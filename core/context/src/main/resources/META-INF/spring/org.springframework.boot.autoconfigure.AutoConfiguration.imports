@@ -1,0 +1,2 @@
+com.milesight.beaveriot.context.configuration.GenericContextAutoConfiguration
+com.milesight.beaveriot.context.configuration.IntegrationAutoConfiguration
