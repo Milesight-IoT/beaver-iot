@@ -25,8 +25,8 @@ import com.milesight.beaveriot.entity.repository.EntityHistoryRepository;
 import com.milesight.beaveriot.entity.repository.EntityLatestRepository;
 import com.milesight.beaveriot.entity.repository.EntityRepository;
 import jakarta.persistence.EntityManager;
-import lombok.*;
-import lombok.extern.slf4j.*;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -197,7 +197,7 @@ public class EntityValueService implements EntityValueServiceProvider {
             String unionId = entityId + ":" + timestamp;
             EntityHistoryPO dataHistory = existUnionIdMap.get(unionId);
             Long historyId = null;
-            String operatorId = SecurityUserContext.getUserId();
+            String operatorId = SecurityUserContext.getUserId() == null ? null : SecurityUserContext.getUserId().toString();
             if (dataHistory == null) {
                 historyId = SnowflakeUtil.nextId();
                 entityHistoryPO.setCreatedBy(operatorId);
@@ -303,7 +303,7 @@ public class EntityValueService implements EntityValueServiceProvider {
     }
 
     public Page<EntityHistoryResponse> historySearch(EntityHistoryQuery entityHistoryQuery) {
-        Page<EntityHistoryPO> entityHistoryPage = entityHistoryRepository.findAll(f -> f.eq(EntityHistoryPO.Fields.entityId, entityHistoryQuery.getEntityId())
+        Page<EntityHistoryPO> entityHistoryPage = entityHistoryRepository.findAllWithDataPermission(f -> f.eq(EntityHistoryPO.Fields.entityId, entityHistoryQuery.getEntityId())
                         .ge(EntityHistoryPO.Fields.timestamp, entityHistoryQuery.getStartTimestamp())
                         .le(EntityHistoryPO.Fields.timestamp, entityHistoryQuery.getEndTimestamp()),
                 entityHistoryQuery.toPageable());
@@ -334,11 +334,11 @@ public class EntityValueService implements EntityValueServiceProvider {
     }
 
     public EntityAggregateResponse historyAggregate(EntityAggregateQuery entityAggregateQuery) {
-        List<EntityHistoryPO> entityHistoryPOList = entityHistoryRepository.findAll(filter -> filter.eq(EntityHistoryPO.Fields.entityId, entityAggregateQuery.getEntityId())
+        EntityAggregateResponse entityAggregateResponse = new EntityAggregateResponse();
+        List<EntityHistoryPO> entityHistoryPOList = entityHistoryRepository.findAllWithDataPermission(filter -> filter.eq(EntityHistoryPO.Fields.entityId, entityAggregateQuery.getEntityId())
                         .ge(EntityHistoryPO.Fields.timestamp, entityAggregateQuery.getStartTimestamp())
                         .le(EntityHistoryPO.Fields.timestamp, entityAggregateQuery.getEndTimestamp()))
                 .stream().sorted(Comparator.comparingLong(EntityHistoryPO::getTimestamp)).toList();
-        EntityAggregateResponse entityAggregateResponse = new EntityAggregateResponse();
         if (entityHistoryPOList.isEmpty()) {
             return entityAggregateResponse;
         }
@@ -494,7 +494,7 @@ public class EntityValueService implements EntityValueServiceProvider {
     }
 
     public EntityLatestResponse getEntityStatus(Long entityId) {
-        EntityLatestPO entityLatestPO = entityLatestRepository.findOne(filter -> filter.eq(EntityLatestPO.Fields.entityId, entityId)).orElse(null);
+        EntityLatestPO entityLatestPO = entityLatestRepository.fineOneWithDataPermission(filter -> filter.eq(EntityLatestPO.Fields.entityId, entityId)).orElse(null);
         EntityLatestResponse entityLatestResponse = new EntityLatestResponse();
         if (entityLatestPO == null) {
             return entityLatestResponse;

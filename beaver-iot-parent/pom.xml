@@ -24,6 +24,10 @@
         <groovy.version>3.0.8</groovy.version>
         <mockito.version>4.11.0</mockito.version>
         <h2.version>2.3.232</h2.version>
+
+        <mapstruct.version>1.5.5.Final</mapstruct.version>
+        <lombok-mapstruct.version>0.2.0</lombok-mapstruct.version>
+        <jsqlparser.version>4.4</jsqlparser.version>
     </properties>
 
     <dependencyManagement>
@@ -127,6 +131,28 @@
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
                 <version>${h2.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.jsqlparser</groupId>
+                <artifactId>jsqlparser</artifactId>
+                <version>${jsqlparser.version}</version>
+            </dependency>
+            <!-- mapstruct -->
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct-processor</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok-mapstruct-binding</artifactId>
+                <version>${lombok-mapstruct.version}</version>
             </dependency>
 
             <!-- test dependencies -->

@@ -1,11 +1,12 @@
 package com.milesight.beaveriot.authentication.facade;
 
 import com.milesight.beaveriot.authentication.service.UserAuthenticationService;
-import com.milesight.beaveriot.context.security.SecurityUserContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+
+import java.util.Map;
 
 /**
  * @author loong
@@ -18,12 +19,12 @@ public class AuthenticationFacade implements IAuthenticationFacade {
     UserAuthenticationService userAuthenticationService;
 
     @Override
-    public String getUserIdByToken(String token) {
+    public Map<String, Object> getUserByToken(String token) {
         if (!StringUtils.hasText(token)) {
             return null;
         }
         Jwt jwt = userAuthenticationService.readAccessToken(token);
-        return jwt.getClaims().get(SecurityUserContext.USER_ID).toString();
+        return jwt.getClaims();
     }
 
 }

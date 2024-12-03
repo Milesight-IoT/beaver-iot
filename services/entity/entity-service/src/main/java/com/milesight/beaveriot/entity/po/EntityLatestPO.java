@@ -7,6 +7,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
+import org.hibernate.annotations.DynamicInsert;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
@@ -24,6 +25,8 @@ public class EntityLatestPO {
 
     @Id
     private Long id;
+    @Column(insertable = false, updatable = false)
+    private Long tenantId;
     private Long entityId;
     private Long valueLong;
     private BigDecimal valueDouble;

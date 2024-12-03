@@ -39,7 +39,7 @@ public class CustomJdbcOAuth2AuthorizationService extends JdbcOAuth2Authorizatio
 //        PreparedStatementSetter pss = new ArgumentPreparedStatementSetter(parameters);
 //        getJdbcOperations().update(REMOVE_PRINCIPAL_SQL, pss);
 
-        SqlParameterValue[] parameters = new SqlParameterValue[] {
+        SqlParameterValue[] parameters = new SqlParameterValue[]{
                 new SqlParameterValue(Types.VARCHAR, principalName),
                 new SqlParameterValue(Types.TIMESTAMP, new Date())
         };

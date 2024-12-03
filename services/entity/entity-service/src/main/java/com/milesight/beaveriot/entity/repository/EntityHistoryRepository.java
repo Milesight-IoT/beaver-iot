@@ -1,15 +1,22 @@
 package com.milesight.beaveriot.entity.repository;
 
+import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.data.jpa.repository.BaseJpaRepository;
 import com.milesight.beaveriot.entity.model.dto.EntityHistoryUnionQuery;
 import com.milesight.beaveriot.entity.po.EntityHistoryPO;
+import com.milesight.beaveriot.permission.aspect.DataPermission;
+import com.milesight.beaveriot.permission.enums.DataPermissionTypeEnum;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.repository.query.Param;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * @author loong
@@ -18,8 +25,18 @@ import java.util.Map;
 public interface EntityHistoryRepository extends BaseJpaRepository<EntityHistoryPO, Long> {
 
     @Modifying
-    @org.springframework.data.jpa.repository.Query(value = "delete from t_entity_history d where d.entity_id in (?1)", nativeQuery = true)
-    void deleteByEntityIds(List<Long> entityIds);
+    @org.springframework.data.jpa.repository.Query("delete from EntityHistoryPO d where d.entityId in :entityIds")
+    void deleteByEntityIds(@Param("entityIds") List<Long> entityIds);
+
+    @DataPermission(type = DataPermissionTypeEnum.ENTITY, column = "entity_id")
+    default List<EntityHistoryPO> findAllWithDataPermission(Consumer<Filterable> consumer) {
+        return findAll(consumer);
+    }
+
+    @DataPermission(type = DataPermissionTypeEnum.ENTITY, column = "entity_id")
+    default Page<EntityHistoryPO> findAllWithDataPermission(Consumer<Filterable> filterable, Pageable pageable) {
+        return findAll(filterable, pageable);
+    }
 
     default List<EntityHistoryPO> findByUnionUnique(EntityManager entityManager, List<EntityHistoryUnionQuery> queries) {
         String dynamicQuery = generateDynamicQuery(queries);
@@ -32,13 +49,14 @@ public interface EntityHistoryRepository extends BaseJpaRepository<EntityHistory
     }
 
     default String generateDynamicQuery(List<EntityHistoryUnionQuery> queries) {
-        StringBuilder sqlBuilder = new StringBuilder("SELECT * FROM t_entity_history WHERE ");
+        StringBuilder sqlBuilder = new StringBuilder("SELECT * FROM t_entity_history WHERE ( ");
         for (int i = 0; i < queries.size(); i++) {
             if (i > 0) {
                 sqlBuilder.append(" OR ");
             }
             sqlBuilder.append("(entity_id = :entityId").append(i).append(" AND timestamp = :timestamp").append(i).append(")");
         }
+        sqlBuilder.append(" ) ");
         return sqlBuilder.toString();
     }
 
