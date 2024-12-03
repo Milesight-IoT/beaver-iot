@@ -1,0 +1,39 @@
+package com.milesight.beaveriot.base.exception;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * @author leon
+ */
+public class EventBusExecutionException extends BaseException {
+
+    private final List<Throwable> causes = new ArrayList<>();
+
+    public EventBusExecutionException() {
+    }
+
+    public EventBusExecutionException(String message) {
+        super(message);
+    }
+
+    public EventBusExecutionException(Throwable throwable) {
+        super(throwable);
+        causes.add(throwable);
+    }
+
+    public EventBusExecutionException(String message, Throwable cause) {
+        super(message, cause);
+        causes.add(cause);
+    }
+
+    public EventBusExecutionException(String message, List<Throwable> causes) {
+        super(message);
+        this.causes.addAll(causes);
+    }
+
+    public List<Throwable> getCauses() {
+        return causes;
+    }
+
+}

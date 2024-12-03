@@ -1,0 +1,44 @@
+
+server:
+  port: 9200
+
+spring:
+  jackson:
+    default-property-inclusion: non_null
+    property-naming-strategy: SNAKE_CASE
+
+#  data:
+#    jpa:
+#      repositories:
+#        enabled: "true"
+  jpa:
+    show-sql: true
+    properties:
+      jakarta.persistence.query.timeout: "${JAVAX_PERSISTENCE_QUERY_TIMEOUT:30000}" # General timeout for JDBC queries
+      hibernate:
+#        dialect: org.hibernate.dialect.PostgreSQLDialect
+        naming:
+          physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+  datasource:
+    #url: jdbc:mysql://localhost:3306/jpa-demo?allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&useSSL=false&useColumnNamesInFindColumn=true&createDatabaseIfNotExist=true
+    url: "${SPRING_DATASOURCE_URL:jdbc:postgresql://192.168.43.48:5432/iab}"
+    username: "${SPRING_DATASOURCE_USERNAME:postgres}"
+    password: "${SPRING_DATASOURCE_PASSWORD:postgres}"
+    driverClassName: "${SPRING_DRIVER_CLASS_NAME:org.postgresql.Driver}"
+  liquibase:
+    enabled: true
+    contexts: init,dev,prod,test
+    change-log: 'classpath*:db/postgres/changelog.yaml'
+
+camel:
+  springboot:
+    routes-include-pattern: classpath:routes/*.yaml
+
+logging:
+  level:
+    com.milesight: debug
+
+websocket:
+  enabled: true
+  port: ${WEBSOCKET_PORT:8081}
+  context-path: ${WEBSOCKET_CONTEXT_PATH:/websocket}

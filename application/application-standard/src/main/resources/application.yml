@@ -1,0 +1,92 @@
+server:
+  port: 9200
+
+spring:
+  jackson:
+    default-property-inclusion: non_null
+    property-naming-strategy: SNAKE_CASE
+  jpa:
+    show-sql: true
+    properties:
+      jakarta.persistence.query.timeout: "${JAVAX_PERSISTENCE_QUERY_TIMEOUT:30000}" # General timeout for JDBC queries
+      hibernate.type.wrapper_array_handling: ALLOW
+      hibernate.naming.physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+  datasource:
+#    url: "${SPRING_DATASOURCE_URL:jdbc:postgresql://192.168.45.115:5432/postgres}"
+#    username: "${SPRING_DATASOURCE_USERNAME:postgres}"
+#    password: "${SPRING_DATASOURCE_PASSWORD:postgres}"
+#    driverClassName: "${SPRING_DRIVER_CLASS_NAME:org.postgresql.Driver}"
+    url: "${SPRING_DATASOURCE_URL:jdbc:h2:file:~/beaver-iot/h2/beaver;AUTO_SERVER=TRUE}"
+    username: "${SPRING_DATASOURCE_USERNAME:sa}"
+    password: "${SPRING_DATASOURCE_PASSWORD:}"
+    driverClassName: "${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.h2.Driver}"
+  liquibase:
+    enabled: true
+    contexts: init,dev,prod,test
+    change-log: 'classpath*:db/${DB_TYPE:h2}/changelog.yaml'
+  h2:
+    console:
+      enabled: ${SPRING_H2_CONSOLE_ENABLED:false}
+      path: /public/h2-console
+      settings:
+        webAllowOthers: true
+
+#eventbus:
+#  disruptor:
+#    core-pool-size: 16
+#    max-pool-size: 50
+#    ring-buffer-size: 4096
+camel:
+  springboot:
+    routes-include-pattern: classpath:routes/*.yaml
+websocket:
+  enabled: true
+  port: ${WEBSOCKET_PORT:9201}
+  context-path: ${WEBSOCKET_CONTEXT_PATH:/websocket}
+oauth2:
+  registered-client-id: ${OAUTH2_REGISTERED_CLIENT_ID:default}
+  client-id: ${OAUTH2_CLIENT_ID:iab}
+  client-secret: ${OAUTH2_CLIENT_SECRET:milesight*iab}
+  rsa:
+    private-key: ${OAUTH2_RSA_PRIVATE_KEY:}
+    public-key: ${OAUTH2_RSA_PUBLIC_KEY:}
+  ignore-urls:
+    - "/oauth2/token"
+    - "/user/register"
+    - "/user/status"
+    - "/public/**"
+
+logging:
+  level:
+    com.milesight.beaveriot: ${LOGGING_LEVEL_BEAVER_IOT:debug}
+
+OAUTH2_RSA_PRIVATE_KEY: |
+  MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCtCpHZwvZf9hUQgYGpQoK3Y7fn
+  RRWb4ZrsVdpD8bf3GezPQEKmsyYSdKvXhg3vq6oLcYqjlg8SV7XmytNqjjVkOMR8BOaVMkIvujCI
+  pJemxbR08U7FVW4ShFyxL+mSV5PlLPqHbPbOF5MHtxxHByx4zzwmja+kQ5YokhtQd6+TVkDLUw66
+  0YUO364mEMXrT351n0M4gDHLQzq1xyCyURmU+ELCjh8PUYzFePNkWj0XbjTGeQQZpZRbuqm8XZgY
+  aoN37TydaBLB0z1KipB7CprDNyFnzaGUntBPvUMX/YBFVL05u7Ny5E3AyalwJpEdtRKK+lFnzCB1
+  QXndx0gbuoFxAgMBAAECggEAB4jFx/L+sjfvO9w/roR4V47Oc5Hk+ngMvEySp9Gu/mHRF0cHf+Wd
+  +0C8OLKcCbryOPRVIoFGn7hU8bsUEHgnp/j2ySWXepiJHDXhphlwhvDlxg+5q8rn84Ny274nz9jj
+  Vh+qutnKNzf8jWHyJ7+OtqXjSxRxONg+gf62lL7ZVLNi42HA2VI8Qq2sJ+j4eCsQ5+lYZ9WFRd/Y
+  ZoD5wvua4FG7F6OXp8G65gRcrg4M8Uj5BWX7BAo3KZJMEuVR64TRgTgNkt/1kbWVYyUKNR82x5BR
+  Y5o5tZ+aRW+pXZv2EAHeHqTvYh4U950IfXpdMo71r/ocEPDZaw+JGN7NKfpj6QKBgQDVRIfXmqwL
+  XEaWwjnLgo8tmo3GtByTgdIwO0vj6V7gvWjRlq4LMqeOfzlfuDjnCSwt/4oyNKgtddx2I7GzrdDR
+  qx9e0XceYt2zr/9UyPaV+ZExD6vhwUvQ/gCcgzGb693xZspyLxRo+Qi6yfwxMA8LMKD4nZhJeqU1
+  zsihAGUuNQKBgQDPtqTL//npZljH8MULzSNxjwNId3oVCIXJAB9Bohyf7j+arQwlUy/gx/O0pl4p
+  qW0yTNTa9Cz6LuYsT+wwa0B4sYabXp8M5Ie367JznjaoRGnhGZczy321+WtMK3FD2m9LLCiPtySf
+  Df/9/T8VP3+y2P/DXbNWKDv89+cCi6adzQKBgQCn+EbJcD/q3q2WFblxaQ4dy+m4Q6lyIECMzlcS
+  VX7toSDKWlQP68B+ggONOUpP5TCPtgGBU2nWDEssHSbbrp2WVaHqiy23mASnfomqnHFiY+KP8pjc
+  wOJW44dVvhq3hIkUlXIDhsMbfnD6tRVVJFXk6VMPHQiRbvBqNchczjPitQKBgBVn+z/S14yIMaoZ
+  VBVNRNPVKz9yoLA+OptmWdJHxK9uvDtSjifilNKTiLgbVSTyAwDmDiGqfGAkKTBz5CFxTCmkEf09
+  GSMZAiugLLnhmjxpIIhEPOLnm8L/O2GUMI4PmtyiZmO5OhryNGmWicPE0YI6/tDBfVPpvZTqb3JB
+  tiAZAoGACp2pp29vghRRA617LhDoawWG1FoRYmD+pfUXi2twPmOpM8wNicEq2KblARQa93JQHyCV
+  b4KXFLAItUD24a6+0OwPNLQ3AEaShRM0OSOdcqfV4Dsr5SgacBGky6su/0CbMEiNE0UNKuDe+13i
+  1xDAeCLhl0C0nRG6OyS8EDKRV2o=
+OAUTH2_RSA_PUBLIC_KEY: |
+  MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArQqR2cL2X/YVEIGBqUKCt2O350UVm+Ga
+  7FXaQ/G39xnsz0BCprMmEnSr14YN76uqC3GKo5YPEle15srTao41ZDjEfATmlTJCL7owiKSXpsW0
+  dPFOxVVuEoRcsS/pkleT5Sz6h2z2zheTB7ccRwcseM88Jo2vpEOWKJIbUHevk1ZAy1MOutGFDt+u
+  JhDF609+dZ9DOIAxy0M6tccgslEZlPhCwo4fD1GMxXjzZFo9F240xnkEGaWUW7qpvF2YGGqDd+08
+  nWgSwdM9SoqQewqawzchZ82hlJ7QT71DF/2ARVS9ObuzcuRNwMmpcCaRHbUSivpRZ8wgdUF53cdI
+  G7qBcQIDAQAB
