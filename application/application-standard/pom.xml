@@ -130,6 +130,11 @@
         </dependency>
         <dependency>
             <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>permission-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
             <artifactId>user-service</artifactId>
             <version>${project.version}</version>
         </dependency>

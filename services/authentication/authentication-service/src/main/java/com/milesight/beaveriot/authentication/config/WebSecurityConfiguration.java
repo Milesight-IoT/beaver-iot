@@ -1,15 +1,16 @@
 package com.milesight.beaveriot.authentication.config;
 
+import com.milesight.beaveriot.authentication.exception.CustomAuthenticationHandler;
+import com.milesight.beaveriot.authentication.exception.CustomOAuth2AccessDeniedHandler;
+import com.milesight.beaveriot.authentication.exception.CustomOAuth2ExceptionEntryPoint;
 import com.milesight.beaveriot.authentication.filter.AuthenticationFilter;
 import com.milesight.beaveriot.authentication.handler.CustomOAuth2AccessTokenResponseHandler;
 import com.milesight.beaveriot.authentication.provider.CustomJdbcOAuth2AuthorizationService;
 import com.milesight.beaveriot.authentication.provider.CustomOAuth2AuthorizationService;
-import com.milesight.beaveriot.authentication.provider.CustomOAuth2PasswordAuthenticationProvider;
-import com.milesight.beaveriot.authentication.exception.CustomAuthenticationHandler;
-import com.milesight.beaveriot.authentication.exception.CustomOAuth2AccessDeniedHandler;
-import com.milesight.beaveriot.authentication.exception.CustomOAuth2ExceptionEntryPoint;
 import com.milesight.beaveriot.authentication.provider.CustomOAuth2PasswordAuthenticationConverter;
+import com.milesight.beaveriot.authentication.provider.CustomOAuth2PasswordAuthenticationProvider;
 import com.milesight.beaveriot.authentication.util.OAuth2EndpointUtils;
+import com.milesight.beaveriot.user.facade.IUserFacade;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
@@ -82,6 +83,8 @@ public class WebSecurityConfiguration {
     AuthenticationFilter authenticationFilter;
     @Autowired
     OAuth2Properties oAuth2Properties;
+    @Autowired
+    IUserFacade userFacade;
 
     @Bean
     @Order(1)
@@ -94,7 +97,7 @@ public class WebSecurityConfiguration {
                                         new OAuth2ClientCredentialsAuthenticationConverter(),
                                         new CustomOAuth2PasswordAuthenticationConverter()))
                                 )
-                                .authenticationProvider(new CustomOAuth2PasswordAuthenticationProvider(authorizationService(), tokenGenerator(), userDetailsService, passwordEncoder()))
+                                .authenticationProvider(new CustomOAuth2PasswordAuthenticationProvider(authorizationService(), tokenGenerator(), userFacade, userDetailsService, passwordEncoder()))
                                 .errorResponseHandler(new CustomAuthenticationHandler())
                                 .accessTokenResponseHandler(new CustomOAuth2AccessTokenResponseHandler())
                 )

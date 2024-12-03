@@ -9,6 +9,8 @@ import lombok.Data;
 public class DeviceNameDTO {
     private Long id;
     private String key;
+    private Long userId;
     private Integration integrationConfig;
     private String name;
+    private Long createdAt;
 }

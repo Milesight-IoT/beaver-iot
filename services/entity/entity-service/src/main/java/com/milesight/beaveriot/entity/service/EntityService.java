@@ -17,6 +17,7 @@ import com.milesight.beaveriot.context.integration.model.EntityBuilder;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.Integration;
 import com.milesight.beaveriot.context.integration.model.event.EntityEvent;
+import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
@@ -31,6 +32,10 @@ import com.milesight.beaveriot.entity.repository.EntityLatestRepository;
 import com.milesight.beaveriot.entity.repository.EntityRepository;
 import com.milesight.beaveriot.eventbus.EventBus;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
+import com.milesight.beaveriot.permission.aspect.OperationPermission;
+import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
+import com.milesight.beaveriot.user.enums.ResourceType;
+import com.milesight.beaveriot.user.facade.IUserFacade;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -75,9 +80,11 @@ public class EntityService implements EntityServiceProvider {
     @Autowired
     ExchangeFlowExecutor exchangeFlowExecutor;
     @Autowired
+    IUserFacade userFacade;
+    @Autowired
     EventBus eventBus;
 
-    private EntityPO saveConvert(Entity entity, Map<String, Long> deviceKeyMap, Map<String, EntityPO> dataEntityKeyMap) {
+    private EntityPO saveConvert(Long userId, Entity entity, Map<String, Long> deviceKeyMap, Map<String, EntityPO> dataEntityKeyMap) {
         try {
             AttachTargetType attachTarget;
             String attachTargetId;
@@ -101,6 +108,7 @@ public class EntityService implements EntityServiceProvider {
                 entityPO.setCreatedAt(dataEntityPO.getCreatedAt());
             }
             entityPO.setId(entityId);
+            entityPO.setUserId(userId);
             entityPO.setKey(entity.getKey());
             entityPO.setName(entity.getName());
             entityPO.setType(entity.getType());
@@ -235,6 +243,7 @@ public class EntityService implements EntityServiceProvider {
 
     @Override
     public void save(Entity entity) {
+        Long userId = SecurityUserContext.getUserId();
         if (entity == null) {
             return;
         }
@@ -243,11 +252,12 @@ public class EntityService implements EntityServiceProvider {
         if (!CollectionUtils.isEmpty(entity.getChildren())) {
             allEntityList.addAll(entity.getChildren());
         }
-        doBatchSaveEntity(allEntityList);
+        doBatchSaveEntity(userId, allEntityList);
     }
 
     @Override
     public void batchSave(List<Entity> entityList) {
+        Long userId = SecurityUserContext.getUserId();
         if (entityList == null || entityList.isEmpty()) {
             return;
         }
@@ -259,10 +269,10 @@ public class EntityService implements EntityServiceProvider {
                 allEntityList.addAll(childrenEntityList);
             }
         });
-        doBatchSaveEntity(allEntityList);
+        doBatchSaveEntity(userId, allEntityList);
     }
 
-    private void doBatchSaveEntity(List<Entity> entityList) {
+    private void doBatchSaveEntity(Long userId, List<Entity> entityList) {
         if (entityList == null || entityList.isEmpty()) {
             return;
         }
@@ -282,7 +292,7 @@ public class EntityService implements EntityServiceProvider {
         }
         List<EntityPO> entityPOList = new ArrayList<>();
         entityList.forEach(t -> {
-            EntityPO entityPO = saveConvert(t, deviceKeyMap, dataEntityKeyMap);
+            EntityPO entityPO = saveConvert(userId, t, deviceKeyMap, dataEntityKeyMap);
             EntityPO dataEntityPO = dataEntityKeyMap.get(t.getKey());
             if (dataEntityPO == null
                     || dataEntityPO.getAccessMod() != entityPO.getAccessMod()
@@ -323,6 +333,8 @@ public class EntityService implements EntityServiceProvider {
         entityRepository.deleteByTargetId(targetId);
         entityHistoryRepository.deleteByEntityIds(entityIdList);
         entityLatestRepository.deleteByEntityIds(entityIdList);
+
+        userFacade.deleteResource(ResourceType.ENTITY, entityIdList);
 
         entityList.forEach(entity -> {
             eventBus.publish(EntityEvent.of(EntityEvent.EventType.DELETED, entity));
@@ -548,7 +560,7 @@ public class EntityService implements EntityServiceProvider {
                 .in(entityQuery.getEntityAccessMod() != null && !entityQuery.getEntityAccessMod().isEmpty(), EntityPO.Fields.accessMod, entityQuery.getEntityAccessMod() == null ? null : entityQuery.getEntityAccessMod().toArray())
                 .or(f1 -> f1.likeIgnoreCase(StringUtils.hasText(entityQuery.getKeyword()), EntityPO.Fields.name, entityQuery.getKeyword())
                         .in(!attachTargetIds.isEmpty(), EntityPO.Fields.attachTargetId, attachTargetIds.toArray()));
-        Page<EntityPO> entityPOList = entityRepository.findAll(filterable, entityQuery.toPageable());
+        Page<EntityPO> entityPOList = entityRepository.findAllWithDataPermission(filterable, entityQuery.toPageable());
         if (entityPOList == null || entityPOList.getContent().isEmpty()) {
             return Page.empty();
         }
@@ -589,8 +601,8 @@ public class EntityService implements EntityServiceProvider {
     }
 
     public List<EntityResponse> getChildren(Long entityId) {
-        EntityPO entityPO = entityRepository.findOne(f -> f.eq(EntityPO.Fields.id, entityId)).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).build());
-        List<EntityPO> entityPOList = entityRepository.findAll(f -> f.eq(EntityPO.Fields.parent, entityPO.getKey()));
+        EntityPO entityPO = entityRepository.findOneWithDataPermission(f -> f.eq(EntityPO.Fields.id, entityId)).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).build());
+        List<EntityPO> entityPOList = entityRepository.findAllWithDataPermission(f -> f.eq(EntityPO.Fields.parent, entityPO.getKey()));
         if (entityPOList == null || entityPOList.isEmpty()) {
             return Collections.emptyList();
         }
@@ -631,7 +643,7 @@ public class EntityService implements EntityServiceProvider {
     }
 
     public EntityMetaResponse getEntityMeta(Long entityId) {
-        EntityPO entityPO = entityRepository.getOne(entityId);
+        EntityPO entityPO = entityRepository.findOneWithDataPermission(filterable -> filterable.eq(EntityPO.Fields.id, entityId)).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).build());
         EntityMetaResponse entityMetaResponse = new EntityMetaResponse();
         entityMetaResponse.setKey(entityPO.getKey());
         entityMetaResponse.setName(entityPO.getName());
@@ -642,13 +654,19 @@ public class EntityService implements EntityServiceProvider {
         return entityMetaResponse;
     }
 
+    @OperationPermission(code = OperationPermissionCode.INTEGRATION_EDIT_PROPERTY)
     public void updatePropertyEntity(UpdatePropertyEntityRequest updatePropertyEntityRequest) {
         Map<String, Object> exchange = updatePropertyEntityRequest.getExchange();
         List<String> entityKeys = exchange.keySet().stream().toList();
-        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, entityKeys.toArray()));
+        List<EntityPO> entityPOList = entityRepository.findAllWithDataPermission(filter -> filter.in(EntityPO.Fields.key, entityKeys.toArray()));
         if (entityPOList == null || entityPOList.isEmpty()) {
             log.info("entity not found: {}", entityKeys);
             throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
+        }
+        List<String> nowEntityKeys = entityPOList.stream().map(EntityPO::getKey).toList();
+        List<String> noInExchangeKeys = exchange.keySet().stream().filter(t -> !nowEntityKeys.contains(t)).toList();
+        if (!noInExchangeKeys.isEmpty()) {
+            noInExchangeKeys.forEach(exchange::remove);
         }
         entityPOList.forEach(entityPO -> {
             boolean isProperty = entityPO.getType().equals(EntityType.PROPERTY);
@@ -670,13 +688,19 @@ public class EntityService implements EntityServiceProvider {
         exchangeFlowExecutor.syncExchangeDown(payload);
     }
 
+    @OperationPermission(code = OperationPermissionCode.INTEGRATION_EDIT_SERVICE)
     public EventResponse serviceCall(ServiceCallRequest serviceCallRequest) {
         Map<String, Object> exchange = serviceCallRequest.getExchange();
         List<String> entityKeys = exchange.keySet().stream().toList();
-        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, entityKeys.toArray()));
+        List<EntityPO> entityPOList = entityRepository.findAllWithDataPermission(filter -> filter.in(EntityPO.Fields.key, entityKeys.toArray()));
         if (entityPOList == null || entityPOList.isEmpty()) {
             log.info("entity not found: {}", entityKeys);
             throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
+        }
+        List<String> nowEntityKeys = entityPOList.stream().map(EntityPO::getKey).toList();
+        List<String> noInExchangeKeys = exchange.keySet().stream().filter(t -> !nowEntityKeys.contains(t)).toList();
+        if (!noInExchangeKeys.isEmpty()) {
+            noInExchangeKeys.forEach(exchange::remove);
         }
         entityPOList.forEach(entityPO -> {
             boolean isService = entityPO.getType().equals(EntityType.SERVICE);
