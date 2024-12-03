@@ -1,7 +1,8 @@
 package com.milesight.beaveriot.authentication.filter;
 
-import com.milesight.beaveriot.authentication.service.UserAuthenticationService;
 import com.milesight.beaveriot.authentication.exception.CustomOAuth2Exception;
+import com.milesight.beaveriot.authentication.service.UserAuthenticationService;
+import com.milesight.beaveriot.context.security.SecurityUserContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,10 +29,12 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
             userAuthenticationService.loadSecurityContext(request);
+
+            filterChain.doFilter(request, response);
         } catch (Exception e) {
             CustomOAuth2Exception.exceptionResponse(response, e);
-            return;
+        } finally {
+            SecurityUserContext.clear();
         }
-        filterChain.doFilter(request, response);
     }
 }

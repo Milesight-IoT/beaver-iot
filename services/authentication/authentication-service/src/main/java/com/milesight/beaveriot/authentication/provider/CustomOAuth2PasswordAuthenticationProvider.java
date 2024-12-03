@@ -1,5 +1,9 @@
 package com.milesight.beaveriot.authentication.provider;
 
+import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.user.dto.TenantDTO;
+import com.milesight.beaveriot.user.dto.UserDTO;
+import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -27,6 +31,7 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 
 import java.security.Principal;
+import java.util.Map;
 
 /**
  * @author loong
@@ -34,6 +39,7 @@ import java.security.Principal;
  */
 public class CustomOAuth2PasswordAuthenticationProvider implements AuthenticationProvider {
 
+    private final IUserFacade userFacade;
     private final UserDetailsService userDetailService;
     private final PasswordEncoder passwordEncoder;
 
@@ -42,10 +48,12 @@ public class CustomOAuth2PasswordAuthenticationProvider implements Authenticatio
 
     public CustomOAuth2PasswordAuthenticationProvider(CustomOAuth2AuthorizationService authorizationService,
                                                       OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator,
+                                                      IUserFacade userFacade,
                                                       UserDetailsService userDetailService,
                                                       PasswordEncoder passwordEncoder) {
         this.authorizationService = authorizationService;
         this.tokenGenerator = tokenGenerator;
+        this.userFacade = userFacade;
         this.userDetailService = userDetailService;
         this.passwordEncoder = passwordEncoder;
     }
@@ -58,8 +66,27 @@ public class CustomOAuth2PasswordAuthenticationProvider implements Authenticatio
                 getAuthenticatedClientElseThrowInvalidClient(passwordAuthentication);
         RegisteredClient registeredClient = clientPrincipal.getRegisteredClient();
 
+        Long tenantId = passwordAuthentication.getTenantId();
         String username = passwordAuthentication.getUsername();
         String password = passwordAuthentication.getPassword();
+
+        TenantDTO tenantDTO = userFacade.analyzeTenantId(tenantId);
+        if (tenantDTO == null) {
+            OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,
+                    "subDomain not found.", null);
+            throw new OAuth2AuthenticationException(error);
+        }
+
+        tenantId = tenantDTO.getTenantId();
+
+        Map<String, Object> payload = Map.of(
+                SecurityUserContext.TENANT_ID, tenantId
+        );
+        SecurityUserContext.SecurityUser securityUser = SecurityUserContext.SecurityUser.builder()
+                .payload(payload)
+                .build();
+        SecurityUserContext.setSecurityUser(securityUser);
+
         UserDetails userDetails = userDetailService.loadUserByUsername(username);
         if (userDetails == null) {
             OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,
@@ -69,6 +96,22 @@ public class CustomOAuth2PasswordAuthenticationProvider implements Authenticatio
         if (!passwordEncoder.matches(password, userDetails.getPassword())) {
             OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,
                     "password not match.", null);
+            throw new OAuth2AuthenticationException(error);
+        }
+        UserDTO userDTO = userFacade.getEnableUserByEmail(username);
+        if (userDTO == null) {
+            OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,
+                    "username not found.", null);
+            throw new OAuth2AuthenticationException(error);
+        }
+        if (!passwordEncoder.matches(password, userDTO.getEncodePassword())) {
+            OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,
+                    "password not match.", null);
+            throw new OAuth2AuthenticationException(error);
+        }
+        if (!tenantId.equals(Long.parseLong(userDTO.getTenantId()))) {
+            OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,
+                    "tenantId not match.", null);
             throw new OAuth2AuthenticationException(error);
         }
 

@@ -3,7 +3,6 @@ package com.milesight.beaveriot.websocket;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,6 +13,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @date 2024/10/18 14:42
  */
 public class WebSocketContext {
+
+    public static final String KEY_JOIN_SYMBOL = "_";
 
     private static final Map<String, List<ChannelHandlerContext>> channelMap = new ConcurrentHashMap<>();
 
@@ -33,7 +34,7 @@ public class WebSocketContext {
         channelMap.remove(key);
     }
 
-    public static String getChannelByValue(ChannelHandlerContext ctx) {
+    public static String getKeyByValue(ChannelHandlerContext ctx) {
         return channelMap.entrySet().stream().filter(entry -> entry.getValue().stream().anyMatch(ctx1 -> ctx1.channel().id().asLongText().equals(ctx.channel().id().asLongText()))).map(Map.Entry::getKey).findFirst().orElse(null);
     }
 
