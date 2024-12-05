@@ -12,9 +12,6 @@
     <artifactId>notifications</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>notification-api</module>
-        <module>notification-email</module>
-        <module>notification-webhook</module>
         <module>notification-websocket</module>
     </modules>
 
