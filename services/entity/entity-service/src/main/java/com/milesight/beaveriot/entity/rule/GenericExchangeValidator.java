@@ -24,7 +24,7 @@ import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.ENTI
  */
 @Slf4j
 @Component
-@RuleNode(name = RuleNodeNames.innerExchangeValidator, description = "innerExchangeValidator")
+@RuleNode(value = RuleNodeNames.innerExchangeValidator, description = "innerExchangeValidator")
 public class GenericExchangeValidator implements PredicateNode<ExchangePayload> {
 
     @Autowired

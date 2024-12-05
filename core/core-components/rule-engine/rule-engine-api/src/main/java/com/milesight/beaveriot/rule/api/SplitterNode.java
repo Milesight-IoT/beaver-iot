@@ -5,8 +5,8 @@ import java.util.List;
 /**
  * @author leon
  */
-public interface SplitterNode<T> extends RuleConfigurationAware{
+public interface SplitterNode<T> {
 
-    List<T> split(T payload) ;
+    List<T> split(T payload);
 
 }

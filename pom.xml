@@ -21,6 +21,7 @@
         <module>services</module>
         <module>extension-components</module>
         <module>beaver-iot-parent</module>
+        <module>services/workflow</module>
     </modules>
 
     <properties>

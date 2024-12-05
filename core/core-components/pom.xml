@@ -20,7 +20,6 @@
     <modules>
         <module>eventbus</module>
         <module>rule-engine</module>
-        <module>script-engine</module>
     </modules>
 
 </project>

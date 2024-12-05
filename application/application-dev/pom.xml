@@ -37,7 +37,7 @@
 
         <dependency>
             <groupId>com.milesight.beaveriot</groupId>
-            <artifactId>rule-engine-component</artifactId>
+            <artifactId>rule-engine-core</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -100,6 +100,55 @@
             <scope>system</scope>
             <systemPath>C:/Users/Zhangl/.m2/repository/com/milesight/beaveriot/ping/1.0-SNAPSHOT/ping-1.0-SNAPSHOT.jar</systemPath>
         </dependency>-->
+
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-language-starter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-groovy</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-javascript</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-mvel</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-cluster</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-quartz</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-kafka</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.quarkus</groupId>
+            <artifactId>camel-quarkus-file-cluster-service</artifactId>
+            <version>3.16.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.apache.camel/camel-package-maven-plugin -->
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-package-maven-plugin</artifactId>
+            <version>4.8.1</version>
+            <scope>test</scope>
+        </dependency>
 
     </dependencies>
 

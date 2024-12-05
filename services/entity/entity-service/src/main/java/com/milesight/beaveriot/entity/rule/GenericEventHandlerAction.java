@@ -18,7 +18,7 @@ import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.EVEN
  */
 @Slf4j
 @Component
-@RuleNode(name = RuleNodeNames.innerEventHandlerAction, description = "innerEventHandlerAction")
+@RuleNode(value = RuleNodeNames.innerEventHandlerAction, description = "innerEventHandlerAction")
 public class GenericEventHandlerAction implements TransformerNode<ExchangePayload, EventResponse> {
 
     @Autowired

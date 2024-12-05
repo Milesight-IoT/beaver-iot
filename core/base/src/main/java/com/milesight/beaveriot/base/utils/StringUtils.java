@@ -141,4 +141,9 @@ public class StringUtils {
     public static String upperFirst(String name) {
         return Character.toUpperCase(name.charAt(0)) + name.substring(1);
     }
+
+    public static String lowerFirst(String name) {
+        return Character.toLowerCase(name.charAt(0)) + name.substring(1);
+    }
+
 }

@@ -7,7 +7,7 @@ import org.apache.camel.CamelContext;
  */
 public interface RuleEngineRouteConfigurer {
 
-   void customizeRoute(CamelContext context) throws Exception;
+    void customizeRoute(CamelContext context) throws Exception;
 
 }
 

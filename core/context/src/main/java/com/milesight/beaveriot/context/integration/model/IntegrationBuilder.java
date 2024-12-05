@@ -173,11 +173,6 @@ public class IntegrationBuilder {
             return this;
         }
 
-        public IntegrationConfigBuilder flowExchangeDownHandler(String flowExchangeDownHandler) {
-            this.integrationBuilder.integration.setFlowExchangeDownHandler(flowExchangeDownHandler);
-            return this;
-        }
-
         public IntegrationBuilder end() {
             return integrationBuilder;
         }

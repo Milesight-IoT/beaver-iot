@@ -3,7 +3,7 @@ package com.milesight.beaveriot.rule.api;
 /**
  * @author leon
  */
-public interface TransformerNode<S,T> extends RuleConfigurationAware{
+public interface TransformerNode<S, T> {
 
-    T transform(S exchange) ;
+    T transform(S exchange);
 }

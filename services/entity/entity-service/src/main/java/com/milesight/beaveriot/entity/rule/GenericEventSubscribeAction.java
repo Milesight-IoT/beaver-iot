@@ -17,7 +17,7 @@ import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.EVEN
  */
 @Slf4j
 @Component
-@RuleNode(name = RuleNodeNames.innerEventSubscribeAction, description = "innerEventSubscribeAction")
+@RuleNode(value = RuleNodeNames.innerEventSubscribeAction, description = "innerEventSubscribeAction")
 public class GenericEventSubscribeAction implements ProcessorNode<ExchangePayload> {
 
     @Autowired

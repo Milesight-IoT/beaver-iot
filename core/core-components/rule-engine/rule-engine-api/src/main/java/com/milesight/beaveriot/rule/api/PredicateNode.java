@@ -3,8 +3,8 @@ package com.milesight.beaveriot.rule.api;
 /**
  * @author leon
  */
-public interface PredicateNode<T> extends RuleConfigurationAware{
+public interface PredicateNode<T> {
 
-    boolean matches(T exchange) ;
+    boolean matches(T exchange);
 
 }

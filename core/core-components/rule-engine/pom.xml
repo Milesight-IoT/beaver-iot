@@ -13,7 +13,9 @@
     <packaging>pom</packaging>
     <modules>
         <module>rule-engine-api</module>
-        <module>rule-engine-component</module>
+        <module>rule-engine-core</module>
+        <module>rule-engine-components</module>
+        <module>rule-engine-manager</module>
     </modules>
 
     <properties>

@@ -13,7 +13,7 @@ import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.SYNC
  */
 @Slf4j
 @Component
-@RuleNode(name = "innerSyncCallPredicate", description = "SyncCallPredicate")
+@RuleNode(value = "innerSyncCallPredicate", description = "SyncCallPredicate")
 public class GenericSyncCallPredicate implements PredicateNode<ExchangePayload> {
 
     @Override

@@ -46,7 +46,7 @@
             </dependency>
             <dependency>
                 <groupId>com.milesight.beaveriot</groupId>
-                <artifactId>rule-engine-component</artifactId>
+                <artifactId>rule-engine-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- beaver iot service -->

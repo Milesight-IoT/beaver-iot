@@ -3,7 +3,7 @@ package com.milesight.beaveriot.rule.api;
 /**
  * @author leon
  */
-public interface ProcessorNode<T> extends RuleConfigurationAware{
+public interface ProcessorNode<T> {
 
-    void processor(T exchange) ;
+    void processor(T exchange);
 }

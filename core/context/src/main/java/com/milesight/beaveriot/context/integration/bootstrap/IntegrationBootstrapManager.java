@@ -150,6 +150,7 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
         IntegrationConfig integrationConfig = Binder.get(environment).bind(IntegrationConstants.INTEGRATION_PROPERTY_PREFIX + "." + integrationId, IntegrationConfig.class).get();
         Integration integration = integrationConfig.toIntegration(integrationId);
         integration.setIntegrationClass(clazz);
+        integration.setEnvironment(environment);
         return integration;
     }
 

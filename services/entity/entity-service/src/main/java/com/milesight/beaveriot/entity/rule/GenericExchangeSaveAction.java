@@ -19,7 +19,7 @@ import java.util.Map;
 
 @Slf4j
 @Component
-@RuleNode(name = RuleNodeNames.innerExchangeSaveAction, description = "innerExchangeSaveAction")
+@RuleNode(value = RuleNodeNames.innerExchangeSaveAction, description = "innerExchangeSaveAction")
 public class GenericExchangeSaveAction implements ProcessorNode<ExchangePayload> {
 
     @Autowired
