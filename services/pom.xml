@@ -18,6 +18,7 @@
         <module>authentication</module>
         <module>integration</module>
         <module>entity</module>
+        <module>workflow</module>
     </modules>
 
     <properties>

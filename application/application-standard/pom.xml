@@ -123,21 +123,17 @@
         </dependency>
 
         <!-- sample test -->
-        <dependency>
+        <!--<dependency>
             <groupId>com.milesight.beaveriot</groupId>
             <artifactId>msc-integration</artifactId>
             <version>${project.version}</version>
-            <scope>system</scope>
-            <systemPath>C:/Users/Zhangl/.m2/repository/com/milesight/beaveriot/msc-integration/1.0-SNAPSHOT/msc-integration-1.0-SNAPSHOT.jar</systemPath>
         </dependency>
 
         <dependency>
             <groupId>com.milesight.beaveriot</groupId>
             <artifactId>ping</artifactId>
             <version>${project.version}</version>
-            <scope>system</scope>
-            <systemPath>C:/Users/Zhangl/.m2/repository/com/milesight/beaveriot/ping/1.0-SNAPSHOT/ping-1.0-SNAPSHOT.jar</systemPath>
-        </dependency>
+        </dependency>-->
 
         <!-- unit test -->
         <dependency>
