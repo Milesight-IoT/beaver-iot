@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.authentication.service;
 
-import com.milesight.beaveriot.authentication.provider.CustomOAuth2AuthorizationService;
 import com.milesight.beaveriot.authentication.config.OAuth2Properties;
+import com.milesight.beaveriot.authentication.provider.CustomOAuth2AuthorizationService;
 import com.milesight.beaveriot.authentication.util.OAuth2EndpointUtils;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import jakarta.servlet.http.HttpServletRequest;

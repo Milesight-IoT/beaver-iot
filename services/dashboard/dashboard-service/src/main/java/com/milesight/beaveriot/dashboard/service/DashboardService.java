@@ -3,6 +3,7 @@ package com.milesight.beaveriot.dashboard.service;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
+import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.dashboard.convert.DashboardConvert;
 import com.milesight.beaveriot.dashboard.convert.DashboardWidgetConvert;
 import com.milesight.beaveriot.dashboard.enums.DashboardErrorCode;
@@ -16,13 +17,16 @@ import com.milesight.beaveriot.dashboard.po.DashboardWidgetPO;
 import com.milesight.beaveriot.dashboard.repository.DashboardRepository;
 import com.milesight.beaveriot.dashboard.repository.DashboardWidgetRepository;
 import com.milesight.beaveriot.dashboard.repository.DashboardWidgetTemplateRepository;
+import com.milesight.beaveriot.user.enums.ResourceType;
+import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,20 +47,26 @@ public class DashboardService {
     private DashboardWidgetRepository dashboardWidgetRepository;
     @Autowired
     private DashboardWidgetTemplateRepository dashboardWidgetTemplateRepository;
+    @Autowired
+    IUserFacade userFacade;
 
     public CreateDashboardResponse createDashboard(CreateDashboardRequest createDashboardRequest) {
         String name = createDashboardRequest.getName();
         if (!StringUtils.hasText(name)) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("name is empty").build();
         }
+        Long userId = SecurityUserContext.getUserId();
         DashboardPO dashboardPO = dashboardRepository.findOne(filterable -> filterable.eq(DashboardPO.Fields.name, name)).orElse(null);
         if (dashboardPO != null) {
             throw ServiceException.with(DashboardErrorCode.DASHBOARD_NAME_EXIST).build();
         }
         dashboardPO = new DashboardPO();
         dashboardPO.setId(SnowflakeUtil.nextId());
+        dashboardPO.setUserId(userId);
         dashboardPO.setName(name);
         dashboardRepository.save(dashboardPO);
+
+        userFacade.associateResource(userId, ResourceType.DASHBOARD, Collections.singletonList(dashboardPO.getId()));
 
         CreateDashboardResponse createDashboardResponse = new CreateDashboardResponse();
         createDashboardResponse.setDashboardId(dashboardPO.getId().toString());
@@ -73,7 +83,7 @@ public class DashboardService {
         if (otherDashboardPO != null && !Objects.equals(otherDashboardPO.getId(), dashboardId)) {
             throw ServiceException.with(DashboardErrorCode.DASHBOARD_NAME_EXIST).build();
         }
-        DashboardPO dashboardPO = dashboardRepository.findById(dashboardId).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).detailMessage("dashboard not exist").build());
+        DashboardPO dashboardPO = dashboardRepository.findOne(filterable -> filterable.eq(DashboardPO.Fields.id, dashboardId)).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).detailMessage("dashboard not exist").build());
         dashboardPO.setName(name);
         dashboardRepository.save(dashboardPO);
 
@@ -91,6 +101,8 @@ public class DashboardService {
                 if (widgetId == null) {
                     DashboardWidgetPO dashboardWidgetPO = new DashboardWidgetPO();
                     dashboardWidgetPO.setId(SnowflakeUtil.nextId());
+                    dashboardWidgetPO.setUserId(dashboardPO.getUserId());
+                    dashboardWidgetPO.setTenantId(dashboardPO.getTenantId());
                     dashboardWidgetPO.setDashboardId(dashboardId);
                     dashboardWidgetPO.setData(data);
                     dashboardWidgetPOList.add(dashboardWidgetPO);
@@ -118,13 +130,16 @@ public class DashboardService {
 
     @Transactional(rollbackFor = Exception.class)
     public void deleteDashboard(Long dashboardId) {
+        dashboardRepository.findById(dashboardId).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).detailMessage("dashboard not exist").build());
         dashboardRepository.deleteById(dashboardId);
         dashboardWidgetRepository.deleteByDashboardId(dashboardId);
+
+        userFacade.deleteResource(ResourceType.DASHBOARD, Collections.singletonList(dashboardId));
     }
 
     public List<DashboardResponse> getDashboards() {
-        List<DashboardPO> dashboardPOList = dashboardRepository.findAll(Sort.by(Sort.Order.asc(DashboardPO.Fields.createdAt)));
-        if (dashboardPOList == null || dashboardPOList.isEmpty()) {
+        List<DashboardPO> dashboardPOList = dashboardRepository.findAllWithDataPermission().stream().sorted(Comparator.comparing(DashboardPO::getCreatedAt)).collect(Collectors.toList());
+        if (dashboardPOList.isEmpty()) {
             return new ArrayList<>();
         }
         List<DashboardResponse> dashboardResponseList = DashboardConvert.INSTANCE.convertResponseList(dashboardPOList);

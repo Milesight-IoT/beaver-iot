@@ -4,6 +4,7 @@ import com.milesight.beaveriot.data.support.MapJsonConverter;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
+import org.hibernate.annotations.DynamicInsert;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -21,6 +22,11 @@ public class DevicePO {
     @Id
     @Column(name = "id")
     private Long id;
+
+    @Column(insertable = false, updatable = false)
+    private Long tenantId;
+
+    private Long userId;
 
     @Column(name = "\"key\"", length = 512)
     private String key;

@@ -6,7 +6,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
-import org.hibernate.Length;
 
 import java.sql.Timestamp;
 
@@ -26,11 +25,11 @@ public class OAuth2AuthorizationPO {
     private String principalName;
     private String authorizationGrantType;
 
-    @Column(length=1000)
+    @Column(length = 1000)
     private String authorizedScopes;
     @Column(columnDefinition = "BLOB")
     private String attributes;
-    @Column(length=500)
+    @Column(length = 500)
     private String state;
     @Column(columnDefinition = "BLOB")
     private String authorizationCodeValue;
@@ -45,7 +44,7 @@ public class OAuth2AuthorizationPO {
     @Column(columnDefinition = "BLOB")
     private String accessTokenMetadata;
     private String accessTokenType;
-    @Column(length=1000)
+    @Column(length = 1000)
     private String accessTokenScopes;
     @Column(columnDefinition = "BLOB")
     private String oidcIdTokenValue;

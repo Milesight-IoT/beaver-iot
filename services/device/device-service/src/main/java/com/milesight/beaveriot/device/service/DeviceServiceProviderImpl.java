@@ -5,6 +5,7 @@ import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.event.DeviceEvent;
+import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.device.po.DevicePO;
 import com.milesight.beaveriot.device.repository.DeviceRepository;
 import com.milesight.beaveriot.device.support.DeviceConverter;
@@ -36,6 +37,8 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
 
     @Override
     public void save(Device device) {
+        Long userId = SecurityUserContext.getUserId();
+
         DevicePO devicePO;
         Assert.notNull(device.getName(), "Device Name must be provided!");
         Assert.notNull(device.getIdentifier(), "Device identifier must be provided!");
@@ -78,6 +81,7 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
 
         // create or update
         if (shouldCreate) {
+            devicePO.setUserId(userId);
             // integration / identifier / key would not be updated
             devicePO.setIntegration(device.getIntegrationId());
             devicePO.setIdentifier(device.getIdentifier());

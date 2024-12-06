@@ -23,14 +23,16 @@ public class CustomTokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingC
     @Override
     public void customize(JwtEncodingContext context) {
         String username = context.getPrincipal().getName();
-        UserDTO userDTO = userFacade.getUserByEmail(username);
+        UserDTO userDTO = userFacade.getEnableUserByEmail(username);
         if (userDTO == null) {
             OAuth2EndpointUtils.throwError(OAuth2ErrorCodes.INVALID_REQUEST, "user not found.", null);
         }
         context.getClaims().claims(claims -> {
+            claims.put(SecurityUserContext.TENANT_ID, userDTO.getTenantId());
             claims.put(SecurityUserContext.USER_ID, userDTO.getUserId());
             claims.put("nickname", userDTO.getNickname());
             claims.put("email", userDTO.getEmail());
+            claims.put("createdAt", userDTO.getCreatedAt());
         });
     }
 

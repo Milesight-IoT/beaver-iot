@@ -1,0 +1,2 @@
+org.springframework.context.ApplicationContextInitializer=\
+com.milesight.beaveriot.permission.initializer.JPAApplicationContextInitializer

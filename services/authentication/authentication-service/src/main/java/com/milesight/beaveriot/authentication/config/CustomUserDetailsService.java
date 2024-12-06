@@ -23,7 +23,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        UserDTO userDTO = userFacade.getUserByEmail(username);
+        UserDTO userDTO = userFacade.getEnableUserByEmail(username);
         if (userDTO == null) {
             OAuth2EndpointUtils.throwError(OAuth2ErrorCodes.INVALID_REQUEST, "user not found.", null);
         }

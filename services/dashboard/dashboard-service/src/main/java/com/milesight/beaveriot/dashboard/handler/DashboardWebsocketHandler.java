@@ -3,6 +3,7 @@ package com.milesight.beaveriot.dashboard.handler;
 import com.milesight.beaveriot.authentication.facade.IAuthenticationFacade;
 import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.context.integration.model.event.WebSocketEvent;
+import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.dashboard.context.DashboardWebSocketContext;
 import com.milesight.beaveriot.dashboard.model.DashboardExchangePayload;
 import com.milesight.beaveriot.websocket.AbstractWebSocketHandler;
@@ -15,7 +16,6 @@ import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -50,12 +50,15 @@ public class DashboardWebsocketHandler extends AbstractWebSocketHandler {
             sendHttpResponse(ctx, request, HttpResponseStatus.FORBIDDEN);
             return;
         }
-        String userId = authenticationFacade.getUserIdByToken(token);
-        if (userId == null) {
+        Map<String, Object> user = authenticationFacade.getUserByToken(token);
+        if (user == null || user.isEmpty()) {
             sendHttpResponse(ctx, request, HttpResponseStatus.FORBIDDEN);
             return;
         }
-        WebSocketContext.addChannel(userId, ctx);
+        String tenantId = user.get(SecurityUserContext.TENANT_ID).toString();
+        String userId = user.get(SecurityUserContext.USER_ID).toString();
+        String key = tenantId + WebSocketContext.KEY_JOIN_SYMBOL + userId;
+        WebSocketContext.addChannel(key, ctx);
     }
 
     @Override
@@ -68,14 +71,14 @@ public class DashboardWebsocketHandler extends AbstractWebSocketHandler {
         if (payload == null) {
             return;
         }
-        String userId = WebSocketContext.getChannelByValue(ctx);
-        log.info("userId:{}, handleTextMessage:{}", userId, webSocketEvent);
-        DashboardWebSocketContext.addEntityKeys(userId, payload.getEntityKey());
+        String key = WebSocketContext.getKeyByValue(ctx);
+        log.info("key:{}, handleTextMessage:{}", key, webSocketEvent);
+        DashboardWebSocketContext.addEntityKeys(key, payload.getEntityKey());
     }
 
     @Override
     public void disconnect(ChannelHandlerContext ctx) throws Exception {
-        DashboardWebSocketContext.removeEntityKeys(WebSocketContext.getChannelByValue(ctx));
+        DashboardWebSocketContext.removeEntityKeys(WebSocketContext.getKeyByValue(ctx));
         WebSocketContext.removeChannelByValue(ctx);
     }
 

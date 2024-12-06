@@ -64,6 +64,7 @@ public class CustomInMemoryOAuth2AuthorizationService implements CustomOAuth2Aut
     /**
      * Constructs an {@code InMemoryOAuth2AuthorizationService} using the provided
      * parameters.
+     *
      * @param authorizations the authorization(s)
      */
     public CustomInMemoryOAuth2AuthorizationService(OAuth2Authorization... authorizations) {
@@ -73,6 +74,7 @@ public class CustomInMemoryOAuth2AuthorizationService implements CustomOAuth2Aut
     /**
      * Constructs an {@code InMemoryOAuth2AuthorizationService} using the provided
      * parameters.
+     *
      * @param authorizations the authorization(s)
      */
     public CustomInMemoryOAuth2AuthorizationService(List<OAuth2Authorization> authorizations) {
@@ -90,8 +92,7 @@ public class CustomInMemoryOAuth2AuthorizationService implements CustomOAuth2Aut
         Assert.notNull(authorization, "authorization cannot be null");
         if (isComplete(authorization)) {
             this.authorizations.put(authorization.getId(), authorization);
-        }
-        else {
+        } else {
             this.initializedAuthorizations.put(authorization.getId(), authorization);
         }
     }
@@ -101,8 +102,7 @@ public class CustomInMemoryOAuth2AuthorizationService implements CustomOAuth2Aut
         Assert.notNull(authorization, "authorization cannot be null");
         if (isComplete(authorization)) {
             this.authorizations.remove(authorization.getId(), authorization);
-        }
-        else {
+        } else {
             this.initializedAuthorizations.remove(authorization.getId(), authorization);
         }
     }

@@ -9,10 +9,12 @@ import lombok.Data;
 @Data
 public class UserDTO {
 
+    private String tenantId;
     private String userId;
     private String email;
     private String nickname;
     private String encodePassword;
     private String preference;
+    private String createdAt;
 
 }

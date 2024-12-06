@@ -11,6 +11,7 @@ import java.util.Map;
 public class SecurityUserContext {
 
     public static final String USER_ID = "USER_ID";
+    public static final String TENANT_ID = "TENANT_ID";
 
     private static final ThreadLocal<SecurityUser> securityUserThreadLocal = new ThreadLocal<>();
 
@@ -33,7 +34,7 @@ public class SecurityUserContext {
         private Map<String, Object> payload;
     }
 
-    public static String getUserId() {
+    public static Long getUserId() {
         SecurityUser securityUser = getSecurityUser();
         if (securityUser == null) {
             return null;
@@ -41,7 +42,18 @@ public class SecurityUserContext {
         if (securityUser.getPayload().get(USER_ID) == null) {
             return null;
         }
-        return securityUser.getPayload().get(USER_ID).toString();
+        return Long.parseLong(securityUser.getPayload().get(USER_ID).toString());
+    }
+
+    public static Long getTenantId() {
+        SecurityUser securityUser = getSecurityUser();
+        if (securityUser == null) {
+            return null;
+        }
+        if (securityUser.getPayload().get(TENANT_ID) == null) {
+            return null;
+        }
+        return Long.parseLong(securityUser.getPayload().get(TENANT_ID).toString());
     }
 
 }

@@ -24,6 +24,8 @@ import com.milesight.beaveriot.device.po.DevicePO;
 import com.milesight.beaveriot.device.repository.DeviceRepository;
 import com.milesight.beaveriot.device.support.DeviceConverter;
 import com.milesight.beaveriot.eventbus.EventBus;
+import com.milesight.beaveriot.user.enums.ResourceType;
+import com.milesight.beaveriot.user.facade.IUserFacade;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +36,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -57,6 +65,9 @@ public class DeviceService implements IDeviceFacade {
     @Lazy
     @Autowired
     EntityServiceProvider entityServiceProvider;
+
+    @Autowired
+    IUserFacade userFacade;
 
     @Autowired
     EventBus eventBus;
@@ -245,6 +256,8 @@ public class DeviceService implements IDeviceFacade {
                 .id(devicePO.getId())
                 .name(devicePO.getName())
                 .key(devicePO.getKey())
+                .userId(devicePO.getUserId())
+                .createdAt(devicePO.getCreatedAt())
                 .integrationConfig(integrationServiceProvider.getIntegration(devicePO.getIntegration()))
                 .build();
     }
@@ -303,6 +316,9 @@ public class DeviceService implements IDeviceFacade {
         entityServiceProvider.deleteByTargetId(device.getId().toString());
 
         deviceRepository.deleteById(device.getId());
+
+        userFacade.deleteResource(ResourceType.DEVICE, Collections.singletonList(device.getId()));
+        userFacade.deleteResource(ResourceType.ENTITY, device.getEntities().stream().map(Entity::getId).collect(Collectors.toList()));
 
         eventBus.publish(DeviceEvent.of(DeviceEvent.EventType.DELETED, device));
     }

@@ -13,6 +13,7 @@ import java.util.List;
 public class DashboardResponse {
 
     private String dashboardId;
+    private String userId;
     private String name;
     private List<DashboardWidgetDTO> widgets;
     private String createdAt;
