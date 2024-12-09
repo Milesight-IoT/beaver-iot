@@ -15,6 +15,7 @@ public class UserInfoResponse {
     private String nickname;
     private String email;
     private List<Role> roles;
+    private Boolean isSuperAdmin;
     private String createdAt;
 
     @Data

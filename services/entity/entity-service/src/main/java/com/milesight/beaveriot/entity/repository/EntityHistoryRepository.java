@@ -5,7 +5,8 @@ import com.milesight.beaveriot.data.jpa.repository.BaseJpaRepository;
 import com.milesight.beaveriot.entity.model.dto.EntityHistoryUnionQuery;
 import com.milesight.beaveriot.entity.po.EntityHistoryPO;
 import com.milesight.beaveriot.permission.aspect.DataPermission;
-import com.milesight.beaveriot.permission.enums.DataPermissionTypeEnum;
+import com.milesight.beaveriot.permission.aspect.Tenant;
+import com.milesight.beaveriot.permission.enums.DataPermissionType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import org.springframework.data.domain.Page;
@@ -22,18 +23,19 @@ import java.util.function.Consumer;
  * @author loong
  * @date 2024/10/16 15:32
  */
+@Tenant
 public interface EntityHistoryRepository extends BaseJpaRepository<EntityHistoryPO, Long> {
 
     @Modifying
     @org.springframework.data.jpa.repository.Query("delete from EntityHistoryPO d where d.entityId in :entityIds")
     void deleteByEntityIds(@Param("entityIds") List<Long> entityIds);
 
-    @DataPermission(type = DataPermissionTypeEnum.ENTITY, column = "entity_id")
+    @DataPermission(type = DataPermissionType.ENTITY, column = "entity_id")
     default List<EntityHistoryPO> findAllWithDataPermission(Consumer<Filterable> consumer) {
         return findAll(consumer);
     }
 
-    @DataPermission(type = DataPermissionTypeEnum.ENTITY, column = "entity_id")
+    @DataPermission(type = DataPermissionType.ENTITY, column = "entity_id")
     default Page<EntityHistoryPO> findAllWithDataPermission(Consumer<Filterable> filterable, Pageable pageable) {
         return findAll(filterable, pageable);
     }

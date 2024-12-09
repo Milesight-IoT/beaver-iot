@@ -46,6 +46,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -120,11 +121,15 @@ public class UserService {
             userInfoResponse.setEmail(securityUser.getPayload().get("email").toString());
             userInfoResponse.setCreatedAt(securityUser.getPayload().get("createdAt").toString());
         }
+        AtomicBoolean isSuperAdmin = new AtomicBoolean(false);
         List<UserRolePO> userRolePOS = userRoleRepository.findAll(filter -> filter.eq(UserRolePO.Fields.userId, SecurityUserContext.getUserId()));
         if (userRolePOS != null && !userRolePOS.isEmpty()) {
             List<Long> roleIds = userRolePOS.stream().map(UserRolePO::getRoleId).toList();
             List<RolePO> rolePOS = roleRepository.findAll(filter -> filter.in(RolePO.Fields.id, roleIds.toArray()));
             List<UserInfoResponse.Role> roles = rolePOS.stream().map(rolePO -> {
+                if (rolePO.getName().equals(UserConstants.SUPER_ADMIN_ROLE_NAME)) {
+                    isSuperAdmin.set(true);
+                }
                 UserInfoResponse.Role role = new UserInfoResponse.Role();
                 role.setRoleId(rolePO.getId().toString());
                 role.setRoleName(rolePO.getName());
@@ -132,6 +137,7 @@ public class UserService {
             }).collect(Collectors.toList());
             userInfoResponse.setRoles(roles);
         }
+        userInfoResponse.setIsSuperAdmin(isSuperAdmin.get());
         return userInfoResponse;
     }
 

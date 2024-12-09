@@ -3,7 +3,7 @@ package com.milesight.beaveriot.permission.aspect;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
-import com.milesight.beaveriot.permission.enums.MenuCodeEnum;
+import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.user.dto.MenuDTO;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.aspectj.lang.JoinPoint;
@@ -26,21 +26,21 @@ import java.util.List;
 @Aspect
 @ConditionalOnClass(Pointcut.class)
 @EnableAspectJAutoProxy(proxyTargetClass = true)
-public class MenuPermissionAspect {
+public class OperationPermissionAspect {
 
     @Autowired
     IUserFacade userFacade;
 
-    @Pointcut("@annotation(MenuPermission)")
+    @Pointcut("@annotation(OperationPermission)")
     public void pointCut() {
     }
 
     @Before("pointCut()")
     public void checkMenuPermission(JoinPoint joinPoint) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-        MenuPermission menuPermission = signature.getMethod().getAnnotation(MenuPermission.class);
-        if (menuPermission != null) {
-            MenuCodeEnum code = menuPermission.code();
+        OperationPermission operationPermission = signature.getMethod().getAnnotation(OperationPermission.class);
+        if (operationPermission != null) {
+            OperationPermissionCode code = operationPermission.code();
             if (code != null) {
                 Long userId = SecurityUserContext.getUserId();
                 if (userId == null) {
@@ -50,7 +50,7 @@ public class MenuPermissionAspect {
                 if (menuDTOList == null || menuDTOList.isEmpty()) {
                     throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not have permission").build();
                 }
-                boolean hasPermission = menuDTOList.stream().anyMatch(menuDTO -> menuDTO.getMenuCode().equals(code.name()));
+                boolean hasPermission = menuDTOList.stream().anyMatch(menuDTO -> menuDTO.getMenuCode().equals(code.getCode()));
                 if (!hasPermission) {
                     throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not have permission").build();
                 }

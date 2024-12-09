@@ -81,3 +81,38 @@ insert into `t_tenant`(id, name, domain, status, created_at, updated_at)
 values (1, 'default', 'default', 'ENABLE', 1732005490000, 1732005490000);
 insert into `t_role` (id, tenant_id, name, created_at, updated_at)
 values (1, 1, 'super_admin', 1732005490000, 1732005490000);
+
+--changeset loong:user_v1.1.0_20241209_092400
+
+insert into "t_menu" (id, parent_id, code, name, type, created_at, updated_at)
+VALUES (1000, null, 'dashboard', 'dashboard', 'MENU', 1732005490000, 1732005490000),
+       (1001, 1000, 'dashboard.view', 'dashboard.view', 'BUTTON', 1732005490000, 1732005490000),
+       (1002, 1000, 'dashboard.add', 'dashboard.add', 'BUTTON', 1732005490000, 1732005490000),
+       (1003, 1000, 'dashboard.edit', 'dashboard.edit', 'BUTTON', 1732005490000, 1732005490000),
+       (2000, null, 'device', 'device', 'MENU', 1732005490000, 1732005490000),
+       (2001, 2000, 'device.view', 'device.view', 'BUTTON', 1732005490000, 1732005490000),
+       (2002, 2000, 'device.add', 'device.add', 'BUTTON', 1732005490000, 1732005490000),
+       (2003, 2000, 'device.rename', 'device.rename', 'BUTTON', 1732005490000, 1732005490000),
+       (2004, 2000, 'device.delete', 'device.delete', 'BUTTON', 1732005490000, 1732005490000),
+       (3000, null, 'entity_custom', 'entity_custom', 'MENU', 1732005490000, 1732005490000),
+       (3001, 3000, 'entity_custom.view', 'entity_custom.view', 'BUTTON', 1732005490000, 1732005490000),
+       (3002, 3000, 'entity_custom.add', 'entity_custom.add', 'BUTTON', 1732005490000, 1732005490000),
+       (3003, 3000, 'entity_custom.edit', 'entity_custom.edit', 'BUTTON', 1732005490000, 1732005490000),
+       (3004, 3000, 'entity_custom.delete', 'entity_custom.delete', 'BUTTON', 1732005490000, 1732005490000),
+       (4000, null, 'entity_data', 'entity_data', 'MENU', 1732005490000, 1732005490000),
+       (4001, 4000, 'entity_data.view', 'entity_data.view', 'BUTTON', 1732005490000, 1732005490000),
+       (4002, 4000, 'entity_data.edit', 'entity_data.edit', 'BUTTON', 1732005490000, 1732005490000),
+       (4003, 4000, 'entity_data.export', 'entity_data.export', 'BUTTON', 1732005490000, 1732005490000),
+       (5000, null, 'workflow', 'workflow', 'MENU', 1732005490000, 1732005490000),
+       (5001, 5000, 'workflow.view', 'workflow.view', 'BUTTON', 1732005490000, 1732005490000),
+       (5002, 5000, 'workflow.add', 'workflow.add', 'BUTTON', 1732005490000, 1732005490000),
+       (5003, 5000, 'workflow.import', 'workflow.import', 'BUTTON', 1732005490000, 1732005490000),
+       (5004, 5000, 'workflow.edit', 'workflow.edit', 'BUTTON', 1732005490000, 1732005490000),
+       (5005, 5000, 'workflow.export', 'workflow.export', 'BUTTON', 1732005490000, 1732005490000),
+       (5006, 5000, 'workflow.delete', 'workflow.delete', 'BUTTON', 1732005490000, 1732005490000),
+       (5007, 5000, 'workflow.enable', 'workflow.enable', 'BUTTON', 1732005490000, 1732005490000),
+       (6000, null, 'integration', 'integration', 'MENU', 1732005490000, 1732005490000),
+       (6001, 6000, 'integration.view', 'integration.view', 'BUTTON', 1732005490000, 1732005490000),
+       (6002, 6000, 'integration.edit_property', 'integration.edit_property', 'BUTTON', 1732005490000, 1732005490000),
+       (6003, 6000, 'integration.edit_service', 'integration.edit_service', 'BUTTON', 1732005490000, 1732005490000)
+;

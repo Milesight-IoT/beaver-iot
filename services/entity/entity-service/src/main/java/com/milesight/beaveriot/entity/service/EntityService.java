@@ -32,6 +32,8 @@ import com.milesight.beaveriot.entity.repository.EntityLatestRepository;
 import com.milesight.beaveriot.entity.repository.EntityRepository;
 import com.milesight.beaveriot.eventbus.EventBus;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
+import com.milesight.beaveriot.permission.aspect.OperationPermission;
+import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import lombok.extern.slf4j.Slf4j;
@@ -652,6 +654,7 @@ public class EntityService implements EntityServiceProvider {
         return entityMetaResponse;
     }
 
+    @OperationPermission(code = OperationPermissionCode.INTEGRATION_EDIT_PROPERTY)
     public void updatePropertyEntity(UpdatePropertyEntityRequest updatePropertyEntityRequest) {
         Map<String, Object> exchange = updatePropertyEntityRequest.getExchange();
         List<String> entityKeys = exchange.keySet().stream().toList();
@@ -685,6 +688,7 @@ public class EntityService implements EntityServiceProvider {
         exchangeFlowExecutor.syncExchangeDown(payload);
     }
 
+    @OperationPermission(code = OperationPermissionCode.INTEGRATION_EDIT_SERVICE)
     public EventResponse serviceCall(ServiceCallRequest serviceCallRequest) {
         Map<String, Object> exchange = serviceCallRequest.getExchange();
         List<String> entityKeys = exchange.keySet().stream().toList();

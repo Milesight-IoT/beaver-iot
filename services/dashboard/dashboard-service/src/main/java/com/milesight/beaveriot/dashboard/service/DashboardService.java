@@ -17,6 +17,8 @@ import com.milesight.beaveriot.dashboard.po.DashboardWidgetPO;
 import com.milesight.beaveriot.dashboard.repository.DashboardRepository;
 import com.milesight.beaveriot.dashboard.repository.DashboardWidgetRepository;
 import com.milesight.beaveriot.dashboard.repository.DashboardWidgetTemplateRepository;
+import com.milesight.beaveriot.permission.aspect.OperationPermission;
+import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +52,7 @@ public class DashboardService {
     @Autowired
     IUserFacade userFacade;
 
+    @OperationPermission(code = OperationPermissionCode.DASHBOARD_ADD)
     public CreateDashboardResponse createDashboard(CreateDashboardRequest createDashboardRequest) {
         String name = createDashboardRequest.getName();
         if (!StringUtils.hasText(name)) {
@@ -73,6 +76,7 @@ public class DashboardService {
         return createDashboardResponse;
     }
 
+    @OperationPermission(code = OperationPermissionCode.DASHBOARD_EDIT)
     @Transactional(rollbackFor = Exception.class)
     public void updateDashboard(Long dashboardId, UpdateDashboardRequest updateDashboardRequest) {
         String name = updateDashboardRequest.getName();

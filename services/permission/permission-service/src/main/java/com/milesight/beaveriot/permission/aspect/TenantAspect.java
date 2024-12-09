@@ -40,13 +40,13 @@ public class TenantAspect {
             Class<?> repositoryInterface = joinPoint.getTarget().getClass().getInterfaces()[0];
             tenant = repositoryInterface.getAnnotation(Tenant.class);
         }
-        if (tenant != null && !tenant.enable()) {
+        if (tenant == null) {
             return joinPoint.proceed();
         }
-        String columnName = SecurityUserContext.TENANT_ID;
-        if (tenant != null) {
-            columnName = tenant.column();
+        if (!tenant.enable()) {
+            return joinPoint.proceed();
         }
+        String columnName = tenant.column();
         if (columnName.isEmpty()) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("tenant column name is not exist").build();
         }

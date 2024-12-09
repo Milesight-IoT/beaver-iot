@@ -1,6 +1,6 @@
 package com.milesight.beaveriot.permission.aspect;
 
-import com.milesight.beaveriot.permission.enums.MenuCodeEnum;
+import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD})
 @Documented
 @Inherited
-public @interface MenuPermission {
+public @interface OperationPermission {
 
-    MenuCodeEnum code();
+    OperationPermissionCode code();
 }

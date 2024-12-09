@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.user.repository;
 
 import com.milesight.beaveriot.data.jpa.repository.BaseJpaRepository;
+import com.milesight.beaveriot.permission.aspect.Tenant;
 import com.milesight.beaveriot.user.po.RoleResourcePO;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -10,6 +11,7 @@ import org.springframework.data.repository.query.Param;
  * @author loong
  * @date 2024/11/19 17:53
  */
+@Tenant
 public interface RoleResourceRepository extends BaseJpaRepository<RoleResourcePO, Long> {
 
     @Modifying

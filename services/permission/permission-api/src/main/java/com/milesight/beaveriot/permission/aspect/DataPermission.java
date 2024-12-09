@@ -1,6 +1,6 @@
 package com.milesight.beaveriot.permission.aspect;
 
-import com.milesight.beaveriot.permission.enums.DataPermissionTypeEnum;
+import com.milesight.beaveriot.permission.enums.DataPermissionType;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -19,6 +19,6 @@ import java.lang.annotation.Target;
 @Inherited
 public @interface DataPermission {
 
-    DataPermissionTypeEnum type();
+    DataPermissionType type();
     String column();
 }

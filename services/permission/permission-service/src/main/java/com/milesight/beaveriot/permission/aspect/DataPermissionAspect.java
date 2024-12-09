@@ -7,7 +7,7 @@ import com.milesight.beaveriot.permission.context.DataAspectContext;
 import com.milesight.beaveriot.permission.dto.DashboardPermissionDTO;
 import com.milesight.beaveriot.permission.dto.DevicePermissionDTO;
 import com.milesight.beaveriot.permission.dto.EntityPermissionDTO;
-import com.milesight.beaveriot.permission.enums.DataPermissionTypeEnum;
+import com.milesight.beaveriot.permission.enums.DataPermissionType;
 import com.milesight.beaveriot.permission.service.DashboardPermissionService;
 import com.milesight.beaveriot.permission.service.DevicePermissionService;
 import com.milesight.beaveriot.permission.service.EntityPermissionService;
@@ -58,7 +58,7 @@ public class DataPermissionAspect {
         if (dataPermission == null) {
             return joinPoint.proceed();
         }
-        DataPermissionTypeEnum type = dataPermission.type();
+        DataPermissionType type = dataPermission.type();
         String columnName = dataPermission.column();
         if (type == null) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("data permission type is not exist").build();
@@ -72,15 +72,15 @@ public class DataPermissionAspect {
         }
         boolean isHasAllPermission = false;
         List<Long> dataIds = new ArrayList<>();
-        if(type == DataPermissionTypeEnum.ENTITY) {
+        if(type == DataPermissionType.ENTITY) {
             EntityPermissionDTO entityPermissionDTO = entityPermissionService.getEntityPermission(userId);
             isHasAllPermission = entityPermissionDTO.isHasAllPermission();
             dataIds.addAll(entityPermissionDTO.getEntityIds().stream().map(Long::valueOf).toList());
-        }else if(type == DataPermissionTypeEnum.DEVICE) {
+        }else if(type == DataPermissionType.DEVICE) {
             DevicePermissionDTO devicePermissionDTO = devicePermissionService.getDevicePermission(userId);
             isHasAllPermission = devicePermissionDTO.isHasAllPermission();
             dataIds.addAll(devicePermissionDTO.getDeviceIds().stream().map(Long::valueOf).toList());
-        }else if (type == DataPermissionTypeEnum.DASHBOARD) {
+        }else if (type == DataPermissionType.DASHBOARD) {
             DashboardPermissionDTO dashboardPermissionDTO = dashboardPermissionService.getDashboardPermission(userId);
             isHasAllPermission = dashboardPermissionDTO.isHasAllPermission();
             dataIds.addAll(dashboardPermissionDTO.getDashboardIds().stream().map(Long::valueOf).toList());
