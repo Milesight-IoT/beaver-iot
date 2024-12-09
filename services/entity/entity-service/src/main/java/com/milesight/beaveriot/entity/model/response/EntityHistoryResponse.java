@@ -10,8 +10,12 @@ import lombok.Data;
 @Data
 public class EntityHistoryResponse {
 
+    private String entityId;
+
     private String timestamp;
+
     private Object value;
+
     private EntityValueType valueType;
 
 }

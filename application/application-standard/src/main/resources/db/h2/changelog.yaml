@@ -1,4 +1,8 @@
 databaseChangeLog:
+  # Note: Keep the order of the changelogs in the same order as the versions.
   - includeAll:
-      path: sql/
+      path: sql/v1.0.0
+      relativeToChangelogFile: true
+  - includeAll:
+      path: sql/v1.1.0
       relativeToChangelogFile: true

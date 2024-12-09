@@ -85,7 +85,7 @@ public class EntityBuilder extends BaseEntityBuilder<EntityBuilder> {
         return entity;
     }
 
-    public class ChildEntityBuilder extends BaseEntityBuilder<ChildEntityBuilder> {
+    public static class ChildEntityBuilder extends BaseEntityBuilder<ChildEntityBuilder> {
 
         private EntityBuilder entityBuilder;
 

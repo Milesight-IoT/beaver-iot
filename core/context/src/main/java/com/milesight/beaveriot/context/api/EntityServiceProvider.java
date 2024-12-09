@@ -2,6 +2,7 @@ package com.milesight.beaveriot.context.api;
 
 import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.context.integration.model.Entity;
+import lombok.*;
 
 import java.util.List;
 import java.util.Map;
@@ -11,8 +12,10 @@ import java.util.Map;
  */
 public interface EntityServiceProvider {
 
+    @NonNull
     List<Entity> findByTargetId(AttachTargetType targetType, String targetId);
 
+    @NonNull
     List<Entity> findByTargetIds(AttachTargetType targetType, List<String> targetIds);
 
     void save(Entity entity);
@@ -32,4 +35,9 @@ public interface EntityServiceProvider {
     Entity findByKey(String entityKey);
 
     Map<String, Entity> findByKeys(String... entityKeys);
+
+    Entity findById(Long entityId);
+
+    List<Entity> findByIds(List<Long> ids);
+
 }

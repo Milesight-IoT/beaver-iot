@@ -37,6 +37,8 @@ public class Entity implements IdentityKey {
     private String parentIdentifier;
     private List<Entity> children;
 
+    private Boolean visible;
+
     protected Entity() {
     }
 
@@ -116,7 +118,15 @@ public class Entity implements IdentityKey {
         this.children = children;
         if (children != null) {
             Assert.notNull(identifier, "Entity identifier must not be null");
-            children.forEach(entity -> entity.setParentIdentifier(identifier));
+            children.forEach(entity -> {
+                entity.setParentIdentifier(identifier);
+                if (deviceKey != null) {
+                    entity.setDeviceKey(deviceKey);
+                }
+                if (integrationId != null) {
+                    entity.setIntegrationId(integrationId);
+                }
+            });
         }
     }
 
