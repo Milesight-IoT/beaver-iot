@@ -5,17 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.milesight.beaveriot</groupId>
-        <artifactId>core</artifactId>
+        <artifactId>workflow</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>rule-engine</artifactId>
-    <packaging>pom</packaging>
-    <modules>
-        <module>rule-engine-api</module>
-        <module>rule-engine-core</module>
-        <module>rule-engine-components</module>
-    </modules>
+    <artifactId>workflow-service</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

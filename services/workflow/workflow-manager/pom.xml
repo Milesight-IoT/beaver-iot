@@ -5,25 +5,16 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.milesight.beaveriot</groupId>
-        <artifactId>rule-engine</artifactId>
+        <artifactId>workflow</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>com.milesight.iab</groupId>
-    <artifactId>rule-engine-manager</artifactId>
+    <artifactId>workflow-manager</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>com.milesight.beaveriot</groupId>
-            <artifactId>rule-engine-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-    </dependencies>
 
 </project>

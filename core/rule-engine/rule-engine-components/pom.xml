@@ -9,7 +9,7 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>com.milesight.iab</groupId>
+    <groupId>com.milesight.beaveriot</groupId>
     <artifactId>rule-engine-components</artifactId>
 
     <properties>
