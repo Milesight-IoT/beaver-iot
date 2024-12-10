@@ -3,8 +3,7 @@ package com.milesight.beaveriot.user.service;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
-import com.milesight.beaveriot.context.security.SecurityContextUser;
-import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.context.aspect.SecurityUserContext;
 import com.milesight.beaveriot.user.constants.UserConstants;
 import com.milesight.beaveriot.user.dto.UserResourceDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
@@ -15,9 +14,11 @@ import com.milesight.beaveriot.user.model.request.CreateUserRequest;
 import com.milesight.beaveriot.user.model.request.UpdatePasswordRequest;
 import com.milesight.beaveriot.user.model.request.UpdateUserRequest;
 import com.milesight.beaveriot.user.model.request.UserListRequest;
+import com.milesight.beaveriot.user.model.request.UserPermissionRequest;
 import com.milesight.beaveriot.user.model.request.UserRegisterRequest;
 import com.milesight.beaveriot.user.model.response.UserInfoResponse;
 import com.milesight.beaveriot.user.model.response.UserMenuResponse;
+import com.milesight.beaveriot.user.model.response.UserPermissionResponse;
 import com.milesight.beaveriot.user.model.response.UserStatusResponse;
 import com.milesight.beaveriot.user.po.MenuPO;
 import com.milesight.beaveriot.user.po.RoleMenuPO;
@@ -72,7 +73,7 @@ public class UserService {
     @Autowired
     TenantRepository tenantRepository;
 
-    @SecurityContextUser(tenantId = "#tenantId")
+    @SecurityUserContext(tenantId = "#tenantId")
     @Transactional(rollbackFor = Exception.class)
     public void register(Long tenantId, UserRegisterRequest userRegisterRequest) {
         String email = userRegisterRequest.getEmail();
@@ -103,7 +104,7 @@ public class UserService {
         userRoleRepository.save(userRolePO);
     }
 
-    @SecurityContextUser(tenantId = "#tenantId")
+    @SecurityUserContext(tenantId = "#tenantId")
     public UserStatusResponse status(Long tenantId) {
         List<UserPO> users = userRepository.findAll();
         boolean isInit = users != null && !users.isEmpty();
@@ -113,16 +114,16 @@ public class UserService {
     }
 
     public UserInfoResponse getUserInfo() {
-        SecurityUserContext.SecurityUser securityUser = SecurityUserContext.getSecurityUser();
+        com.milesight.beaveriot.context.security.SecurityUserContext.SecurityUser securityUser = com.milesight.beaveriot.context.security.SecurityUserContext.getSecurityUser();
         UserInfoResponse userInfoResponse = new UserInfoResponse();
         if (securityUser != null) {
-            userInfoResponse.setUserId(SecurityUserContext.getUserId() == null ? null : SecurityUserContext.getUserId().toString());
+            userInfoResponse.setUserId(com.milesight.beaveriot.context.security.SecurityUserContext.getUserId() == null ? null : com.milesight.beaveriot.context.security.SecurityUserContext.getUserId().toString());
             userInfoResponse.setNickname(securityUser.getPayload().get("nickname").toString());
             userInfoResponse.setEmail(securityUser.getPayload().get("email").toString());
             userInfoResponse.setCreatedAt(securityUser.getPayload().get("createdAt").toString());
         }
         AtomicBoolean isSuperAdmin = new AtomicBoolean(false);
-        List<UserRolePO> userRolePOS = userRoleRepository.findAll(filter -> filter.eq(UserRolePO.Fields.userId, SecurityUserContext.getUserId()));
+        List<UserRolePO> userRolePOS = userRoleRepository.findAll(filter -> filter.eq(UserRolePO.Fields.userId, com.milesight.beaveriot.context.security.SecurityUserContext.getUserId()));
         if (userRolePOS != null && !userRolePOS.isEmpty()) {
             List<Long> roleIds = userRolePOS.stream().map(UserRolePO::getRoleId).toList();
             List<RolePO> rolePOS = roleRepository.findAll(filter -> filter.in(RolePO.Fields.id, roleIds.toArray()));
@@ -219,7 +220,7 @@ public class UserService {
     }
 
     public void updatePassword(UpdatePasswordRequest updatePasswordRequest) {
-        UserPO userPO = userRepository.findOne(filter -> filter.eq(UserPO.Fields.id, SecurityUserContext.getUserId())).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).build());
+        UserPO userPO = userRepository.findOne(filter -> filter.eq(UserPO.Fields.id, com.milesight.beaveriot.context.security.SecurityUserContext.getUserId())).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).build());
         if (!new BCryptPasswordEncoder().matches(updatePasswordRequest.getOldPassword(), userPO.getPassword())) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("old password is not correct").build();
         }
@@ -291,6 +292,34 @@ public class UserService {
             userMenuResponse.setParentId(menuMap.get(roleMenuPO.getMenuId()).getParentId() == null ? null : menuMap.get(roleMenuPO.getMenuId()).getParentId().toString());
             return userMenuResponse;
         }).filter(Objects::nonNull).toList();
+    }
+
+    public UserPermissionResponse getUserPermission(Long userId, UserPermissionRequest userPermissionRequest) {
+        boolean permissionMode = permissionModule();
+        if (!permissionMode) {
+            UserPermissionResponse userPermissionResponse = new UserPermissionResponse();
+            userPermissionResponse.setHasPermission(true);
+            return userPermissionResponse;
+        }
+        UserPermissionResponse userPermissionResponse = new UserPermissionResponse();
+        userPermissionResponse.setHasPermission(false);
+        List<UserRolePO> userRolePOS = userRoleRepository.findAll(filter -> filter.eq(UserRolePO.Fields.userId, userId));
+        if (userRolePOS == null || userRolePOS.isEmpty()) {
+            return userPermissionResponse;
+        }
+        List<Long> roleIds = userRolePOS.stream().map(UserRolePO::getRoleId).toList();
+        List<RolePO> rolePOS = roleRepository.findAll(filter -> filter.in(RolePO.Fields.id, roleIds.toArray()));
+        if (rolePOS == null || rolePOS.isEmpty()) {
+            return userPermissionResponse;
+        }
+        List<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filter -> filter.in(RoleResourcePO.Fields.roleId, roleIds.toArray())
+                .eq(RoleResourcePO.Fields.resourceType, userPermissionRequest.getResourceType())
+                .eq(RoleResourcePO.Fields.resourceId, userPermissionRequest.getResourceId()));
+        if (roleResourcePOS == null || roleResourcePOS.isEmpty()) {
+            return userPermissionResponse;
+        }
+        userPermissionResponse.setHasPermission(true);
+        return userPermissionResponse;
     }
 
     public TenantPO analyzeTenantId(Long tenantId) {
