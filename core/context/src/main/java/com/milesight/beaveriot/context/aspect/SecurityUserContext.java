@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.context.security;
+package com.milesight.beaveriot.context.aspect;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -15,7 +15,9 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD})
 @Documented
 @Inherited
-public @interface SecurityContextUser {
+public @interface SecurityUserContext {
 
-    String tenantId();
+    String tenantId() default "";
+
+    String userId() default "";
 }

@@ -4,7 +4,7 @@
 CREATE TABLE `t_entity`
 (
     id               BIGINT PRIMARY KEY,
-    "key"            VARCHAR(512) not null,
+    "key"              VARCHAR(512) not null,
     name             VARCHAR(255) not null,
     type             VARCHAR(255) not null,
     access_mod       VARCHAR(255),

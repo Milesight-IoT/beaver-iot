@@ -10,9 +10,11 @@ import com.milesight.beaveriot.user.model.request.CreateUserRequest;
 import com.milesight.beaveriot.user.model.request.UpdatePasswordRequest;
 import com.milesight.beaveriot.user.model.request.UpdateUserRequest;
 import com.milesight.beaveriot.user.model.request.UserListRequest;
+import com.milesight.beaveriot.user.model.request.UserPermissionRequest;
 import com.milesight.beaveriot.user.model.request.UserRegisterRequest;
 import com.milesight.beaveriot.user.model.response.UserInfoResponse;
 import com.milesight.beaveriot.user.model.response.UserMenuResponse;
+import com.milesight.beaveriot.user.model.response.UserPermissionResponse;
 import com.milesight.beaveriot.user.model.response.UserStatusResponse;
 import com.milesight.beaveriot.user.po.TenantPO;
 import com.milesight.beaveriot.user.service.UserService;
@@ -112,6 +114,12 @@ public class UserController {
     public ResponseBody<List<UserMenuResponse>> getMenusByUserId(@PathVariable("userId") Long userId) {
         List<UserMenuResponse> userMenuResponses = userService.getMenusByUserId(userId);
         return ResponseBuilder.success(userMenuResponses);
+    }
+
+    @GetMapping("/members/{userId}/permission")
+    public ResponseBody<UserPermissionResponse> getUserPermission(@PathVariable("userId") Long userId, @RequestBody UserPermissionRequest userPermissionRequest) {
+        UserPermissionResponse userPermissionResponse = userService.getUserPermission(userId, userPermissionRequest);
+        return ResponseBuilder.success(userPermissionResponse);
     }
 
 }

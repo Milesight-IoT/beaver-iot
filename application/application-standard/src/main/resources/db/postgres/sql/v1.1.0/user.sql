@@ -113,3 +113,8 @@ VALUES (1000, null, 'dashboard', 'dashboard', 'MENU', 1732005490000, 17320054900
        (6002, 6000, 'integration.edit_property', 'integration.edit_property', 'BUTTON', 1732005490000, 1732005490000),
        (6003, 6000, 'integration.edit_service', 'integration.edit_service', 'BUTTON', 1732005490000, 1732005490000)
 ;
+
+-- changeset loong:user_v1.1.0_20241210_112400
+insert into "t_user_role" (id, user_id, role_id, created_at)
+SELECT ROW_NUMBER() OVER (ORDER BY t.id), t.id, 1, 1732005490000
+FROM "t_user" t;
