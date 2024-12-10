@@ -45,7 +45,7 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
     }
 
     @Override
-    public void startFlow(String flowId) throws Exception {
+    public void startRoute(String flowId) throws Exception {
         camelContext.startRoute(flowId);
     }
 
@@ -58,14 +58,6 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
     public void removeFlow(String flowId) throws Exception {
         camelContext.stopRoute(flowId);
         camelContext.removeRoute(flowId);
-    }
-
-    @Override
-    public boolean validateFlow(String flowYaml) throws Exception {
-        if (!StringUtils.hasText(flowYaml)) {
-            throw new RuleEngineException("YAML content is empty: " + flowYaml);
-        }
-        return true;
     }
 
     @Override

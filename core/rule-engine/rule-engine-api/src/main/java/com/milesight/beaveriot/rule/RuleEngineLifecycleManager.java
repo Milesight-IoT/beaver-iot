@@ -13,13 +13,11 @@ public interface RuleEngineLifecycleManager {
 
     void deployFlow(String flowId, String flowYaml) throws Exception;
 
-    void startFlow(String flowId) throws Exception;
+    void startRoute(String flowId) throws Exception;
 
     void stopRoute(String flowId) throws Exception;
 
     void removeFlow(String flowId) throws Exception;
-
-    boolean validateFlow(String flowYaml) throws Exception;     //todo？
 
     FlowTraceResponse trackFlow(String routeId, Exchange exchange);         //todo
 

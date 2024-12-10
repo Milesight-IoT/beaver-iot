@@ -15,8 +15,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface UriParamExtension {
 
-    String dependParam() default "";
-
     /**
      * describe the ui component of front.
      *
