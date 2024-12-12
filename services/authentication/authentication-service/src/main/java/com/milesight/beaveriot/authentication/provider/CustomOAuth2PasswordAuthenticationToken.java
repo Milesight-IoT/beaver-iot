@@ -14,11 +14,13 @@ import java.util.Map;
 @Getter
 public class CustomOAuth2PasswordAuthenticationToken extends OAuth2AuthorizationGrantAuthenticationToken {
 
+    private final Long tenantId;
     private final String username;
     private final String password;
 
-    public CustomOAuth2PasswordAuthenticationToken(String username, String password, Authentication clientPrincipal, Map<String, Object> additionalParameters) {
+    public CustomOAuth2PasswordAuthenticationToken(Long tenantId, String username, String password, Authentication clientPrincipal, Map<String, Object> additionalParameters) {
         super(AuthorizationGrantType.PASSWORD, clientPrincipal, additionalParameters);
+        this.tenantId = tenantId;
         this.username = username;
         this.password = password;
     }

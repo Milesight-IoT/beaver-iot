@@ -24,6 +24,10 @@ import com.milesight.beaveriot.device.po.DevicePO;
 import com.milesight.beaveriot.device.repository.DeviceRepository;
 import com.milesight.beaveriot.device.support.DeviceConverter;
 import com.milesight.beaveriot.eventbus.EventBus;
+import com.milesight.beaveriot.permission.aspect.OperationPermission;
+import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
+import com.milesight.beaveriot.user.enums.ResourceType;
+import com.milesight.beaveriot.user.facade.IUserFacade;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +38,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -59,6 +69,9 @@ public class DeviceService implements IDeviceFacade {
     EntityServiceProvider entityServiceProvider;
 
     @Autowired
+    IUserFacade userFacade;
+
+    @Autowired
     EventBus eventBus;
 
 
@@ -66,6 +79,7 @@ public class DeviceService implements IDeviceFacade {
         return Optional.ofNullable(integrationServiceProvider.getIntegration(integrationIdentifier));
     }
 
+    @OperationPermission(code = OperationPermissionCode.DEVICE_ADD)
     @Transactional(rollbackFor = Exception.class)
     public void createDevice(CreateDeviceRequest createDeviceRequest) {
         String integrationIdentifier = createDeviceRequest.getIntegration();
@@ -129,13 +143,14 @@ public class DeviceService implements IDeviceFacade {
         }
 
         return deviceRepository
-                .findAll(f -> f.like(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.name, searchDeviceRequest.getName()), searchDeviceRequest.toPageable())
+                .findAllWithDataPermission(f -> f.like(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.name, searchDeviceRequest.getName()), searchDeviceRequest.toPageable())
                 .map(this::convertPOToResponseData);
     }
 
+    @OperationPermission(code = OperationPermissionCode.DEVICE_RENAME)
     @Transactional(rollbackFor = Exception.class)
     public void updateDevice(Long deviceId, UpdateDeviceRequest updateDeviceRequest) {
-        Optional<DevicePO> findResult = deviceRepository.findById(deviceId);
+        Optional<DevicePO> findResult = deviceRepository.findByIdWithDataPermission(deviceId);
         if (findResult.isEmpty()) {
             throw ServiceException.with(ErrorCode.DATA_NO_FOUND).build();
         }
@@ -152,13 +167,14 @@ public class DeviceService implements IDeviceFacade {
         eventBus.publish(DeviceEvent.of(DeviceEvent.EventType.UPDATED, deviceConverter.convertPO(device)));
     }
 
+    @OperationPermission(code = OperationPermissionCode.DEVICE_DELETE)
     @Transactional(rollbackFor = Exception.class)
     public void batchDeleteDevices(List<String> deviceIdList) {
         if (deviceIdList.isEmpty()) {
             return;
         }
 
-        List<DevicePO> devicePOList = deviceRepository.findByIdIn(deviceIdList.stream().map(Long::valueOf).toList());
+        List<DevicePO> devicePOList = deviceRepository.findByIdInWithDataPermission(deviceIdList.stream().map(Long::valueOf).toList());
         Set<String> foundIds = devicePOList.stream().map(id -> id.getId().toString()).collect(Collectors.toSet());
 
         // check whether all devices exist
@@ -204,7 +220,7 @@ public class DeviceService implements IDeviceFacade {
     }
 
     public DeviceDetailResponse getDeviceDetail(Long deviceId) {
-        Optional<DevicePO> findResult = deviceRepository.findById(deviceId);
+        Optional<DevicePO> findResult = deviceRepository.findByIdWithDataPermission(deviceId);
         if (findResult.isEmpty()) {
             throw ServiceException.with(ErrorCode.DATA_NO_FOUND).build();
         }
@@ -245,6 +261,8 @@ public class DeviceService implements IDeviceFacade {
                 .id(devicePO.getId())
                 .name(devicePO.getName())
                 .key(devicePO.getKey())
+                .userId(devicePO.getUserId())
+                .createdAt(devicePO.getCreatedAt())
                 .integrationConfig(integrationServiceProvider.getIntegration(devicePO.getIntegration()))
                 .build();
     }
@@ -303,6 +321,9 @@ public class DeviceService implements IDeviceFacade {
         entityServiceProvider.deleteByTargetId(device.getId().toString());
 
         deviceRepository.deleteById(device.getId());
+
+        userFacade.deleteResource(ResourceType.DEVICE, Collections.singletonList(device.getId()));
+        userFacade.deleteResource(ResourceType.ENTITY, device.getEntities().stream().map(Entity::getId).collect(Collectors.toList()));
 
         eventBus.publish(DeviceEvent.of(DeviceEvent.EventType.DELETED, device));
     }

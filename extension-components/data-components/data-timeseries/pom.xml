@@ -6,12 +6,22 @@
     <parent>
         <groupId>com.milesight.beaveriot</groupId>
         <artifactId>extension-components</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.1.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <artifactId>data-timeseries</artifactId>
     <packaging>pom</packaging>
+    <name>data-timeseries</name>
+    <description>An open-source platform designed for rapid and intuitive IoT application development.</description>
+    <url>https://github.com/milesight-iot/beaver-iot</url>
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/license/MIT</url>
+        </license>
+    </licenses>
+
     <modules>
         <module>data-timeseries-influxdb</module>
     </modules>
@@ -21,5 +31,22 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.6.0</version>
+                <extensions>true</extensions>
+                <executions>
+                    <execution>
+                        <id>injected-central-publishing</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

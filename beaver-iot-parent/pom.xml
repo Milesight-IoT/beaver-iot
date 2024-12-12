@@ -6,8 +6,31 @@
 
     <groupId>com.milesight.beaveriot</groupId>
     <artifactId>beaver-iot-parent</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
+    <name>beaver-iot-parent</name>
+    <description>An open-source platform designed for rapid and intuitive IoT application development.</description>
+    <url>https://github.com/milesight-iot/beaver-iot</url>
+    <scm>
+        <url>https://github.com/milesight-iot/beaver-iot</url>
+    </scm>
+    <organization>
+        <name>Milesight</name>
+        <url>https://www.milesight.com</url>
+    </organization>
+    <developers>
+        <developer>
+            <id>Simon</id>
+            <name>Simon Zhao</name>
+            <email>simon.zhao@milesight.com</email>
+        </developer>
+    </developers>
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/license/MIT</url>
+        </license>
+    </licenses>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -24,6 +47,12 @@
         <groovy.version>3.0.8</groovy.version>
         <mockito.version>4.11.0</mockito.version>
         <h2.version>2.3.232</h2.version>
+
+        <mapstruct.version>1.5.5.Final</mapstruct.version>
+        <lombok-mapstruct.version>0.2.0</lombok-mapstruct.version>
+        <jsqlparser.version>4.4</jsqlparser.version>
+
+        <deploy.skip>false</deploy.skip>
     </properties>
 
     <dependencyManagement>
@@ -129,6 +158,28 @@
                 <version>${h2.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>com.github.jsqlparser</groupId>
+                <artifactId>jsqlparser</artifactId>
+                <version>${jsqlparser.version}</version>
+            </dependency>
+            <!-- mapstruct -->
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct-processor</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok-mapstruct-binding</artifactId>
+                <version>${lombok-mapstruct.version}</version>
+            </dependency>
+
             <!-- test dependencies -->
             <dependency>
                 <groupId>org.junit.platform</groupId>
@@ -218,9 +269,31 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <skipSource>${deploy.skip}</skipSource>
+                </configuration>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.10.1</version>
+                <configuration>
+                    <legacyMode>true</legacyMode>
+                    <doclint>none</doclint>
+                    <skip>${deploy.skip}</skip>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
                         <goals>
                             <goal>jar</goal>
                         </goals>
@@ -230,15 +303,90 @@
         </plugins>
     </build>
 
-    <distributionManagement>
-        <repository>
-            <id>nexus</id>
-            <url>https://nexus.milesight.com/repository/maven-open-source/</url>
-        </repository>
-        <snapshotRepository>
-            <id>snapshots</id>
-            <url>https://nexus.milesight.com/repository/maven-open-source/</url>
-            <uniqueVersion>false</uniqueVersion>
-        </snapshotRepository>
-    </distributionManagement>
+    <profiles>
+        <profile>
+            <id>release</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.6</version>
+                        <configuration>
+                            <skip>${deploy.skip}</skip>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.6.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <waitUntil>published</waitUntil>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>snapshot</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-deploy-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>deploy</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>deploy</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+
+            <distributionManagement>
+                <repository>
+                    <id>nexus</id>
+                    <url>https://nexus.milesight.com/repository/maven-open-source/</url>
+                </repository>
+                <snapshotRepository>
+                    <id>snapshots</id>
+                    <url>https://nexus.milesight.com/repository/maven-open-source/</url>
+                    <uniqueVersion>false</uniqueVersion>
+                </snapshotRepository>
+            </distributionManagement>
+
+            <repositories>
+                <repository>
+                    <id>snapshots</id>
+                    <name>nexus-snapshots</name>
+                    <url>https://nexus.milesight.com/repository/maven-open-source/</url>
+                    <releases>
+                        <enabled>true</enabled>
+                    </releases>
+                    <snapshots>
+                        <enabled>true</enabled>
+                        <updatePolicy>always</updatePolicy>
+                    </snapshots>
+                </repository>
+            </repositories>
+        </profile>
+    </profiles>
 </project>
