@@ -1,6 +1,6 @@
-package com.milesight.beaveriot.rule.model.flow.dsl.base;
+package com.milesight.beaveriot.rule.model.flow.route.base;
 
-import com.milesight.beaveriot.rule.model.flow.dsl.ExpressionNode;
+import com.milesight.beaveriot.rule.model.flow.route.ExpressionNode;
 
 /**
  * @author leon

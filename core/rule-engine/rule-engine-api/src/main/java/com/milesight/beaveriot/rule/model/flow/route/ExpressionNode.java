@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.rule.model.flow.dsl;
+package com.milesight.beaveriot.rule.model.flow.route;
 
 import com.milesight.beaveriot.rule.model.flow.config.RuleChoiceConfig;
 import com.milesight.beaveriot.rule.support.ExpressionGenerator;

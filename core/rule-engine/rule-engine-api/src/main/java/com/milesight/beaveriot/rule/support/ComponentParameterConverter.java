@@ -19,12 +19,12 @@ public class ComponentParameterConverter {
             return Map.of();
         }
 
-        Map<String, Object> dslParameters = Maps.newHashMap();
+        Map<String, Object> routeParameters = Maps.newHashMap();
         if (parameters.isObject()) {
             ObjectNode objectNode = (ObjectNode) parameters;
-            objectNode.fields().forEachRemaining(field -> dslParameters.put(field.getKey(), convertValue(field.getValue())));
+            objectNode.fields().forEachRemaining(field -> routeParameters.put(field.getKey(), convertValue(field.getValue())));
         }
-        return dslParameters;
+        return routeParameters;
     }
 
     private static Object convertValue(JsonNode value) {

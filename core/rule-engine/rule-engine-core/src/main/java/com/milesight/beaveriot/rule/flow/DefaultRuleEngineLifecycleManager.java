@@ -10,7 +10,6 @@ import com.milesight.beaveriot.rule.model.flow.config.RuleFlowConfig;
 import com.milesight.beaveriot.rule.model.flow.config.RuleNodeConfig;
 import com.milesight.beaveriot.rule.model.trace.FlowTraceResponse;
 import com.milesight.beaveriot.rule.model.trace.NodeTraceResponse;
-import com.milesight.beaveriot.rule.observe.RuleConfigOutputCache;
 import com.milesight.beaveriot.rule.support.RuleFlowIdGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
@@ -51,7 +50,6 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
     public String deployFlow(RuleFlowConfig ruleFlowConfig) {
         Assert.notNull(ruleFlowConfig.getFlowId(), "Rule flow id must not be null");
 
-        RuleConfigOutputCache.cache(ruleFlowConfig);
         String dumpYaml = RuleFlowYamlBuilder.builder()
                 .withRuleFlowConfig(ruleFlowConfig)
                 .build()

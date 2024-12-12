@@ -1,7 +1,7 @@
-package com.milesight.beaveriot.rule.model.flow.dsl;
+package com.milesight.beaveriot.rule.model.flow.route;
 
-import com.milesight.beaveriot.rule.model.flow.dsl.base.ExpressionAware;
-import com.milesight.beaveriot.rule.model.flow.dsl.base.OutputNode;
+import com.milesight.beaveriot.rule.model.flow.route.base.ExpressionAware;
+import com.milesight.beaveriot.rule.model.flow.route.base.OutputNode;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

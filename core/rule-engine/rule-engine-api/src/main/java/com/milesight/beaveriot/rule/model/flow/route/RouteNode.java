@@ -1,6 +1,6 @@
-package com.milesight.beaveriot.rule.model.flow.dsl;
+package com.milesight.beaveriot.rule.model.flow.route;
 
-import com.milesight.beaveriot.rule.model.flow.dsl.base.NodeId;
+import com.milesight.beaveriot.rule.model.flow.route.base.NodeId;
 import com.milesight.beaveriot.rule.support.RuleFlowYamlDumper;
 import lombok.AllArgsConstructor;
 import lombok.Data;
