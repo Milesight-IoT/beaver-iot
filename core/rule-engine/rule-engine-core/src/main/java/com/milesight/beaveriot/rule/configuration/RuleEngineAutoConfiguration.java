@@ -1,23 +1,19 @@
 package com.milesight.beaveriot.rule.configuration;
 
+import com.milesight.beaveriot.rule.RuleEngineExecutor;
 import com.milesight.beaveriot.rule.RuleEngineRouteConfigurer;
-import com.milesight.beaveriot.rule.flow.CamelRuleEngineExecutor;
-import com.milesight.beaveriot.rule.flow.DefaultRuleEngineComponentManager;
-import com.milesight.beaveriot.rule.flow.DefaultRuleEngineLifecycleManager;
-import com.milesight.beaveriot.rule.flow.RuleEngineRunner;
+import com.milesight.beaveriot.rule.constants.RuleNodeNames;
+import com.milesight.beaveriot.rule.flow.*;
 import com.milesight.beaveriot.rule.flow.definition.AnnotationComponentDefinitionLoader;
 import com.milesight.beaveriot.rule.flow.definition.CamelComponentDefinitionLoader;
 import com.milesight.beaveriot.rule.flow.definition.ComponentDefinitionLoader;
 import com.milesight.beaveriot.rule.flow.definition.CustomizeJsonComponentDefinitionLoader;
-import com.milesight.beaveriot.rule.trace.RuleEngineTracer;
+import com.milesight.beaveriot.rule.flow.parallel.ParallelSplitter;
+import com.milesight.beaveriot.rule.observe.RuleEngineOutputInterceptor;
 import org.apache.camel.CamelContext;
-import org.apache.camel.ProducerTemplate;
-import org.apache.camel.impl.DefaultCamelContext;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -42,8 +38,8 @@ public class RuleEngineAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public DefaultRuleEngineLifecycleManager ruleEngineLifecycleManager(DefaultCamelContext camelContext, ProducerTemplate producerTemplate) {
-        return new DefaultRuleEngineLifecycleManager(camelContext, producerTemplate);
+    public DefaultRuleEngineLifecycleManager ruleEngineLifecycleManager(CamelContext context, RuleEngineExecutor ruleEngineExecutor) {
+        return new DefaultRuleEngineLifecycleManager(context, ruleEngineExecutor);
     }
 
     @Bean
@@ -70,12 +66,20 @@ public class RuleEngineAutoConfiguration {
         return new CustomizeJsonComponentDefinitionLoader(ruleProperties);
     }
 
-    @ConditionalOnProperty(value = "camel.rule.enabled-tracing", matchIfMissing = true)
-    public class RuleEngineTraceConfiguration {
-        @Bean
-        @ConditionalOnMissingBean
-        public RuleEngineTracer ruleEngineTracer(ApplicationEventPublisher applicationEventPublisher, RuleProperties ruleProperties) {
-            return new RuleEngineTracer(applicationEventPublisher, ruleProperties);
-        }
+    @Bean
+    @ConditionalOnMissingBean
+    public ComponentDefinitionCache componentDefinitionCache() {
+        return new ComponentDefinitionCache();
     }
+
+    @Bean(RuleNodeNames.innerParallelSplitter)
+    @ConditionalOnMissingBean
+    public ParallelSplitter parallelSplitter() {
+        return new ParallelSplitter();
+    }
+
+    public RuleEngineOutputInterceptor traceContextInterceptor() {
+        return new RuleEngineOutputInterceptor();
+    }
+
 }

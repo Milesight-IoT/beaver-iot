@@ -13,7 +13,6 @@ import org.springframework.util.Assert;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author leon
@@ -24,8 +23,6 @@ public class DefaultRuleEngineComponentManager implements RuleEngineComponentMan
     private RuleProperties ruleProperties;
 
     private ObjectProvider<ComponentDefinitionLoader> componentDefinitionLoaderProviders;
-
-    private static final Map<String, String> COMPONENT_DEFINITION_CACHE = new ConcurrentHashMap<>();
 
     public DefaultRuleEngineComponentManager(RuleProperties ruleProperties, ObjectProvider<ComponentDefinitionLoader> componentDefinitionLoaderProviders) {
         this.ruleProperties = ruleProperties;
@@ -43,22 +40,21 @@ public class DefaultRuleEngineComponentManager implements RuleEngineComponentMan
     }
 
     @Override
-    public String getComponentDefinitionSchema(String name) {
-        String jsonSchema = COMPONENT_DEFINITION_CACHE.computeIfAbsent(name, key ->
-                componentDefinitionLoaderProviders.orderedStream()
-                        .map(loader -> {
-                            try {
-                                return loader.loadComponentDefinition(name);
-                            } catch (Exception e) {
-                                log.error("Failed to load component definition for {}", name, e);
-                                return null;
-                            }
-                        })
-                        .filter(Objects::nonNull)
-                        .findFirst()
-                        .orElse(null)
-        );
-        Assert.notNull(jsonSchema, "Component definition not found: " + name);
+    public String getComponentDefinitionSchema(String componentId) {
+        String jsonSchema = componentDefinitionLoaderProviders.orderedStream()
+                .map(loader -> {
+                    try {
+                        return loader.loadComponentDefinitionSchema(componentId);
+                    } catch (Exception e) {
+                        log.error("Failed to load component definition for {}", componentId, e);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+        Assert.notNull(jsonSchema, "Component definition not found: " + componentId);
         return jsonSchema;
     }
+
 }

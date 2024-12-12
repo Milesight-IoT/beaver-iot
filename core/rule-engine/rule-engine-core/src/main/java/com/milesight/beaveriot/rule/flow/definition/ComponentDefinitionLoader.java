@@ -11,6 +11,6 @@ public interface ComponentDefinitionLoader {
     int ORDER_LEVEL_ANNOTATION = 10;
     int ORDER_LEVEL_CAMEL = 20;
 
-    String loadComponentDefinition(String name) throws IOException;
+    String loadComponentDefinitionSchema(String name) throws IOException;
 
 }

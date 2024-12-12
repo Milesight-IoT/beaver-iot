@@ -22,7 +22,7 @@ public class CustomizeJsonComponentDefinitionLoader implements ComponentDefiniti
     }
 
     @Override
-    public String loadComponentDefinition(String name) throws IOException {
+    public String loadComponentDefinitionSchema(String name) throws IOException {
 
         String path = ruleProperties.getComponentSchemaPath().endsWith(SLASH) ?
                 ruleProperties.getComponentSchemaPath() + name + ".json" :

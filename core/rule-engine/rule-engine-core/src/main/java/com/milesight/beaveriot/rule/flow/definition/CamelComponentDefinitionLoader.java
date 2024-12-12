@@ -17,7 +17,7 @@ public class CamelComponentDefinitionLoader implements ComponentDefinitionLoader
     }
 
     @Override
-    public String loadComponentDefinition(String name) {
+    public String loadComponentDefinitionSchema(String name) {
         RuntimeCamelCatalog catalog = context.getCamelContextExtension().getContextPlugin(RuntimeCamelCatalog.class);
         return catalog.componentJSonSchema(name);
     }

@@ -9,6 +9,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.List;
 import java.util.Map;
 
+import static com.milesight.beaveriot.rule.support.RuleFlowIdGenerator.FLOW_ID_PREFIX;
+
 /**
  * @author leon
  */
@@ -41,6 +43,12 @@ public class RuleProperties {
      * The schema file is named as {componentName}.json, used to override the camel component's options.
      */
     private String componentSchemaPath = "/camel-schema";
+
+    /**
+     * The prefix of the trace node id. Default is "flow."
+     * default only trace the prefix flow node
+     */
+    private String traceNodePrefix = FLOW_ID_PREFIX;
 
 
     public enum TraceOutputMode {

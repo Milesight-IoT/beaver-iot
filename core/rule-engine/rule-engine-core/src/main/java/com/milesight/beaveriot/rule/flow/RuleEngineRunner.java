@@ -2,6 +2,7 @@ package com.milesight.beaveriot.rule.flow;
 
 import com.milesight.beaveriot.rule.RuleEngineRouteConfigurer;
 import com.milesight.beaveriot.rule.exception.RuleEngineException;
+import lombok.SneakyThrows;
 import org.apache.camel.CamelContext;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.SmartInitializingSingleton;
@@ -25,6 +26,7 @@ public class RuleEngineRunner implements SmartInitializingSingleton {
         return camelContext;
     }
 
+    @SneakyThrows
     @Override
     public void afterSingletonsInstantiated() {
 

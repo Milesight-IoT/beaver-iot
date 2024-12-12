@@ -65,6 +65,4 @@ public class EntityWrapper extends AbstractWrapper {
         return findValueByKey(entity.getKey(), clazz);
     }
 
-//    public Map<String, JsonNode> getChildValues() {
-//    }
 }

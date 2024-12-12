@@ -5,13 +5,16 @@ import org.springframework.util.ObjectUtils;
 import java.io.File;
 import java.net.URI;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
  * @author leon
  */
-@SuppressWarnings({"java:S1192","java:S3776"})
+@SuppressWarnings({"java:S1192", "java:S3776"})
 public class ComponentDefinitionHelper {
 
     private ComponentDefinitionHelper() {

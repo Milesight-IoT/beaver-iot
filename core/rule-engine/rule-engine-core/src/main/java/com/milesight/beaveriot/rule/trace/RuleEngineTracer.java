@@ -1,17 +1,19 @@
 package com.milesight.beaveriot.rule.trace;
 
+import com.milesight.beaveriot.rule.configuration.RuleProperties;
 import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
 import com.milesight.beaveriot.rule.enums.ExecutionStatus;
-import com.milesight.beaveriot.rule.configuration.RuleProperties;
 import com.milesight.beaveriot.rule.model.trace.FlowTraceResponse;
 import com.milesight.beaveriot.rule.model.trace.NodeTraceResponse;
-import com.milesight.beaveriot.rule.utils.JSONHelper;
+import com.milesight.beaveriot.rule.support.JSONHelper;
+import com.milesight.beaveriot.rule.support.RuleFlowIdGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
 import org.apache.camel.NamedNode;
 import org.apache.camel.NamedRoute;
 import org.apache.camel.impl.engine.DefaultTracer;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.util.ObjectUtils;
 
 /**
  * @author leon
@@ -44,15 +46,14 @@ public class RuleEngineTracer extends DefaultTracer {
         if (shouldTraceByLogging()) {
             super.traceBeforeNode(node, exchange);
         }
-
         FlowTraceResponse traceContext = (FlowTraceResponse) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
-        if (traceContext != null) {
+        if (traceContext != null && shouldTraceNodeByPrefix(node, exchange)) {
             try {
                 NodeTraceResponse nodeTraceResponse = new NodeTraceResponse();
                 nodeTraceResponse.setNodeName(node.getLabel());
-                nodeTraceResponse.setNodeId(node.getId());
+                nodeTraceResponse.setNodeId(RuleFlowIdGenerator.removeNamespacedId(exchange.getFromRouteId(), node.getId()));
                 nodeTraceResponse.setStartTime(System.currentTimeMillis());
-                nodeTraceResponse.setInput(getInputBody(exchange));
+                nodeTraceResponse.setInput(getExchangeBody(exchange));
                 nodeTraceResponse.setMessageId(exchange.getIn().getMessageId());
                 traceContext.getTraceInfos().add(nodeTraceResponse);
             } catch (Exception ex) {
@@ -70,13 +71,13 @@ public class RuleEngineTracer extends DefaultTracer {
         FlowTraceResponse traceContext = (FlowTraceResponse) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
         if (traceContext != null) {
             try {
-                NodeTraceResponse traceInfo = traceContext.findTraceInfo(node.getId());
-                if (exchange.getException() != null) {
-                    traceInfo.causeException(exchange.getException());
-                }
+                NodeTraceResponse traceInfo = traceContext.findTraceInfo(RuleFlowIdGenerator.removeNamespacedId(exchange.getFromRouteId(), node.getId()));
                 if (traceInfo != null) {
-                    traceInfo.setOutput(getInputBody(exchange));
-                    traceInfo.setCost(System.currentTimeMillis() - traceInfo.getStartTime());
+                    traceInfo.setOutput(getExchangeBody(exchange));
+                    traceInfo.setTimeCost(System.currentTimeMillis() - traceInfo.getStartTime());
+                    if (exchange.getException() != null) {
+                        traceInfo.causeException(exchange.getException());
+                    }
                 }
             } catch (Exception ex) {
                 log.error("traceBeforeNode error", ex);
@@ -84,7 +85,7 @@ public class RuleEngineTracer extends DefaultTracer {
         }
     }
 
-    private String getInputBody(Exchange exchange) {
+    private String getExchangeBody(Exchange exchange) {
         Object body = exchange.getIn().getBody();
         if (body == null) {
             return null;
@@ -120,6 +121,13 @@ public class RuleEngineTracer extends DefaultTracer {
 
     private boolean shouldTraceByLogging() {
         return ruleProperties.getTraceOutputMode() == RuleProperties.TraceOutputMode.ALL || ruleProperties.getTraceOutputMode() == RuleProperties.TraceOutputMode.LOGGING;
+    }
+
+    protected boolean shouldTraceNodeByPrefix(NamedNode node, Exchange exchange) {
+        if (ObjectUtils.isEmpty(ruleProperties.getTraceNodePrefix())) {
+            return true;
+        }
+        return node.getId().startsWith(ruleProperties.getTraceNodePrefix());
     }
 
 }

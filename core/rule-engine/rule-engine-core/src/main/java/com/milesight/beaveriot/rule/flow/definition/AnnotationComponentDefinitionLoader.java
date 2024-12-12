@@ -3,10 +3,12 @@ package com.milesight.beaveriot.rule.flow.definition;
 import com.milesight.beaveriot.rule.annotations.OutputArguments;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
 import com.milesight.beaveriot.rule.annotations.UriParamExtension;
+import com.milesight.beaveriot.rule.model.definition.BaseDefinition;
 import com.milesight.beaveriot.rule.model.definition.ComponentDefinition;
 import com.milesight.beaveriot.rule.model.definition.ComponentOptionDefinition;
+import com.milesight.beaveriot.rule.model.definition.ComponentOutputDefinition;
+import com.milesight.beaveriot.rule.support.JSONHelper;
 import com.milesight.beaveriot.rule.utils.ComponentDefinitionHelper;
-import com.milesight.beaveriot.rule.utils.JSONHelper;
 import com.milesight.beaveriot.rule.utils.StringHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Category;
@@ -46,7 +48,7 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
     private ApplicationContext applicationContext;
 
     @Override
-    public String loadComponentDefinition(String name) throws IOException {
+    public String loadComponentDefinitionSchema(String name) throws IOException {
 
         if (!applicationContext.containsBean(name)) {
             return null;
@@ -60,7 +62,9 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
 
         Class<?> componentClazz = bean.getClass();
         ComponentDefinition model = new ComponentDefinition();
-        model.setJavaType(componentClazz.getName());
+        BaseDefinition baseDefinition = new BaseDefinition();
+        model.setComponent(baseDefinition);
+        baseDefinition.setJavaType(componentClazz.getName());
 
         UriEndpoint uriEndpoint = componentClazz.getAnnotation(UriEndpoint.class);
         RuleNode ruleNode = componentClazz.getAnnotation(RuleNode.class);
@@ -72,13 +76,13 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
         //add endpoint headers
         final Class<?> headersClass = retrieveHeaderClass(ruleNode, uriEndpoint);
         if (headersClass != null && headersClass != void.class) {
-            addEndpointHeaders(model, model.getScheme(), headersClass, uriEndpoint);
+            addEndpointHeaders(model, baseDefinition.getScheme(), headersClass, uriEndpoint);
         }
 
         //add exchange properties
         final Class<?> propertiesClass = retrieveValueOrderly("propertiesClass", ruleNode);
         if (propertiesClass != null && propertiesClass != void.class) {
-            addExchangeProperties(model, model.getScheme(), propertiesClass);
+            addExchangeProperties(model, baseDefinition.getScheme(), propertiesClass);
         }
 
         //add parameter properties and path properties
@@ -91,13 +95,14 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
     }
 
     protected void fillComponentProperties(ComponentDefinition model, RuleNode ruleNode, Class<?> componentClazz) {
-        model.setTestable(ruleNode.testable());
-        model.setType(ruleNode.type());
-        model.setDescription(ruleNode.description());
+        BaseDefinition baseDefinition = model.getComponent();
+        baseDefinition.setTestable(ruleNode.testable());
+        baseDefinition.setType(ruleNode.type());
+        baseDefinition.setDescription(ruleNode.description());
         if (!ObjectUtils.isEmpty(ruleNode.value())) {
-            model.setName(ruleNode.value());
-        } else if (ObjectUtils.isEmpty(model.getName())) {
-            model.setName(StringHelper.lowerFirst(componentClazz.getSimpleName()));
+            baseDefinition.setName(ruleNode.value());
+        } else if (ObjectUtils.isEmpty(baseDefinition.getName())) {
+            baseDefinition.setName(StringHelper.lowerFirst(componentClazz.getSimpleName()));
         }
     }
 
@@ -105,6 +110,7 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
         if (uriEndpoint == null) {
             return;
         }
+        BaseDefinition baseDefinition = model.getComponent();
         String scheme = uriEndpoint.scheme();
         String extendsScheme = uriEndpoint.extendsScheme();
         String title = uriEndpoint.title();
@@ -116,18 +122,18 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
                     .collect(Collectors.joining(","));
         }
 
-        model.setScheme(scheme);
-        model.setName(scheme);
-        model.setExtendsScheme(extendsScheme);
+        baseDefinition.setScheme(scheme);
+        baseDefinition.setName(scheme);
+        baseDefinition.setExtendsScheme(extendsScheme);
         // if the scheme is an alias then replace the scheme name from the
         // syntax with the alias
         String syntax = scheme + ":" + StringHelper.after(uriEndpoint.syntax(), ":");
-        model.setSyntax(syntax);
-        model.setTitle(title);
-        model.setLabel(label);
-        model.setConsumerOnly(uriEndpoint.consumerOnly());
-        model.setProducerOnly(uriEndpoint.producerOnly());
-        model.setRemote(uriEndpoint.remote());
+        baseDefinition.setSyntax(syntax);
+        baseDefinition.setTitle(title);
+        baseDefinition.setLabel(label);
+        baseDefinition.setConsumerOnly(uriEndpoint.consumerOnly());
+        baseDefinition.setProducerOnly(uriEndpoint.producerOnly());
+        baseDefinition.setRemote(uriEndpoint.remote());
     }
 
     protected void addParameterProperties(ComponentDefinition componentModel, Class<?> classElement) {
@@ -167,6 +173,7 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
                     boolean isSecret = retrieveValueOrderly("secret", false, uriParam, pathParam);
                     String enumString = retrieveValueOrderly("enums", uriParam, pathParam);
                     List<String> enums = ComponentDefinitionHelper.gatherEnums(enumString, fieldTypeElement);
+                    boolean autowired = metadata != null ? metadata.autowired() : false;
 
                     // the field type may be overloaded by another type
                     boolean isDuration = false;
@@ -198,6 +205,7 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
                     option.setMultiValue(multiValue);
                     option.setKind(kind);
                     option.setIndex(idx.getAndIncrement());
+                    option.setAutowired(autowired);
                     //fill extension parameter properties
                     fillExtensionParameterProperties(option, fieldElement);
                     componentModel.getProperties().put(option.getName(), option);
@@ -227,19 +235,23 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
         for (final Field fieldElement : componentClazz.getDeclaredFields()) {
             if (fieldElement.isAnnotationPresent(OutputArguments.class)) {
                 OutputArguments outputArguments = fieldElement.getAnnotation(OutputArguments.class);
-                ComponentOptionDefinition componentOptionDefinition = new ComponentOptionDefinition();
+                ComponentOutputDefinition componentOutputDefinition = new ComponentOutputDefinition();
                 String fieldName = fieldElement.getName();
                 String name = ObjectUtils.isEmpty(outputArguments.name()) ? fieldName : outputArguments.name();
                 String displayName = ObjectUtils.isEmpty(outputArguments.displayName()) ? StringHelper.upperFirst(name) : outputArguments.displayName();
                 String description = outputArguments.description();
                 String javaType = ObjectUtils.isEmpty(outputArguments.javaType()) ? fieldElement.getType().getTypeName() : outputArguments.javaType();
                 String type = ComponentDefinitionHelper.getType(javaType, false, "java.time.Duration".equals(javaType));
-                componentOptionDefinition.setJavaType(javaType);
-                componentOptionDefinition.setType(type);
-                componentOptionDefinition.setName(name);
-                componentOptionDefinition.setDisplayName(displayName);
-                componentOptionDefinition.setDescription(description);
-                model.getOutputProperties().put(componentOptionDefinition.getName(), componentOptionDefinition);
+                componentOutputDefinition.setJavaType(javaType);
+                componentOutputDefinition.setType(type);
+                componentOutputDefinition.setName(name);
+                componentOutputDefinition.setDisplayName(displayName);
+                componentOutputDefinition.setDescription(description);
+
+                if (model.getProperties().containsKey(name)) {
+                    componentOutputDefinition.setInputDefinition(model.getProperties().get(name));
+                }
+                model.getOutputProperties().put(componentOutputDefinition.getName(), componentOutputDefinition);
             }
         }
     }
