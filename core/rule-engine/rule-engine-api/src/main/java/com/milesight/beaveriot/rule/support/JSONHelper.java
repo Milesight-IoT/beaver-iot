@@ -1,7 +1,8 @@
-package com.milesight.beaveriot.rule.utils;
+package com.milesight.beaveriot.rule.support;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -35,6 +36,20 @@ public class JSONHelper {
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException(e);
         }
+    }
+
+    public static <T> T cast(Object object, TypeReference<T> typeReference) {
+        if (object == null) {
+            return null;
+        }
+        return JSON.convertValue(object, typeReference);
+    }
+
+    public static <T> T cast(Object object, Class<T> classType) {
+        if (object == null) {
+            return null;
+        }
+        return JSON.convertValue(object, classType);
     }
 
 }

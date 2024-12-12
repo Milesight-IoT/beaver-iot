@@ -1,7 +1,8 @@
 package com.milesight.beaveriot.rule;
 
+import com.milesight.beaveriot.rule.model.flow.config.RuleFlowConfig;
+import com.milesight.beaveriot.rule.model.flow.config.RuleNodeConfig;
 import com.milesight.beaveriot.rule.model.trace.FlowTraceResponse;
-import com.milesight.beaveriot.rule.model.trace.NodeTraceRequest;
 import com.milesight.beaveriot.rule.model.trace.NodeTraceResponse;
 import org.apache.camel.Exchange;
 
@@ -10,17 +11,24 @@ import org.apache.camel.Exchange;
  */
 public interface RuleEngineLifecycleManager {
 
+    String deployFlow(RuleFlowConfig ruleFlowConfig);
 
-    void deployFlow(String flowId, String flowYaml) throws Exception;
+    void deployFlow(String flowId, String flowRouteYaml);
 
-    void startRoute(String flowId) throws Exception;
+    void startRoute(String flowId);
 
-    void stopRoute(String flowId) throws Exception;
+    void stopRoute(String flowId);
 
-    void removeFlow(String flowId) throws Exception;
+    void removeFlow(String flowId);
 
-    FlowTraceResponse trackFlow(String routeId, Exchange exchange);         //todo
+    boolean validateFlow(RuleFlowConfig ruleFlowConfig);
 
-    NodeTraceResponse trackNode(NodeTraceRequest nodeTraceRequest, Exchange exchange);         //todo
+    FlowTraceResponse trackFlow(RuleFlowConfig ruleFlowConfig, Exchange exchange);
+
+    FlowTraceResponse trackFlow(RuleFlowConfig ruleFlowConfig, Object body);
+
+    NodeTraceResponse trackNode(RuleNodeConfig nodeConfig, Exchange exchange);
+
+    NodeTraceResponse trackNode(RuleNodeConfig nodeConfig, Object body);
 
 }

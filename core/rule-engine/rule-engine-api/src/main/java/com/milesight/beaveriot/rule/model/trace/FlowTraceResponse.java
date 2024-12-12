@@ -2,6 +2,7 @@ package com.milesight.beaveriot.rule.model.trace;
 
 import com.milesight.beaveriot.rule.enums.ExecutionStatus;
 import lombok.Data;
+import org.springframework.util.ObjectUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.List;
 @Data
 public class FlowTraceResponse {
 
-    private ExecutionStatus status;
+    private ExecutionStatus status = ExecutionStatus.SUCCESS;
 
     private List<NodeTraceResponse> traceInfos = new ArrayList<>();
 
@@ -23,5 +24,7 @@ public class FlowTraceResponse {
                 .orElse(null);
     }
 
-
+    public NodeTraceResponse getLastNodeTrace() {
+        return ObjectUtils.isEmpty(traceInfos) ? null : traceInfos.get(traceInfos.size() - 1);
+    }
 }

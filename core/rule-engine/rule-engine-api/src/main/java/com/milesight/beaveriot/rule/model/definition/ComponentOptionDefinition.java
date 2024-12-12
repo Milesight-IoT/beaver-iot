@@ -2,6 +2,7 @@ package com.milesight.beaveriot.rule.model.definition;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import org.springframework.util.ObjectUtils;
 
 import java.util.List;
 
@@ -28,9 +29,14 @@ public class ComponentOptionDefinition {
     protected Object defaultValue;
     protected String defaultValueNote;
     protected String description;
+    protected boolean autowired;
 
     //extension ui parameter
     protected String uiComponent;
     protected String uiComponentTags;
     protected String uiComponentGroup;
+
+    public String getFullName() {
+        return ObjectUtils.isEmpty(prefix) ? name : prefix + "." + name;
+    }
 }

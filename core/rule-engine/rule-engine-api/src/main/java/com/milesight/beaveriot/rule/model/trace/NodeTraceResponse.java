@@ -21,7 +21,7 @@ public class NodeTraceResponse {
 
     private long startTime;
 
-    private long cost;
+    private long timeCost;
 
     private Object input;
 

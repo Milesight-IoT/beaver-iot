@@ -12,5 +12,9 @@ public interface RuleNodeNames {
     String innerEventHandlerAction = "innerEventHandlerAction";
     String innerExchangeSaveAction = "innerExchangeSaveAction";
     String innerEventSubscribeAction = "innerEventSubscribeAction";
+    String innerParallelSplitter = "innerParallelSplitter";
+
+    String CAMEL_DIRECT = "direct";
+    String CAMEL_CHOICE = "choice";
 
 }
