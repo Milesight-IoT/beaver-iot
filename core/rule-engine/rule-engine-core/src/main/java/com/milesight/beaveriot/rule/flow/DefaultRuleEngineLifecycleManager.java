@@ -122,7 +122,7 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
 
         exchange.setProperty(ExchangeHeaders.TRACE_FOR_TEST, true);
 
-        FlowTraceResponse traceResponse = executeWithRollback(ruleFlowConfig, () -> {
+        return executeWithRollback(ruleFlowConfig, () -> {
             try {
                 AdviceWith.adviceWith(flowId, camelContext, new AdviceWithRouteBuilder() {
                     @Override
@@ -137,8 +137,6 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
             ruleEngineExecutor.execute(endpointUri, exchange);
             return exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE, FlowTraceResponse.class);
         });
-
-        return traceResponse;
     }
 
     @Override

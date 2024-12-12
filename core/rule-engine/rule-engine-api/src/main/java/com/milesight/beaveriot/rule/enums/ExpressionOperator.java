@@ -5,7 +5,7 @@ package com.milesight.beaveriot.rule.enums;
  */
 public enum ExpressionOperator {
 
-    eq,
-    lg
+    EQ,
+    LG
 
 }

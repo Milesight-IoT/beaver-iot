@@ -47,7 +47,7 @@ public class RuleEngineTracer extends DefaultTracer {
             super.traceBeforeNode(node, exchange);
         }
         FlowTraceResponse traceContext = (FlowTraceResponse) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
-        if (traceContext != null && shouldTraceNodeByPrefix(node, exchange)) {
+        if (traceContext != null && shouldTraceNodeByPrefix(node)) {
             try {
                 NodeTraceResponse nodeTraceResponse = new NodeTraceResponse();
                 nodeTraceResponse.setNodeName(node.getLabel());
@@ -123,7 +123,7 @@ public class RuleEngineTracer extends DefaultTracer {
         return ruleProperties.getTraceOutputMode() == RuleProperties.TraceOutputMode.ALL || ruleProperties.getTraceOutputMode() == RuleProperties.TraceOutputMode.LOGGING;
     }
 
-    protected boolean shouldTraceNodeByPrefix(NamedNode node, Exchange exchange) {
+    protected boolean shouldTraceNodeByPrefix(NamedNode node) {
         if (ObjectUtils.isEmpty(ruleProperties.getTraceNodePrefix())) {
             return true;
         }

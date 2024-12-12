@@ -10,7 +10,6 @@ public interface ExchangeHeaders {
      */
     String TRACE_FOR_TEST = "CamelTraceForTest";
 
-
     /**
      * Save tracking result information
      */

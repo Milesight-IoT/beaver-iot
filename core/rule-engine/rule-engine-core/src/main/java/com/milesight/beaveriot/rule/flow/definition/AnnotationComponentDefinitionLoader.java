@@ -42,6 +42,7 @@ import static java.lang.reflect.Modifier.isStatic;
  */
 @Order(ComponentDefinitionLoader.ORDER_LEVEL_ANNOTATION)
 @Slf4j
+@SuppressWarnings({"java:S3776"})
 public class AnnotationComponentDefinitionLoader implements ComponentDefinitionLoader, ApplicationContextAware {
 
     private static final Map<String, Class<?>> KNOWN_CLASSES_CACHE = new ConcurrentHashMap<>();

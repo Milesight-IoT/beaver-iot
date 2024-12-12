@@ -13,8 +13,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class RuleConfigOutputCache {
 
-    private static Map<String, Map<String, RuleNodeConfig>> RULE_CONFIG_OUTPUT_CACHE = new ConcurrentHashMap<>();
+    private static Map<String, Map<String, RuleNodeConfig>> ruleConfigOutputCache = new ConcurrentHashMap<>();
 
+    private RuleConfigOutputCache() {
+    }
     public static void cache(RuleFlowConfig ruleFlowConfig) {
 
         Map<String, RuleNodeConfig> ruleConfigs = new LinkedHashMap<>();
@@ -25,12 +27,12 @@ public class RuleConfigOutputCache {
         });
 
         if (!ObjectUtils.isEmpty(ruleConfigs)) {
-            RULE_CONFIG_OUTPUT_CACHE.put(ruleFlowConfig.getFlowId(), ruleConfigs);
+            ruleConfigOutputCache.put(ruleFlowConfig.getFlowId(), ruleConfigs);
         }
     }
 
     public static RuleNodeConfig get(String flowId, String nodeId) {
         //todo load from db
-        return RULE_CONFIG_OUTPUT_CACHE.containsKey(flowId) ? RULE_CONFIG_OUTPUT_CACHE.get(flowId).get(nodeId) : null;
+        return ruleConfigOutputCache.containsKey(flowId) ? ruleConfigOutputCache.get(flowId).get(nodeId) : null;
     }
 }

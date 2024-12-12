@@ -42,7 +42,7 @@ public class RuleProperties {
      * The path to the component schema directory. Default is /camel-schema.
      * The schema file is named as {componentName}.json, used to override the camel component's options.
      */
-    private String componentSchemaPath = "/camel-schema";
+    private String componentSchemaPath = "camel-schema";
 
     /**
      * The prefix of the trace node id. Default is "flow."

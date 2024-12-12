@@ -17,6 +17,9 @@ import java.util.stream.Collectors;
  */
 public class ExpressionGenerator {
 
+    private ExpressionGenerator() {
+    }
+
     public static String generate(String language, List<ExpressionConfig> expressionList, boolean andExpression) {
 
         Assert.isTrue(!ObjectUtils.isEmpty(expressionList), "expressionList is empty");

@@ -11,17 +11,18 @@ import java.util.Map;
  */
 public class ComponentParameterConverter {
 
+    private ComponentParameterConverter() {
+    }
+
     public static Map<String, Object> convertParameters(JsonNode parameters) {
         if (parameters == null) {
-            return null;
+            return Map.of();
         }
 
         Map<String, Object> dslParameters = Maps.newHashMap();
         if (parameters.isObject()) {
             ObjectNode objectNode = (ObjectNode) parameters;
-            objectNode.fields().forEachRemaining((field) -> {
-                dslParameters.put(field.getKey(), convertValue(field.getValue()));
-            });
+            objectNode.fields().forEachRemaining(field -> dslParameters.put(field.getKey(), convertValue(field.getValue())));
         }
         return dslParameters;
     }

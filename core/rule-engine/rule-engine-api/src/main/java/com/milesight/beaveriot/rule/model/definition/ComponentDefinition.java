@@ -28,7 +28,7 @@ public class ComponentDefinition {
 
         //if component contains path property, and parameters has path value, then use path as uri
         ComponentOptionDefinition pathOptionDefinition = properties.values().stream()
-                .filter((definition) -> definition.getKind().equals("path"))
+                .filter(definition -> definition.getKind().equals("path"))
                 .findFirst()
                 .orElse(null);
         if (pathOptionDefinition != null && !ObjectUtils.isEmpty(parameters) && parameters.containsKey(pathOptionDefinition.getFullName())) {
