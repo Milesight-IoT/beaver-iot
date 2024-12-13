@@ -116,14 +116,28 @@ public class UserService {
     public UserInfoResponse getUserInfo() {
         com.milesight.beaveriot.context.security.SecurityUserContext.SecurityUser securityUser = com.milesight.beaveriot.context.security.SecurityUserContext.getSecurityUser();
         UserInfoResponse userInfoResponse = new UserInfoResponse();
-        if (securityUser != null) {
-            userInfoResponse.setUserId(com.milesight.beaveriot.context.security.SecurityUserContext.getUserId() == null ? null : com.milesight.beaveriot.context.security.SecurityUserContext.getUserId().toString());
-            userInfoResponse.setNickname(securityUser.getPayload().get("nickname").toString());
-            userInfoResponse.setEmail(securityUser.getPayload().get("email").toString());
-            userInfoResponse.setCreatedAt(securityUser.getPayload().get("createdAt").toString());
+        if (securityUser == null){
+            return userInfoResponse;
         }
+        Long userId = com.milesight.beaveriot.context.security.SecurityUserContext.getUserId();
+        userInfoResponse.setUserId(userId == null ? null : userId.toString());
+        userInfoResponse.setNickname(securityUser.getPayload().get("nickname").toString());
+        userInfoResponse.setEmail(securityUser.getPayload().get("email").toString());
+        userInfoResponse.setCreatedAt(securityUser.getPayload().get("createdAt").toString());
+
+        List<UserInfoResponse.Menu> menus = getMenusByUserId(userId).stream().map(userMenuResponse -> {
+            UserInfoResponse.Menu menu = new UserInfoResponse.Menu();
+            menu.setMenuId(userMenuResponse.getMenuId());
+            menu.setCode(userMenuResponse.getCode());
+            menu.setName(userMenuResponse.getName());
+            menu.setType(userMenuResponse.getType());
+            menu.setParentId(userMenuResponse.getParentId());
+            return menu;
+        }).toList();
+        userInfoResponse.setMenus(menus);
+
         AtomicBoolean isSuperAdmin = new AtomicBoolean(false);
-        List<UserRolePO> userRolePOS = userRoleRepository.findAll(filter -> filter.eq(UserRolePO.Fields.userId, com.milesight.beaveriot.context.security.SecurityUserContext.getUserId()));
+        List<UserRolePO> userRolePOS = userRoleRepository.findAll(filter -> filter.eq(UserRolePO.Fields.userId, userId));
         if (userRolePOS != null && !userRolePOS.isEmpty()) {
             List<Long> roleIds = userRolePOS.stream().map(UserRolePO::getRoleId).toList();
             List<RolePO> rolePOS = roleRepository.findAll(filter -> filter.in(RolePO.Fields.id, roleIds.toArray()));

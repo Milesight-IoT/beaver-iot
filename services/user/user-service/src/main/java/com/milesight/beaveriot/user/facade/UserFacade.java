@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.user.facade;
 
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
+import com.milesight.beaveriot.user.constants.UserConstants;
 import com.milesight.beaveriot.user.convert.TenantConverter;
 import com.milesight.beaveriot.user.convert.UserConverter;
 import com.milesight.beaveriot.user.dto.MenuDTO;
@@ -29,6 +30,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author loong
@@ -82,7 +84,7 @@ public class UserFacade implements IUserFacade {
         if (userRolePOList == null || userRolePOList.isEmpty()) {
             return new ArrayList<>();
         }
-        List<Long> roleIds = userRolePOList.stream().map(UserRolePO::getId).toList();
+        List<Long> roleIds = userRolePOList.stream().map(UserRolePO::getRoleId).toList();
         List<RolePO> rolePOS = roleRepository.findAll(filterable -> filterable.in(RolePO.Fields.id, roleIds.toArray()));
         if (rolePOS == null || rolePOS.isEmpty()) {
             return new ArrayList<>();
@@ -101,7 +103,21 @@ public class UserFacade implements IUserFacade {
         if (userRolePOList == null || userRolePOList.isEmpty()) {
             return new ArrayList<>();
         }
-        List<Long> roleIds = userRolePOList.stream().map(UserRolePO::getId).toList();
+        List<Long> roleIds = userRolePOList.stream().map(UserRolePO::getRoleId).toList();
+        List<RolePO> rolePOS = roleRepository.findAll(filterable -> filterable.in(RolePO.Fields.id, roleIds.toArray()));
+        if (rolePOS == null || rolePOS.isEmpty()) {
+            return new ArrayList<>();
+        }
+        boolean isSuperAdmin = rolePOS.stream().anyMatch(rolePO -> Objects.equals(rolePO.getName(), UserConstants.SUPER_ADMIN_ROLE_NAME));
+        if (isSuperAdmin) {
+            List<MenuPO> menuPOList = menuRepository.findAll();
+            return menuPOList.stream().map(menuPO -> {
+                MenuDTO menuDTO = new MenuDTO();
+                menuDTO.setMenuId(menuPO.getId());
+                menuDTO.setMenuCode(menuPO.getCode());
+                return menuDTO;
+            }).toList();
+        }
         List<RoleMenuPO> roleMenuPOS = roleMenuRepository.findAll(filterable -> filterable.in(RoleMenuPO.Fields.roleId, roleIds.toArray()));
         if (roleMenuPOS == null || roleMenuPOS.isEmpty()) {
             return new ArrayList<>();

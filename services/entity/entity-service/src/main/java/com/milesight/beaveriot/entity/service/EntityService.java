@@ -654,7 +654,6 @@ public class EntityService implements EntityServiceProvider {
         return entityMetaResponse;
     }
 
-    @OperationPermission(code = OperationPermissionCode.INTEGRATION_EDIT_PROPERTY)
     public void updatePropertyEntity(UpdatePropertyEntityRequest updatePropertyEntityRequest) {
         Map<String, Object> exchange = updatePropertyEntityRequest.getExchange();
         List<String> entityKeys = exchange.keySet().stream().toList();
@@ -688,7 +687,6 @@ public class EntityService implements EntityServiceProvider {
         exchangeFlowExecutor.syncExchangeDown(payload);
     }
 
-    @OperationPermission(code = OperationPermissionCode.INTEGRATION_EDIT_SERVICE)
     public EventResponse serviceCall(ServiceCallRequest serviceCallRequest) {
         Map<String, Object> exchange = serviceCallRequest.getExchange();
         List<String> entityKeys = exchange.keySet().stream().toList();
