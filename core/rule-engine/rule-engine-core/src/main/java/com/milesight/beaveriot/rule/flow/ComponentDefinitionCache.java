@@ -3,7 +3,7 @@ package com.milesight.beaveriot.rule.flow;
 import com.milesight.beaveriot.rule.RuleEngineComponentManager;
 import com.milesight.beaveriot.rule.model.definition.ComponentDefinition;
 import com.milesight.beaveriot.rule.model.definition.ComponentOutputDefinition;
-import com.milesight.beaveriot.rule.support.JSONHelper;
+import com.milesight.beaveriot.rule.support.JsonHelper;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -29,7 +29,7 @@ public class ComponentDefinitionCache implements BeanFactoryPostProcessor {
     public static ComponentDefinition load(String componentName) {
         String schema = COMPONENT_DEFINITION_SCHEMA_CACHE.computeIfAbsent(componentName, key ->
                 beanFactory.getBean(RuleEngineComponentManager.class).getComponentDefinitionSchema(componentName));
-        return JSONHelper.fromJSON(schema, ComponentDefinition.class);
+        return JsonHelper.fromJSON(schema, ComponentDefinition.class);
     }
 
     public static Collection<ComponentOutputDefinition> loadOutputArguments(String componentName) {

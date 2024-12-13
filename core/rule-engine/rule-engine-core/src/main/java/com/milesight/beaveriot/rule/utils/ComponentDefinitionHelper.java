@@ -83,8 +83,10 @@ public class ComponentDefinitionHelper {
      * @param type the java type
      * @return the json schema type, is never null, but returns <tt>object</tt> as the generic type
      */
-    public static String getType(String type, boolean enumType, boolean isDuration) {
-        if (enumType) {
+    public static String getType(String type, boolean enumType, boolean isDuration, boolean isMap) {
+        if (isMap) {
+            return "map";
+        } else if (enumType) {
             return "enum";
         } else if (isDuration) {
             return "duration";

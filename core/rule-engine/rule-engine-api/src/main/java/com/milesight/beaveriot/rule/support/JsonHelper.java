@@ -12,14 +12,14 @@ import org.springframework.util.ObjectUtils;
 /**
  * @author leon
  */
-public class JSONHelper {
+public class JsonHelper {
 
     private static final ObjectMapper JSON = JsonMapper.builder()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .serializationInclusion(JsonInclude.Include.NON_NULL)
             .build();
 
-    private JSONHelper() {
+    private JsonHelper() {
     }
 
     @SneakyThrows
@@ -28,6 +28,17 @@ public class JSONHelper {
     }
 
     public static <T> T fromJSON(String json, Class<T> type) {
+        if (ObjectUtils.isEmpty(json)) {
+            return null;
+        }
+        try {
+            return JSON.readValue(json, type);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    public static <T> T fromJSON(String json, TypeReference<T> type) {
         if (ObjectUtils.isEmpty(json)) {
             return null;
         }

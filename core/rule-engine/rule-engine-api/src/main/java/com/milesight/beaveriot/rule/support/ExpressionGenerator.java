@@ -30,7 +30,7 @@ public class ExpressionGenerator {
             List<JsonNode> jsonNodes = expressionList.stream().map(ExpressionConfig::getExpressionValue).toList();
 
             String split = andExpression ? " and " : " or ";
-            List<ConditionExpressionHolder> conditionExpressionHolders = JSONHelper.cast(jsonNodes, new TypeReference<List<ConditionExpressionHolder>>() {
+            List<ConditionExpressionHolder> conditionExpressionHolders = JsonHelper.cast(jsonNodes, new TypeReference<List<ConditionExpressionHolder>>() {
             });
 
             return conditionExpressionHolders.stream().map(ConditionExpressionHolder::getExpression).collect(Collectors.joining(split));

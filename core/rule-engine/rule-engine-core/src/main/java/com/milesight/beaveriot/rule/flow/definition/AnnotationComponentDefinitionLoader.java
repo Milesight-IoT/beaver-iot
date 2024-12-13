@@ -7,7 +7,7 @@ import com.milesight.beaveriot.rule.model.definition.ComponentBaseDefinition;
 import com.milesight.beaveriot.rule.model.definition.ComponentDefinition;
 import com.milesight.beaveriot.rule.model.definition.ComponentOptionDefinition;
 import com.milesight.beaveriot.rule.model.definition.ComponentOutputDefinition;
-import com.milesight.beaveriot.rule.support.JSONHelper;
+import com.milesight.beaveriot.rule.support.JsonHelper;
 import com.milesight.beaveriot.rule.utils.ComponentDefinitionHelper;
 import com.milesight.beaveriot.rule.utils.StringHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -92,14 +92,19 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
         //add output argument properties
         addOutputArgumentProperties(model, componentClazz);
 
-        return JSONHelper.toJSON(model);
+        return JsonHelper.toJSON(model);
     }
 
     protected void fillComponentProperties(ComponentDefinition model, RuleNode ruleNode, Class<?> componentClazz) {
         ComponentBaseDefinition baseDefinition = model.getComponent();
         baseDefinition.setTestable(ruleNode.testable());
         baseDefinition.setType(ruleNode.type());
-        baseDefinition.setDescription(ruleNode.description());
+        if(!ObjectUtils.isEmpty(ruleNode.description())){
+            baseDefinition.setDescription(ruleNode.description());
+        }
+        if(!ObjectUtils.isEmpty(ruleNode.title())){
+            baseDefinition.setTitle(ruleNode.title());
+        }
         if (!ObjectUtils.isEmpty(ruleNode.value())) {
             baseDefinition.setName(ruleNode.value());
         } else if (ObjectUtils.isEmpty(baseDefinition.getName())) {
@@ -193,7 +198,7 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
                     ComponentOptionDefinition option = new ComponentOptionDefinition();
                     option.setName(name);
                     option.setDisplayName(displayName);
-                    option.setType(ComponentDefinitionHelper.getType(fieldTypeName, false, isDuration));
+                    option.setType(ComponentDefinitionHelper.getType(fieldTypeName, false, isDuration, Map.class.isAssignableFrom(fieldTypeElement)));
                     option.setJavaType(fieldTypeName);
                     option.setRequired(required);
                     option.setDefaultValue(defaultValue);
@@ -242,7 +247,7 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
                 String displayName = ObjectUtils.isEmpty(outputArguments.displayName()) ? StringHelper.upperFirst(name) : outputArguments.displayName();
                 String description = outputArguments.description();
                 String javaType = ObjectUtils.isEmpty(outputArguments.javaType()) ? fieldElement.getType().getTypeName() : outputArguments.javaType();
-                String type = ComponentDefinitionHelper.getType(javaType, false, "java.time.Duration".equals(javaType));
+                String type = ComponentDefinitionHelper.getType(javaType, false, "java.time.Duration".equals(javaType), Map.class.isAssignableFrom(fieldElement.getType()));
                 componentOutputDefinition.setJavaType(javaType);
                 componentOutputDefinition.setType(type);
                 componentOutputDefinition.setName(name);

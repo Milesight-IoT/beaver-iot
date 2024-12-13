@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.rule.model.flow.config;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.milesight.beaveriot.rule.support.JSONHelper;
+import com.milesight.beaveriot.rule.support.JsonHelper;
 import lombok.Data;
 import lombok.SneakyThrows;
 
@@ -21,7 +21,7 @@ public class RuleChoiceConfig implements RuleConfig {
 
     @SneakyThrows
     public static RuleChoiceConfig create(JsonNode parameters) {
-        return JSONHelper.fromJSON(JSONHelper.toJSON(parameters), RuleChoiceConfig.class);
+        return JsonHelper.fromJSON(JsonHelper.toJSON(parameters), RuleChoiceConfig.class);
     }
 
     @Data

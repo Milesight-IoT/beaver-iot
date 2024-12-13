@@ -11,6 +11,6 @@ public interface RuleNodeType {
 
     String ACTION = "action";
 
-    String EXTERNAL = "external";
+    String EXTERNAL = "";
 
 }

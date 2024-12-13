@@ -1,6 +1,5 @@
 package com.milesight.beaveriot.rule;
 
-import com.milesight.beaveriot.rule.constants.RuleNodeType;
 import com.milesight.beaveriot.rule.model.RuleLanguage;
 import com.milesight.beaveriot.rule.model.definition.BaseDefinition;
 
@@ -12,7 +11,7 @@ import java.util.Map;
  */
 public interface RuleEngineComponentManager {
 
-    Map<RuleNodeType, List<BaseDefinition>> getDeclaredComponents();
+    Map<String, List<BaseDefinition>> getDeclaredComponents();
 
     RuleLanguage getDeclaredLanguages();
 

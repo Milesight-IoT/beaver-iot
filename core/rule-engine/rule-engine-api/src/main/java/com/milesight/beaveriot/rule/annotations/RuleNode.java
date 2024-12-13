@@ -55,6 +55,12 @@ public @interface RuleNode {
     String description() default "";
 
     /**
+     * describe the title of the component.
+     * @return
+     */
+    String title() default "";
+
+    /**
      * if the component is testable, default is true.
      *
      * @return

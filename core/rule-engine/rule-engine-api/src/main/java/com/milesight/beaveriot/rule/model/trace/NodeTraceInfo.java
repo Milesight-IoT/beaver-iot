@@ -13,7 +13,7 @@ public class NodeTraceInfo {
 
     private String nodeId;
 
-    private String nodeName;
+    private String nodeLabel;
 
     private ExecutionStatus status;
 

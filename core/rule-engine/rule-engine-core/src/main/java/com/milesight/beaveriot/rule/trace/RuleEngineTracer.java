@@ -5,7 +5,7 @@ import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
 import com.milesight.beaveriot.rule.enums.ExecutionStatus;
 import com.milesight.beaveriot.rule.model.trace.FlowTraceInfo;
 import com.milesight.beaveriot.rule.model.trace.NodeTraceInfo;
-import com.milesight.beaveriot.rule.support.JSONHelper;
+import com.milesight.beaveriot.rule.support.JsonHelper;
 import com.milesight.beaveriot.rule.support.RuleFlowIdGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
@@ -50,7 +50,7 @@ public class RuleEngineTracer extends DefaultTracer {
         if (traceContext != null && shouldTraceNodeByPrefix(node)) {
             try {
                 NodeTraceInfo nodeTraceResponse = new NodeTraceInfo();
-                nodeTraceResponse.setNodeName(node.getLabel());
+                nodeTraceResponse.setNodeLabel(node.getLabel());
                 nodeTraceResponse.setNodeId(RuleFlowIdGenerator.removeNamespacedId(exchange.getFromRouteId(), node.getId()));
                 nodeTraceResponse.setStartTime(System.currentTimeMillis());
                 nodeTraceResponse.setInput(getExchangeBody(exchange));
@@ -91,9 +91,9 @@ public class RuleEngineTracer extends DefaultTracer {
             return null;
         }
         if (body instanceof Exchange exchangeBody) {
-            return JSONHelper.toJSON(exchangeBody.getIn().getBody());
+            return JsonHelper.toJSON(exchangeBody.getIn().getBody());
         } else {
-            return JSONHelper.toJSON(body);
+            return JsonHelper.toJSON(body);
         }
     }
 
