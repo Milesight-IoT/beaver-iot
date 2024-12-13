@@ -11,20 +11,20 @@ import java.util.List;
  * @author leon
  */
 @Data
-public class FlowTraceResponse {
+public class FlowTraceInfo {
 
     private ExecutionStatus status = ExecutionStatus.SUCCESS;
 
-    private List<NodeTraceResponse> traceInfos = new ArrayList<>();
+    private List<NodeTraceInfo> traceInfos = new ArrayList<>();
 
-    public NodeTraceResponse findTraceInfo(String nodeId) {
+    public NodeTraceInfo findTraceInfo(String nodeId) {
         return traceInfos.stream()
                 .filter(node -> node.getNodeId().equals(nodeId))
                 .findFirst()
                 .orElse(null);
     }
 
-    public NodeTraceResponse getLastNodeTrace() {
+    public NodeTraceInfo getLastNodeTrace() {
         return ObjectUtils.isEmpty(traceInfos) ? null : traceInfos.get(traceInfos.size() - 1);
     }
 }

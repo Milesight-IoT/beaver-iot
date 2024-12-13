@@ -8,8 +8,8 @@ import com.milesight.beaveriot.rule.exception.RuleEngineException;
 import com.milesight.beaveriot.rule.flow.builder.RuleFlowYamlBuilder;
 import com.milesight.beaveriot.rule.model.flow.config.RuleFlowConfig;
 import com.milesight.beaveriot.rule.model.flow.config.RuleNodeConfig;
-import com.milesight.beaveriot.rule.model.trace.FlowTraceResponse;
-import com.milesight.beaveriot.rule.model.trace.NodeTraceResponse;
+import com.milesight.beaveriot.rule.model.trace.FlowTraceInfo;
+import com.milesight.beaveriot.rule.model.trace.NodeTraceInfo;
 import com.milesight.beaveriot.rule.support.RuleFlowIdGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
@@ -112,7 +112,7 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
     }
 
     @Override
-    public FlowTraceResponse trackFlow(RuleFlowConfig ruleFlowConfig, Exchange exchange) {
+    public FlowTraceInfo trackFlow(RuleFlowConfig ruleFlowConfig, Exchange exchange) {
 
         final String flowId = RuleFlowIdGenerator.generateRandomId();
 
@@ -133,27 +133,27 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
             }
             String endpointUri = camelContext.getRoute(flowId).getEndpoint().getEndpointUri();
             ruleEngineExecutor.execute(endpointUri, exchange);
-            return exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE, FlowTraceResponse.class);
+            return exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE, FlowTraceInfo.class);
         });
     }
 
     @Override
-    public FlowTraceResponse trackFlow(RuleFlowConfig ruleFlowConfig, Object body) {
+    public FlowTraceInfo trackFlow(RuleFlowConfig ruleFlowConfig, Object body) {
         DefaultExchange defaultExchange = new DefaultExchange(camelContext);
         defaultExchange.getIn().setBody(body);
         return trackFlow(ruleFlowConfig, defaultExchange);
     }
 
     @Override
-    public NodeTraceResponse trackNode(RuleNodeConfig nodeConfig, Exchange exchange) {
+    public NodeTraceInfo trackNode(RuleNodeConfig nodeConfig, Exchange exchange) {
         RuleNodeConfig fromNode = RuleNodeConfig.create(RuleFlowIdGenerator.generateRandomId(), RuleNodeNames.CAMEL_DIRECT, "TestMockNode", null);
         RuleFlowConfig sequenceFlow = RuleFlowConfig.createSequenceFlow(RuleFlowIdGenerator.generateRandomId(), List.of(fromNode, nodeConfig));
-        FlowTraceResponse flowTraceResponse = trackFlow(sequenceFlow, exchange);
+        FlowTraceInfo flowTraceResponse = trackFlow(sequenceFlow, exchange);
         return flowTraceResponse.getLastNodeTrace();
     }
 
     @Override
-    public NodeTraceResponse trackNode(RuleNodeConfig nodeConfig, Object body) {
+    public NodeTraceInfo trackNode(RuleNodeConfig nodeConfig, Object body) {
         DefaultExchange defaultExchange = new DefaultExchange(camelContext);
         defaultExchange.getIn().setBody(body);
         return trackNode(nodeConfig, defaultExchange);

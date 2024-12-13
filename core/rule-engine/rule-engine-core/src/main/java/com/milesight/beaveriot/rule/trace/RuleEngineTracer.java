@@ -3,8 +3,8 @@ package com.milesight.beaveriot.rule.trace;
 import com.milesight.beaveriot.rule.configuration.RuleProperties;
 import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
 import com.milesight.beaveriot.rule.enums.ExecutionStatus;
-import com.milesight.beaveriot.rule.model.trace.FlowTraceResponse;
-import com.milesight.beaveriot.rule.model.trace.NodeTraceResponse;
+import com.milesight.beaveriot.rule.model.trace.FlowTraceInfo;
+import com.milesight.beaveriot.rule.model.trace.NodeTraceInfo;
 import com.milesight.beaveriot.rule.support.JSONHelper;
 import com.milesight.beaveriot.rule.support.RuleFlowIdGenerator;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +37,7 @@ public class RuleEngineTracer extends DefaultTracer {
 
         Object property = exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
         if (property == null) {
-            exchange.setProperty(ExchangeHeaders.TRACE_RESPONSE, new FlowTraceResponse());
+            exchange.setProperty(ExchangeHeaders.TRACE_RESPONSE, new FlowTraceInfo());
         }
     }
 
@@ -46,10 +46,10 @@ public class RuleEngineTracer extends DefaultTracer {
         if (shouldTraceByLogging()) {
             super.traceBeforeNode(node, exchange);
         }
-        FlowTraceResponse traceContext = (FlowTraceResponse) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
+        FlowTraceInfo traceContext = (FlowTraceInfo) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
         if (traceContext != null && shouldTraceNodeByPrefix(node)) {
             try {
-                NodeTraceResponse nodeTraceResponse = new NodeTraceResponse();
+                NodeTraceInfo nodeTraceResponse = new NodeTraceInfo();
                 nodeTraceResponse.setNodeName(node.getLabel());
                 nodeTraceResponse.setNodeId(RuleFlowIdGenerator.removeNamespacedId(exchange.getFromRouteId(), node.getId()));
                 nodeTraceResponse.setStartTime(System.currentTimeMillis());
@@ -68,10 +68,10 @@ public class RuleEngineTracer extends DefaultTracer {
             super.traceAfterNode(node, exchange);
         }
 
-        FlowTraceResponse traceContext = (FlowTraceResponse) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
+        FlowTraceInfo traceContext = (FlowTraceInfo) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
         if (traceContext != null) {
             try {
-                NodeTraceResponse traceInfo = traceContext.findTraceInfo(RuleFlowIdGenerator.removeNamespacedId(exchange.getFromRouteId(), node.getId()));
+                NodeTraceInfo traceInfo = traceContext.findTraceInfo(RuleFlowIdGenerator.removeNamespacedId(exchange.getFromRouteId(), node.getId()));
                 if (traceInfo != null) {
                     traceInfo.setOutput(getExchangeBody(exchange));
                     traceInfo.setTimeCost(System.currentTimeMillis() - traceInfo.getStartTime());
@@ -103,7 +103,7 @@ public class RuleEngineTracer extends DefaultTracer {
             super.traceAfterRoute(route, exchange);
         }
 
-        FlowTraceResponse flowTraceResponse = (FlowTraceResponse) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
+        FlowTraceInfo flowTraceResponse = (FlowTraceInfo) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
         if (shouldTraceByEvent(exchange) && flowTraceResponse != null) {
             if (exchange.getException() != null) {
                 flowTraceResponse.setStatus(ExecutionStatus.ERROR);

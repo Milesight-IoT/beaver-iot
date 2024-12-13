@@ -40,20 +40,20 @@ public class DefaultRuleEngineComponentManager implements RuleEngineComponentMan
     }
 
     @Override
-    public String getComponentDefinitionSchema(String componentId) {
+    public String getComponentDefinitionSchema(String componentName) {
         String jsonSchema = componentDefinitionLoaderProviders.orderedStream()
                 .map(loader -> {
                     try {
-                        return loader.loadComponentDefinitionSchema(componentId);
+                        return loader.loadComponentDefinitionSchema(componentName);
                     } catch (Exception e) {
-                        log.error("Failed to load component definition for {}", componentId, e);
+                        log.error("Failed to load component definition for {}", componentName, e);
                         return null;
                     }
                 })
                 .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
-        Assert.notNull(jsonSchema, "Component definition not found: " + componentId);
+        Assert.notNull(jsonSchema, "Component definition not found: " + componentName);
         return jsonSchema;
     }
 

@@ -10,14 +10,14 @@ import lombok.Data;
 public class RuleNodeConfig implements RuleConfig {
 
     private String id;
-    private String componentId;
+    private String componentName;
     private String nodeName;
     private JsonNode parameters;
 
-    public static RuleNodeConfig create(String id, String componentId, String nodeName, JsonNode parameters) {
+    public static RuleNodeConfig create(String id, String componentName, String nodeName, JsonNode parameters) {
         RuleNodeConfig ruleNodeConfig = new RuleNodeConfig();
         ruleNodeConfig.setId(id);
-        ruleNodeConfig.setComponentId(componentId);
+        ruleNodeConfig.setComponentName(componentName);
         ruleNodeConfig.setNodeName(nodeName);
         ruleNodeConfig.setParameters(parameters);
         return ruleNodeConfig;

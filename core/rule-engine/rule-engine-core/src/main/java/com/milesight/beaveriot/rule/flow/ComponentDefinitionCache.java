@@ -21,19 +21,19 @@ public class ComponentDefinitionCache implements BeanFactoryPostProcessor {
     private static final Map<String, Collection<ComponentOutputDefinition>> COMPONENT_DEFINITION_OUTPUT_CACHE = new ConcurrentHashMap<>();
     private static ConfigurableListableBeanFactory beanFactory;
 
-    public static String loadSchema(String componentId) {
-        return COMPONENT_DEFINITION_SCHEMA_CACHE.computeIfAbsent(componentId, key ->
-                beanFactory.getBean(RuleEngineComponentManager.class).getComponentDefinitionSchema(componentId));
+    public static String loadSchema(String componentName) {
+        return COMPONENT_DEFINITION_SCHEMA_CACHE.computeIfAbsent(componentName, key ->
+                beanFactory.getBean(RuleEngineComponentManager.class).getComponentDefinitionSchema(componentName));
     }
 
-    public static ComponentDefinition load(String componentId) {
-        String schema = COMPONENT_DEFINITION_SCHEMA_CACHE.computeIfAbsent(componentId, key ->
-                beanFactory.getBean(RuleEngineComponentManager.class).getComponentDefinitionSchema(componentId));
+    public static ComponentDefinition load(String componentName) {
+        String schema = COMPONENT_DEFINITION_SCHEMA_CACHE.computeIfAbsent(componentName, key ->
+                beanFactory.getBean(RuleEngineComponentManager.class).getComponentDefinitionSchema(componentName));
         return JSONHelper.fromJSON(schema, ComponentDefinition.class);
     }
 
-    public static Collection<ComponentOutputDefinition> loadOutputArguments(String componentId) {
-        return COMPONENT_DEFINITION_OUTPUT_CACHE.computeIfAbsent(componentId, key -> load(componentId).getOutputProperties().values());
+    public static Collection<ComponentOutputDefinition> loadOutputArguments(String componentName) {
+        return COMPONENT_DEFINITION_OUTPUT_CACHE.computeIfAbsent(componentName, key -> load(componentName).getOutputProperties().values());
     }
 
     @Override

@@ -42,7 +42,7 @@ public class RuleFlowGraph {
             mutableGraph.addNode(node.getId());
 
             //choice edge and nodes init
-            if (node.getComponentId().equals(RuleConfig.COMPONENT_CHOICE)) {
+            if (node.getComponentName().equals(RuleConfig.COMPONENT_CHOICE)) {
                 RuleChoiceConfig ruleChoiceConfig = RuleChoiceConfig.create(node.getParameters());
                 ruleChoiceConfig.getWhen().forEach(when -> {
                     ruleNodeCache.put(when.getId(), when);

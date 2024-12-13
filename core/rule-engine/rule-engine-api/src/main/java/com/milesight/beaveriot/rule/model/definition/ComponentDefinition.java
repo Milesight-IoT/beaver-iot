@@ -12,7 +12,7 @@ import java.util.Map;
 @Data
 public class ComponentDefinition {
 
-    private BaseDefinition component = new BaseDefinition();
+    private ComponentBaseDefinition component = new ComponentBaseDefinition();
 
     protected final Map<String, ComponentOptionDefinition> exchangeProperties = new LinkedHashMap<>();
     protected final Map<String, ComponentOptionDefinition> headers = new LinkedHashMap<>();

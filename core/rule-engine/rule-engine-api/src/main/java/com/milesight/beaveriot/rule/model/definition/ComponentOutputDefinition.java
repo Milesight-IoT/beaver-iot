@@ -14,6 +14,6 @@ public class ComponentOutputDefinition {
     protected String type;
     protected String javaType;
     protected String description;
-    protected ComponentOptionDefinition inputDefinition;
+    protected boolean editable;
 
 }

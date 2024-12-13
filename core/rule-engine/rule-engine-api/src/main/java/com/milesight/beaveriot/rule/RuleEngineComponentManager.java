@@ -16,6 +16,6 @@ public interface RuleEngineComponentManager {
 
     RuleLanguage getDeclaredLanguages();
 
-    String getComponentDefinitionSchema(String componentId);
+    String getComponentDefinitionSchema(String componentName);
 
 }

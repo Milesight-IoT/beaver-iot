@@ -7,7 +7,7 @@ import lombok.Data;
  * @author leon
  */
 @Data
-public class NodeTraceResponse {
+public class NodeTraceInfo {
 
     private String messageId;
 
@@ -23,9 +23,9 @@ public class NodeTraceResponse {
 
     private long timeCost;
 
-    private Object input;
+    private String input;
 
-    private Object output;
+    private String output;
 
     public void causeException(Exception ex) {
         this.status = ExecutionStatus.ERROR;

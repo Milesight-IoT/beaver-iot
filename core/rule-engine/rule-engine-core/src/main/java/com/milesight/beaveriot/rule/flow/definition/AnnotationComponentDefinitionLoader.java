@@ -3,7 +3,7 @@ package com.milesight.beaveriot.rule.flow.definition;
 import com.milesight.beaveriot.rule.annotations.OutputArguments;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
 import com.milesight.beaveriot.rule.annotations.UriParamExtension;
-import com.milesight.beaveriot.rule.model.definition.BaseDefinition;
+import com.milesight.beaveriot.rule.model.definition.ComponentBaseDefinition;
 import com.milesight.beaveriot.rule.model.definition.ComponentDefinition;
 import com.milesight.beaveriot.rule.model.definition.ComponentOptionDefinition;
 import com.milesight.beaveriot.rule.model.definition.ComponentOutputDefinition;
@@ -63,7 +63,7 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
 
         Class<?> componentClazz = bean.getClass();
         ComponentDefinition model = new ComponentDefinition();
-        BaseDefinition baseDefinition = new BaseDefinition();
+        ComponentBaseDefinition baseDefinition = new ComponentBaseDefinition();
         model.setComponent(baseDefinition);
         baseDefinition.setJavaType(componentClazz.getName());
 
@@ -96,7 +96,7 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
     }
 
     protected void fillComponentProperties(ComponentDefinition model, RuleNode ruleNode, Class<?> componentClazz) {
-        BaseDefinition baseDefinition = model.getComponent();
+        ComponentBaseDefinition baseDefinition = model.getComponent();
         baseDefinition.setTestable(ruleNode.testable());
         baseDefinition.setType(ruleNode.type());
         baseDefinition.setDescription(ruleNode.description());
@@ -111,7 +111,7 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
         if (uriEndpoint == null) {
             return;
         }
-        BaseDefinition baseDefinition = model.getComponent();
+        ComponentBaseDefinition baseDefinition = model.getComponent();
         String scheme = uriEndpoint.scheme();
         String extendsScheme = uriEndpoint.extendsScheme();
         String title = uriEndpoint.title();
@@ -250,7 +250,9 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
                 componentOutputDefinition.setDescription(description);
 
                 if (model.getProperties().containsKey(name)) {
-                    componentOutputDefinition.setInputDefinition(model.getProperties().get(name));
+                    componentOutputDefinition.setEditable(false);
+                }else{
+                    componentOutputDefinition.setEditable(true);
                 }
                 model.getOutputProperties().put(componentOutputDefinition.getName(), componentOutputDefinition);
             }

@@ -14,7 +14,7 @@ import java.util.List;
 public class RuleChoiceConfig implements RuleConfig {
 
     private String id;
-    private String componentId;
+    private String componentName;
     private String nodeName;
     private List<RuleChoiceWhenConfig> when;
     private RuleChoiceOtherwiseConfig otherwise;
@@ -32,7 +32,7 @@ public class RuleChoiceConfig implements RuleConfig {
         private List<ExpressionConfig> or;
 
         @Override
-        public String getComponentId() {
+        public String getComponentName() {
             return COMPONENT_CHOICE_WHEN;
         }
 
@@ -43,7 +43,7 @@ public class RuleChoiceConfig implements RuleConfig {
         private String id;
 
         @Override
-        public String getComponentId() {
+        public String getComponentName() {
             return COMPONENT_CHOICE_OTHERWISE;
         }
     }

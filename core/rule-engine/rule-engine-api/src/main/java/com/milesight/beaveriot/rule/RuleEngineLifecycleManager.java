@@ -2,8 +2,8 @@ package com.milesight.beaveriot.rule;
 
 import com.milesight.beaveriot.rule.model.flow.config.RuleFlowConfig;
 import com.milesight.beaveriot.rule.model.flow.config.RuleNodeConfig;
-import com.milesight.beaveriot.rule.model.trace.FlowTraceResponse;
-import com.milesight.beaveriot.rule.model.trace.NodeTraceResponse;
+import com.milesight.beaveriot.rule.model.trace.FlowTraceInfo;
+import com.milesight.beaveriot.rule.model.trace.NodeTraceInfo;
 import org.apache.camel.Exchange;
 
 /**
@@ -23,12 +23,12 @@ public interface RuleEngineLifecycleManager {
 
     boolean validateFlow(RuleFlowConfig ruleFlowConfig);
 
-    FlowTraceResponse trackFlow(RuleFlowConfig ruleFlowConfig, Exchange exchange);
+    FlowTraceInfo trackFlow(RuleFlowConfig ruleFlowConfig, Exchange exchange);
 
-    FlowTraceResponse trackFlow(RuleFlowConfig ruleFlowConfig, Object body);
+    FlowTraceInfo trackFlow(RuleFlowConfig ruleFlowConfig, Object body);
 
-    NodeTraceResponse trackNode(RuleNodeConfig nodeConfig, Exchange exchange);
+    NodeTraceInfo trackNode(RuleNodeConfig nodeConfig, Exchange exchange);
 
-    NodeTraceResponse trackNode(RuleNodeConfig nodeConfig, Object body);
+    NodeTraceInfo trackNode(RuleNodeConfig nodeConfig, Object body);
 
 }

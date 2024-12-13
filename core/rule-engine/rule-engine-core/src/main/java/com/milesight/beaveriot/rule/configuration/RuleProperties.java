@@ -3,6 +3,7 @@ package com.milesight.beaveriot.rule.configuration;
 import com.milesight.beaveriot.rule.constants.RuleNodeType;
 import com.milesight.beaveriot.rule.model.RuleLanguage;
 import com.milesight.beaveriot.rule.model.definition.BaseDefinition;
+import com.milesight.beaveriot.rule.model.definition.ComponentBaseDefinition;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
