@@ -15,6 +15,8 @@ import com.milesight.beaveriot.entity.model.response.EntityResponse;
 import com.milesight.beaveriot.entity.service.EntityService;
 import com.milesight.beaveriot.entity.service.EntityValueService;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
+import com.milesight.beaveriot.permission.aspect.OperationPermission;
+import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,30 +41,35 @@ public class EntityController {
     @Autowired
     EntityValueService entityValueService;
 
+    @OperationPermission(codes = OperationPermissionCode.DASHBOARD_EDIT)
     @PostMapping("/search")
     public ResponseBody<Page<EntityResponse>> search(@RequestBody EntityQuery entityQuery) {
         Page<EntityResponse> entityResponse = entityService.search(entityQuery);
         return ResponseBuilder.success(entityResponse);
     }
 
+    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW, OperationPermissionCode.INTEGRATION_VIEW})
     @GetMapping("/{entityId}/children")
     public ResponseBody<List<EntityResponse>> getChildren(@PathVariable("entityId") Long entityId) {
         List<EntityResponse> entityResponse = entityService.getChildren(entityId);
         return ResponseBuilder.success(entityResponse);
     }
 
+    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW})
     @PostMapping("/history/search")
     public ResponseBody<Page<EntityHistoryResponse>> historySearch(@RequestBody EntityHistoryQuery entityHistoryQuery) {
         Page<EntityHistoryResponse> entityHistoryResponse = entityValueService.historySearch(entityHistoryQuery);
         return ResponseBuilder.success(entityHistoryResponse);
     }
 
+    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW})
     @PostMapping("/history/aggregate")
     public ResponseBody<EntityAggregateResponse> historyAggregate(@RequestBody EntityAggregateQuery entityAggregateQuery) {
         EntityAggregateResponse entityAggregateResponse = entityValueService.historyAggregate(entityAggregateQuery);
         return ResponseBuilder.success(entityAggregateResponse);
     }
 
+    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW})
     @GetMapping("/{entityId}/status")
     public ResponseBody<EntityLatestResponse> getEntityStatus(@PathVariable("entityId") Long entityId) {
         EntityLatestResponse entityLatestResponse = entityValueService.getEntityStatus(entityId);
@@ -75,12 +82,14 @@ public class EntityController {
         return ResponseBuilder.success(entityMetaResponse);
     }
 
+    @OperationPermission(codes = {OperationPermissionCode.INTEGRATION_VIEW,OperationPermissionCode.DASHBOARD_VIEW,OperationPermissionCode.DASHBOARD_EDIT})
     @PostMapping("/property/update")
     public ResponseBody<Void> updatePropertyEntity(@RequestBody UpdatePropertyEntityRequest updatePropertyEntityRequest) {
         entityService.updatePropertyEntity(updatePropertyEntityRequest);
         return ResponseBuilder.success();
     }
 
+    @OperationPermission(codes = {OperationPermissionCode.INTEGRATION_VIEW,OperationPermissionCode.DASHBOARD_VIEW,OperationPermissionCode.DASHBOARD_EDIT})
     @PostMapping("/service/call")
     public ResponseBody<EventResponse> serviceCall(@RequestBody ServiceCallRequest serviceCallRequest) {
         EventResponse eventResponse = entityService.serviceCall(serviceCallRequest);

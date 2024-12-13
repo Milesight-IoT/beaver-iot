@@ -16,6 +16,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -40,8 +41,8 @@ public class OperationPermissionAspect {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         OperationPermission operationPermission = signature.getMethod().getAnnotation(OperationPermission.class);
         if (operationPermission != null) {
-            OperationPermissionCode code = operationPermission.code();
-            if (code != null) {
+            OperationPermissionCode[] codes = operationPermission.codes();
+            if (codes != null && codes.length > 0) {
                 Long userId = SecurityUserContext.getUserId();
                 if (userId == null) {
                     throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not login").build();
@@ -50,7 +51,8 @@ public class OperationPermissionAspect {
                 if (menuDTOList == null || menuDTOList.isEmpty()) {
                     throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not have permission").build();
                 }
-                boolean hasPermission = menuDTOList.stream().anyMatch(menuDTO -> menuDTO.getMenuCode().equals(code.getCode()));
+                List<String> operationPermissionCodes = Arrays.stream(codes).map(OperationPermissionCode::getCode).toList();
+                boolean hasPermission = menuDTOList.stream().anyMatch(menuDTO -> operationPermissionCodes.contains(menuDTO.getMenuCode()));
                 if (!hasPermission) {
                     throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not have permission").build();
                 }

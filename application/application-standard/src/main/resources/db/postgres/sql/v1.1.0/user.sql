@@ -118,3 +118,15 @@ VALUES (1000, null, 'dashboard', 'dashboard', 'MENU', 1732005490000, 17320054900
 insert into "t_user_role" (id, user_id, role_id, created_at)
 SELECT ROW_NUMBER() OVER (ORDER BY t.id), t.id, 1, 1732005490000
 FROM "t_user" t;
+
+-- changeset loong:user_v1.1.0_20241211_162400
+update "t_menu" set type='FUNCTION' where type='BUTTON';
+
+delete from "t_menu" where code in ('workflow.import','workflow.export','workflow.enable','integration.edit_property','integration.edit_service');
+
+update "t_menu" set code='device.edit',name='device.edit' where code='device.rename';
+
+insert into "t_menu" (id, parent_id, code, name, type, created_at, updated_at)
+VALUES (7000, null, 'entity', 'entity', 'MENU', 1732005490000, 1732005490000);
+
+update "t_menu" set parent_id=7000 where id in(3000,4000);

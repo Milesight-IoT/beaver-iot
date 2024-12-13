@@ -7,10 +7,12 @@ import com.milesight.beaveriot.permission.context.DataAspectContext;
 import com.milesight.beaveriot.permission.dto.DashboardPermissionDTO;
 import com.milesight.beaveriot.permission.dto.DevicePermissionDTO;
 import com.milesight.beaveriot.permission.dto.EntityPermissionDTO;
+import com.milesight.beaveriot.permission.dto.WorkflowPermissionDTO;
 import com.milesight.beaveriot.permission.enums.DataPermissionType;
 import com.milesight.beaveriot.permission.service.DashboardPermissionService;
 import com.milesight.beaveriot.permission.service.DevicePermissionService;
 import com.milesight.beaveriot.permission.service.EntityPermissionService;
+import com.milesight.beaveriot.permission.service.WorkflowPermissionService;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -41,6 +43,8 @@ public class DataPermissionAspect {
     DashboardPermissionService dashboardPermissionService;
     @Autowired
     DevicePermissionService devicePermissionService;
+    @Autowired
+    WorkflowPermissionService workflowPermissionService;
 
     @Pointcut("execution(* com.milesight.beaveriot..*Repository.*(..))")
     public void pointCut() {
@@ -84,6 +88,10 @@ public class DataPermissionAspect {
             DashboardPermissionDTO dashboardPermissionDTO = dashboardPermissionService.getDashboardPermission(userId);
             isHasAllPermission = dashboardPermissionDTO.isHasAllPermission();
             dataIds.addAll(dashboardPermissionDTO.getDashboardIds().stream().map(Long::valueOf).toList());
+        }else if(type == DataPermissionType.WORKFLOW) {
+            WorkflowPermissionDTO workflowPermissionDTO = workflowPermissionService.getWorkflowPermission(userId);
+            isHasAllPermission = workflowPermissionDTO.isHasAllPermission();
+            dataIds.addAll(workflowPermissionDTO.getWorkflowIds().stream().map(Long::valueOf).toList());
         }else {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("unknown data permission type").build();
         }

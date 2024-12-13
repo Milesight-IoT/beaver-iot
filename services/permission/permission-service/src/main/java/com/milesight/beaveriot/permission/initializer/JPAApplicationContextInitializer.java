@@ -15,6 +15,7 @@ import org.springframework.util.StringUtils;
 @Slf4j
 public class JPAApplicationContextInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext>, Ordered {
 
+    String JSQLPARSER_CLASS_NAME = "net.sf.jsqlparser.statement.Statement";
     String JPA_ENTITYMANAGER_CLASS_NAME = "jakarta.persistence.EntityManager";
 
     String JPA_STATEMENT_INSPECTOR_KEY = "spring.jpa.properties.hibernate.session_factory.statement_inspector";
@@ -22,9 +23,9 @@ public class JPAApplicationContextInitializer implements ApplicationContextIniti
     @Override
     public void initialize(ConfigurableApplicationContext applicationContext) {
 
-        boolean present = ClassUtils.isPresent(JPA_ENTITYMANAGER_CLASS_NAME, this.getClass().getClassLoader());
-
-        if(present){
+        boolean entityManagerPresent = ClassUtils.isPresent(JPA_ENTITYMANAGER_CLASS_NAME, this.getClass().getClassLoader());
+        boolean jsqlparserPresent = ClassUtils.isPresent(JSQLPARSER_CLASS_NAME, this.getClass().getClassLoader());
+        if(entityManagerPresent && jsqlparserPresent){
             String oldValue = applicationContext.getEnvironment().getProperty(JPA_STATEMENT_INSPECTOR_KEY);
             if(StringUtils.hasText(oldValue)){
                 log.warn("The existing statement inspector interceptor configuration, please manually add JPADataAspectStatementInspector interceptors");
