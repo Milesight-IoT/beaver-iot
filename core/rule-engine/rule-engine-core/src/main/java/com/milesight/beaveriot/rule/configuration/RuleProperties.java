@@ -83,7 +83,7 @@ public class RuleProperties implements SmartInitializingSingleton, ApplicationCo
                 List<BaseDefinition> baseDefinitions = components.get(ruleNode.type());
                 if(baseDefinitions != null){
                     ComponentDefinition componentDefinition = ComponentDefinitionCache.load(componentName);
-                    baseDefinitions.add(BaseDefinition.create(ruleNode.value(), componentDefinition.getComponent().getTitle()));
+                    baseDefinitions.add(BaseDefinition.create(componentName, componentDefinition.getComponent().getTitle()));
                 }
             }
         }

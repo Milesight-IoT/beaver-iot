@@ -6,8 +6,10 @@ import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
 import com.milesight.beaveriot.rule.constants.RuleNodeNames;
 import com.milesight.beaveriot.rule.exception.RuleEngineException;
 import com.milesight.beaveriot.rule.flow.builder.RuleFlowYamlBuilder;
+import com.milesight.beaveriot.rule.flow.builder.RuleNodeInterceptor;
 import com.milesight.beaveriot.rule.model.flow.config.RuleFlowConfig;
 import com.milesight.beaveriot.rule.model.flow.config.RuleNodeConfig;
+import com.milesight.beaveriot.rule.model.flow.route.FromNode;
 import com.milesight.beaveriot.rule.model.trace.FlowTraceInfo;
 import com.milesight.beaveriot.rule.model.trace.NodeTraceInfo;
 import com.milesight.beaveriot.rule.support.RuleFlowIdGenerator;
@@ -15,8 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.RoutesBuilder;
-import org.apache.camel.builder.AdviceWith;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.dsl.yaml.YamlRoutesBuilderLoader;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.spi.Resource;
@@ -48,9 +48,13 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
 
     @Override
     public String deployFlow(RuleFlowConfig ruleFlowConfig) {
+        return deployFlow(ruleFlowConfig, null);
+    }
+
+    private String deployFlow(RuleFlowConfig ruleFlowConfig, RuleNodeInterceptor ruleNodeInterceptor) {
         Assert.notNull(ruleFlowConfig.getFlowId(), "Rule flow id must not be null");
 
-        String dumpYaml = RuleFlowYamlBuilder.builder()
+        String dumpYaml = RuleFlowYamlBuilder.builder(ComponentDefinitionCache::load, ruleNodeInterceptor)
                 .withRuleFlowConfig(ruleFlowConfig)
                 .build()
                 .dumpYaml();
@@ -114,24 +118,14 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
     @Override
     public FlowTraceInfo trackFlow(RuleFlowConfig ruleFlowConfig, Exchange exchange) {
 
-        final String flowId = RuleFlowIdGenerator.generateRandomId();
-
-        ruleFlowConfig.setFlowId(flowId);
-
         exchange.setProperty(ExchangeHeaders.TRACE_FOR_TEST, true);
+        exchange.setProperty(ExchangeHeaders.TRACE_RESPONSE, FlowTraceInfo.create(ruleFlowConfig.getFlowId()));
+
+        final String newFlowId = RuleFlowIdGenerator.generateRandomId();
+        ruleFlowConfig.setFlowId(newFlowId);
 
         return executeWithRollback(ruleFlowConfig, () -> {
-            try {
-                AdviceWith.adviceWith(flowId, camelContext, new AdviceWithRouteBuilder() {
-                    @Override
-                    public void configure() throws Exception {
-                        this.replaceFromWith("direct:" + flowId);
-                    }
-                });
-            } catch (Exception e) {
-                throw new RuleEngineException("Trace Rule Flow Exception", e);
-            }
-            String endpointUri = camelContext.getRoute(flowId).getEndpoint().getEndpointUri();
+            String endpointUri = camelContext.getRoute(newFlowId).getEndpoint().getEndpointUri();
             ruleEngineExecutor.execute(endpointUri, exchange);
             return exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE, FlowTraceInfo.class);
         });
@@ -163,7 +157,7 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
 
         String routeYaml = null;
         try {
-            routeYaml = deployFlow(ruleFlowConfig);
+            routeYaml = deployFlow(ruleFlowConfig, new TraceRuleNodeInterceptor());
             return supplier.get();
         } catch (Exception ex) {
             log.error("Execute route withRollback exception, Yaml content is : {}", routeYaml, ex);
@@ -173,4 +167,11 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
         }
     }
 
+    public static class TraceRuleNodeInterceptor implements RuleNodeInterceptor {
+
+        @Override
+        public FromNode interceptFrom(String flowId, FromNode fromNode) {
+            return new FromNode(fromNode.getId(), "direct:" + flowId, null, fromNode.getSteps());
+        }
+    }
 }

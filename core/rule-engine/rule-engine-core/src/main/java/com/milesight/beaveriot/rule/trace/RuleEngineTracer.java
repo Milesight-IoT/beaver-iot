@@ -37,7 +37,9 @@ public class RuleEngineTracer extends DefaultTracer {
 
         Object property = exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
         if (property == null) {
-            exchange.setProperty(ExchangeHeaders.TRACE_RESPONSE, new FlowTraceInfo());
+            FlowTraceInfo flowTraceInfo = new FlowTraceInfo();
+            flowTraceInfo.setFlowId(exchange.getFromRouteId());
+            exchange.setProperty(ExchangeHeaders.TRACE_RESPONSE, flowTraceInfo);
         }
     }
 
@@ -108,7 +110,7 @@ public class RuleEngineTracer extends DefaultTracer {
             if (exchange.getException() != null) {
                 flowTraceResponse.setStatus(ExecutionStatus.ERROR);
             }
-            log.info("traceAfterRoute: {}", flowTraceResponse);
+            log.debug("traceAfterRoute: {}", flowTraceResponse);
             applicationEventPublisher.publishEvent(flowTraceResponse);
         }
     }

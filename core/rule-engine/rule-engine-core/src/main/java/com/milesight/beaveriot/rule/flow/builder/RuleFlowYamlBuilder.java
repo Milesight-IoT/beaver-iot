@@ -30,17 +30,29 @@ public class RuleFlowYamlBuilder {
     private RuleFlowGraph ruleFlowGraph;
     private RuleFlowConfig ruleFlow;
     private Function<String, ComponentDefinition> componentDefinitionLoader;
+    private RuleNodeInterceptor ruleNodeInterceptor;
 
-    private RuleFlowYamlBuilder(Function<String, ComponentDefinition> componentDefinitionProvider) {
+    private String flowId;
+
+    private RuleFlowYamlBuilder(Function<String, ComponentDefinition> componentDefinitionProvider, RuleNodeInterceptor ruleNodeInterceptor) {
         this.componentDefinitionLoader = componentDefinitionProvider;
+        if(ruleNodeInterceptor == null) {
+            this.ruleNodeInterceptor = new RuleNodeInterceptor.NoOpRuleNodeInterceptor();
+        }else {
+            this.ruleNodeInterceptor = ruleNodeInterceptor;
+        }
+    }
+
+    public static RuleFlowYamlBuilder builder(Function<String, ComponentDefinition> componentDefinitionProvider, RuleNodeInterceptor ruleNodeInterceptor) {
+        return new RuleFlowYamlBuilder(componentDefinitionProvider, ruleNodeInterceptor);
     }
 
     public static RuleFlowYamlBuilder builder(Function<String, ComponentDefinition> componentDefinitionProvider) {
-        return new RuleFlowYamlBuilder(componentDefinitionProvider);
+        return new RuleFlowYamlBuilder(componentDefinitionProvider, null);
     }
 
     public static RuleFlowYamlBuilder builder() {
-        return new RuleFlowYamlBuilder(ComponentDefinitionCache::load);
+        return new RuleFlowYamlBuilder(ComponentDefinitionCache::load, null);
     }
 
     public RuleFlowYamlBuilder withRuleFlowConfig(RuleFlowConfig flowConfig) {
@@ -51,6 +63,7 @@ public class RuleFlowYamlBuilder {
         ruleFlowGraph.initGraph();
         this.ruleFlow = flowConfig;
         this.ruleFlowGraph = ruleFlowGraph;
+        this.flowId = flowConfig.getFlowId();
         return this;
     }
 
@@ -60,13 +73,13 @@ public class RuleFlowYamlBuilder {
 
         List<OutputNode> outputNodes = new ArrayList<>();
 
-        FromNode fromNode = FromNode.create(ruleFlow.getFlowId(), fromNodeConfig, componentDefinitionLoader.apply(fromNodeConfig.getComponentName()), outputNodes);
+        FromNode fromNode = FromNode.create(flowId, fromNodeConfig, componentDefinitionLoader.apply(fromNodeConfig.getComponentName()), outputNodes);
 
         retrieveOutputNodes(outputNodes, fromNodeConfig.getId(), nodes -> false);
 
         fromNode.setSteps(outputNodes);
 
-        return RouteNode.create(ruleFlow.getFlowId(), fromNode);
+        return ruleNodeInterceptor.interceptRouteNode(flowId,RouteNode.create(flowId, ruleNodeInterceptor.interceptFrom(flowId,fromNode)));
     }
 
     private void retrieveOutputNodes(List<OutputNode> outputNodes, String nodeId, Predicate<Set<RuleConfig>> endBranchPredicate) {
@@ -78,7 +91,7 @@ public class RuleFlowYamlBuilder {
         if (isSequentialNode(successors)) {
             RuleConfig successor = successors.iterator().next();
             //todo check rule node type
-            outputNodes.add(RuleNode.create(ruleFlow.getFlowId(), (RuleNodeConfig) successor, componentDefinitionLoader.apply(successor.getComponentName())));
+            outputNodes.add(ruleNodeInterceptor.interceptOutputNode(flowId, RuleNode.create(flowId, (RuleNodeConfig) successor, componentDefinitionLoader.apply(successor.getComponentName()))));
             retrieveOutputNodes(outputNodes, successor.getId(), nodes -> false);
         } else if (isChoiceNode(successors)) {
             retrieveChoiceOutputNodes(outputNodes, successors);
@@ -91,16 +104,16 @@ public class RuleFlowYamlBuilder {
 
     protected void retrieveParallelOutputNodes(List<OutputNode> outputNodes, Set<RuleConfig> successors) {
         ParallelNode.ParallelBuilder builder = ParallelNode.builder();
-        String flowId = RuleFlowIdGenerator.generateNamespacedParallelId(ruleFlow.getFlowId(), parallelCounter.getAndIncrement());
-        builder.id(flowId);
+        String parallelNodeId = RuleFlowIdGenerator.generateNamespacedParallelId(ruleFlow.getFlowId(), parallelCounter.getAndIncrement());
+        builder.id(parallelNodeId);
         AtomicReference<RuleConfig> endChoiceNode = new AtomicReference<>();
         AtomicInteger branchCounter = new AtomicInteger(0);
         for (RuleConfig successor : successors) {
             List<OutputNode> parallelNodes = new ArrayList<>();
             //todo check if choice
-            parallelNodes.add(RuleNode.create(ruleFlow.getFlowId(), (RuleNodeConfig) successor, componentDefinitionLoader.apply(successor.getComponentName())));
+            parallelNodes.add(ruleNodeInterceptor.interceptOutputNode(flowId, RuleNode.create(flowId, (RuleNodeConfig) successor, componentDefinitionLoader.apply(successor.getComponentName()))));
             retrieveOutputNodes(parallelNodes, successor.getId(), nodes -> onEndBranch(nodes, endChoiceNode));
-            builder.then(RuleFlowIdGenerator.generateNamespacedBranchId(flowId, branchCounter.getAndIncrement()), parallelNodes);
+            builder.then(RuleFlowIdGenerator.generateNamespacedBranchId(parallelNodeId, branchCounter.getAndIncrement()), parallelNodes);
         }
         outputNodes.addAll(builder.build().getOutputNodes());
         if (endChoiceNode.get() != null) {
@@ -130,7 +143,7 @@ public class RuleFlowYamlBuilder {
 
         if (endChoiceNode.get() != null) {
             RuleNodeConfig ruleNodeConfig = (RuleNodeConfig) endChoiceNode.get();
-            outputNodes.add(RuleNode.create(ruleFlow.getFlowId(), ruleNodeConfig, componentDefinitionLoader.apply(ruleNodeConfig.getComponentName())));
+            outputNodes.add(ruleNodeInterceptor.interceptOutputNode(flowId, RuleNode.create(flowId, ruleNodeConfig, componentDefinitionLoader.apply(ruleNodeConfig.getComponentName()))));
             retrieveOutputNodes(outputNodes, endChoiceNode.get().getId(), node -> false);
         }
     }

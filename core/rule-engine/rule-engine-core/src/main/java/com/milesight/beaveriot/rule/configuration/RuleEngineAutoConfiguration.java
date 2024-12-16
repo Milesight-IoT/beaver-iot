@@ -11,6 +11,7 @@ import com.milesight.beaveriot.rule.flow.definition.CustomizeJsonComponentDefini
 import com.milesight.beaveriot.rule.flow.parallel.ParallelSplitter;
 import com.milesight.beaveriot.rule.observe.RuleEngineOutputInterceptor;
 import org.apache.camel.CamelContext;
+import org.apache.camel.spi.Tracer;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -32,8 +33,8 @@ public class RuleEngineAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public RuleEngineRunner ruleEngineRunner(ObjectProvider<RuleEngineRouteConfigurer> ruleEngineRouteConfigurers, CamelRuleEngineExecutor ruleEngineExecutor, CamelContext context) {
-        return new RuleEngineRunner(ruleEngineRouteConfigurers, ruleEngineExecutor, context);
+    public RuleEngineRunner ruleEngineRunner(ObjectProvider<RuleEngineRouteConfigurer> ruleEngineRouteConfigurers, CamelRuleEngineExecutor ruleEngineExecutor, CamelContext context,RuleProperties ruleProperties, ObjectProvider<Tracer> tracerObjectProvider) {
+        return new RuleEngineRunner(ruleEngineRouteConfigurers, ruleEngineExecutor, context, ruleProperties, tracerObjectProvider);
     }
 
     @Bean
