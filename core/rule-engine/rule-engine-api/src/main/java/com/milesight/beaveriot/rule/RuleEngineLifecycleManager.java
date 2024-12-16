@@ -19,7 +19,7 @@ public interface RuleEngineLifecycleManager {
 
     void stopRoute(String flowId);
 
-    void removeFlow(String flowId);
+    boolean removeFlow(String flowId);
 
     boolean validateFlow(RuleFlowConfig ruleFlowConfig);
 

@@ -1,10 +1,7 @@
 package com.milesight.beaveriot.rule.components.eventlistener;
 
 import org.apache.camel.Endpoint;
-import org.apache.camel.ResolveEndpointFailedException;
 import org.apache.camel.support.DefaultComponent;
-import org.apache.camel.util.PropertiesHelper;
-import org.springframework.util.ObjectUtils;
 
 import java.util.Map;
 
