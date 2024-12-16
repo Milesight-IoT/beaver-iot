@@ -17,4 +17,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>eventbus-component</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 </project>
