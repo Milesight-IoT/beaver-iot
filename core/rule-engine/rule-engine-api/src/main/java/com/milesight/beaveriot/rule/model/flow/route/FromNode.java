@@ -45,6 +45,6 @@ public class FromNode implements NodeId {
 
         String generatedId = RuleFlowIdGenerator.generateNamespacedId(flowId, fromNodeConfig.getId());
 
-        return FromNode.create(generatedId, componentDefinition.generateUri(generatedId, parameters), parameters, steps);
+        return FromNode.create(generatedId, componentDefinition.generateUri(flowId, parameters), parameters, steps);
     }
 }

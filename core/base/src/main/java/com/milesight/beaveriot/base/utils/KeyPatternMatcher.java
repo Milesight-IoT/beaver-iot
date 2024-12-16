@@ -1,5 +1,9 @@
 package com.milesight.beaveriot.base.utils;
 
+import com.milesight.beaveriot.base.constants.StringConstant;
+
+import java.util.Arrays;
+
 /**
  * @author leon
  */
@@ -14,8 +18,8 @@ public class KeyPatternMatcher {
         return matchPattern(keyPattern, key);
     }
 
-    private static boolean matchPattern(String pattern, String str) {
-        return matchPattern(pattern, str, 0, 0);
+    private static boolean matchPattern(String patterns, String str) {
+        return Arrays.stream(patterns.split(StringConstant.COMMA)).anyMatch(pattern -> matchPattern(pattern, str, 0, 0));
     }
 
     private static boolean matchPattern(String pattern, String str, int pIndex, int sIndex) {

@@ -15,7 +15,15 @@ public class FlowTraceInfo {
 
     private ExecutionStatus status = ExecutionStatus.SUCCESS;
 
+    private String flowId;
+
     private List<NodeTraceInfo> traceInfos = new ArrayList<>();
+
+    public static FlowTraceInfo create(String flowId) {
+        FlowTraceInfo flowTraceInfo = new FlowTraceInfo();
+        flowTraceInfo.setFlowId(flowId);
+        return flowTraceInfo;
+    }
 
     public NodeTraceInfo findTraceInfo(String nodeId) {
         return traceInfos.stream()
