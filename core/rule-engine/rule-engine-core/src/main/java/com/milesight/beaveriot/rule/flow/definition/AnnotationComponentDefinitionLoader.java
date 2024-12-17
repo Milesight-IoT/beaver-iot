@@ -99,10 +99,10 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
         ComponentBaseDefinition baseDefinition = model.getComponent();
         baseDefinition.setTestable(ruleNode.testable());
         baseDefinition.setType(ruleNode.type());
-        if(!ObjectUtils.isEmpty(ruleNode.description())){
+        if (!ObjectUtils.isEmpty(ruleNode.description())) {
             baseDefinition.setDescription(ruleNode.description());
         }
-        if(!ObjectUtils.isEmpty(ruleNode.title())){
+        if (!ObjectUtils.isEmpty(ruleNode.title())) {
             baseDefinition.setTitle(ruleNode.title());
         }
         if (!ObjectUtils.isEmpty(ruleNode.value())) {
@@ -256,7 +256,7 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
 
                 if (model.getProperties().containsKey(name)) {
                     componentOutputDefinition.setEditable(false);
-                }else{
+                } else {
                     componentOutputDefinition.setEditable(true);
                 }
                 model.getOutputProperties().put(componentOutputDefinition.getName(), componentOutputDefinition);

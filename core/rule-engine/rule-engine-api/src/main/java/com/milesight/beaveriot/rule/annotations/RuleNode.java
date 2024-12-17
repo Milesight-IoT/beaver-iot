@@ -56,6 +56,7 @@ public @interface RuleNode {
 
     /**
      * describe the title of the component.
+     *
      * @return
      */
     String title() default "";

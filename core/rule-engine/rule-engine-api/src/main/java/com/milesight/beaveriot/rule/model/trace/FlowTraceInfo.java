@@ -19,6 +19,10 @@ public class FlowTraceInfo {
 
     private List<NodeTraceInfo> traceInfos = new ArrayList<>();
 
+    public boolean isEmpty() {
+        return ObjectUtils.isEmpty(traceInfos);
+    }
+
     public static FlowTraceInfo create(String flowId) {
         FlowTraceInfo flowTraceInfo = new FlowTraceInfo();
         flowTraceInfo.setFlowId(flowId);

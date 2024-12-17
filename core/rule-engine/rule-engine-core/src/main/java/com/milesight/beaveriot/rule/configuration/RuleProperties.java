@@ -61,7 +61,7 @@ public class RuleProperties implements SmartInitializingSingleton, ApplicationCo
     private String traceNodePrefix = FLOW_ID_PREFIX;
 
     public List<String> getComponentNames() {
-        if(ObjectUtils.isEmpty(components) ){
+        if (ObjectUtils.isEmpty(components)) {
             return List.of();
         }
         return components.values().stream()
@@ -78,12 +78,14 @@ public class RuleProperties implements SmartInitializingSingleton, ApplicationCo
         for (String beanName : beanNamesForAnnotation) {
             Object bean = applicationContext.getBean(beanName);
             RuleNode ruleNode = AnnotationUtils.getAnnotation(bean.getClass(), RuleNode.class);
-            String componentName = ObjectUtils.isEmpty(ruleNode.value()) ? beanName : ruleNode.value();
-            if(!ObjectUtils.isEmpty(ruleNode.type()) && components.containsKey(ruleNode.type()) && !componentNames.contains(componentName)){
-                List<BaseDefinition> baseDefinitions = components.get(ruleNode.type());
-                if(baseDefinitions != null){
-                    ComponentDefinition componentDefinition = ComponentDefinitionCache.load(componentName);
-                    baseDefinitions.add(BaseDefinition.create(componentName, componentDefinition.getComponent().getTitle()));
+            if (ruleNode != null) {
+                String componentName = ObjectUtils.isEmpty(ruleNode.value()) ? beanName : ruleNode.value();
+                if (!ObjectUtils.isEmpty(ruleNode.type()) && components.containsKey(ruleNode.type()) && !componentNames.contains(componentName)) {
+                    List<BaseDefinition> baseDefinitions = components.get(ruleNode.type());
+                    if (baseDefinitions != null) {
+                        ComponentDefinition componentDefinition = ComponentDefinitionCache.load(componentName);
+                        baseDefinitions.add(BaseDefinition.create(componentName, componentDefinition.getComponent().getTitle()));
+                    }
                 }
             }
         }

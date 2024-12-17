@@ -106,7 +106,7 @@ public class RuleEngineTracer extends DefaultTracer {
         }
 
         FlowTraceInfo flowTraceResponse = (FlowTraceInfo) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
-        if (shouldTraceByEvent(exchange) && flowTraceResponse != null) {
+        if (shouldTraceByEvent(exchange) && flowTraceResponse != null && !flowTraceResponse.isEmpty()) {
             if (exchange.getException() != null) {
                 flowTraceResponse.setStatus(ExecutionStatus.ERROR);
             }

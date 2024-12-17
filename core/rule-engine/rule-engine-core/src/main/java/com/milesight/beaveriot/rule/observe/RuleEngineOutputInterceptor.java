@@ -23,7 +23,7 @@ public class RuleEngineOutputInterceptor implements InterceptStrategy {
     }
 
     protected void cacheOutputArguments(NamedNode definition, Exchange exchange) {
-        if(definition.getId().startsWith(RuleFlowIdGenerator.FLOW_ID_PREFIX)) {
+        if (definition.getId().startsWith(RuleFlowIdGenerator.FLOW_ID_PREFIX)) {
             String configNodeId = RuleFlowIdGenerator.removeNamespacedId(exchange.getFromRouteId(), definition.getId());
             exchange.setProperty(configNodeId, exchange.getIn().getBody());
         }

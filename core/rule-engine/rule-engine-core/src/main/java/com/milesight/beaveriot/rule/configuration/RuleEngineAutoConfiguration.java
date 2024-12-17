@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.rule.configuration;
 
+import com.milesight.beaveriot.rule.AutowiredTypeConverter;
 import com.milesight.beaveriot.rule.RuleEngineExecutor;
 import com.milesight.beaveriot.rule.RuleEngineRouteConfigurer;
 import com.milesight.beaveriot.rule.constants.RuleNodeNames;
@@ -33,8 +34,8 @@ public class RuleEngineAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public RuleEngineRunner ruleEngineRunner(ObjectProvider<RuleEngineRouteConfigurer> ruleEngineRouteConfigurers, CamelRuleEngineExecutor ruleEngineExecutor, CamelContext context,RuleProperties ruleProperties, ObjectProvider<Tracer> tracerObjectProvider) {
-        return new RuleEngineRunner(ruleEngineRouteConfigurers, ruleEngineExecutor, context, ruleProperties, tracerObjectProvider);
+    public RuleEngineRunner ruleEngineRunner(ObjectProvider<RuleEngineRouteConfigurer> ruleEngineRouteConfigurers, CamelRuleEngineExecutor ruleEngineExecutor, CamelContext context, RuleProperties ruleProperties, ObjectProvider<Tracer> tracerObjectProvider, ObjectProvider<AutowiredTypeConverter> autowiredTypeConverters) {
+        return new RuleEngineRunner(ruleEngineRouteConfigurers, ruleEngineExecutor, context, ruleProperties, tracerObjectProvider, autowiredTypeConverters);
     }
 
     @Bean

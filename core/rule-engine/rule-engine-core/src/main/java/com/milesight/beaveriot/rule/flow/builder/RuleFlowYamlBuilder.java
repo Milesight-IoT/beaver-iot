@@ -36,9 +36,9 @@ public class RuleFlowYamlBuilder {
 
     private RuleFlowYamlBuilder(Function<String, ComponentDefinition> componentDefinitionProvider, RuleNodeInterceptor ruleNodeInterceptor) {
         this.componentDefinitionLoader = componentDefinitionProvider;
-        if(ruleNodeInterceptor == null) {
+        if (ruleNodeInterceptor == null) {
             this.ruleNodeInterceptor = new RuleNodeInterceptor.NoOpRuleNodeInterceptor();
-        }else {
+        } else {
             this.ruleNodeInterceptor = ruleNodeInterceptor;
         }
     }
@@ -79,7 +79,7 @@ public class RuleFlowYamlBuilder {
 
         fromNode.setSteps(outputNodes);
 
-        return ruleNodeInterceptor.interceptRouteNode(flowId,RouteNode.create(flowId, ruleNodeInterceptor.interceptFrom(flowId,fromNode)));
+        return ruleNodeInterceptor.interceptRouteNode(flowId, RouteNode.create(flowId, ruleNodeInterceptor.interceptFrom(flowId, fromNode)));
     }
 
     private void retrieveOutputNodes(List<OutputNode> outputNodes, String nodeId, Predicate<Set<RuleConfig>> endBranchPredicate) {

@@ -17,7 +17,7 @@ public interface RuleNodeInterceptor {
         return outputNode;
     }
 
-    default RouteNode interceptRouteNode(String flowId, RouteNode routeNode){
+    default RouteNode interceptRouteNode(String flowId, RouteNode routeNode) {
         return routeNode;
     }
 

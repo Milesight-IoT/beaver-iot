@@ -6,10 +6,7 @@ import com.milesight.beaveriot.rule.flow.definition.ComponentDefinitionLoader;
 import com.milesight.beaveriot.rule.model.RuleLanguage;
 import com.milesight.beaveriot.rule.model.definition.BaseDefinition;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.util.Assert;
 
 import java.util.List;
@@ -20,11 +17,10 @@ import java.util.Objects;
  * @author leon
  */
 @Slf4j
-public class DefaultRuleEngineComponentManager implements RuleEngineComponentManager, ApplicationContextAware {
+public class DefaultRuleEngineComponentManager implements RuleEngineComponentManager {
 
     private RuleProperties ruleProperties;
     private ObjectProvider<ComponentDefinitionLoader> componentDefinitionLoaderProviders;
-    private ApplicationContext applicationContext;
 
     public DefaultRuleEngineComponentManager(RuleProperties ruleProperties, ObjectProvider<ComponentDefinitionLoader> componentDefinitionLoaderProviders) {
         this.ruleProperties = ruleProperties;
@@ -59,8 +55,4 @@ public class DefaultRuleEngineComponentManager implements RuleEngineComponentMan
         return jsonSchema;
     }
 
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
-    }
 }

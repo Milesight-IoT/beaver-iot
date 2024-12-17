@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.rule.flow;
 
+import com.milesight.beaveriot.rule.AutowiredTypeConverter;
 import com.milesight.beaveriot.rule.RuleEngineRouteConfigurer;
 import com.milesight.beaveriot.rule.configuration.RuleProperties;
 import com.milesight.beaveriot.rule.exception.RuleEngineException;
@@ -19,13 +20,15 @@ public class RuleEngineRunner implements SmartInitializingSingleton {
     private CamelRuleEngineExecutor camelRuleEngineExecutor;
     private RuleProperties ruleProperties;
     private ObjectProvider<Tracer> tracerObjectProvider;
+    private ObjectProvider<AutowiredTypeConverter> autowiredTypeConverters;
 
-    public RuleEngineRunner(ObjectProvider<RuleEngineRouteConfigurer> ruleEngineRouteConfigurers, CamelRuleEngineExecutor camelRuleEngineExecutor, CamelContext context,RuleProperties ruleProperties, ObjectProvider<Tracer> tracerObjectProvider) {
+    public RuleEngineRunner(ObjectProvider<RuleEngineRouteConfigurer> ruleEngineRouteConfigurers, CamelRuleEngineExecutor camelRuleEngineExecutor, CamelContext context, RuleProperties ruleProperties, ObjectProvider<Tracer> tracerObjectProvider, ObjectProvider<AutowiredTypeConverter> autowiredTypeConverters) {
         this.ruleEngineRouteConfigurers = ruleEngineRouteConfigurers;
         this.camelRuleEngineExecutor = camelRuleEngineExecutor;
         this.camelContext = context;
         this.ruleProperties = ruleProperties;
         this.tracerObjectProvider = tracerObjectProvider;
+        this.autowiredTypeConverters = autowiredTypeConverters;
     }
 
     public CamelContext getCamelContext() {
@@ -45,7 +48,7 @@ public class RuleEngineRunner implements SmartInitializingSingleton {
             }
         });
 
-        if(ruleProperties.isEnabledTracing() && tracerObjectProvider.getIfAvailable() != null) {
+        if (ruleProperties.isEnabledTracing() && tracerObjectProvider.getIfAvailable() != null) {
             camelContext.setTracing(true);
             camelContext.setTracer(tracerObjectProvider.getIfAvailable());
         }
@@ -53,5 +56,7 @@ public class RuleEngineRunner implements SmartInitializingSingleton {
         //set camel context to camelRuleEngineExecutor
         camelRuleEngineExecutor.initializeCamelContext(camelContext);
 
+        //register autowired type converters
+        autowiredTypeConverters.stream().forEach(autowiredTypeConverter -> camelContext.getTypeConverterRegistry().addConverter(autowiredTypeConverter.getTypeConvertible(), autowiredTypeConverter));
     }
 }
