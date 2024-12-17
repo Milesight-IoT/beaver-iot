@@ -1,4 +1,7 @@
 ![BeaverIotLogo](beaver-iot.png)
+
+[![Discord](https://img.shields.io/discord/1270281746687983626.svg?label=Discord&logo=discord&colorB=7289da)](https://discord.gg/vNFxbwfErm)
+
 ## What is Beaver IoT?
 
 Beaver IoT is an open-source platform designed for rapid and intuitive IoT application development. It supports the entire process from device connectivity to data processing, analysis, and visualization. Besides, Beaver IoT supports IoT developers to quickly build a variety of integrations based on project encapsulation capabilities, which is an ideal choice for IoT prototyping and scalable solutions. Released under the MIT Open Source license and available free of charge, Beaver IoT fosters innovation and community collaboration in the IoT space.
