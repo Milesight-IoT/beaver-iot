@@ -77,7 +77,7 @@ public class SearchFilter extends CompositeCondition implements Filterable{
 
     @Override
     public Filterable likeRight(boolean condition, String name, String value) {
-        return addCompareCondition(condition, SearchOperator.LIKE_LEFT, name, value);
+        return addCompareCondition(condition, SearchOperator.LIKE_RIGHT, name, value);
     }
 
     @Override
@@ -112,7 +112,7 @@ public class SearchFilter extends CompositeCondition implements Filterable{
 
     @Override
     public Filterable ne(boolean condition, String name, Object value) {
-        return addCompareCondition(condition, SearchOperator.EQ, name, value);
+        return addCompareCondition(condition, SearchOperator.NE, name, value);
     }
 
     @Override
@@ -122,7 +122,7 @@ public class SearchFilter extends CompositeCondition implements Filterable{
 
     @Override
     public Filterable gt(boolean condition, String name, Object value) {
-        return addCompareCondition(condition, SearchOperator.EQ, name, value);
+        return addCompareCondition(condition, SearchOperator.GT, name, value);
     }
 
     @Override
