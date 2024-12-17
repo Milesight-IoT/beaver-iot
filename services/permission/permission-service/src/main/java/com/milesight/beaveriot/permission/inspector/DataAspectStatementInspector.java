@@ -10,16 +10,20 @@ import net.sf.jsqlparser.expression.operators.relational.ItemsList;
 import net.sf.jsqlparser.expression.operators.relational.MultiExpressionList;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.delete.Delete;
 import net.sf.jsqlparser.statement.insert.Insert;
+import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.update.Update;
 import org.hibernate.resource.jdbc.spi.StatementInspector;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -83,7 +87,7 @@ public class DataAspectStatementInspector implements StatementInspector {
                         Select selectStatement = (Select) statement;
                         SelectBody selectBody = selectStatement.getSelectBody();
                         if (selectBody instanceof PlainSelect) {
-                            PlainSelect plainSelect= (PlainSelect) selectBody;
+                            PlainSelect plainSelect = (PlainSelect) selectBody;
                             addDataPermissionCondition(plainSelect, columnName, dataIds);
                         }
                     }
@@ -97,19 +101,33 @@ public class DataAspectStatementInspector implements StatementInspector {
     }
 
     private void addTenantCondition(PlainSelect plainSelect, String columnName, Long tenantId) {
-        Column column = new Column(columnName);
-        Expression tenantExpression = new EqualsTo(column, new LongValue(tenantId));
+        Map<String, String> tableAliases = new HashMap<>();
+        FromItem fromItem = plainSelect.getFromItem();
+        if (fromItem instanceof Table) {
+            Table table = (Table) fromItem;
+            String tableName = table.getName();
+            String alias = table.getAlias() != null ? table.getAlias().getName() : tableName;
+            tableAliases.put(tableName, alias);
+        }
+        for (String alias : tableAliases.values()) {
+            Column column = new Column(alias + "." + columnName);
+            Expression tenantExpression = new EqualsTo(column, new LongValue(tenantId));
 
-        if (plainSelect.getWhere() == null) {
-            plainSelect.setWhere(tenantExpression);
-        } else {
-            plainSelect.setWhere(new net.sf.jsqlparser.expression.operators.conditional.AndExpression(
-                    plainSelect.getWhere(), tenantExpression));
+            if (plainSelect.getWhere() == null) {
+                plainSelect.setWhere(tenantExpression);
+            } else {
+                plainSelect.setWhere(new net.sf.jsqlparser.expression.operators.conditional.AndExpression(
+                        plainSelect.getWhere(), tenantExpression));
+            }
         }
     }
 
     private void addTenantCondition(Update updateStatement, String columnName, Long tenantId) {
-        Column column = new Column(columnName);
+        Table table = updateStatement.getTable();
+        String tableName = table.getName();
+        String alias = table.getAlias() != null ? table.getAlias().getName() : tableName;
+
+        Column column = new Column(alias + "." + columnName);
         Expression tenantExpression = new EqualsTo(column, new LongValue(tenantId));
 
         if (updateStatement.getWhere() == null) {
@@ -121,7 +139,11 @@ public class DataAspectStatementInspector implements StatementInspector {
     }
 
     private void addTenantCondition(Delete deleteStatement, String columnName, Long tenantId) {
-        Column column = new Column(columnName);
+        Table table = deleteStatement.getTable();
+        String tableName = table.getName();
+        String alias = table.getAlias() != null ? table.getAlias().getName() : tableName;
+
+        Column column = new Column(alias + "." + columnName);
         Expression tenantExpression = new EqualsTo(column, new LongValue(tenantId));
 
         if (deleteStatement.getWhere() == null) {
@@ -191,16 +213,26 @@ public class DataAspectStatementInspector implements StatementInspector {
     }
 
     private void addDataPermissionCondition(PlainSelect plainSelect, String columnName, List<Long> dataIds) {
-        Column column = new Column(columnName);
-        Expression expression = new InExpression(column, new ExpressionList(dataIds.stream()
-                .map(LongValue::new)
-                .collect(Collectors.toList())));
+        Map<String, String> tableAliases = new HashMap<>();
+        FromItem fromItem = plainSelect.getFromItem();
+        if (fromItem instanceof Table) {
+            Table table = (Table) fromItem;
+            String tableName = table.getName();
+            String alias = table.getAlias() != null ? table.getAlias().getName() : tableName;
+            tableAliases.put(tableName, alias);
+        }
+        for (String alias : tableAliases.values()) {
+            Column column = new Column(alias + "." + columnName);
+            Expression expression = new InExpression(column, new ExpressionList(dataIds.stream()
+                    .map(LongValue::new)
+                    .collect(Collectors.toList())));
 
-        if (plainSelect.getWhere() == null) {
-            plainSelect.setWhere(expression);
-        } else {
-            plainSelect.setWhere(new net.sf.jsqlparser.expression.operators.conditional.AndExpression(
-                    plainSelect.getWhere(), expression));
+            if (plainSelect.getWhere() == null) {
+                plainSelect.setWhere(expression);
+            } else {
+                plainSelect.setWhere(new net.sf.jsqlparser.expression.operators.conditional.AndExpression(
+                        plainSelect.getWhere(), expression));
+            }
         }
     }
 

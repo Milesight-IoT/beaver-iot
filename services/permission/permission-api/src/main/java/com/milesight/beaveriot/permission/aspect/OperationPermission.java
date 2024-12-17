@@ -19,5 +19,5 @@ import java.lang.annotation.Target;
 @Inherited
 public @interface OperationPermission {
 
-    OperationPermissionCode code();
+    OperationPermissionCode[] codes();
 }

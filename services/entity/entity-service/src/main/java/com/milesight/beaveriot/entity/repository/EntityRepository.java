@@ -23,10 +23,6 @@ import java.util.function.Consumer;
 @Tenant
 public interface EntityRepository extends BaseJpaRepository<EntityPO, Long> {
 
-    @Modifying
-    @Query("delete from EntityPO d where d.attachTargetId = :targetId")
-    void deleteByTargetId(@Param("targetId") String targetId);
-
     @DataPermission(type = DataPermissionType.ENTITY, column = "id")
     default Optional<EntityPO> findOneWithDataPermission(Consumer<Filterable> filterable) {
         return findOne(filterable);

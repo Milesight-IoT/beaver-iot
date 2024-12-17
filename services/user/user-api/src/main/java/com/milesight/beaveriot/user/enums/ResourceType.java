@@ -6,5 +6,5 @@ package com.milesight.beaveriot.user.enums;
  */
 public enum ResourceType {
 
-    ENTITY, DEVICE, INTEGRATION, DASHBOARD;
+    ENTITY, DEVICE, INTEGRATION, DASHBOARD, WORKFLOW;
 }

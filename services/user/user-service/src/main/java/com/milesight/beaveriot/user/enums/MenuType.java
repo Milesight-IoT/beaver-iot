@@ -6,6 +6,6 @@ package com.milesight.beaveriot.user.enums;
  */
 public enum MenuType {
 
-    MENU, BUTTON;
+    MENU, FUNCTION;
 
 }

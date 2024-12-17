@@ -6,5 +6,5 @@ package com.milesight.beaveriot.permission.enums;
  */
 public enum DataPermissionType {
 
-    ENTITY, DEVICE, DASHBOARD;
+    ENTITY, DEVICE, DASHBOARD, WORKFLOW;
 }

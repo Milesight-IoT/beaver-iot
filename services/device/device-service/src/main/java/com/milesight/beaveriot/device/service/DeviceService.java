@@ -79,7 +79,6 @@ public class DeviceService implements IDeviceFacade {
         return Optional.ofNullable(integrationServiceProvider.getIntegration(integrationIdentifier));
     }
 
-    @OperationPermission(code = OperationPermissionCode.DEVICE_ADD)
     @Transactional(rollbackFor = Exception.class)
     public void createDevice(CreateDeviceRequest createDeviceRequest) {
         String integrationIdentifier = createDeviceRequest.getIntegration();
@@ -147,7 +146,6 @@ public class DeviceService implements IDeviceFacade {
                 .map(this::convertPOToResponseData);
     }
 
-    @OperationPermission(code = OperationPermissionCode.DEVICE_RENAME)
     @Transactional(rollbackFor = Exception.class)
     public void updateDevice(Long deviceId, UpdateDeviceRequest updateDeviceRequest) {
         Optional<DevicePO> findResult = deviceRepository.findByIdWithDataPermission(deviceId);
@@ -167,7 +165,6 @@ public class DeviceService implements IDeviceFacade {
         eventBus.publish(DeviceEvent.of(DeviceEvent.EventType.UPDATED, deviceConverter.convertPO(device)));
     }
 
-    @OperationPermission(code = OperationPermissionCode.DEVICE_DELETE)
     @Transactional(rollbackFor = Exception.class)
     public void batchDeleteDevices(List<String> deviceIdList) {
         if (deviceIdList.isEmpty()) {

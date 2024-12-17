@@ -35,12 +35,16 @@ public abstract class IntegrationServiceProvider {
         return integrationBootstrapManager.getIntegrationContext().getAllIntegrations().values();
     }
 
+    public List<Integration> findVisibleIntegrations() {
+        return integrationBootstrapManager.getIntegrationContext().getAllIntegrations().values().stream().filter(Integration::isVisible).toList();
+    }
+
     public List<Integration> findActiveIntegrations() {
         return integrationBootstrapManager.getIntegrationContext().getAllIntegrations().values().stream().filter(Integration::isEnabled).toList();
     }
 
     public List<Integration> findIntegrations(Predicate<Integration> predicate) {
-        return integrationBootstrapManager.getIntegrationContext().getAllIntegrations().values().stream().filter(predicate::test).toList();
+        return integrationBootstrapManager.getIntegrationContext().getAllIntegrations().values().stream().filter(predicate).toList();
     }
 
 }

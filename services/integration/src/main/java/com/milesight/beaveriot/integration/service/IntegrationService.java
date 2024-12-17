@@ -48,7 +48,7 @@ public class IntegrationService {
     }
 
     public List<SearchIntegrationResponseData> searchIntegration(SearchIntegrationRequest searchDeviceRequest) {
-        List<Integration> integrations = integrationServiceProvider.findIntegrations().stream().toList();
+        List<Integration> integrations = integrationServiceProvider.findVisibleIntegrations();
         if (integrations.isEmpty()) {
             return new ArrayList<>();
         }
@@ -59,27 +59,27 @@ public class IntegrationService {
         return integrations
                 .stream()
                 .filter(integration -> {
-            if (searchDeviceRequest.getDeviceAddable() != null) {
-                Boolean canAddDevice = integration.getEntityIdentifierAddDevice() != null;
-                if (!searchDeviceRequest.getDeviceAddable().equals(canAddDevice)) {
-                    return false;
-                }
-            }
+                    if (searchDeviceRequest.getDeviceAddable() != null) {
+                        Boolean canAddDevice = integration.getEntityIdentifierAddDevice() != null;
+                        if (!searchDeviceRequest.getDeviceAddable().equals(canAddDevice)) {
+                            return false;
+                        }
+                    }
 
-            if (searchDeviceRequest.getDeviceDeletable() != null) {
-                Boolean canDeleteDevice = integration.getEntityIdentifierDeleteDevice() != null;
-                if (!searchDeviceRequest.getDeviceDeletable().equals(canDeleteDevice)) {
-                    return false;
-                }
-            }
+                    if (searchDeviceRequest.getDeviceDeletable() != null) {
+                        Boolean canDeleteDevice = integration.getEntityIdentifierDeleteDevice() != null;
+                        if (!searchDeviceRequest.getDeviceDeletable().equals(canDeleteDevice)) {
+                            return false;
+                        }
+                    }
 
-            return true;
-        }).map(integration -> {
-            SearchIntegrationResponseData data = this.integrationToSearchResponseData(integration);
-            data.setDeviceCount(integrationDeviceCount.get(integration.getId()));
-            data.setEntityCount(integrationEntityCount.get(integration.getId()));
-            return data;
-        }).collect(Collectors.toList());
+                    return true;
+                }).map(integration -> {
+                    SearchIntegrationResponseData data = this.integrationToSearchResponseData(integration);
+                    data.setDeviceCount(integrationDeviceCount.get(integration.getId()));
+                    data.setEntityCount(integrationEntityCount.get(integration.getId()));
+                    return data;
+                }).toList();
     }
 
     public IntegrationDetailData getDetailData(String integrationId) {
@@ -97,6 +97,10 @@ public class IntegrationService {
         data.setEntityCount(entityServiceProvider.countAllEntitiesByIntegrationId(integrationId));
         data.setDeleteDeviceServiceKey(integration.getEntityKeyDeleteDevice());
         List<Entity> entities = entityServiceProvider.findByTargetId(AttachTargetType.INTEGRATION, integrationId);
+        if (entities.isEmpty()) {
+            return data;
+        }
+
         final Map<String, JsonNode> entityValues = entityValueServiceProvider.findValuesByKeys(entities.stream().map(Entity::getKey).toList());
 
         data.setIntegrationEntities(entities

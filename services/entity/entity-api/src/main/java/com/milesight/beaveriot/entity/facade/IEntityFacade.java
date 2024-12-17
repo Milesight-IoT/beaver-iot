@@ -14,4 +14,6 @@ public interface IEntityFacade {
 
     List<EntityDTO> getTargetEntities(List<String> targetIds);
 
+    void deleteCustomizedEntitiesByIds(List<Long> entityIds);
+
 }

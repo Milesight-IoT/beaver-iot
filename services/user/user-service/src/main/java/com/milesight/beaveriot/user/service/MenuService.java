@@ -46,8 +46,8 @@ public class MenuService {
         if (type == null) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("type is empty").build();
         }
-        if (!StringUtils.hasText(parentId) && type == MenuType.BUTTON) {
-            throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("button can not be root").build();
+        if (!StringUtils.hasText(parentId) && type == MenuType.FUNCTION) {
+            throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("function can not be root").build();
         }
         MenuPO menuPO = menuRepository.findOne(filterable -> filterable.eq(MenuPO.Fields.code, code)).orElse(null);
         if (menuPO != null) {

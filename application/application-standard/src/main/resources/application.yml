@@ -2,6 +2,8 @@ server:
   port: 9200
 
 spring:
+  main:
+    allow-bean-definition-overriding: true
   jackson:
     default-property-inclusion: non_null
     property-naming-strategy: SNAKE_CASE

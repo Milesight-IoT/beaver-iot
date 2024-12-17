@@ -134,6 +134,10 @@ public class StringUtils {
         }
     }
 
+    public static boolean isEmpty(CharSequence cs) {
+        return cs == null || cs.length() == 0;
+    }
+
     public static boolean isNumber(char ch) {
         return ch >= '0' && ch <= '9';
     }
