@@ -17,6 +17,8 @@ public class FlowTraceInfo {
 
     private String flowId;
 
+    private String flowVersion;
+
     private List<NodeTraceInfo> traceInfos = new ArrayList<>();
 
     public boolean isEmpty() {

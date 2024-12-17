@@ -1,8 +1,12 @@
 package com.milesight.beaveriot.rule.components.eventlistener;
 
-import com.milesight.beaveriot.context.integration.model.Entity;
+import com.milesight.beaveriot.rule.annotations.RuleNode;
+import com.milesight.beaveriot.rule.constants.RuleNodeType;
 import lombok.Data;
-import org.apache.camel.*;
+import org.apache.camel.Category;
+import org.apache.camel.Consumer;
+import org.apache.camel.Processor;
+import org.apache.camel.Producer;
 import org.apache.camel.api.management.ManagedResource;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
@@ -12,6 +16,7 @@ import org.apache.camel.support.DefaultEndpoint;
 
 import java.util.List;
 
+@RuleNode(type = RuleNodeType.ENTRY, value = "eventlistener", testable = false)
 @Data
 @ManagedResource(description = "Managed EventBusEndpoint")
 @UriEndpoint(firstVersion = "1.0.0", scheme = "eventlistener", title = "Event Listener", syntax = "eventlistener:eventListenerName", consumerOnly = true,
@@ -31,6 +36,8 @@ public class EventListenerEndpoint extends DefaultEndpoint {
 
     public EventListenerEndpoint(String uri, EventListenerComponent component) {
         super(uri, component);
+    }
+    public EventListenerEndpoint() {
     }
 
     @Override
