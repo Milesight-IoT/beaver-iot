@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 /**
  * @author leon
  */
-public class BaseEntityBuilder<T extends BaseEntityBuilder> {
+public class BaseEntityBuilder<T extends BaseEntityBuilder<T>> {
     protected Long id;
     protected String name;
 
@@ -23,6 +23,8 @@ public class BaseEntityBuilder<T extends BaseEntityBuilder> {
     protected EntityValueType valueType;
     protected Map<String, Object> attributes;
     protected String parentIdentifier;
+
+    protected Boolean visible = true;
 
     public T identifier(String identifier) {
         IdentifierValidator.validate(identifier);
@@ -43,6 +45,11 @@ public class BaseEntityBuilder<T extends BaseEntityBuilder> {
 
     public T valueType(EntityValueType valueType) {
         this.valueType = valueType;
+        return (T) this;
+    }
+
+    public T visible(boolean visible) {
+        this.visible = visible;
         return (T) this;
     }
 
@@ -93,6 +100,7 @@ public class BaseEntityBuilder<T extends BaseEntityBuilder> {
         entity.setType(type);
         entity.setAttributes(attributes);
         entity.setParentIdentifier(parentIdentifier);
+        entity.setVisible(visible);
         return entity;
     }
 

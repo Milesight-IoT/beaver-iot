@@ -2,6 +2,7 @@ package com.milesight.beaveriot.entity.model.response;
 
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
+import com.milesight.beaveriot.context.integration.enums.EntityValueType;
 import lombok.Data;
 
 import java.util.Map;
@@ -14,13 +15,25 @@ import java.util.Map;
 public class EntityResponse {
 
     private String deviceName;
+
     private String integrationName;
+
     private String entityId;
+
     private AccessMod entityAccessMod;
+
     private String entityKey;
+
     private EntityType entityType;
+
     private String entityName;
+
     private Map<String, Object> entityValueAttribute;
-    private String entityValueType;
+
+    private EntityValueType entityValueType;
+
+    private Boolean entityIsCustomized;
+
+    private Long entityWorkflowId;
 
 }

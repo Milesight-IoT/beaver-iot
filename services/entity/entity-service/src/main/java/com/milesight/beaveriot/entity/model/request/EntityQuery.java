@@ -16,9 +16,25 @@ import java.util.List;
 public class EntityQuery extends GenericPageRequest {
 
     private String keyword;
+
     private List<EntityType> entityType;
+
     private Boolean excludeChildren;
+
     private List<EntityValueType> entityValueType;
+
     private List<AccessMod> entityAccessMod;
+
+    private List<Long> entityIds;
+
+    /**
+     * Filter customized entities
+     */
+    private Boolean customized;
+
+    /**
+     * Show hidden entities
+     */
+    private Boolean showHidden;
 
 }

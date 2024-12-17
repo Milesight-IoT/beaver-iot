@@ -14,11 +14,22 @@ import java.util.Map;
 @Data
 public class EntityMetaResponse {
 
+    private Long id;
+
     private String key;
+
     private String name;
+
     private EntityType type;
+
     private AccessMod accessMod;
+
     private Map<String, Object> valueAttribute;
+
     private EntityValueType valueType;
+
+    private Boolean customized;
+
+    private Long workflowId;
 
 }

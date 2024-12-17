@@ -8,6 +8,7 @@ import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.ExchangeFlowExecutor;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
+import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
@@ -21,6 +22,8 @@ import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
+import com.milesight.beaveriot.entity.model.request.EntityCreateRequest;
+import com.milesight.beaveriot.entity.model.request.EntityModifyRequest;
 import com.milesight.beaveriot.entity.model.request.EntityQuery;
 import com.milesight.beaveriot.entity.model.request.ServiceCallRequest;
 import com.milesight.beaveriot.entity.model.request.UpdatePropertyEntityRequest;
@@ -32,14 +35,14 @@ import com.milesight.beaveriot.entity.repository.EntityLatestRepository;
 import com.milesight.beaveriot.entity.repository.EntityRepository;
 import com.milesight.beaveriot.eventbus.EventBus;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
-import com.milesight.beaveriot.permission.aspect.OperationPermission;
-import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
-import lombok.extern.slf4j.Slf4j;
+import lombok.*;
+import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -54,6 +57,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author loong
@@ -64,25 +68,92 @@ import java.util.stream.Collectors;
 public class EntityService implements EntityServiceProvider {
 
     @Autowired
+    private IDeviceFacade deviceFacade;
+
+    @Lazy
+    @Autowired
+    private IntegrationServiceProvider integrationServiceProvider;
+
+    @Lazy
+    @Autowired
+    private DeviceServiceProvider deviceServiceProvider;
+
+    @Autowired
+    private ExchangeFlowExecutor exchangeFlowExecutor;
+
+    @Autowired
+    private IUserFacade userFacade;
+
+    @Autowired
+    private EventBus<EntityEvent> eventBus;
+
+    @Autowired
     private EntityRepository entityRepository;
+
     @Autowired
     private EntityHistoryRepository entityHistoryRepository;
+
     @Autowired
     private EntityLatestRepository entityLatestRepository;
-    @Autowired
-    IDeviceFacade deviceFacade;
-    @Lazy
-    @Autowired
-    IntegrationServiceProvider integrationServiceProvider;
-    @Lazy
-    @Autowired
-    DeviceServiceProvider deviceServiceProvider;
-    @Autowired
-    ExchangeFlowExecutor exchangeFlowExecutor;
-    @Autowired
-    IUserFacade userFacade;
-    @Autowired
-    EventBus eventBus;
+
+    private static Entity convertPOToEntity(EntityPO entityPO, Map<String, DeviceNameDTO> deviceIdToDetails) {
+        String integrationId = null;
+        String deviceKey = null;
+        String attachTargetId = entityPO.getAttachTargetId();
+        AttachTargetType attachTarget = entityPO.getAttachTarget();
+        if (attachTarget == AttachTargetType.DEVICE) {
+            DeviceNameDTO deviceDetail = deviceIdToDetails.get(attachTargetId);
+            if (deviceDetail != null) {
+                deviceKey = deviceDetail.getKey();
+                if (deviceDetail.getIntegrationConfig() != null) {
+                    integrationId = deviceDetail.getIntegrationConfig().getId();
+                }
+            }
+        } else if (attachTarget == AttachTargetType.INTEGRATION) {
+            integrationId = attachTargetId;
+        }
+        return convertPOToEntity(entityPO, integrationId, deviceKey);
+    }
+
+    private static Entity convertPOToEntity(EntityPO entityPO, String IntegrationId, String deviceKey) {
+        EntityBuilder entityBuilder = new EntityBuilder(IntegrationId, deviceKey)
+                .id(entityPO.getId())
+                .identifier(entityPO.getKey().substring(entityPO.getKey().lastIndexOf(".") + 1))
+                .valueType(entityPO.getValueType())
+                .attributes(entityPO.getValueAttribute());
+
+        String parentKey = entityPO.getParent();
+        if (StringUtils.hasText(entityPO.getParent())) {
+            String parentIdentifier = entityPO.getParent().substring(parentKey.lastIndexOf(".") + 1);
+            entityBuilder.parentIdentifier(parentIdentifier);
+        }
+
+        Entity entity = null;
+        if (entityPO.getType() == EntityType.PROPERTY) {
+            entity = entityBuilder.property(entityPO.getName(), entityPO.getAccessMod())
+                    .build();
+        } else if (entityPO.getType() == EntityType.SERVICE) {
+            entity = entityBuilder.service(entityPO.getName())
+                    .build();
+        } else if (entityPO.getType() == EntityType.EVENT) {
+            entity = entityBuilder.event(entityPO.getName())
+                    .build();
+        }
+        return entity;
+    }
+
+    private static EntityMetaResponse convertEntityPOToEntityMetaResponse(EntityPO entityPO) {
+        EntityMetaResponse response = new EntityMetaResponse();
+        response.setId(entityPO.getId());
+        response.setKey(entityPO.getKey());
+        response.setName(entityPO.getName());
+        response.setType(entityPO.getType());
+        response.setAccessMod(entityPO.getAccessMod());
+        response.setValueAttribute(entityPO.getValueAttribute());
+        response.setValueType(entityPO.getValueType());
+        response.setCustomized(isCustomizedEntity(entityPO.getAttachTargetId()));
+        return response;
+    }
 
     private EntityPO saveConvert(Long userId, Entity entity, Map<String, Long> deviceKeyMap, Map<String, EntityPO> dataEntityKeyMap) {
         try {
@@ -118,6 +189,7 @@ public class EntityService implements EntityServiceProvider {
             entityPO.setAttachTargetId(attachTargetId);
             entityPO.setValueAttribute(entity.getAttributes());
             entityPO.setValueType(entity.getValueType());
+            entityPO.setVisible(entity.getVisible());
             return entityPO;
         } catch (Exception e) {
             log.error("save entity error:{}", e.getMessage(), e);
@@ -126,6 +198,7 @@ public class EntityService implements EntityServiceProvider {
     }
 
     @Override
+    @NonNull
     public List<Entity> findByTargetId(AttachTargetType targetType, String targetId) {
         if (!StringUtils.hasText(targetId)) {
             return new ArrayList<>();
@@ -133,7 +206,58 @@ public class EntityService implements EntityServiceProvider {
         return findByTargetIds(targetType, Collections.singletonList(targetId));
     }
 
+    public List<Entity> convertPOListToEntities(List<EntityPO> entityPOList) {
+        if (entityPOList == null || entityPOList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<Long> deviceIds = entityPOList.stream()
+                .filter(entityPO -> AttachTargetType.DEVICE.equals(entityPO.getAttachTarget()))
+                .map(EntityPO::getAttachTargetId)
+                .distinct()
+                .map(Long::valueOf)
+                .toList();
+        HashMap<String, DeviceNameDTO> deviceIdToDetails = deviceIdToDetails(deviceIds);
+
+        Map<String, List<Entity>> parentIdentifierToChildren = entityPOList.stream()
+                .filter(entityPO -> StringUtils.hasText(entityPO.getParent()))
+                .map(entityPO -> convertPOToEntity(entityPO, deviceIdToDetails))
+                .collect(Collectors.groupingBy(Entity::getParentIdentifier));
+
+        List<Entity> parentEntities = entityPOList.stream()
+                .filter(entityPO -> !StringUtils.hasText(entityPO.getParent()))
+                .map(entityPO -> {
+                    Entity entity = convertPOToEntity(entityPO, deviceIdToDetails);
+                    List<Entity> children = parentIdentifierToChildren.get(entity.getIdentifier());
+                    if (children != null) {
+                        entity.setChildren(children);
+                        parentIdentifierToChildren.remove(entity.getIdentifier());
+                    }
+                    return entity;
+                })
+                .toList();
+
+        return Stream.concat(parentEntities.stream(),
+                        // include all children that have no parent
+                        parentIdentifierToChildren.values().stream().flatMap(List::stream))
+                .toList();
+    }
+
+    private HashMap<String, DeviceNameDTO> deviceIdToDetails(List<Long> deviceIds) {
+        HashMap<String, DeviceNameDTO> deviceIdToDetails = new HashMap<>();
+        if (deviceIds.isEmpty()) {
+            return deviceIdToDetails;
+        }
+        List<DeviceNameDTO> deviceNameDTOList = deviceFacade.getDeviceNameByIds(deviceIds);
+        if (deviceNameDTOList != null && !deviceNameDTOList.isEmpty()) {
+            deviceIdToDetails.putAll(deviceNameDTOList.stream()
+                    .collect(Collectors.toMap(v -> String.valueOf(v.getId()), Function.identity(), (v1, v2) -> v1)));
+        }
+        return deviceIdToDetails;
+    }
+
     @Override
+    @NonNull
     public List<Entity> findByTargetIds(AttachTargetType targetType, List<String> targetIds) {
         if (targetIds == null || targetIds.isEmpty()) {
             return new ArrayList<>();
@@ -142,103 +266,12 @@ public class EntityService implements EntityServiceProvider {
         if (entityPOList == null || entityPOList.isEmpty()) {
             return new ArrayList<>();
         }
-        Map<String, String> deviceKeyMap = new HashMap<>();
-        Map<String, Integration> deviceIntegrationMap = new HashMap<>();
-        if (targetType == AttachTargetType.DEVICE) {
-            List<DeviceNameDTO> deviceNameDTOList = deviceFacade.getDeviceNameByIds(targetIds.stream().map(Long::valueOf).distinct().collect(Collectors.toList()));
-            if (deviceNameDTOList != null && !deviceNameDTOList.isEmpty()) {
-                deviceKeyMap.putAll(deviceNameDTOList.stream().collect(Collectors.toMap(t -> String.valueOf(t.getId()), DeviceNameDTO::getKey)));
-                deviceIntegrationMap.putAll(deviceNameDTOList.stream().filter(t -> t.getIntegrationConfig() != null).collect(Collectors.toMap(t -> String.valueOf(t.getId()), DeviceNameDTO::getIntegrationConfig)));
-            }
+        try {
+            return convertPOListToEntities(entityPOList);
+        } catch (Exception e) {
+            log.error("find entity by targetId error:{}", e.getMessage(), e);
+            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
         }
-        List<EntityPO> parentEntityPOList = entityPOList.stream().filter(entityPO -> !StringUtils.hasText(entityPO.getParent())).toList();
-        List<EntityPO> childrenEntityPOList = entityPOList.stream().filter(entityPO -> StringUtils.hasText(entityPO.getParent())).toList();
-        List<Entity> childrenEntityList = new ArrayList<>();
-        if (!childrenEntityPOList.isEmpty()) {
-            childrenEntityPOList.forEach(childEntityPO -> {
-                try {
-                    String parentKey = childEntityPO.getParent();
-                    if (StringUtils.hasText(parentKey)) {
-                        parentKey = parentKey.substring(parentKey.lastIndexOf(".") + 1);
-                    }
-                    EntityBuilder entityBuilder = new EntityBuilder()
-                            .id(childEntityPO.getId())
-                            .identifier(childEntityPO.getKey().substring(childEntityPO.getKey().lastIndexOf(".") + 1))
-                            .valueType(childEntityPO.getValueType())
-                            .attributes(childEntityPO.getValueAttribute())
-                            .parentIdentifier(parentKey);
-
-                    Entity entity = null;
-                    if (childEntityPO.getType() == EntityType.PROPERTY) {
-                        entity = entityBuilder.property(childEntityPO.getName(), childEntityPO.getAccessMod())
-                                .build();
-                    } else if (childEntityPO.getType() == EntityType.SERVICE) {
-                        entity = entityBuilder.service(childEntityPO.getName())
-                                .build();
-                    } else if (childEntityPO.getType() == EntityType.EVENT) {
-                        entity = entityBuilder.event(childEntityPO.getName())
-                                .build();
-                    }
-                    if (entity != null) {
-                        childrenEntityList.add(entity);
-                    }
-                } catch (Exception e) {
-                    log.error("find entity by targetId error:{}", e.getMessage(), e);
-                    throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
-                }
-            });
-        }
-        List<Entity> entityList = new ArrayList<>();
-        parentEntityPOList.forEach(entityPO -> {
-            try {
-                String parentKey = entityPO.getParent();
-                if (StringUtils.hasText(parentKey)) {
-                    parentKey = parentKey.substring(parentKey.lastIndexOf(".") + 1);
-                }
-                String identifier = entityPO.getKey().substring(entityPO.getKey().lastIndexOf(".") + 1);
-                List<Entity> childEntityList = childrenEntityList.stream().filter(childEntity -> identifier.equals(childEntity.getParentIdentifier())).toList();
-
-                String integrationId = null;
-                String deviceKey = null;
-                String attachTargetId = entityPO.getAttachTargetId();
-                AttachTargetType attachTarget = entityPO.getAttachTarget();
-                if (attachTarget == AttachTargetType.DEVICE) {
-                    deviceKey = deviceKeyMap.get(attachTargetId);
-                    Integration deviceIntegration = deviceIntegrationMap.get(attachTargetId);
-                    if (deviceIntegration != null) {
-                        integrationId = deviceIntegration.getId();
-                    }
-                } else if (attachTarget == AttachTargetType.INTEGRATION) {
-                    integrationId = attachTargetId;
-                }
-                EntityBuilder entityBuilder = new EntityBuilder(integrationId, deviceKey)
-                        .id(entityPO.getId())
-                        .identifier(identifier)
-                        .valueType(entityPO.getValueType())
-                        .attributes(entityPO.getValueAttribute())
-                        .parentIdentifier(parentKey)
-                        .children(childEntityList);
-
-                Entity entity = null;
-                if (entityPO.getType() == EntityType.PROPERTY) {
-                    entity = entityBuilder.property(entityPO.getName(), entityPO.getAccessMod())
-                            .build();
-                } else if (entityPO.getType() == EntityType.SERVICE) {
-                    entity = entityBuilder.service(entityPO.getName())
-                            .build();
-                } else if (entityPO.getType() == EntityType.EVENT) {
-                    entity = entityBuilder.event(entityPO.getName())
-                            .build();
-                }
-                if (entity != null) {
-                    entityList.add(entity);
-                }
-            } catch (Exception e) {
-                log.error("find entity by targetId error:{}", e.getMessage(), e);
-                throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
-            }
-        });
-        return entityList;
     }
 
     @Override
@@ -317,7 +350,7 @@ public class EntityService implements EntityServiceProvider {
         });
     }
 
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Throwable.class)
     @Override
     public void deleteByTargetId(String targetId) {
         if (!StringUtils.hasText(targetId)) {
@@ -327,18 +360,22 @@ public class EntityService implements EntityServiceProvider {
         if (entityPOList == null || entityPOList.isEmpty()) {
             return;
         }
-        List<Long> entityIdList = entityPOList.stream().map(EntityPO::getId).toList();
-        List<Entity> entityList = findByTargetId(entityPOList.get(0).getAttachTarget(), targetId);
 
-        entityRepository.deleteByTargetId(targetId);
+        deleteEntitiesByPOList(entityPOList);
+    }
+
+    private void deleteEntitiesByPOList(List<EntityPO> entityPOList) {
+        List<Long> entityIdList = entityPOList.stream().map(EntityPO::getId).toList();
+        log.info("delete entities: {}", entityIdList);
+
+        entityRepository.deleteAllById(entityIdList);
         entityHistoryRepository.deleteByEntityIds(entityIdList);
         entityLatestRepository.deleteByEntityIds(entityIdList);
-
         userFacade.deleteResource(ResourceType.ENTITY, entityIdList);
 
-        entityList.forEach(entity -> {
-            eventBus.publish(EntityEvent.of(EntityEvent.EventType.DELETED, entity));
-        });
+        List<Entity> entityList = convertPOListToEntities(entityPOList);
+        entityList.forEach(entity ->
+                eventBus.publish(EntityEvent.of(EntityEvent.EventType.DELETED, entity)));
     }
 
     @Override
@@ -433,225 +470,154 @@ public class EntityService implements EntityServiceProvider {
         if (entityPOList == null || entityPOList.isEmpty()) {
             return new HashMap<>();
         }
-        List<EntityPO> childrenEntityPOList = entityPOList.stream().filter(entityPO -> StringUtils.hasText(entityPO.getParent())).toList();
-        List<Entity> childrenEntityList = new ArrayList<>();
-        if (!childrenEntityPOList.isEmpty()) {
-            childrenEntityPOList.forEach(childEntityPO -> {
-                try {
-                    String parentKey = childEntityPO.getParent();
-                    if (StringUtils.hasText(parentKey)) {
-                        parentKey = parentKey.substring(parentKey.lastIndexOf(".") + 1);
-                    }
 
-                    EntityBuilder entityBuilder = new EntityBuilder()
-                            .id(childEntityPO.getId())
-                            .identifier(childEntityPO.getKey().substring(childEntityPO.getKey().lastIndexOf(".") + 1))
-                            .valueType(childEntityPO.getValueType())
-                            .attributes(childEntityPO.getValueAttribute())
-                            .parentIdentifier(parentKey);
-
-                    Entity entity = null;
-                    if (childEntityPO.getType() == EntityType.PROPERTY) {
-                        entity = entityBuilder.property(childEntityPO.getName(), childEntityPO.getAccessMod())
-                                .build();
-                    } else if (childEntityPO.getType() == EntityType.SERVICE) {
-                        entity = entityBuilder.service(childEntityPO.getName())
-                                .build();
-                    } else if (childEntityPO.getType() == EntityType.EVENT) {
-                        entity = entityBuilder.event(childEntityPO.getName())
-                                .build();
-                    }
-                    if (entity != null) {
-                        childrenEntityList.add(entity);
-                    }
-                } catch (Exception e) {
-                    log.error("find entity by targetId error:{}", e.getMessage(), e);
-                    throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
-                }
-            });
+        try {
+            return convertPOListToEntities(entityPOList).stream()
+                    .collect(Collectors.toMap(Entity::getKey, Function.identity()));
+        } catch (Exception e) {
+            log.error("find entity by keys error: {}", e.getMessage(), e);
+            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
         }
-        List<Entity> entityList = new ArrayList<>();
-        List<Long> deviceIds = entityPOList.stream().filter(entityPO -> entityPO.getAttachTarget() == AttachTargetType.DEVICE).map(t -> Long.valueOf(t.getAttachTargetId())).distinct().toList();
-        Map<String, String> deviceKeyMap = new HashMap<>();
-        Map<String, Integration> deviceIntegrationMap = new HashMap<>();
-        if (!deviceIds.isEmpty()) {
-            List<DeviceNameDTO> deviceNameDTOList = deviceFacade.getDeviceNameByIds(deviceIds);
-            if (deviceNameDTOList != null && !deviceNameDTOList.isEmpty()) {
-                deviceKeyMap.putAll(deviceNameDTOList.stream().collect(Collectors.toMap(t -> String.valueOf(t.getId()), DeviceNameDTO::getKey)));
-                deviceIntegrationMap.putAll(deviceNameDTOList.stream().filter(t -> t.getIntegrationConfig() != null).collect(Collectors.toMap(t -> String.valueOf(t.getId()), DeviceNameDTO::getIntegrationConfig)));
-            }
+    }
+
+    @Override
+    public Entity findById(Long id) {
+        return findByIds(Collections.singletonList(id))
+                .stream()
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Override
+    public List<Entity> findByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return new ArrayList<>();
         }
-        entityPOList.forEach(entityPO -> {
-            try {
-                String parentKey = entityPO.getParent();
-                if (StringUtils.hasText(parentKey)) {
-                    parentKey = parentKey.substring(parentKey.lastIndexOf(".") + 1);
-                }
-                String identifier = entityPO.getKey().substring(entityPO.getKey().lastIndexOf(".") + 1);
-                List<Entity> childEntityList = childrenEntityList.stream().filter(childEntity -> identifier.equals(childEntity.getParentIdentifier())).toList();
 
-                String integrationId = null;
-                String deviceKey = null;
-                String attachTargetId = entityPO.getAttachTargetId();
-                AttachTargetType attachTarget = entityPO.getAttachTarget();
-                if (attachTarget == AttachTargetType.DEVICE) {
-                    deviceKey = deviceKeyMap.get(attachTargetId);
+        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.id, ids.toArray()));
+        if (entityPOList == null || entityPOList.isEmpty()) {
+            return new ArrayList<>();
+        }
 
-                    Integration deviceIntegration = deviceIntegrationMap.get(attachTargetId);
-                    if (deviceIntegration != null) {
-                        integrationId = deviceIntegration.getId();
-                    }
-                } else if (attachTarget == AttachTargetType.INTEGRATION) {
-                    integrationId = attachTargetId;
-                }
-                EntityBuilder entityBuilder = new EntityBuilder(integrationId, deviceKey)
-                        .id(entityPO.getId())
-                        .identifier(identifier)
-                        .valueType(entityPO.getValueType())
-                        .attributes(entityPO.getValueAttribute())
-                        .parentIdentifier(parentKey)
-                        .children(childEntityList);
-
-                Entity entity = null;
-                if (entityPO.getType() == EntityType.PROPERTY) {
-                    entity = entityBuilder.property(entityPO.getName(), entityPO.getAccessMod())
-                            .build();
-                } else if (entityPO.getType() == EntityType.SERVICE) {
-                    entity = entityBuilder.service(entityPO.getName())
-                            .build();
-                } else if (entityPO.getType() == EntityType.EVENT) {
-                    entity = entityBuilder.event(entityPO.getName())
-                            .build();
-                }
-                if (entity != null) {
-                    entityList.add(entity);
-                }
-            } catch (Exception e) {
-                log.error("find entity by targetId error:{}", e.getMessage(), e);
-                throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
-            }
-        });
-        return entityList.stream().collect(Collectors.toMap(Entity::getKey, Function.identity()));
+        try {
+            return convertPOListToEntities(entityPOList);
+        } catch (Exception e) {
+            log.error("find entity by ids error: {}", e.getMessage(), e);
+            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
+        }
     }
 
     public Page<EntityResponse> search(EntityQuery entityQuery) {
         boolean isExcludeChildren = entityQuery.getExcludeChildren() != null && entityQuery.getExcludeChildren();
-        List<String> attachTargetIds = new ArrayList<>();
-        if (StringUtils.hasText(entityQuery.getKeyword())) {
-            List<Integration> integrations = integrationServiceProvider.findIntegrations(f -> f.getName().toLowerCase().contains(entityQuery.getKeyword().toLowerCase()));
-            if (integrations != null && !integrations.isEmpty()) {
-                List<String> integrationIds = integrations.stream().map(Integration::getId).toList();
-                attachTargetIds.addAll(integrationIds);
-                List<DeviceNameDTO> integrationDevices = deviceFacade.getDeviceNameByIntegrations(integrationIds);
-                if (integrationDevices != null && !integrationDevices.isEmpty()) {
-                    List<String> deviceIds = integrationDevices.stream().map(t -> String.valueOf(t.getId())).toList();
-                    attachTargetIds.addAll(deviceIds);
-                }
-            }
-            List<DeviceNameDTO> deviceNameDTOList = deviceFacade.fuzzySearchDeviceByName(entityQuery.getKeyword());
-            if (deviceNameDTOList != null && !deviceNameDTOList.isEmpty()) {
-                List<String> deviceIds = deviceNameDTOList.stream().map(DeviceNameDTO::getId).map(String::valueOf).toList();
-                attachTargetIds.addAll(deviceIds);
-            }
-        }
-        Consumer<Filterable> filterable = f -> f.in(entityQuery.getEntityType() != null && !entityQuery.getEntityType().isEmpty(), EntityPO.Fields.type, entityQuery.getEntityType() == null ? null : entityQuery.getEntityType().toArray())
-                .isNull(isExcludeChildren, EntityPO.Fields.parent)
+        List<String> attachTargetIds = searchAttachTargetIdsByKeyword(entityQuery.getKeyword());
+
+        Consumer<Filterable> filterable = f -> f.isNull(isExcludeChildren, EntityPO.Fields.parent)
+                .in(entityQuery.getEntityType() != null && !entityQuery.getEntityType().isEmpty(), EntityPO.Fields.type, entityQuery.getEntityType() == null ? null : entityQuery.getEntityType().toArray())
+                .in(entityQuery.getEntityIds() != null && !entityQuery.getEntityIds().isEmpty(), EntityPO.Fields.id, entityQuery.getEntityIds() == null ? null : entityQuery.getEntityIds().toArray())
                 .in(entityQuery.getEntityValueType() != null && !entityQuery.getEntityValueType().isEmpty(), EntityPO.Fields.valueType, entityQuery.getEntityValueType() == null ? null : entityQuery.getEntityValueType().toArray())
                 .in(entityQuery.getEntityAccessMod() != null && !entityQuery.getEntityAccessMod().isEmpty(), EntityPO.Fields.accessMod, entityQuery.getEntityAccessMod() == null ? null : entityQuery.getEntityAccessMod().toArray())
+                .eq(Boolean.TRUE.equals(entityQuery.getCustomized()), EntityPO.Fields.attachTargetId, IntegrationConstants.SYSTEM_INTEGRATION_ID)
+                .ne(Boolean.FALSE.equals(entityQuery.getCustomized()), EntityPO.Fields.attachTargetId, IntegrationConstants.SYSTEM_INTEGRATION_ID)
+                .eq(!Boolean.TRUE.equals(entityQuery.getShowHidden()), EntityPO.Fields.visible, true)
                 .or(f1 -> f1.likeIgnoreCase(StringUtils.hasText(entityQuery.getKeyword()), EntityPO.Fields.name, entityQuery.getKeyword())
+                        .likeIgnoreCase(StringUtils.hasText(entityQuery.getKeyword()), EntityPO.Fields.key, entityQuery.getKeyword())
                         .in(!attachTargetIds.isEmpty(), EntityPO.Fields.attachTargetId, attachTargetIds.toArray()));
         Page<EntityPO> entityPOList = entityRepository.findAllWithDataPermission(filterable, entityQuery.toPageable());
         if (entityPOList == null || entityPOList.getContent().isEmpty()) {
             return Page.empty();
         }
-        List<Long> resultDeviceIds = entityPOList.stream().filter(entityPO -> entityPO.getAttachTarget() == AttachTargetType.DEVICE).map(t -> Long.parseLong(t.getAttachTargetId())).distinct().toList();
-        List<DeviceNameDTO> resultDevices = deviceFacade.getDeviceNameByIds(resultDeviceIds);
-        Map<String, String> deviceNameMap = new HashMap<>();
-        Map<String, String> deviceIntegrationNameMap = new HashMap<>();
-        if (resultDevices != null && !resultDevices.isEmpty()) {
-            deviceNameMap.putAll(resultDevices.stream().collect(Collectors.toMap(t -> String.valueOf(t.getId()), DeviceNameDTO::getName)));
-            deviceIntegrationNameMap.putAll(resultDevices.stream().filter(t -> t.getIntegrationConfig() != null).collect(Collectors.toMap(t -> String.valueOf(t.getId()), t -> t.getIntegrationConfig().getName())));
-        }
-        return entityPOList.map(entityPO -> {
-            EntityResponse response = new EntityResponse();
-            String deviceName = null;
-            String integrationName = null;
-            if (entityPO.getAttachTarget() == AttachTargetType.DEVICE) {
-                String deviceId = entityPO.getAttachTargetId();
-                deviceName = deviceNameMap.get(deviceId);
-                integrationName = deviceIntegrationNameMap.get(deviceId);
-            } else if (entityPO.getAttachTarget() == AttachTargetType.INTEGRATION) {
-                String integrationId = entityPO.getAttachTargetId();
-                Integration integration = integrationServiceProvider.getIntegration(integrationId);
-                if (integration != null) {
-                    integrationName = integration.getName();
+
+        return convertEntityPOListToEntityResponses(entityPOList);
+    }
+
+    private EntityResponse convertEntityPOToEntityResponse(EntityPO entityPO, HashMap<String, DeviceNameDTO> deviceIdToDetails) {
+        String deviceName = null;
+        String integrationName = null;
+        String attachTargetId = entityPO.getAttachTargetId();
+        AttachTargetType attachTarget = entityPO.getAttachTarget();
+        if (attachTarget == AttachTargetType.DEVICE) {
+            DeviceNameDTO deviceDetail = deviceIdToDetails.get(attachTargetId);
+            if (deviceDetail != null) {
+                deviceName = deviceDetail.getName();
+                if (deviceDetail.getIntegrationConfig() != null) {
+                    integrationName = deviceDetail.getIntegrationConfig().getName();
                 }
             }
-            response.setDeviceName(deviceName);
-            response.setIntegrationName(integrationName);
-            response.setEntityId(entityPO.getId().toString());
-            response.setEntityAccessMod(entityPO.getAccessMod());
-            response.setEntityKey(entityPO.getKey());
-            response.setEntityType(entityPO.getType());
-            response.setEntityName(entityPO.getName());
-            response.setEntityValueAttribute(entityPO.getValueAttribute());
-            response.setEntityValueType(entityPO.getValueType().name());
-            return response;
-        });
+        } else if (attachTarget == AttachTargetType.INTEGRATION) {
+            Integration integration = integrationServiceProvider.getIntegration(attachTargetId);
+            if (integration != null) {
+                integrationName = integration.getName();
+            }
+        }
+
+        EntityResponse response = new EntityResponse();
+        response.setDeviceName(deviceName);
+        response.setIntegrationName(integrationName);
+        response.setEntityId(entityPO.getId().toString());
+        response.setEntityAccessMod(entityPO.getAccessMod());
+        response.setEntityKey(entityPO.getKey());
+        response.setEntityType(entityPO.getType());
+        response.setEntityName(entityPO.getName());
+        response.setEntityValueAttribute(entityPO.getValueAttribute());
+        response.setEntityValueType(entityPO.getValueType());
+        response.setEntityIsCustomized(isCustomizedEntity(entityPO.getAttachTargetId()));
+        return response;
+    }
+
+    private List<String> searchAttachTargetIdsByKeyword(String keyword) {
+        List<String> attachTargetIds = new ArrayList<>();
+        if (!StringUtils.hasText(keyword)) {
+            return attachTargetIds;
+        }
+
+        List<Integration> integrations = integrationServiceProvider.findIntegrations(
+                f -> f.getName().toLowerCase().contains(keyword.toLowerCase()));
+        if (integrations != null && !integrations.isEmpty()) {
+            List<String> integrationIds = integrations.stream().map(Integration::getId).toList();
+            attachTargetIds.addAll(integrationIds);
+
+            List<DeviceNameDTO> integrationDevices = deviceFacade.getDeviceNameByIntegrations(integrationIds);
+            if (integrationDevices != null && !integrationDevices.isEmpty()) {
+                List<String> deviceIds = integrationDevices.stream().map(t -> String.valueOf(t.getId())).toList();
+                attachTargetIds.addAll(deviceIds);
+            }
+        }
+
+        List<DeviceNameDTO> deviceNameDTOList = deviceFacade.fuzzySearchDeviceByName(keyword);
+        if (deviceNameDTOList != null && !deviceNameDTOList.isEmpty()) {
+            List<String> deviceIds = deviceNameDTOList.stream().map(DeviceNameDTO::getId).map(String::valueOf).toList();
+            attachTargetIds.addAll(deviceIds);
+        }
+        return attachTargetIds;
     }
 
     public List<EntityResponse> getChildren(Long entityId) {
-        EntityPO entityPO = entityRepository.findOneWithDataPermission(f -> f.eq(EntityPO.Fields.id, entityId)).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).build());
-        List<EntityPO> entityPOList = entityRepository.findAllWithDataPermission(f -> f.eq(EntityPO.Fields.parent, entityPO.getKey()));
+        EntityPO parentEntityPO = entityRepository.findOneWithDataPermission(f -> f.eq(EntityPO.Fields.id, entityId)).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).build());
+        List<EntityPO> entityPOList = entityRepository.findAllWithDataPermission(f -> f.eq(EntityPO.Fields.parent, parentEntityPO.getKey()));
         if (entityPOList == null || entityPOList.isEmpty()) {
             return Collections.emptyList();
         }
-        List<Long> resultDeviceIds = entityPOList.stream().filter(t -> t.getAttachTarget() == AttachTargetType.DEVICE).map(t -> Long.parseLong(t.getAttachTargetId())).distinct().toList();
-        List<DeviceNameDTO> resultDevices = deviceFacade.getDeviceNameByIds(resultDeviceIds);
-        Map<String, String> deviceNameMap = new HashMap<>();
-        Map<String, String> deviceIntegrationNameMap = new HashMap<>();
-        if (resultDevices != null && !resultDevices.isEmpty()) {
-            deviceNameMap.putAll(resultDevices.stream().collect(Collectors.toMap(t -> String.valueOf(t.getId()), DeviceNameDTO::getName)));
-            deviceIntegrationNameMap.putAll(resultDevices.stream().filter(t -> t.getIntegrationConfig() != null).collect(Collectors.toMap(t -> String.valueOf(t.getId()), t -> t.getIntegrationConfig().getName())));
-        }
-        return entityPOList.stream().map(t -> {
-            EntityResponse response = new EntityResponse();
-            String deviceName = null;
-            String integrationName = null;
-            if (t.getAttachTarget() == AttachTargetType.DEVICE) {
-                String deviceId = t.getAttachTargetId();
-                deviceName = deviceNameMap.get(deviceId);
-                integrationName = deviceIntegrationNameMap.get(deviceId);
-            } else if (t.getAttachTarget() == AttachTargetType.INTEGRATION) {
-                String integrationId = t.getAttachTargetId();
-                Integration integration = integrationServiceProvider.getIntegration(integrationId);
-                if (integration != null) {
-                    integrationName = integration.getName();
-                }
-            }
-            response.setDeviceName(deviceName);
-            response.setIntegrationName(integrationName);
-            response.setEntityId(t.getId().toString());
-            response.setEntityAccessMod(t.getAccessMod());
-            response.setEntityKey(t.getKey());
-            response.setEntityType(t.getType());
-            response.setEntityName(t.getName());
-            response.setEntityValueAttribute(t.getValueAttribute());
-            response.setEntityValueType(t.getValueType().name());
-            return response;
-        }).collect(Collectors.toList());
+        return convertEntityPOListToEntityResponses(entityPOList);
+    }
+
+    private List<EntityResponse> convertEntityPOListToEntityResponses(List<EntityPO> entityPOList) {
+        return convertEntityPOListToEntityResponses(new PageImpl<>(entityPOList)).toList();
+    }
+
+    private Page<EntityResponse> convertEntityPOListToEntityResponses(Page<EntityPO> entityPOList) {
+        List<Long> foundDeviceIds = entityPOList.stream()
+                .filter(entityPO -> AttachTargetType.DEVICE.equals(entityPO.getAttachTarget()))
+                .map(entityPO -> Long.parseLong(entityPO.getAttachTargetId()))
+                .distinct()
+                .toList();
+        HashMap<String, DeviceNameDTO> deviceIdToDetails = deviceIdToDetails(foundDeviceIds);
+        return entityPOList.map(entityPO -> convertEntityPOToEntityResponse(entityPO, deviceIdToDetails));
     }
 
     public EntityMetaResponse getEntityMeta(Long entityId) {
-        EntityPO entityPO = entityRepository.findOneWithDataPermission(filterable -> filterable.eq(EntityPO.Fields.id, entityId)).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).build());
-        EntityMetaResponse entityMetaResponse = new EntityMetaResponse();
-        entityMetaResponse.setKey(entityPO.getKey());
-        entityMetaResponse.setName(entityPO.getName());
-        entityMetaResponse.setType(entityPO.getType());
-        entityMetaResponse.setAccessMod(entityPO.getAccessMod());
-        entityMetaResponse.setValueAttribute(entityPO.getValueAttribute());
-        entityMetaResponse.setValueType(entityPO.getValueType());
-        return entityMetaResponse;
+        EntityPO entityPO = entityRepository.findOneWithDataPermission(filterable -> filterable.eq(EntityPO.Fields.id, entityId))
+                .orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).build());
+        return convertEntityPOToEntityMetaResponse(entityPO);
     }
 
     public void updatePropertyEntity(UpdatePropertyEntityRequest updatePropertyEntityRequest) {
@@ -713,6 +679,93 @@ public class EntityService implements EntityServiceProvider {
         }
         ExchangePayload payload = new ExchangePayload(exchange);
         return exchangeFlowExecutor.syncExchangeDown(payload);
+    }
+
+    /**
+     * Delete customized entities by ids.
+     *
+     * @param entityIds entity ids
+     */
+    @Transactional(rollbackFor = Throwable.class)
+    public void deleteCustomizedEntitiesByIds(List<Long> entityIds) {
+        List<EntityPO> entityPOList = findEntityPOListAndTheirChildrenByIds(entityIds)
+                .stream()
+                // only customized entities allowed to be deleted
+                .filter(entityPO -> isCustomizedEntity(entityPO.getAttachTargetId()))
+                .toList();
+        deleteEntitiesByPOList(entityPOList);
+    }
+
+    /**
+     * Find entity PO list and their children by ids.
+     *
+     * @param entityIds entity ids
+     * @return entity PO list
+     */
+    public List<EntityPO> findEntityPOListAndTheirChildrenByIds(List<Long> entityIds) {
+        List<EntityPO> entityPOList = entityRepository.findAllById(entityIds);
+        List<Long> parentEntityIds = entityPOList.stream()
+                .filter(t -> t.getParent() == null)
+                .map(EntityPO::getId).toList();
+        List<EntityPO> childrenEntityPOList = entityRepository.findAll(
+                filter -> filter.in(EntityPO.Fields.parent, parentEntityIds.toArray()));
+        return Stream.concat(entityPOList.stream(), childrenEntityPOList.stream())
+                .toList();
+    }
+
+    /**
+     * Find entity responses and their children by ids.
+     *
+     * @param entityIds entity ids
+     * @return entity PO list
+     */
+    public List<EntityResponse> findEntityResponsesAndTheirChildrenByIds(List<Long> entityIds) {
+        return convertEntityPOListToEntityResponses(findEntityPOListAndTheirChildrenByIds(entityIds));
+    }
+
+    /**
+     * Update entity basic info.<br>
+     * Currently only name and can be modified.
+     *
+     * @param entityId            entity ID
+     * @param entityModifyRequest entity modify request
+     * @return entity metadata
+     */
+    @Transactional(rollbackFor = Throwable.class)
+    public EntityMetaResponse updateEntityBasicInfo(Long entityId, EntityModifyRequest entityModifyRequest) {
+        if (!StringUtils.hasText(entityModifyRequest.getName())) {
+            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("name is empty").build();
+        }
+
+        EntityPO entityPO = entityRepository.findById(entityId)
+                .orElseThrow(ServiceException.with(ErrorCode.DATA_NO_FOUND).detailMessage("entity not found")::build);
+        entityPO.setName(entityModifyRequest.getName());
+        entityRepository.save(entityPO);
+
+        return convertEntityPOToEntityMetaResponse(entityPO);
+    }
+
+    @Transactional(rollbackFor = Throwable.class)
+    public EntityMetaResponse createCustomizedEntity(EntityCreateRequest entityCreateRequest) {
+        EntityPO entityPO = new EntityPO();
+        entityPO.setName(entityCreateRequest.getName());
+        entityPO.setType(entityCreateRequest.getType());
+        entityPO.setAccessMod(entityCreateRequest.getAccessMod());
+        entityPO.setValueAttribute(entityCreateRequest.getValueAttribute());
+        entityPO.setValueType(entityCreateRequest.getValueType());
+        entityPO.setParent(entityCreateRequest.getParentIdentifier());
+        entityPO.setKey(entityCreateRequest.getIdentifier());
+        entityPO.setVisible(entityCreateRequest.getVisible());
+        entityPO.setTenantId(SecurityUserContext.getTenantId());
+        entityPO.setUserId(SecurityUserContext.getUserId());
+        entityPO.setAttachTarget(AttachTargetType.INTEGRATION);
+        entityPO.setAttachTargetId(IntegrationConstants.SYSTEM_INTEGRATION_ID);
+        entityPO = entityRepository.save(entityPO);
+        return convertEntityPOToEntityMetaResponse(entityPO);
+    }
+
+    private static boolean isCustomizedEntity(String integrationId) {
+        return IntegrationConstants.SYSTEM_INTEGRATION_ID.equals(integrationId);
     }
 
 }

@@ -303,15 +303,42 @@ public class EntityValueService implements EntityValueServiceProvider {
     }
 
     public Page<EntityHistoryResponse> historySearch(EntityHistoryQuery entityHistoryQuery) {
-        Page<EntityHistoryPO> entityHistoryPage = entityHistoryRepository.findAllWithDataPermission(f -> f.eq(EntityHistoryPO.Fields.entityId, entityHistoryQuery.getEntityId())
+
+        if (entityHistoryQuery.getStartTimestamp() == null) {
+            entityHistoryQuery.setStartTimestamp(0L);
+        }
+        if (entityHistoryQuery.getEndTimestamp() == null) {
+            entityHistoryQuery.setEndTimestamp(System.currentTimeMillis());
+        }
+        if (entityHistoryQuery.getEndTimestamp() <= entityHistoryQuery.getStartTimestamp()) {
+            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED)
+                    .detailMessage("startTimestamp should be less than endTimestamp")
+                    .build();
+        }
+
+        List<Long> entityIds = entityHistoryQuery.getEntityIds() == null
+                ? new ArrayList<>()
+                : entityHistoryQuery.getEntityIds()
+                .stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        if (entityHistoryQuery.getEntityId() != null) {
+            entityIds.add(entityHistoryQuery.getEntityId());
+        }
+
+        Page<EntityHistoryPO> entityHistoryPage = entityHistoryRepository.findAllWithDataPermission(f -> f.in(EntityHistoryPO.Fields.entityId, entityIds.toArray())
                         .ge(EntityHistoryPO.Fields.timestamp, entityHistoryQuery.getStartTimestamp())
                         .le(EntityHistoryPO.Fields.timestamp, entityHistoryQuery.getEndTimestamp()),
                 entityHistoryQuery.toPageable());
         if (entityHistoryPage == null || entityHistoryPage.getContent().isEmpty()) {
             return Page.empty();
         }
+
         return entityHistoryPage.map(entityHistoryPO -> {
             EntityHistoryResponse response = new EntityHistoryResponse();
+            response.setEntityId(entityHistoryPO.getEntityId().toString());
+            response.setTimestamp(entityHistoryPO.getTimestamp().toString());
             if (entityHistoryPO.getValueBoolean() != null) {
                 response.setValue(entityHistoryPO.getValueBoolean());
                 response.setValueType(EntityValueType.BOOLEAN);
@@ -328,7 +355,6 @@ public class EntityValueService implements EntityValueServiceProvider {
                 response.setValue(entityHistoryPO.getValueBinary());
                 response.setValueType(EntityValueType.BINARY);
             }
-            response.setTimestamp(entityHistoryPO.getTimestamp().toString());
             return response;
         });
     }

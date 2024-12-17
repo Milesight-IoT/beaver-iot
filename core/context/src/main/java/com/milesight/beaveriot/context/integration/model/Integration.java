@@ -35,11 +35,24 @@ public class Integration {
 
     private String entityIdentifierDeleteDevice;
 
+    private boolean visible = true;
+
     private List<Device> initialDevices = new ArrayList<>();
 
     private List<Entity> initialEntities = new ArrayList<>();
 
     public Integration() {
+    }
+
+    public Integration(String id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
+    public Integration(String id, String name, boolean visible) {
+        this.id = id;
+        this.name = name;
+        this.visible = visible;
     }
 
     public Integration(String id, String name, String description, String iconUrl) {

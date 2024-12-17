@@ -33,11 +33,11 @@ import java.util.Map;
 @Order(0)
 public class IntegrationBootstrapManager implements CommandLineRunner {
 
-    private YamlPropertySourceFactory propertySourceFactory;
-    private IntegrationContext integrationContext = new IntegrationContext();
-    private ObjectProvider<EntityLoader> entityLoaders;
-    private ObjectProvider<IntegrationBootstrap> integrationBootstrapList;
-    private IntegrationServiceProvider integrationStorageProvider;
+    private final YamlPropertySourceFactory propertySourceFactory;
+    private final IntegrationContext integrationContext = new IntegrationContext();
+    private final ObjectProvider<EntityLoader> entityLoaders;
+    private final ObjectProvider<IntegrationBootstrap> integrationBootstrapList;
+    private final IntegrationServiceProvider integrationStorageProvider;
 
     public IntegrationBootstrapManager(ObjectProvider<EntityLoader> entityLoaders, ObjectProvider<IntegrationBootstrap> integrationBootstraps, IntegrationServiceProvider integrationStorageProvider) {
         this.entityLoaders = entityLoaders;
@@ -47,6 +47,11 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
     }
 
     public void onStarted() {
+
+        // Add default integration: "system"
+        integrationContext.cacheIntegration(
+                new Integration(IntegrationConstants.SYSTEM_INTEGRATION_ID, IntegrationConstants.SYSTEM_INTEGRATION_ID, false),
+                new SystemIntegrationBootstrap(), new StandardEnvironment());
 
         integrationBootstrapList.orderedStream().forEach(integrationBootstrap -> {
             try {
@@ -64,7 +69,7 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
 
                 integration.initializeProperties();
 
-                integrationContext.cacheIntegration(integrationBootstrap, integration, integrationEnvironment);
+                integrationContext.cacheIntegration(integration, integrationBootstrap, integrationEnvironment);
 
                 int allDeviceEntitySize = integration.getInitialDevices().stream().mapToInt(device -> ObjectUtils.isEmpty(device.getEntities()) ? 0 : device.getEntities().size()).sum();
 
@@ -79,12 +84,12 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
         integrationStorageProvider.batchSave(integrationContext.getAllIntegrations().values());
 
         integrationBootstrapList.orderedStream().forEach(integrationBootstrap -> {
-            try{
+            try {
                 Integration integration = integrationContext.getIntegration(integrationBootstrap);
                 if (integration != null) {
                     integrationBootstrap.onStarted(integration);
                 }
-            }catch (Exception ex){
+            } catch (Exception ex) {
                 log.error("Failed to start integration yaml", ex);
             }
         });
