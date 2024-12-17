@@ -110,6 +110,7 @@ public class RuleEngineTracer extends DefaultTracer {
             if (exchange.getException() != null) {
                 flowTraceResponse.setStatus(ExecutionStatus.ERROR);
             }
+            flowTraceResponse.setTimeCost(System.currentTimeMillis() - flowTraceResponse.getStartTime());
             log.debug("traceAfterRoute: {}", flowTraceResponse);
             applicationEventPublisher.publishEvent(flowTraceResponse);
         }

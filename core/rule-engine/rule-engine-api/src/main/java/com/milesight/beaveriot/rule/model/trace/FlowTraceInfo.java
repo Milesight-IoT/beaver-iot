@@ -17,7 +17,9 @@ public class FlowTraceInfo {
 
     private String flowId;
 
-    private String flowVersion;
+    private long startTime = System.currentTimeMillis();
+
+    private long timeCost;
 
     private List<NodeTraceInfo> traceInfos = new ArrayList<>();
 
