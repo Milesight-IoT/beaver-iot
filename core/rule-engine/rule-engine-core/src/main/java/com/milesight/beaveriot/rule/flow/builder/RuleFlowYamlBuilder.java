@@ -80,7 +80,7 @@ public class RuleFlowYamlBuilder {
 
         fromNode.setSteps(outputNodes);
 
-        return ruleNodeInterceptor.interceptRouteNode(flowId, RouteNode.create(flowId, ruleNodeInterceptor.interceptFrom(flowId, fromNode)));
+        return ruleNodeInterceptor.interceptRouteNode(flowId, RouteNode.create(flowId, ruleNodeInterceptor.interceptFromNode(flowId, fromNode)));
     }
 
     private void retrieveOutputNodes(List<OutputNode> outputNodes, String nodeId, Predicate<Set<RuleConfig>> endBranchPredicate) {

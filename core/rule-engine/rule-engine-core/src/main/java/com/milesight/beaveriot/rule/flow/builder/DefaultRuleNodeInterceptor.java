@@ -24,9 +24,9 @@ public class DefaultRuleNodeInterceptor implements RuleNodeInterceptor {
     }
 
     @Override
-    public FromNode interceptFrom(String flowId, FromNode fromNode) {
+    public FromNode interceptFromNode(String flowId, FromNode fromNode) {
         for (RuleNodeInterceptor interceptor : ruleNodeInterceptors) {
-            fromNode = interceptor.interceptFrom(flowId, fromNode);
+            fromNode = interceptor.interceptFromNode(flowId, fromNode);
         }
         return fromNode;
     }

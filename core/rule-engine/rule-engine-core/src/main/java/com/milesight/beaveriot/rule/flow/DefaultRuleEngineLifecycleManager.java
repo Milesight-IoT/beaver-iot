@@ -171,7 +171,7 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
     public static class TraceRuleNodeInterceptor extends DefaultRuleNodeInterceptor {
 
         @Override
-        public FromNode interceptFrom(String flowId, FromNode fromNode) {
+        public FromNode interceptFromNode(String flowId, FromNode fromNode) {
             return new FromNode(fromNode.getId(), "direct:" + flowId, null, fromNode.getSteps());
         }
     }

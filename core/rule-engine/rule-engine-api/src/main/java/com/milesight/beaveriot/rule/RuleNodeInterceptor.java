@@ -10,7 +10,7 @@ import org.springframework.core.Ordered;
  */
 public interface RuleNodeInterceptor extends Ordered {
 
-    default FromNode interceptFrom(String flowId, FromNode fromNode) {
+    default FromNode interceptFromNode(String flowId, FromNode fromNode) {
         return fromNode;
     }
 
