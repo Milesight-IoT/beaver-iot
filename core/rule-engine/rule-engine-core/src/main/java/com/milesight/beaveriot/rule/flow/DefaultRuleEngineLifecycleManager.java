@@ -2,11 +2,12 @@ package com.milesight.beaveriot.rule.flow;
 
 import com.milesight.beaveriot.rule.RuleEngineExecutor;
 import com.milesight.beaveriot.rule.RuleEngineLifecycleManager;
+import com.milesight.beaveriot.rule.RuleNodeInterceptor;
 import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
 import com.milesight.beaveriot.rule.constants.RuleNodeNames;
 import com.milesight.beaveriot.rule.exception.RuleEngineException;
+import com.milesight.beaveriot.rule.flow.builder.DefaultRuleNodeInterceptor;
 import com.milesight.beaveriot.rule.flow.builder.RuleFlowYamlBuilder;
-import com.milesight.beaveriot.rule.flow.builder.RuleNodeInterceptor;
 import com.milesight.beaveriot.rule.model.flow.config.RuleFlowConfig;
 import com.milesight.beaveriot.rule.model.flow.config.RuleNodeConfig;
 import com.milesight.beaveriot.rule.model.flow.route.FromNode;
@@ -167,7 +168,7 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
         }
     }
 
-    public static class TraceRuleNodeInterceptor implements RuleNodeInterceptor {
+    public static class TraceRuleNodeInterceptor extends DefaultRuleNodeInterceptor {
 
         @Override
         public FromNode interceptFrom(String flowId, FromNode fromNode) {

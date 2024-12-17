@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.rule.flow.builder;
 
+import com.milesight.beaveriot.rule.RuleNodeInterceptor;
 import com.milesight.beaveriot.rule.flow.ComponentDefinitionCache;
 import com.milesight.beaveriot.rule.model.definition.ComponentDefinition;
 import com.milesight.beaveriot.rule.model.flow.config.RuleChoiceConfig;
@@ -37,7 +38,7 @@ public class RuleFlowYamlBuilder {
     private RuleFlowYamlBuilder(Function<String, ComponentDefinition> componentDefinitionProvider, RuleNodeInterceptor ruleNodeInterceptor) {
         this.componentDefinitionLoader = componentDefinitionProvider;
         if (ruleNodeInterceptor == null) {
-            this.ruleNodeInterceptor = new RuleNodeInterceptor.NoOpRuleNodeInterceptor();
+            this.ruleNodeInterceptor = new DefaultRuleNodeInterceptor();
         } else {
             this.ruleNodeInterceptor = ruleNodeInterceptor;
         }

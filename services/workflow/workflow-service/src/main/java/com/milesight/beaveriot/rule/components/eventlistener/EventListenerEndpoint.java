@@ -30,10 +30,6 @@ public class EventListenerEndpoint extends DefaultEndpoint {
     @UriParam(displayName = "Entity Listening Setting", description = "The entities to listen for events")
     private List<String> entities;
 
-    @Metadata(autowired = true)
-    @UriParam(defaultValue = "false", label = "advanced", description = "Whether to process the exchange synchronously or asynchronously.")
-    private boolean synchronous = false;
-
     public EventListenerEndpoint(String uri, EventListenerComponent component) {
         super(uri, component);
     }

@@ -1,13 +1,14 @@
-package com.milesight.beaveriot.rule.flow.builder;
+package com.milesight.beaveriot.rule;
 
 import com.milesight.beaveriot.rule.model.flow.route.FromNode;
 import com.milesight.beaveriot.rule.model.flow.route.RouteNode;
 import com.milesight.beaveriot.rule.model.flow.route.base.OutputNode;
+import org.springframework.core.Ordered;
 
 /**
  * @author leon
  */
-public interface RuleNodeInterceptor {
+public interface RuleNodeInterceptor extends Ordered {
 
     default FromNode interceptFrom(String flowId, FromNode fromNode) {
         return fromNode;
@@ -21,7 +22,9 @@ public interface RuleNodeInterceptor {
         return routeNode;
     }
 
-    public class NoOpRuleNodeInterceptor implements RuleNodeInterceptor {
-
+    @Override
+    default int getOrder() {
+        return 0;
     }
+
 }
