@@ -152,6 +152,8 @@ public class EntityService implements EntityServiceProvider {
         response.setValueAttribute(entityPO.getValueAttribute());
         response.setValueType(entityPO.getValueType());
         response.setCustomized(isCustomizedEntity(entityPO.getAttachTargetId()));
+        response.setCreatedAt(entityPO.getCreatedAt());
+        response.setUpdatedAt(entityPO.getUpdatedAt());
         return response;
     }
 
@@ -561,6 +563,8 @@ public class EntityService implements EntityServiceProvider {
         response.setEntityValueAttribute(entityPO.getValueAttribute());
         response.setEntityValueType(entityPO.getValueType());
         response.setEntityIsCustomized(isCustomizedEntity(entityPO.getAttachTargetId()));
+        response.setEntityCreatedAt(entityPO.getCreatedAt());
+        response.setEntityUpdatedAt(entityPO.getUpdatedAt());
         return response;
     }
 
@@ -746,22 +750,47 @@ public class EntityService implements EntityServiceProvider {
     }
 
     @Transactional(rollbackFor = Throwable.class)
-    public EntityMetaResponse createCustomizedEntity(EntityCreateRequest entityCreateRequest) {
+    public EntityMetaResponse createCustomEntity(EntityCreateRequest entityCreateRequest) {
+        String parentKey = entityCreateRequest.getParentIdentifier() != null
+                ? getCustomEntityKey(entityCreateRequest.getParentIdentifier())
+                : null;
+        String key = parentKey != null
+                ? getEntityKey(parentKey, entityCreateRequest.getIdentifier())
+                : getCustomEntityKey(entityCreateRequest.getIdentifier());
+        if (key == null) {
+            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("identifier is empty").build();
+        }
+
         EntityPO entityPO = new EntityPO();
+        entityPO.setId(SnowflakeUtil.nextId());
         entityPO.setName(entityCreateRequest.getName());
         entityPO.setType(entityCreateRequest.getType());
         entityPO.setAccessMod(entityCreateRequest.getAccessMod());
         entityPO.setValueAttribute(entityCreateRequest.getValueAttribute());
         entityPO.setValueType(entityCreateRequest.getValueType());
-        entityPO.setParent(entityCreateRequest.getParentIdentifier());
-        entityPO.setKey(entityCreateRequest.getIdentifier());
-        entityPO.setVisible(entityCreateRequest.getVisible());
+        entityPO.setKey(key);
+        entityPO.setParent(parentKey);
+        entityPO.setVisible(entityCreateRequest.getVisible() == null || entityCreateRequest.getVisible());
         entityPO.setTenantId(SecurityUserContext.getTenantId());
         entityPO.setUserId(SecurityUserContext.getUserId());
         entityPO.setAttachTarget(AttachTargetType.INTEGRATION);
         entityPO.setAttachTargetId(IntegrationConstants.SYSTEM_INTEGRATION_ID);
         entityPO = entityRepository.save(entityPO);
         return convertEntityPOToEntityMetaResponse(entityPO);
+    }
+
+    private String getCustomEntityKey(String identifier) {
+        if (identifier == null) {
+            return null;
+        }
+        return String.format("%s.integration.%s", IntegrationConstants.SYSTEM_INTEGRATION_ID, identifier);
+    }
+
+    private String getEntityKey(String parent, String identifier) {
+        if (parent == null || identifier == null) {
+            return null;
+        }
+        return String.format("%s.%s", parent, identifier);
     }
 
     private static boolean isCustomizedEntity(String integrationId) {

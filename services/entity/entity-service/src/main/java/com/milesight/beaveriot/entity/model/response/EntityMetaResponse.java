@@ -30,6 +30,8 @@ public class EntityMetaResponse {
 
     private Boolean customized;
 
-    private Long workflowId;
+    private Long createdAt;
+
+    private Long updatedAt;
 
 }
