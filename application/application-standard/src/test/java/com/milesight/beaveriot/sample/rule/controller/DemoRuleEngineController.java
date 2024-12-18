@@ -69,7 +69,7 @@ public class DemoRuleEngineController {
     @PostMapping("/public/test-deploy/{config}")
     public ResponseBody<String> testDeploy(@PathVariable("config") String config) throws IOException {
 
-        ClassPathResource classPathResource = new ClassPathResource(config + ".json");
+        ClassPathResource classPathResource = new ClassPathResource("config-schema/"+config + ".json");
         String flowConfig = classPathResource.getContentAsString(Charset.defaultCharset());
 
         RuleFlowConfig ruleFlowConfig = JsonHelper.fromJSON(flowConfig, RuleFlowConfig.class);
