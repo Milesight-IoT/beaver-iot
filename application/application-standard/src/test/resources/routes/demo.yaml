@@ -1,0 +1,44 @@
+  - route:
+      from:
+        id: flow.myId.id_1
+        uri: eventListener:myevent
+        parameters:
+          entities: demo-anno-integration.integration.connect,demo-anno-integration.integration.address
+        steps:
+          - split:
+              simple: "${bean:innerParallelSplitter.split(${body},'2')}"
+              parallelProcessing: true
+          - choice:
+              id: inner.myId.PARALLEL_0
+              when:
+                - simple: "${header.CamelSplitIndex} == 0"
+                  id: inner.inner.myId.PARALLEL_0.BRANCH_1
+                  steps:
+                    - to:
+                        id: "my-groovy-test-js-1"
+                        uri: "language:js"
+                        parameters:
+                          script: "(()=>{
+                                var a = \"abc\";
+                                return a;
+                                })()
+                                "
+                - simple: "${header.CamelSplitIndex} == 1"
+                  id: inner.inner.myId.PARALLEL_0.BRANCH_0
+                  steps:
+                    - to:
+                        id: flow.myId.id_3
+                        parameters:
+                          bean.expression: "{\"language\":\"groovy\",\"expression\":\"def map = [:];  map['key1'] = properties.a; return map;\"}"
+                          bean.inputArguments: '{"a":1}'
+                        uri: bean:code
+
+          - to:
+              id: flow.myId.id_4
+              parameters:
+                bean.emailContent: '"myEvent"'
+                bean.exchangePayload: '{"a":1}'
+              uri: bean:simpleAlarmComponent
+
+      id: myId
+

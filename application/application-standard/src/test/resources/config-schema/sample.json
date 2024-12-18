@@ -1,0 +1,50 @@
+{
+  "flowId": "myId",
+  "nodes": [
+    {
+      "id": "id_1",
+      "nodeName": "node1",
+      "nodeRemark": "",
+      "parameters": {
+        "period": 1000
+      },
+      "componentName": "timer"
+    },
+    {
+      "id": "id_2",
+      "nodeName": "node2",
+      "nodeRemark": "",
+      "parameters": {
+        "bean.emailContent": "myEvent",
+        "bean.exchangePayload": {
+          "a": 1
+        }
+      },
+      "componentName": "simpleAlarmComponent"
+    },
+    {
+      "id": "id_3",
+      "nodeName": "node3",
+      "nodeRemark": "",
+      "parameters": {
+        "bean.emailContent": "myEvent",
+        "bean.exchangePayload": {
+          "b": 2
+        }
+      },
+      "componentName": "simpleAlarmComponent"
+    }
+  ],
+  "edges": [
+    {
+      "id": "1",
+      "source": "id_1",
+      "target": "id_2"
+    },
+    {
+      "id": "2",
+      "source": "id_2",
+      "target": "id_3"
+    }
+  ]
+}

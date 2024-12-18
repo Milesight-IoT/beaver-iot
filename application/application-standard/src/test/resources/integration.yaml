@@ -1,4 +1,6 @@
 
+
+
 integration:
    demo-anno-integration:
       iconUrl: public/msc-integration.png
@@ -25,12 +27,3 @@ integration:
            access_mod: rw
            value_type: string
            type: property
-         - identifier: 'connect'
-           name: connect
-           value_type: string
-           type: service
-           children:
-              - identifier: 'url'
-                name: connectUrl
-                value_type: string
-                type: service

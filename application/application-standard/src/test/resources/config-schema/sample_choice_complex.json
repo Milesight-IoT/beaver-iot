@@ -1,0 +1,108 @@
+{
+  "flowId": "myId",
+  "nodes": [
+    {
+      "id": "id_1",
+      "nodeName": "node1",
+      "nodeRemark": "",
+      "parameters": {
+        "eventbusName": "myEvent",
+        "entities": {}
+      },
+      "componentName": "eventListener"
+    },
+    {
+      "id": "choice_1",
+      "nodeName": "choice",
+      "nodeRemark": "",
+      "componentName": "choice",
+      "parameters": {
+        "when": [
+          {
+            "id": "c_1",
+            "expressionType": "mvel",
+            "or": [
+              {
+                "expressionValue": "request.body['a.b.c'] != null"
+              }
+            ]
+          },
+          {
+            "id": "c_2",
+            "expressionType": "condition",
+            "and": [
+              {
+                "expressionValue": {
+                  "id": "",
+                  "key": "",
+                  "value": "",
+                  "operator": ""
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "id_2",
+      "nodeName": "node2",
+      "nodeRemark": "",
+      "parameters": {
+        "eventbusName": "myEvent",
+        "entities": {}
+      },
+      "componentName": "eventListener"
+    },
+    {
+      "id": "id_3",
+      "nodeName": "node3",
+      "nodeRemark": "",
+      "parameters": {
+        "eventbusName": "myEvent",
+        "entities": {}
+      },
+      "componentName": "eventListener"
+    },
+    {
+      "id": "id_4",
+      "nodeName": "node4",
+      "nodeRemark": "",
+      "parameters": {
+        "eventbusName": "myEvent",
+        "entities": {}
+      },
+      "componentName": "eventListener"
+    }
+  ],
+  "edges": [
+    {
+      "source": "id_1",
+      "target": "choice_1"
+    },
+    {
+      "source": "choice_1",
+      "target": "c_1"
+    },
+    {
+      "source": "choice_1",
+      "target": "c_2"
+    },
+    {
+      "source": "c_1",
+      "target": "id_2"
+    },
+    {
+      "source": "c_2",
+      "target": "id_3"
+    },
+    {
+      "source": "id_3",
+      "target": "id_4"
+    },
+    {
+      "source": "id_2",
+      "target": "id_4"
+    }
+  ]
+}

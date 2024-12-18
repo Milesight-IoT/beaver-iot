@@ -1,0 +1,75 @@
+{
+  "flowId": "myId",
+  "nodes": [
+    {
+      "id": "id_1",
+      "nodeName": "node1",
+      "nodeRemark": "",
+      "parameters": {
+        "period": 1000
+      },
+      "componentName": "timer"
+    },
+    {
+      "id": "id_2",
+      "nodeName": "node2",
+      "nodeRemark": "",
+      "parameters": {
+        "bean.emailContent": "myEvent",
+        "bean.exchangePayload": {
+          "a": 1
+        },
+        "bean.entities": [
+          "a",
+          "b"
+        ],
+        "bean.includeMetadata": false,
+        "bean.size": 10
+      },
+      "componentName": "simpleAlarmComponent"
+    },
+    {
+      "id": "id_3",
+      "nodeName": "node3",
+      "nodeRemark": "",
+      "parameters": {
+        "bean.emailContent": "${properties.id_2.bean.emailContent}",
+        "bean.exchangePayload": "${properties.id_2.bean.exchangePayload.a}",
+        "bean.entities": "${properties.id_2.bean.entities[0]}",
+        "bean.includeMetadata": true,
+        "bean.size": 1
+      },
+      "componentName": "simpleAlarmComponent"
+    },
+    {
+      "id": "id_4",
+      "nodeName": "node4",
+      "nodeRemark": "",
+      "parameters": {
+        "bean.emailContent": "myEvent",
+        "bean.exchangePayload": {
+          "a": 1
+        }
+      },
+      "componentName": "simpleAlarmComponent"
+    }
+  ],
+  "edges": [
+    {
+      "source": "id_1",
+      "target": "id_2"
+    },
+    {
+      "source": "id_1",
+      "target": "id_3"
+    },
+    {
+      "source": "id_3",
+      "target": "id_4"
+    },
+    {
+      "source": "id_2",
+      "target": "id_4"
+    }
+  ]
+}

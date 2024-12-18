@@ -146,29 +146,25 @@
 
         <dependency>
             <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>workflow-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>rule-engine-components</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
             <artifactId>msc-integration</artifactId>
             <version>1.0.0</version>
         </dependency>
 
-        <!-- sample test -->
-        <!--<dependency>
-            <groupId>com.milesight.beaveriot</groupId>
-            <artifactId>msc-integration</artifactId>
-            <version>${project.version}</version>
-            <scope>system</scope>
-            <systemPath>C:/Users/Zhangl/.m2/repository/com/milesight/beaveriot/msc-integration/1.0-SNAPSHOT/msc-integration-1.0-SNAPSHOT.jar</systemPath>
-        </dependency>
-
-        <dependency>
-            <groupId>com.milesight.beaveriot</groupId>
-            <artifactId>ping</artifactId>
-            <version>${project.version}</version>
-            <scope>system</scope>
-            <systemPath>C:/Users/Zhangl/.m2/repository/com/milesight/beaveriot/ping/1.0-SNAPSHOT/ping-1.0-SNAPSHOT.jar</systemPath>
-        </dependency>-->
 
         <!-- unit test -->
-        <dependency>
+        <!--<dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-commons</artifactId>
         </dependency>
@@ -195,7 +191,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-inline</artifactId>
-        </dependency>
+        </dependency>-->
     </dependencies>
 
     <build>

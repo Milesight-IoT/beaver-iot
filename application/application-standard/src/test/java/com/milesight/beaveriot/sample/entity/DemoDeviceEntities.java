@@ -3,6 +3,7 @@ package com.milesight.beaveriot.sample.entity;
 
 import com.milesight.beaveriot.context.integration.entity.annotation.Attribute;
 import com.milesight.beaveriot.context.integration.entity.annotation.DeviceTemplateEntities;
+import com.milesight.beaveriot.context.integration.entity.annotation.Entities;
 import com.milesight.beaveriot.context.integration.entity.annotation.Entity;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
@@ -12,6 +13,7 @@ import com.milesight.beaveriot.context.integration.model.DeviceBuilder;
 import com.milesight.beaveriot.context.integration.model.EntityBuilder;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 
 /**
@@ -26,13 +28,24 @@ public class DemoDeviceEntities extends ExchangePayload {
     public Double temperature;
 
     @Entity
-    private String humidity;
+    public String humidity;
 
     @Entity(attributes = {@Attribute(unit = "ms", min = 0, max = 1000)})
-    private Integer status;
+    public Integer status;
 
     @Entity(type= EntityType.SERVICE)
-    private String changeStatus;
+    public String changeStatus;
+
+    @Entity(type= EntityType.SERVICE)
+    public DemoGroupDeviceEntities groupDeviceEntities;
+
+    @Data
+    @EqualsAndHashCode(callSuper = true)
+    @Entities
+    public static class DemoGroupDeviceEntities extends ExchangePayload {
+        @Entity
+        public String childStatus;
+    }
 
     public static void main(String[] args) {
         com.milesight.beaveriot.context.integration.model.Entity entityConfig = new EntityBuilder()
