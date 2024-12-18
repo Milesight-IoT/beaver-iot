@@ -36,6 +36,8 @@ camel:
       entry:
         - name: "timer"
           title: "timer"
+        - name: "trigger"
+          title: "trigger"
         - name: "direct"
           title: "input"
         - name: "eventListener"
@@ -46,6 +48,8 @@ camel:
       action:
         - name: "entityAssigner"
           title: "Entity Assigner"
+        - name: "entitySelector"
+          title: "Entity Selector"
         - name: "serviceInvocation"
           title: "Service Invocation"
         - name: "code"
