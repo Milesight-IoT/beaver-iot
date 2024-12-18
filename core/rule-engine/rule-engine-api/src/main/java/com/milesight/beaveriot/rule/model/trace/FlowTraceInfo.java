@@ -40,7 +40,7 @@ public class FlowTraceInfo {
                 .orElse(null);
     }
 
-    public NodeTraceInfo getLastNodeTrace() {
+    public NodeTraceInfo findLastNodeTrace() {
         return ObjectUtils.isEmpty(traceInfos) ? null : traceInfos.get(traceInfos.size() - 1);
     }
 }

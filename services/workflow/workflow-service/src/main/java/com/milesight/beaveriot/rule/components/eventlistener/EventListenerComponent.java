@@ -5,7 +5,7 @@ import org.apache.camel.support.DefaultComponent;
 
 import java.util.Map;
 
-@org.apache.camel.spi.annotations.Component("eventlistener")
+@org.apache.camel.spi.annotations.Component("eventListener")
 public class EventListenerComponent extends DefaultComponent {
 
     private Map<String,Object> parameters;

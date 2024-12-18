@@ -16,10 +16,10 @@ import org.apache.camel.support.DefaultEndpoint;
 
 import java.util.List;
 
-@RuleNode(type = RuleNodeType.ENTRY, value = "eventlistener", testable = false)
+@RuleNode(type = RuleNodeType.ENTRY, value = "eventListener", testable = false)
 @Data
 @ManagedResource(description = "Managed EventBusEndpoint")
-@UriEndpoint(firstVersion = "1.0.0", scheme = "eventlistener", title = "Event Listener", syntax = "eventlistener:eventListenerName", consumerOnly = true,
+@UriEndpoint(firstVersion = "1.0.0", scheme = "eventListener", title = "Event Listener", syntax = "eventListener:eventListenerName", consumerOnly = true,
         remote = false, category = { Category.WORKFLOW}, headersClass = EventListenerConstants.class)
 public class EventListenerEndpoint extends DefaultEndpoint {
 

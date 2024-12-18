@@ -144,7 +144,7 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
         RuleNodeConfig fromNode = RuleNodeConfig.create(RuleFlowIdGenerator.generateRandomId(), RuleNodeNames.CAMEL_DIRECT, "TestMockNode", null);
         RuleFlowConfig sequenceFlow = RuleFlowConfig.createSequenceFlow(RuleFlowIdGenerator.generateRandomId(), List.of(fromNode, nodeConfig));
         FlowTraceInfo flowTraceResponse = trackFlow(sequenceFlow, exchange);
-        return flowTraceResponse.getLastNodeTrace();
+        return flowTraceResponse.findLastNodeTrace();
     }
 
     @Override
