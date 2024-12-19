@@ -14,6 +14,7 @@ import com.milesight.beaveriot.rule.manager.po.WorkflowHistoryPO;
 import com.milesight.beaveriot.rule.manager.po.WorkflowPO;
 import com.milesight.beaveriot.rule.manager.repository.*;
 import com.milesight.beaveriot.rule.model.RuleLanguage;
+import com.milesight.beaveriot.rule.model.definition.BaseDefinition;
 import com.milesight.beaveriot.rule.model.flow.config.RuleFlowConfig;
 import com.milesight.beaveriot.rule.model.flow.config.RuleNodeConfig;
 import com.milesight.beaveriot.rule.model.trace.FlowTraceInfo;
@@ -62,7 +63,7 @@ public class WorkflowService {
 
         GenericPageRequest pageRequest = new GenericPageRequest();
         pageRequest.sort(new Sorts().desc(WorkflowPO.Fields.id));
-        final int pageSize = 2;
+        final int pageSize = 1000;
         pageRequest.setPageSize(pageSize);
         pageRequest.setPageNumber(1);
         Page<WorkflowPO> workflowPOPage;
@@ -255,8 +256,7 @@ public class WorkflowService {
             workflowPO.setUserId(SecurityUserContext.getUserId());
         } else {
             workflowPO = getById(Long.valueOf(request.getId()));
-
-            if (request.getVersion() != null && !request.getVersion().equals(workflowPO.getVersion())) {
+            if (!workflowPO.getVersion().equals(request.getVersion())) {
                 throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "Version Expired: " + request.getVersion()).build();
             }
 
@@ -267,9 +267,6 @@ public class WorkflowService {
             workflowHistoryPO.setUserId(workflowPO.getUpdatedUser());
             workflowHistoryPO.setVersion(workflowPO.getVersion());
             workflowHistoryPO.setDesignData(workflowPO.getDesignData());
-
-            // inc version
-            workflowPO.setVersion(workflowPO.getVersion() + 1);
         }
 
         workflowPO.setUpdatedUser(SecurityUserContext.getUserId());
@@ -282,8 +279,9 @@ public class WorkflowService {
             workflowPO.setRouteData(null);
         }
 
+        Integer beforeVersion = workflowPO.getVersion();
         workflowPO = workflowRepository.save(workflowPO);
-        if (workflowHistoryPO != null) {
+        if (workflowHistoryPO != null && !workflowPO.getVersion().equals(beforeVersion)) {
             workflowHistoryRepository.save(workflowHistoryPO);
         }
 
@@ -309,11 +307,11 @@ public class WorkflowService {
 
     public WorkflowComponentResponse getWorkflowComponents() {
         WorkflowComponentResponse wcp = new WorkflowComponentResponse();
-        Map<String, List<WorkflowComponent>> componentMap = new HashMap<>();
+        Map<String, List<BaseDefinition>> componentMap = new HashMap<>();
         ruleEngineComponentManager.getDeclaredComponents().forEach((key, value) -> {
-            List<WorkflowComponent> componentGroup = new ArrayList<>();
+            List<BaseDefinition> componentGroup = new ArrayList<>();
             value.forEach(componentDef -> {
-                WorkflowComponent wc = new WorkflowComponent();
+                BaseDefinition wc = new BaseDefinition();
                 wc.setName(componentDef.getName());
                 wc.setTitle(componentDef.getTitle());
                 componentGroup.add(wc);

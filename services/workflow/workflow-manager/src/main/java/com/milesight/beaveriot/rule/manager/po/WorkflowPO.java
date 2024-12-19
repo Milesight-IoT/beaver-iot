@@ -18,7 +18,8 @@ public class WorkflowPO {
     private Long id;
 
     @Column(name = "version")
-    private Integer version = 1;
+    @Version
+    private Integer version;
 
     @Column(name = "name")
     private String name;
