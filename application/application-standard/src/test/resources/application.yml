@@ -4,7 +4,8 @@ server:
 
 spring:
   liquibase:
-    enabled: false
+    enabled: true
+    change-log: 'classpath*:db/${DB_TYPE:h2}/changelog.yaml'
   jackson:
     default-property-inclusion: non_null
     property-naming-strategy: SNAKE_CASE
@@ -14,8 +15,8 @@ spring:
       jakarta.persistence.query.timeout: "${JAVAX_PERSISTENCE_QUERY_TIMEOUT:30000}" # General timeout for JDBC queries
       hibernate.type.wrapper_array_handling: ALLOW
       hibernate.naming.physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
-      hibernate.hbm2ddl.auto: update
-      hibernate.dialect: org.hibernate.dialect.H2Dialect
+#      hibernate.hbm2ddl.auto: update
+#      hibernate.dialect: org.hibernate.dialect.H2Dialect
   datasource:
     url: "${SPRING_DATASOURCE_URL:jdbc:h2:file:~/beaver-iot/h2/beaver-dev;AUTO_SERVER=TRUE}"
     username: "${SPRING_DATASOURCE_USERNAME:sa}"
