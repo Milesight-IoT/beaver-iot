@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.user.controller;
 
+import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.user.model.request.CreateRoleRequest;
@@ -39,6 +40,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -73,12 +75,20 @@ public class RoleController {
     }
 
     @GetMapping("")
-    public ResponseBody<Page<RoleResponse>> getRoles(@RequestBody RoleListRequest roleListRequest) {
+    public ResponseBody<Page<RoleResponse>> getRoles(@RequestParam(value = "keyword") String keyword,
+                                                     @RequestParam(value = "page_size") Integer pageSize,
+                                                     @RequestParam(value = "page_number") Integer pageNumber,
+                                                     @RequestParam(value = "sort") Sorts sort) {
+        RoleListRequest roleListRequest = new RoleListRequest();
+        roleListRequest.setPageNumber(pageNumber);
+        roleListRequest.setPageSize(pageSize);
+        roleListRequest.setKeyword(keyword);
+        roleListRequest.setSort(sort);
         Page<RoleResponse> roleResponses = roleService.getRoles(roleListRequest);
         return ResponseBuilder.success(roleResponses);
     }
 
-    @GetMapping("/{roleId}/members")
+    @PostMapping("/{roleId}/members")
     public ResponseBody<Page<UserRoleResponse>> getUsersByRoleId(@PathVariable("roleId") Long roleId, @RequestBody UserRolePageRequest userRolePageRequest) {
         Page<UserRoleResponse> userRoles = roleService.getUsersByRoleId(roleId, userRolePageRequest);
         return ResponseBuilder.success(userRoles);
@@ -90,49 +100,49 @@ public class RoleController {
         return ResponseBuilder.success(roleMenus);
     }
 
-    @GetMapping("/{roleId}/resources")
+    @PostMapping("/{roleId}/resources")
     public ResponseBody<Page<RoleResourceResponse>> getResourcesByRoleId(@PathVariable("roleId") Long roleId, @RequestBody RoleResourceListRequest roleResourceListRequest) {
         Page<RoleResourceResponse> roleResources = roleService.getResourcesByRoleId(roleId, roleResourceListRequest);
         return ResponseBuilder.success(roleResources);
     }
 
-    @GetMapping("/{roleId}/integrations")
+    @PostMapping("/{roleId}/integrations")
     public ResponseBody<Page<RoleIntegrationResponse>> getIntegrationsByRoleId(@PathVariable("roleId") Long roleId, @RequestBody RoleIntegrationRequest roleIntegrationRequest) {
         Page<RoleIntegrationResponse> roleIntegrations = roleService.getIntegrationsByRoleId(roleId, roleIntegrationRequest);
         return ResponseBuilder.success(roleIntegrations);
     }
 
-    @GetMapping("/{roleId}/devices")
+    @PostMapping("/{roleId}/devices")
     public ResponseBody<Page<RoleDeviceResponse>> getDevicesByRoleId(@PathVariable("roleId") Long roleId, @RequestBody RoleDeviceRequest roleDeviceRequest) {
         Page<RoleDeviceResponse> roleDevices = roleService.getDevicesByRoleId(roleId, roleDeviceRequest);
         return ResponseBuilder.success(roleDevices);
     }
 
-    @GetMapping("/{roleId}/dashboards")
+    @PostMapping("/{roleId}/dashboards")
     public ResponseBody<Page<RoleDashboardResponse>> getDashboardsByRoleId(@PathVariable("roleId") Long roleId, @RequestBody RoleDashboardRequest roleDashboardRequest) {
         Page<RoleDashboardResponse> roleDashboards = roleService.getDashboardsByRoleId(roleId, roleDashboardRequest);
         return ResponseBuilder.success(roleDashboards);
     }
 
-    @GetMapping("/{roleId}/undistributed-dashboards")
+    @PostMapping("/{roleId}/undistributed-dashboards")
     public ResponseBody<List<DashboardUndistributedResponse>> getUndistributedDashboards(@PathVariable("roleId") Long roleId, @RequestBody DashboardUndistributedRequest dashboardUndistributedRequest) {
         List<DashboardUndistributedResponse> dashboardResponseList = roleService.getUndistributedDashboards(roleId, dashboardUndistributedRequest);
         return ResponseBuilder.success(dashboardResponseList);
     }
 
-    @GetMapping("/{roleId}/undistributed-users")
+    @PostMapping("/{roleId}/undistributed-users")
     public ResponseBody<List<UserUndistributedResponse>> getUndistributedUsers(@PathVariable("roleId") Long roleId, @RequestBody UserUndistributedRequest userUndistributedRequest) {
         List<UserUndistributedResponse> userUndistributedResponses = roleService.getUndistributedUsers(roleId, userUndistributedRequest);
         return ResponseBuilder.success(userUndistributedResponses);
     }
 
-    @GetMapping("/{roleId}/undistributed-integrations")
+    @PostMapping("/{roleId}/undistributed-integrations")
     public ResponseBody<List<IntegrationUndistributedResponse>> getUndistributedIntegrations(@PathVariable("roleId") Long roleId, @RequestBody IntegrationUndistributedRequest integrationUndistributedRequest) {
         List<IntegrationUndistributedResponse> integrationUndistributedResponses = roleService.getUndistributedIntegrations(roleId, integrationUndistributedRequest);
         return ResponseBuilder.success(integrationUndistributedResponses);
     }
 
-    @GetMapping("/{roleId}/undistributed-devices")
+    @PostMapping("/{roleId}/undistributed-devices")
     public ResponseBody<List<DeviceUndistributedResponse>> getUndistributedDevices(@PathVariable("roleId") Long roleId, @RequestBody DeviceUndistributedRequest deviceUndistributedRequest) {
         List<DeviceUndistributedResponse> deviceUndistributedResponses = roleService.getUndistributedDevices(roleId, deviceUndistributedRequest);
         return ResponseBuilder.success(deviceUndistributedResponses);
