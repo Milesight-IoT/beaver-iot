@@ -146,6 +146,11 @@
 
         <dependency>
             <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>workflow-manager</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
             <artifactId>workflow-service</artifactId>
             <version>${project.version}</version>
         </dependency>
