@@ -1,5 +1,7 @@
 package com.milesight.beaveriot.rule.model.flow.route;
 
+import com.milesight.beaveriot.rule.enums.ExpressionLanguage;
+import com.milesight.beaveriot.rule.enums.LogicOperator;
 import com.milesight.beaveriot.rule.model.flow.config.RuleChoiceConfig;
 import com.milesight.beaveriot.rule.support.ExpressionGenerator;
 import lombok.AllArgsConstructor;
@@ -21,15 +23,10 @@ public class ExpressionNode {
 
     public static ExpressionNode create(RuleChoiceConfig.RuleChoiceWhenConfig whenConfig) {
 
-        if (!ObjectUtils.isEmpty(whenConfig.getAnd())) {
-            String generate = ExpressionGenerator.generate(whenConfig.getExpressionType(), whenConfig.getAnd(), true);
-            return create(whenConfig.getExpressionType(), generate);
-        } else if (!ObjectUtils.isEmpty(whenConfig.getOr())) {
-            String generate = ExpressionGenerator.generate(whenConfig.getExpressionType(), whenConfig.getOr(), false);
-            return create(whenConfig.getExpressionType(), generate);
-        } else {
-            throw new IllegalArgumentException("And or Or must be set");
-        }
+        boolean isAnd = whenConfig.getLogicOperator() == null || whenConfig.getLogicOperator() == LogicOperator.AND;
+        String generate = ExpressionGenerator.generate(whenConfig.getExpressionType(), whenConfig.getConditions(), isAnd);
+        String expressionType = whenConfig.getExpressionType().equals(ExpressionLanguage.condition.name()) ? ExpressionLanguage.spel.name() : whenConfig.getExpressionType();
+        return create(expressionType, generate);
     }
 
     public boolean validate() {

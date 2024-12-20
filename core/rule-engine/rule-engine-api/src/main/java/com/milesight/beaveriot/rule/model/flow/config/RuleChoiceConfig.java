@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.rule.model.flow.config;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.milesight.beaveriot.rule.enums.LogicOperator;
 import com.milesight.beaveriot.rule.support.JsonHelper;
 import lombok.Data;
 import lombok.SneakyThrows;
@@ -28,8 +29,8 @@ public class RuleChoiceConfig implements RuleConfig {
     public static class RuleChoiceWhenConfig implements RuleConfig {
         private String id;
         private String expressionType;
-        private List<ExpressionConfig> and;
-        private List<ExpressionConfig> or;
+        private LogicOperator logicOperator;
+        private List<ExpressionConfig> conditions;
 
         @Override
         public String getComponentName() {

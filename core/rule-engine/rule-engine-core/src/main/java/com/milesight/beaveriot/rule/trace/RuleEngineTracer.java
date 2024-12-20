@@ -12,8 +12,11 @@ import org.apache.camel.Exchange;
 import org.apache.camel.NamedNode;
 import org.apache.camel.NamedRoute;
 import org.apache.camel.impl.engine.DefaultTracer;
+import org.apache.camel.model.FromDefinition;
+import org.apache.camel.model.RouteDefinition;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * @author leon
@@ -35,11 +38,19 @@ public class RuleEngineTracer extends DefaultTracer {
             super.traceBeforeRoute(route, exchange);
         }
 
-        Object property = exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
-        if (property == null) {
-            FlowTraceInfo flowTraceInfo = new FlowTraceInfo();
+        FlowTraceInfo flowTraceInfo = (FlowTraceInfo) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
+        if (flowTraceInfo == null) {
+            flowTraceInfo = new FlowTraceInfo();
             flowTraceInfo.setFlowId(exchange.getFromRouteId());
             exchange.setProperty(ExchangeHeaders.TRACE_RESPONSE, flowTraceInfo);
+        }
+
+        //add from node trace info
+        if (route instanceof RouteDefinition routeDefinition) {
+            FromDefinition input = routeDefinition.getInput();
+            NodeTraceInfo nodeTraceInfo = createNodeTraceInfo(input.getId(), input.getLabel(), exchange);
+            nodeTraceInfo.setOutput(getExchangeBody(exchange));
+            flowTraceInfo.getTraceInfos().add(nodeTraceInfo);
         }
     }
 
@@ -51,17 +62,24 @@ public class RuleEngineTracer extends DefaultTracer {
         FlowTraceInfo traceContext = (FlowTraceInfo) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
         if (traceContext != null && shouldTraceNodeByPrefix(node)) {
             try {
-                NodeTraceInfo nodeTraceResponse = new NodeTraceInfo();
-                nodeTraceResponse.setNodeLabel(node.getLabel());
-                nodeTraceResponse.setNodeId(RuleFlowIdGenerator.removeNamespacedId(exchange.getFromRouteId(), node.getId()));
-                nodeTraceResponse.setStartTime(System.currentTimeMillis());
+                NodeTraceInfo nodeTraceResponse = createNodeTraceInfo(node.getId(), node.getLabel(), exchange);
                 nodeTraceResponse.setInput(getExchangeBody(exchange));
-                nodeTraceResponse.setMessageId(exchange.getIn().getMessageId());
                 traceContext.getTraceInfos().add(nodeTraceResponse);
             } catch (Exception ex) {
                 log.error("traceBeforeNode error", ex);
             }
         }
+    }
+
+    private NodeTraceInfo createNodeTraceInfo(String nodeId, String nodeLabel, Exchange exchange) {
+        NodeTraceInfo nodeTraceResponse = new NodeTraceInfo();
+        if (StringUtils.hasText(nodeLabel)) {
+            nodeTraceResponse.setNodeLabel(nodeLabel.split("\\?")[0]);
+        }
+        nodeTraceResponse.setNodeId(RuleFlowIdGenerator.removeNamespacedId(exchange.getFromRouteId(), nodeId));
+        nodeTraceResponse.setStartTime(System.currentTimeMillis());
+        nodeTraceResponse.setMessageId(exchange.getIn().getMessageId());
+        return nodeTraceResponse;
     }
 
     @Override
@@ -106,20 +124,23 @@ public class RuleEngineTracer extends DefaultTracer {
         }
 
         FlowTraceInfo flowTraceResponse = (FlowTraceInfo) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
-        if (shouldTraceByEvent(exchange) && flowTraceResponse != null && !flowTraceResponse.isEmpty()) {
+        if (shouldTraceByEvent() && flowTraceResponse != null && !flowTraceResponse.isEmpty()) {
             if (exchange.getException() != null) {
                 flowTraceResponse.setStatus(ExecutionStatus.ERROR);
             }
             flowTraceResponse.setTimeCost(System.currentTimeMillis() - flowTraceResponse.getStartTime());
             log.debug("traceAfterRoute: {}", flowTraceResponse);
-            applicationEventPublisher.publishEvent(flowTraceResponse);
+            // if trace for test, do not publish event
+            Boolean traceForTest = exchange.getProperty(ExchangeHeaders.TRACE_FOR_TEST, false, boolean.class);
+            if (Boolean.FALSE.equals(traceForTest)) {
+                applicationEventPublisher.publishEvent(flowTraceResponse);
+            }
         }
     }
 
-    private boolean shouldTraceByEvent(Exchange exchange) {
+    private boolean shouldTraceByEvent() {
         return ruleProperties.getTraceOutputMode() == RuleProperties.TraceOutputMode.ALL ||
-                ruleProperties.getTraceOutputMode() == RuleProperties.TraceOutputMode.EVENT ||
-                !exchange.getProperty(ExchangeHeaders.TRACE_FOR_TEST, false, Boolean.class);
+                ruleProperties.getTraceOutputMode() == RuleProperties.TraceOutputMode.EVENT;
     }
 
     private boolean shouldTraceByLogging() {

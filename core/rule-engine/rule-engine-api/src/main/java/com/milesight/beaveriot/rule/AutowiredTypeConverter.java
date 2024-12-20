@@ -26,7 +26,7 @@ public abstract class AutowiredTypeConverter<S, T> extends TypeConverterSupport 
 
     public abstract T doConvertTo(Class<T> type, Exchange exchange, S value) throws TypeConversionException;
 
-    public TypeConvertible<?,?> getTypeConvertible() {
+    public TypeConvertible getTypeConvertible() {
         return new TypeConvertible(fromClass, toClass);
     }
 

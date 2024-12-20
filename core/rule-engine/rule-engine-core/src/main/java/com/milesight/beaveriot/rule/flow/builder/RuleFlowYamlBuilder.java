@@ -60,11 +60,10 @@ public class RuleFlowYamlBuilder {
 
         Assert.notNull(flowConfig.getFlowId(), "Rule flow id must not be null");
 
-        RuleFlowGraph ruleFlowGraph = new RuleFlowGraph(flowConfig);
-        ruleFlowGraph.initGraph();
+        this.ruleFlowGraph = new RuleFlowGraph(flowConfig);
         this.ruleFlow = flowConfig;
-        this.ruleFlowGraph = ruleFlowGraph;
         this.flowId = flowConfig.getFlowId();
+        ruleFlowGraph.initGraph();
         return this;
     }
 

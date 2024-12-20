@@ -5,7 +5,10 @@ import com.milesight.beaveriot.rule.model.flow.route.FromNode;
 import com.milesight.beaveriot.rule.model.flow.route.RouteNode;
 import com.milesight.beaveriot.rule.model.flow.route.base.OutputNode;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 
 /**
@@ -16,7 +19,7 @@ public class DefaultRuleNodeInterceptor implements RuleNodeInterceptor {
     private final static List<RuleNodeInterceptor> ruleNodeInterceptors;
 
     static {
-        ServiceLoader<RuleNodeInterceptor>  serviceLoaders = ServiceLoader.load(RuleNodeInterceptor.class);
+        ServiceLoader<RuleNodeInterceptor> serviceLoaders = ServiceLoader.load(RuleNodeInterceptor.class);
         ruleNodeInterceptors = serviceLoaders.stream()
                 .map(ServiceLoader.Provider::get)
                 .sorted(Comparator.comparingInt(RuleNodeInterceptor::getOrder))

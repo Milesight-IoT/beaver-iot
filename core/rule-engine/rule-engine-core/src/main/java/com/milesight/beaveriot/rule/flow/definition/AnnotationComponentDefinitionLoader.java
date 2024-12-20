@@ -42,7 +42,7 @@ import static java.lang.reflect.Modifier.isStatic;
  */
 @Order(ComponentDefinitionLoader.ORDER_LEVEL_ANNOTATION)
 @Slf4j
-@SuppressWarnings({"java:S3776"})
+@SuppressWarnings({"java:S3776","java:S6541"})
 public class AnnotationComponentDefinitionLoader implements ComponentDefinitionLoader, ApplicationContextAware {
 
     private static final Map<String, Class<?>> KNOWN_CLASSES_CACHE = new ConcurrentHashMap<>();
@@ -179,7 +179,7 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
                     boolean isSecret = retrieveValueOrderly("secret", false, uriParam, pathParam);
                     String enumString = retrieveValueOrderly("enums", uriParam, pathParam);
                     List<String> enums = ComponentDefinitionHelper.gatherEnums(enumString, fieldTypeElement);
-                    boolean autowired = metadata != null ? metadata.autowired() : false;
+                    boolean autowired = metadata != null && metadata.autowired();
 
                     // the field type may be overloaded by another type
                     boolean isDuration = false;
@@ -253,12 +253,7 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
                 componentOutputDefinition.setName(name);
                 componentOutputDefinition.setDisplayName(displayName);
                 componentOutputDefinition.setDescription(description);
-
-                if (model.getProperties().containsKey(name)) {
-                    componentOutputDefinition.setEditable(false);
-                } else {
-                    componentOutputDefinition.setEditable(true);
-                }
+                componentOutputDefinition.setEditable(!model.getProperties().containsKey(name));
                 model.getOutputProperties().put(componentOutputDefinition.getName(), componentOutputDefinition);
             }
         }
