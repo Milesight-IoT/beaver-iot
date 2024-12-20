@@ -4,6 +4,8 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author loong
@@ -11,31 +13,41 @@ import java.util.List;
  */
 public class DataAspectContext {
 
-    private static final ThreadLocal<TenantContext> tenantContextHolder = new ThreadLocal<>();
-    private static final ThreadLocal<DataPermissionContext> DataPermissionHolder = new ThreadLocal<>();
+    private static final ThreadLocal<Map<String, TenantContext>> tenantContextHolder = new ThreadLocal<>();
+    private static final ThreadLocal<Map<String, DataPermissionContext>> DataPermissionHolder = new ThreadLocal<>();
 
-    public static void setTenantContext(TenantContext tenantContext) {
-        tenantContextHolder.set(tenantContext);
+    public static void setTenantContext(String tableName, TenantContext tenantContext) {
+        Map<String, TenantContext> tenantContextMap = tenantContextHolder.get();
+        if (tenantContextMap == null) {
+            tenantContextMap = new ConcurrentHashMap<>();
+        }
+        tenantContextMap.put(tableName, tenantContext);
+        tenantContextHolder.set(tenantContextMap);
     }
 
-    public static void setDataPermissionContext(DataPermissionContext dataPermissionContext) {
-        DataPermissionHolder.set(dataPermissionContext);
+    public static void setDataPermissionContext(String tableName, DataPermissionContext dataPermissionContext) {
+        Map<String, DataPermissionContext> dataPermissionContextMap = DataPermissionHolder.get();
+        if (dataPermissionContextMap == null) {
+            dataPermissionContextMap = new ConcurrentHashMap<>();
+        }
+        dataPermissionContextMap.put(tableName, dataPermissionContext);
+        DataPermissionHolder.set(dataPermissionContextMap);
     }
 
-    public static TenantContext getTenantContext() {
-        return tenantContextHolder.get();
+    public static TenantContext getTenantContext(String tableName) {
+        return tenantContextHolder.get() != null ? tenantContextHolder.get().get(tableName) : null;
     }
 
-    public static DataPermissionContext getDataPermissionContext() {
-        return DataPermissionHolder.get();
+    public static DataPermissionContext getDataPermissionContext(String tableName) {
+        return DataPermissionHolder.get() != null ? DataPermissionHolder.get().get(tableName) : null;
     }
 
-    public static boolean isTenantEnabled() {
-        return tenantContextHolder.get() != null && tenantContextHolder.get().getTenantId() != null;
+    public static boolean isTenantEnabled(String tableName) {
+        return tenantContextHolder.get() != null && tenantContextHolder.get().get(tableName) != null && tenantContextHolder.get().get(tableName).getTenantId() != null;
     }
 
-    public static boolean isDataPermissionEnabled() {
-        return DataPermissionHolder.get() != null && DataPermissionHolder.get().getDataIds() != null && !DataPermissionHolder.get().getDataIds().isEmpty();
+    public static boolean isDataPermissionEnabled(String tableName) {
+        return DataPermissionHolder.get() != null && DataPermissionHolder.get().get(tableName) != null && DataPermissionHolder.get().get(tableName).getDataIds() != null && !DataPermissionHolder.get().get(tableName).getDataIds().isEmpty();
     }
 
     public static void clearTenantContext() {

@@ -21,9 +21,8 @@ import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.update.Update;
 import org.hibernate.resource.jdbc.spi.StatementInspector;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -40,93 +39,101 @@ public class DataAspectStatementInspector implements StatementInspector {
     }
 
     private String doTenantInspect(String sql) {
-        if (DataAspectContext.isTenantEnabled()) {
-            DataAspectContext.TenantContext tenantContext = DataAspectContext.getTenantContext();
-            if (tenantContext != null) {
-                Long tenantId = tenantContext.getTenantId();
-                String columnName = tenantContext.getTenantColumnName();
-                try {
-                    Statement statement = CCJSqlParserUtil.parse(sql);
-
-                    if (statement instanceof Select) {
-                        Select selectStatement = (Select) statement;
-                        SelectBody selectBody = selectStatement.getSelectBody();
-                        if (selectBody instanceof PlainSelect) {
-                            PlainSelect plainSelect = (PlainSelect) selectBody;
-                            addTenantCondition(plainSelect, columnName, tenantId);
-                        }
-                    } else if (statement instanceof Update) {
-                        Update updateStatement = (Update) statement;
-                        addTenantCondition(updateStatement, columnName, tenantId);
-                    } else if (statement instanceof Delete) {
-                        Delete deleteStatement = (Delete) statement;
-                        addTenantCondition(deleteStatement, columnName, tenantId);
-                    } else if (statement instanceof Insert) {
-                        Insert insertStatement = (Insert) statement;
-                        addTenantCondition(insertStatement, columnName, tenantId);
-                    }
-                    return statement.toString();
-                } catch (Exception e) {
-                    throw new RuntimeException("Failed to parse SQL: " + sql, e);
+        try {
+            Statement statement = CCJSqlParserUtil.parse(sql);
+            if (statement instanceof Select) {
+                Select selectStatement = (Select) statement;
+                SelectBody selectBody = selectStatement.getSelectBody();
+                if (selectBody instanceof PlainSelect) {
+                    PlainSelect plainSelect = (PlainSelect) selectBody;
+                    addTenantCondition(plainSelect);
                 }
+            } else if (statement instanceof Update) {
+                Update updateStatement = (Update) statement;
+                addTenantCondition(updateStatement);
+            } else if (statement instanceof Delete) {
+                Delete deleteStatement = (Delete) statement;
+                addTenantCondition(deleteStatement);
+            } else if (statement instanceof Insert) {
+                Insert insertStatement = (Insert) statement;
+                addTenantCondition(insertStatement);
             }
+            return statement.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse SQL: " + sql, e);
         }
-        return sql;
     }
 
     private String doDataPermissionInspect(String sql) {
-        if (DataAspectContext.isDataPermissionEnabled()) {
-            DataAspectContext.DataPermissionContext dataPermissionContext = DataAspectContext.getDataPermissionContext();
-            if (dataPermissionContext != null) {
-                List<Long> dataIds = dataPermissionContext.getDataIds();
-                String columnName = dataPermissionContext.getDataColumnName();
-                try {
-                    Statement statement = CCJSqlParserUtil.parse(sql);
+        try {
+            Statement statement = CCJSqlParserUtil.parse(sql);
 
-                    if (statement instanceof Select) {
-                        Select selectStatement = (Select) statement;
-                        SelectBody selectBody = selectStatement.getSelectBody();
-                        if (selectBody instanceof PlainSelect) {
-                            PlainSelect plainSelect = (PlainSelect) selectBody;
-                            addDataPermissionCondition(plainSelect, columnName, dataIds);
-                        }
-                    }
-                    return statement.toString();
-                } catch (Exception e) {
-                    throw new RuntimeException("Failed to parse SQL: " + sql, e);
+            if (statement instanceof Select) {
+                Select selectStatement = (Select) statement;
+                SelectBody selectBody = selectStatement.getSelectBody();
+                if (selectBody instanceof PlainSelect) {
+                    PlainSelect plainSelect = (PlainSelect) selectBody;
+                    addDataPermissionCondition(plainSelect);
                 }
             }
+            return statement.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse SQL: " + sql, e);
         }
-        return sql;
     }
 
-    private void addTenantCondition(PlainSelect plainSelect, String columnName, Long tenantId) {
-        Map<String, String> tableAliases = new HashMap<>();
+    private void addTenantCondition(PlainSelect plainSelect) {
+        String tableName = null;
+        String alias = null;
         FromItem fromItem = plainSelect.getFromItem();
         if (fromItem instanceof Table) {
             Table table = (Table) fromItem;
-            String tableName = table.getName();
-            String alias = table.getAlias() != null ? table.getAlias().getName() : tableName;
-            tableAliases.put(tableName, alias);
+            tableName = table.getName();
+            alias = table.getAlias() != null ? table.getAlias().getName() : tableName;
         }
-        for (String alias : tableAliases.values()) {
-            Column column = new Column(alias + "." + columnName);
-            Expression tenantExpression = new EqualsTo(column, new LongValue(tenantId));
-
-            if (plainSelect.getWhere() == null) {
-                plainSelect.setWhere(tenantExpression);
-            } else {
-                plainSelect.setWhere(new net.sf.jsqlparser.expression.operators.conditional.AndExpression(
-                        plainSelect.getWhere(), tenantExpression));
+        if (tableName == null || alias == null){
+            return;
+        }
+        Long tenantId = null;
+        String columnName = null;
+        if (DataAspectContext.isTenantEnabled(tableName)) {
+            DataAspectContext.TenantContext tenantContext = DataAspectContext.getTenantContext(tableName);
+            if (tenantContext != null) {
+                tenantId = tenantContext.getTenantId();
+                columnName = tenantContext.getTenantColumnName();
             }
+        }
+        if (tenantId == null || columnName == null) {
+            return;
+        }
+        Column column = new Column(alias + "." + columnName);
+        Expression tenantExpression = new EqualsTo(column, new LongValue(tenantId));
+
+        if (plainSelect.getWhere() == null) {
+            plainSelect.setWhere(tenantExpression);
+        } else {
+            plainSelect.setWhere(new net.sf.jsqlparser.expression.operators.conditional.AndExpression(
+                    plainSelect.getWhere(), tenantExpression));
         }
     }
 
-    private void addTenantCondition(Update updateStatement, String columnName, Long tenantId) {
+    private void addTenantCondition(Update updateStatement) {
         Table table = updateStatement.getTable();
         String tableName = table.getName();
         String alias = table.getAlias() != null ? table.getAlias().getName() : tableName;
 
+        Long tenantId = null;
+        String columnName = null;
+        if (DataAspectContext.isTenantEnabled(tableName)) {
+            DataAspectContext.TenantContext tenantContext = DataAspectContext.getTenantContext(tableName);
+            if (tenantContext != null) {
+                tenantId = tenantContext.getTenantId();
+                columnName = tenantContext.getTenantColumnName();
+            }
+        }
+        if (tenantId == null || columnName == null) {
+            return;
+        }
         Column column = new Column(alias + "." + columnName);
         Expression tenantExpression = new EqualsTo(column, new LongValue(tenantId));
 
@@ -138,11 +145,23 @@ public class DataAspectStatementInspector implements StatementInspector {
         }
     }
 
-    private void addTenantCondition(Delete deleteStatement, String columnName, Long tenantId) {
+    private void addTenantCondition(Delete deleteStatement) {
         Table table = deleteStatement.getTable();
         String tableName = table.getName();
         String alias = table.getAlias() != null ? table.getAlias().getName() : tableName;
 
+        Long tenantId = null;
+        String columnName = null;
+        if (DataAspectContext.isTenantEnabled(tableName)) {
+            DataAspectContext.TenantContext tenantContext = DataAspectContext.getTenantContext(tableName);
+            if (tenantContext != null) {
+                tenantId = tenantContext.getTenantId();
+                columnName = tenantContext.getTenantColumnName();
+            }
+        }
+        if (tenantId == null || columnName == null) {
+            return;
+        }
         Column column = new Column(alias + "." + columnName);
         Expression tenantExpression = new EqualsTo(column, new LongValue(tenantId));
 
@@ -154,10 +173,27 @@ public class DataAspectStatementInspector implements StatementInspector {
         }
     }
 
-    private void addTenantCondition(Insert insertStatement, String columnName, Long tenantId) {
+    private void addTenantCondition(Insert insertStatement) {
         List<Column> columns = insertStatement.getColumns();
+        String tableName = insertStatement.getTable().getName();
         ItemsList itemsList = insertStatement.getItemsList();
 
+        Long tenantId = null;
+        String columnName;
+        if (DataAspectContext.isTenantEnabled(tableName)) {
+            DataAspectContext.TenantContext tenantContext = DataAspectContext.getTenantContext(tableName);
+            if (tenantContext != null) {
+                tenantId = tenantContext.getTenantId();
+                columnName = tenantContext.getTenantColumnName();
+            } else {
+                columnName = null;
+            }
+        } else {
+            columnName = null;
+        }
+        if (tenantId == null || columnName == null) {
+            return;
+        }
         boolean tenantIdPresent = columns.stream()
                 .anyMatch(column -> column.getColumnName().equalsIgnoreCase(columnName));
 
@@ -212,27 +248,40 @@ public class DataAspectStatementInspector implements StatementInspector {
         }
     }
 
-    private void addDataPermissionCondition(PlainSelect plainSelect, String columnName, List<Long> dataIds) {
-        Map<String, String> tableAliases = new HashMap<>();
+    private void addDataPermissionCondition(PlainSelect plainSelect) {
+        String tableName = null;
+        String alias = null;
         FromItem fromItem = plainSelect.getFromItem();
         if (fromItem instanceof Table) {
             Table table = (Table) fromItem;
-            String tableName = table.getName();
-            String alias = table.getAlias() != null ? table.getAlias().getName() : tableName;
-            tableAliases.put(tableName, alias);
+            tableName = table.getName();
+            alias = table.getAlias() != null ? table.getAlias().getName() : tableName;
         }
-        for (String alias : tableAliases.values()) {
-            Column column = new Column(alias + "." + columnName);
-            Expression expression = new InExpression(column, new ExpressionList(dataIds.stream()
-                    .map(LongValue::new)
-                    .collect(Collectors.toList())));
-
-            if (plainSelect.getWhere() == null) {
-                plainSelect.setWhere(expression);
-            } else {
-                plainSelect.setWhere(new net.sf.jsqlparser.expression.operators.conditional.AndExpression(
-                        plainSelect.getWhere(), expression));
+        if(tableName == null || alias == null){
+            return;
+        }
+        List<Long> dataIds = new ArrayList<>();
+        String columnName = null;
+        if (DataAspectContext.isDataPermissionEnabled(tableName)) {
+            DataAspectContext.DataPermissionContext dataPermissionContext = DataAspectContext.getDataPermissionContext(tableName);
+            if (dataPermissionContext != null) {
+                dataIds = dataPermissionContext.getDataIds();
+                columnName = dataPermissionContext.getDataColumnName();
             }
+        }
+        if (dataIds.isEmpty() || columnName == null) {
+            return;
+        }
+        Column column = new Column(alias + "." + columnName);
+        Expression expression = new InExpression(column, new ExpressionList(dataIds.stream()
+                .map(LongValue::new)
+                .collect(Collectors.toList())));
+
+        if (plainSelect.getWhere() == null) {
+            plainSelect.setWhere(expression);
+        } else {
+            plainSelect.setWhere(new net.sf.jsqlparser.expression.operators.conditional.AndExpression(
+                    plainSelect.getWhere(), expression));
         }
     }
 
