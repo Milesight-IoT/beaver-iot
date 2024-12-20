@@ -30,7 +30,7 @@ public class RuleNode implements OutputNode {
 
         String generatedId = RuleFlowIdGenerator.generateNamespacedId(flowId, ruleConfig.getId());
 
-        Map<String, Object> parameters = ComponentParameterConverter.convertParameters(ruleConfig.getParameters());
+        Map<String, Object> parameters = ComponentParameterConverter.convertParameters(ruleConfig.getParameters(), componentDefinition);
 
         return RuleNode.create(generatedId, componentDefinition.generateUri(generatedId, parameters), parameters);
     }

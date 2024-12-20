@@ -3,26 +3,38 @@ package com.milesight.beaveriot.rule.support;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Maps;
+import com.milesight.beaveriot.rule.model.definition.ComponentDefinition;
+import com.milesight.beaveriot.rule.model.definition.ComponentOptionDefinition;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 
 import java.util.Map;
 
 /**
  * @author leon
  */
+@Slf4j
 public class ComponentParameterConverter {
 
     private ComponentParameterConverter() {
     }
 
-    public static Map<String, Object> convertParameters(JsonNode parameters) {
+    public static Map<String, Object> convertParameters(JsonNode parameters, ComponentDefinition componentDefinition) {
         if (parameters == null) {
             return Map.of();
         }
 
         Map<String, Object> routeParameters = Maps.newHashMap();
+        Map<String, ComponentOptionDefinition> properties = componentDefinition.getProperties();
         if (parameters.isObject()) {
             ObjectNode objectNode = (ObjectNode) parameters;
-            objectNode.fields().forEachRemaining(field -> routeParameters.put(field.getKey(), convertValue(field.getValue())));
+            objectNode.fields().forEachRemaining(field -> {
+                if (properties.containsKey(field.getKey())) {
+                    routeParameters.put(properties.get(field.getKey()).getFullName(), convertValue(field.getValue()));
+                } else {
+                    log.warn("Component {} does not have property {}", componentDefinition.getComponent().getName(), field.getKey());
+                }
+            });
         }
         return routeParameters;
     }

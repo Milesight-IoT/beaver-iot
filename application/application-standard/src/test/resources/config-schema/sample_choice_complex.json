@@ -16,38 +16,44 @@
       "nodeRemark": "",
       "componentName": "choice",
       "parameters": {
-        "when": [
-          {
-            "id": "c_1",
-            "expressionType": "mvel",
-            "logicOperator": "AND",
-            "conditions": [
-              {
-                "expressionValue": "request.body['a.b.c'] != null"
-              }
-            ]
-          },
-          {
-            "id": "c_2",
-            "expressionType": "condition",
-            "logicOperator": "AND",
-            "conditions": [
-              {
-                "expressionValue": {
-                  "key": "#{properties.event_1['demo-anno-integration.integration.address']}",
-                  "value": "http",
-                  "operator": "CONTAINS"
+        "choice" :{
+          "when": [
+            {
+              "id": "c_1",
+              "expressionType": "mvel",
+              "logicOperator": "AND",
+              "conditions": [
+                {
+                  "expressionValue": "request.body['a.b.c'] != null"
                 }
-              },
-              {
-                "expressionValue": {
-                  "key": "#{properties.event_1['demo-anno-integration.integration.address']}",
-                  "operator": "IS_NOT_EMPTY"
+              ]
+            },
+            {
+              "id": "c_2",
+              "expressionType": "condition",
+              "logicOperator": "AND",
+              "conditions": [
+                {
+                  "expressionValue": {
+                    "key": "#{properties.event_1['demo-anno-integration.integration.address']}",
+                    "value": "http",
+                    "operator": "CONTAINS"
+                  }
+                },
+                {
+                  "expressionValue": {
+                    "key": "#{properties.event_1['demo-anno-integration.integration.address']}",
+                    "operator": "IS_NOT_EMPTY"
+                  }
                 }
-              }
-            ]
+              ]
+            }
+          ],
+          "otherwise": {
+              "id": "c_3"
           }
-        ]
+        }
+
       }
     },
     {
@@ -55,8 +61,8 @@
       "nodeName": "code_1",
       "nodeRemark": "",
       "parameters": {
-        "bean.inputArguments": {"entities":"a"} ,
-        "bean.expression": {"language":"groovy","expression":"def map = [:];  map['entities'] = entities; return map;"}
+        "inputArguments": {"entities":"a"} ,
+        "expression": {"language":"groovy","expression":"def map = [:];  map['entities'] = entities; return map;"}
       },
       "componentName": "code"
     },
@@ -65,8 +71,8 @@
       "nodeName": "code_2",
       "nodeRemark": "",
       "parameters": {
-        "bean.inputArguments": {"entities":"#{properties.event_1}"} ,
-        "bean.expression": {"language":"groovy","expression":"def map = [:];  map['entities'] = entities; return map;"}
+        "inputArguments": {"entities":"#{properties.event_1}"} ,
+        "expression": {"language":"groovy","expression":"def map = [:];  map['entities'] = entities; return map;"}
       },
       "componentName": "code"
     },
@@ -75,7 +81,16 @@
       "nodeName": "code_3",
       "nodeRemark": "",
       "parameters": {
-        "bean.expression": {"language":"js","expression":"var payload=body.entities; return payload;"}
+        "expression": {"language":"js","expression":"var payload=body.entities; return payload;"}
+      },
+      "componentName": "code"
+    },
+    {
+      "id": "codeId_4",
+      "nodeName": "code_4",
+      "nodeRemark": "",
+      "parameters": {
+        "expression": {"language":"js","expression":"var payload=body.entities; return payload;"}
       },
       "componentName": "code"
     }
@@ -86,14 +101,6 @@
       "target": "choice_1"
     },
     {
-      "source": "choice_1",
-      "target": "c_1"
-    },
-    {
-      "source": "choice_1",
-      "target": "c_2"
-    },
-    {
       "source": "c_1",
       "target": "codeId_1"
     },
@@ -102,12 +109,20 @@
       "target": "codeId_2"
     },
     {
-      "source": "codeId_1",
+      "source": "c_3",
       "target": "codeId_3"
     },
     {
+      "source": "codeId_1",
+      "target": "codeId_4"
+    },
+    {
       "source": "codeId_2",
-      "target": "codeId_3"
+      "target": "codeId_4"
+    },
+    {
+      "source": "codeId_3",
+      "target": "codeId_4"
     }
   ]
 }

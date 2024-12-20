@@ -1,45 +1,37 @@
-  - route:
-      from:
-        id: flow.myId.id_1
-        uri: eventListener:myId
-        parameters:
-          entities: demo-anno-integration.integration.connect,demo-anno-integration.integration.address
-        steps:
-          - to:
-              id: flow.myId.id_4
-              parameters:
-                bean.emailContent: '"myEvent"'
-                bean.exchangePayload: '{"abc":1}'
-              uri: bean:simpleAlarmComponent
-          - split:
-              simple: "${bean:innerParallelSplitter.split(${body},'2')}"
-              parallelProcessing: true
-          - choice:
-              id: inner.myId.PARALLEL_0
-              when:
-                - simple: "${header.CamelSplitIndex} == 0"
-                  id: inner.inner.myId.PARALLEL_0.BRANCH_1
-                  steps:
-                    - to:
-                        id: flow.myId.id_2
-                        uri: "language:js"
-                        parameters:
-                          script: "(()=>{
-                                var a = properties.id_4.abc;
-                                return a;
-                                })()
-                                "
-                - simple: "${header.CamelSplitIndex} == 1"
-                  id: inner.inner.myId.PARALLEL_0.BRANCH_0
-                  steps:
-                    - to:
-                        id: flow.myId.id_3
-                        parameters:
-                          bean.expression: "{\"language\":\"groovy\",\"expression\":\"def map = [:];  map['key1'] = a; return map;\"}"
-                          bean.inputArguments: "{\"a\":\"#{properties.id_4.abc}\"}"
-                        uri: bean:code
-
-
-
-      id: myId
-
+- route:
+    from:
+      id: flow.myId.id_1
+      parameters:
+        period: 100000
+      steps:
+        - choice:
+            id: flow.myId.choice_1
+            when:
+              - mvel: "request.body['a.b.c'] != null"
+                id: flow.myId.c_1
+                steps:
+                  - to:
+                      id: flow.myId.id_2
+                      parameters:
+                        bean.emailContent: '"myEvent"'
+                        bean.exchangePayload: '{"a":1}'
+                      uri: bean:simpleAlarmComponent
+              - spel: "#{ T(com.milesight.beaveriot.rule.enums.ExpressionOperator).isEmpty('a')\
+              \ || T(com.milesight.beaveriot.rule.enums.ExpressionOperator).equals('1','1')\
+              \ }"
+                id: flow.myId.c_2
+                steps:
+                  - to:
+                      id: flow.myId.id_3
+                      parameters:
+                        bean.emailContent: '"myEvent"'
+                        bean.exchangePayload: '{"a":3}'
+                      uri: bean:simpleAlarmComponent
+        - to:
+            id: flow.myId.id_4
+            parameters:
+              bean.emailContent: '"myEvent"'
+              bean.exchangePayload: '{"a":4}'
+            uri: bean:simpleAlarmComponent
+      uri: timer:myId
+    id: myId

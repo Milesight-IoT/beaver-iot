@@ -6,7 +6,7 @@
       "nodeName": "node1",
       "nodeRemark": "",
       "parameters": {
-        "period": 1000
+        "period": 100000
       },
       "componentName": "timer"
     },
@@ -16,38 +16,40 @@
       "nodeRemark": "",
       "componentName": "choice",
       "parameters": {
-        "when": [
-          {
-            "id": "c_1",
-            "expressionType": "mvel",
-            "logicOperator": "AND",
-            "conditions": [
-              {
-                "expressionValue": "request.body['a.b.c'] != null"
-              }
-            ]
-          },
-          {
-            "id": "c_2",
-            "expressionType": "condition",
-            "logicOperator": "OR",
-            "conditions": [
-              {
-                "expressionValue": {
-                  "key": "a",
-                  "operator": "IS_EMPTY"
+        "choice": {
+          "when": [
+            {
+              "id": "c_1",
+              "expressionType": "mvel",
+              "logicOperator": "AND",
+              "conditions": [
+                {
+                  "expressionValue": "request.body['a.b.c'] != null"
                 }
-              },
-              {
-                "expressionValue": {
-                  "key": "1",
-                  "value": 1,
-                  "operator": "EQ"
+              ]
+            },
+            {
+              "id": "c_2",
+              "expressionType": "condition",
+              "logicOperator": "OR",
+              "conditions": [
+                {
+                  "expressionValue": {
+                    "key": "a",
+                    "operator": "IS_EMPTY"
+                  }
+                },
+                {
+                  "expressionValue": {
+                    "key": "1",
+                    "value": 1,
+                    "operator": "EQ"
+                  }
                 }
-              }
-            ]
-          }
-        ]
+              ]
+            }
+          ]
+        }
       }
     },
     {
@@ -55,8 +57,8 @@
       "nodeName": "node2",
       "nodeRemark": "",
       "parameters": {
-        "bean.emailContent": "myEvent",
-        "bean.exchangePayload": {
+        "emailContent": "myEvent",
+        "exchangePayload": {
           "a": 1
         }
       },
@@ -67,8 +69,8 @@
       "nodeName": "node3",
       "nodeRemark": "",
       "parameters": {
-        "bean.emailContent": "myEvent",
-        "bean.exchangePayload": {
+        "emailContent": "myEvent",
+        "exchangePayload": {
           "a": 3
         }
       },
@@ -79,8 +81,8 @@
       "nodeName": "node4",
       "nodeRemark": "",
       "parameters": {
-        "bean.emailContent": "myEvent",
-        "bean.exchangePayload": {
+        "emailContent": "myEvent",
+        "exchangePayload": {
           "a": 4
         }
       },
@@ -91,14 +93,6 @@
     {
       "source": "id_1",
       "target": "choice_1"
-    },
-    {
-      "source": "choice_1",
-      "target": "c_1"
-    },
-    {
-      "source": "choice_1",
-      "target": "c_2"
     },
     {
       "source": "c_1",

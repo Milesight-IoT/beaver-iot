@@ -6,7 +6,7 @@
       "nodeName": "node1",
       "nodeRemark": "",
       "parameters": {
-        "period": 1000
+        "period": 10000
       },
       "componentName": "timer"
     },
@@ -15,16 +15,16 @@
       "nodeName": "node2",
       "nodeRemark": "",
       "parameters": {
-        "bean.emailContent": "myEvent",
-        "bean.exchangePayload": {
+        "emailContent": "myEvent",
+        "exchangePayload": {
           "a": 1
         },
-        "bean.entities": [
+        "entities": [
           "a",
           "b"
         ],
-        "bean.includeMetadata": false,
-        "bean.size": 10
+        "includeMetadata": false,
+        "size": 10
       },
       "componentName": "simpleAlarmComponent"
     },
@@ -33,11 +33,11 @@
       "nodeName": "node3",
       "nodeRemark": "",
       "parameters": {
-        "bean.emailContent": "${properties.id_2.bean.emailContent}",
-        "bean.exchangePayload": "${properties.id_2.bean.exchangePayload.a}",
-        "bean.entities": "${properties.id_2.bean.entities[0]}",
-        "bean.includeMetadata": true,
-        "bean.size": 1
+        "emailContent": "${properties.id_2.emailContent}",
+        "exchangePayload": "${properties.id_2.exchangePayload.a}",
+        "entities": "${properties.id_2.entities[0]}",
+        "includeMetadata": true,
+        "size": 1
       },
       "componentName": "simpleAlarmComponent"
     },
@@ -46,8 +46,8 @@
       "nodeName": "node4",
       "nodeRemark": "",
       "parameters": {
-        "bean.emailContent": "myEvent",
-        "bean.exchangePayload": {
+        "emailContent": "myEvent",
+        "exchangePayload": {
           "a": 1
         }
       },

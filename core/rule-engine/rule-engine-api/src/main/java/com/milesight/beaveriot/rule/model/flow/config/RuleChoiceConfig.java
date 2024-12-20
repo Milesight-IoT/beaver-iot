@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.SneakyThrows;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author leon
@@ -17,12 +18,25 @@ public class RuleChoiceConfig implements RuleConfig {
     private String id;
     private String componentName;
     private String nodeName;
-    private List<RuleChoiceWhenConfig> when;
-    private RuleChoiceOtherwiseConfig otherwise;
+    private ChoiceSettingConfig choice;
 
     @SneakyThrows
     public static RuleChoiceConfig create(JsonNode parameters) {
         return JsonHelper.fromJSON(JsonHelper.toJSON(parameters), RuleChoiceConfig.class);
+    }
+
+    public List<RuleChoiceWhenConfig> getWhen() {
+        return choice != null ? choice.getWhen() : null;
+    }
+
+    public RuleChoiceOtherwiseConfig getOtherwise() {
+        return choice != null ? choice.getOtherwise() : null;
+    }
+
+    @Data
+    public static class ChoiceSettingConfig {
+        private List<RuleChoiceWhenConfig> when;
+        private RuleChoiceOtherwiseConfig otherwise;
     }
 
     @Data

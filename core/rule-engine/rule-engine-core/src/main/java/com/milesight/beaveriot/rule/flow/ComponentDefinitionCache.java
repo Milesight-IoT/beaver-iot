@@ -29,7 +29,10 @@ public class ComponentDefinitionCache implements BeanFactoryPostProcessor {
     public static ComponentDefinition load(String componentName) {
         String schema = COMPONENT_DEFINITION_SCHEMA_CACHE.computeIfAbsent(componentName, key ->
                 beanFactory.getBean(RuleEngineComponentManager.class).getComponentDefinitionSchema(componentName));
-        return JsonHelper.fromJSON(schema, ComponentDefinition.class);
+        ComponentDefinition componentDefinition = JsonHelper.fromJSON(schema, ComponentDefinition.class);
+        componentDefinition.getProperties().entrySet().forEach(entry -> entry.getValue().setName(entry.getKey()));
+        componentDefinition.getOutputProperties().entrySet().forEach(entry -> entry.getValue().setName(entry.getKey()));
+        return componentDefinition;
     }
 
     public static Collection<ComponentOutputDefinition> loadOutputArguments(String componentName) {

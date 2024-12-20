@@ -15,8 +15,8 @@
       "nodeName": "node2",
       "nodeRemark": "",
       "parameters": {
-        "bean.emailContent": "myEvent",
-        "bean.exchangePayload": {
+        "emailContent": "myEvent",
+        "exchangePayload": {
           "a": 1
         }
       },
@@ -27,8 +27,8 @@
       "nodeName": "node3",
       "nodeRemark": "",
       "parameters": {
-        "bean.emailContent": "myEvent",
-        "bean.exchangePayload": {
+        "emailContent": "myEvent",
+        "exchangePayload": {
           "b": 2
         }
       },

@@ -24,9 +24,10 @@ public class ScriptCodeComponent implements ProcessorNode<Exchange> {
     @UriParam(displayName = "Expression", prefix = "bean")
     private ExpressionNode expression;
 
+    @UriParam(displayName = "Input Arguments", prefix = "bean")
     private Map<String, Object> inputArguments;
 
-    @OutputArguments(name = "payload", displayName = "Output Variables")
+    @OutputArguments(name = "Payload", displayName = "Output Variables")
     private Map<String, String> payload;
 
     @Override

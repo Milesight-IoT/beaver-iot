@@ -41,7 +41,7 @@ public class FromNode implements NodeId {
 
     public static FromNode create(String flowId, RuleNodeConfig fromNodeConfig, ComponentDefinition componentDefinition, List<OutputNode> steps) {
 
-        Map<String, Object> parameters = ComponentParameterConverter.convertParameters(fromNodeConfig.getParameters());
+        Map<String, Object> parameters = ComponentParameterConverter.convertParameters(fromNodeConfig.getParameters(), componentDefinition);
 
         String generatedId = RuleFlowIdGenerator.generateNamespacedId(flowId, fromNodeConfig.getId());
 
