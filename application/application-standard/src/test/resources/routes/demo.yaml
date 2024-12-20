@@ -1,10 +1,16 @@
   - route:
       from:
         id: flow.myId.id_1
-        uri: eventListener:myevent
+        uri: eventListener:myId
         parameters:
           entities: demo-anno-integration.integration.connect,demo-anno-integration.integration.address
         steps:
+          - to:
+              id: flow.myId.id_4
+              parameters:
+                bean.emailContent: '"myEvent"'
+                bean.exchangePayload: '{"abc":1}'
+              uri: bean:simpleAlarmComponent
           - split:
               simple: "${bean:innerParallelSplitter.split(${body},'2')}"
               parallelProcessing: true
@@ -15,11 +21,11 @@
                   id: inner.inner.myId.PARALLEL_0.BRANCH_1
                   steps:
                     - to:
-                        id: "my-groovy-test-js-1"
+                        id: flow.myId.id_2
                         uri: "language:js"
                         parameters:
                           script: "(()=>{
-                                var a = \"abc\";
+                                var a = properties.id_4.abc;
                                 return a;
                                 })()
                                 "
@@ -29,16 +35,11 @@
                     - to:
                         id: flow.myId.id_3
                         parameters:
-                          bean.expression: "{\"language\":\"groovy\",\"expression\":\"def map = [:];  map['key1'] = properties.a; return map;\"}"
-                          bean.inputArguments: '{"a":1}'
+                          bean.expression: "{\"language\":\"groovy\",\"expression\":\"def map = [:];  map['key1'] = a; return map;\"}"
+                          bean.inputArguments: "{\"a\":\"#{properties.id_4.abc}\"}"
                         uri: bean:code
 
-          - to:
-              id: flow.myId.id_4
-              parameters:
-                bean.emailContent: '"myEvent"'
-                bean.exchangePayload: '{"a":1}'
-              uri: bean:simpleAlarmComponent
+
 
       id: myId
 

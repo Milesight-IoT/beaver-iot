@@ -5,6 +5,7 @@ import com.milesight.beaveriot.rule.annotations.OutputArguments;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
 import com.milesight.beaveriot.rule.annotations.UriParamExtension;
 import com.milesight.beaveriot.rule.constants.RuleNodeType;
+import com.milesight.beaveriot.rule.support.JsonHelper;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
@@ -14,6 +15,7 @@ import org.apache.camel.spi.UriPath;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  *   "timerName": { "index": 0, "kind": "path", "displayName": "Timer Name", "group": "consumer", "label": "", "required": true, "type": "string", "javaType": "java.lang.String", "deprecated": false, "deprecationNote": "", "autowired": false, "secret": false, "description": "The name of the timer" },
@@ -76,6 +78,7 @@ public class SimpleAlarmComponent  {
 
     public void process(Exchange exchange) throws Exception {
         log.info("SimpleAlarmComponent process...................." + emailContent);
+        exchange.getIn().setBody(JsonHelper.fromJSON(exchangePayload, Map.class));
     }
 
 }

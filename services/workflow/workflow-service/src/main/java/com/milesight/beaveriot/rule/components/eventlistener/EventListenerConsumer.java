@@ -1,7 +1,10 @@
 package com.milesight.beaveriot.rule.components.eventlistener;
 
+import com.milesight.beaveriot.context.constants.ExchangeContextKeys;
+import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
 import com.milesight.beaveriot.context.support.SpringContext;
+import com.milesight.beaveriot.entity.rule.GenericExchangeValidator;
 import com.milesight.beaveriot.eventbus.DisruptorEventBus;
 import com.milesight.beaveriot.eventbus.UniqueListenerCacheKey;
 import com.milesight.beaveriot.eventbus.api.Event;
@@ -21,10 +24,14 @@ import java.util.stream.Collectors;
 public class EventListenerConsumer extends DefaultConsumer {
 
     private final EventListenerEndpoint endpoint;
+    private final GenericExchangeValidator genericExchangeValidator;
+    private final DisruptorEventBus eventBus;
 
-    public EventListenerConsumer(EventListenerEndpoint endpoint, Processor processor) {
+    public EventListenerConsumer(EventListenerEndpoint endpoint, Processor processor, GenericExchangeValidator genericExchangeValidator, DisruptorEventBus eventBus) {
         super(endpoint, processor);
         this.endpoint = endpoint;
+        this.genericExchangeValidator = genericExchangeValidator;
+        this.eventBus = eventBus;
     }
 
     @Override
@@ -33,8 +40,6 @@ public class EventListenerConsumer extends DefaultConsumer {
         super.doStart();
 
         Assert.notEmpty(endpoint.getEntities(), "Entities must be set");
-
-        DisruptorEventBus<Event<? extends IdentityKey>> eventBus = SpringContext.getBean(DisruptorEventBus.class);
 
         List<String> entities = endpoint.getEntities();
 
@@ -50,7 +55,6 @@ public class EventListenerConsumer extends DefaultConsumer {
 
     @Override
     protected void doStop() throws Exception {
-        DisruptorEventBus<Event<? extends IdentityKey>> eventBus = SpringContext.getBean(DisruptorEventBus.class);
         eventBus.deregisterSubscribe(ExchangeEvent.class, generateListenerCacheKey(endpoint.getEntities()));
         super.doStop();
     }
@@ -72,7 +76,15 @@ public class EventListenerConsumer extends DefaultConsumer {
             exchange.getIn().setHeader(EventListenerConstants.HEADER_EVENTBUS_PAYLOAD_KEY, uniqueListenerCacheKey.getPayloadKey());
             exchange.getIn().setHeader(EventListenerConstants.HEADER_EVENTBUS_TYPE, uniqueListenerCacheKey.getEventType());
 
-            exchange.getIn().setBody(event);
+            ExchangeEvent exchangeEvent = (ExchangeEvent) event;
+
+            ExchangePayload payload = ExchangePayload.createFrom(exchangeEvent.getPayload(), endpoint.getEntities());
+
+            if (endpoint.isVerifyEntitiesValidation()) {
+                genericExchangeValidator.matches(payload);
+            }
+
+            exchange.getIn().setBody(payload);
             try {
                 getProcessor().process(exchange);
             } catch (Exception e) {

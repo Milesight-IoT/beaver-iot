@@ -1,18 +1,17 @@
 package com.milesight.beaveriot.rule.components.eventlistener;
 
+import com.milesight.beaveriot.entity.rule.GenericExchangeValidator;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
 import com.milesight.beaveriot.rule.constants.RuleNodeType;
 import lombok.Data;
-import org.apache.camel.Category;
-import org.apache.camel.Consumer;
-import org.apache.camel.Processor;
-import org.apache.camel.Producer;
+import org.apache.camel.*;
 import org.apache.camel.api.management.ManagedResource;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriPath;
 import org.apache.camel.support.DefaultEndpoint;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
@@ -30,6 +29,10 @@ public class EventListenerEndpoint extends DefaultEndpoint {
     @UriParam(displayName = "Entity Listening Setting", description = "The entities to listen for events")
     private List<String> entities;
 
+    @Metadata(required = true, autowired = true, defaultValue = "false")
+    @UriParam(displayName = "verifyEntitiesValidation", description = "Whether it is necessary to verify the legality of the entity")
+    private boolean verifyEntitiesValidation = false;
+
     public EventListenerEndpoint(String uri, EventListenerComponent component) {
         super(uri, component);
     }
@@ -43,7 +46,8 @@ public class EventListenerEndpoint extends DefaultEndpoint {
 
     @Override
     public Consumer createConsumer(Processor processor) throws Exception {
-        return new EventListenerConsumer(this, processor);
+        EventListenerComponent eventListenerComponent = (EventListenerComponent) getComponent();
+        return new EventListenerConsumer(this, processor, eventListenerComponent.getGenericExchangeValidator(), eventListenerComponent.getEventBus());
     }
 
     @Override

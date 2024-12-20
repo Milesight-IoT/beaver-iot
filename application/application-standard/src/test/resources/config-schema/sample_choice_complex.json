@@ -1,13 +1,12 @@
 {
-  "flowId": "myId",
+  "flowId": "choiceFlowId",
   "nodes": [
     {
-      "id": "id_1",
-      "nodeName": "node1",
+      "id": "event_1",
+      "nodeName": "event listener",
       "nodeRemark": "",
       "parameters": {
-        "eventbusName": "myEvent",
-        "entities": {}
+        "entities": "demo-anno-integration.integration.address,demo-anno-integration.integration.connect"
       },
       "componentName": "eventListener"
     },
@@ -21,7 +20,8 @@
           {
             "id": "c_1",
             "expressionType": "mvel",
-            "or": [
+            "logicOperator": "AND",
+            "conditions": [
               {
                 "expressionValue": "request.body['a.b.c'] != null"
               }
@@ -30,13 +30,19 @@
           {
             "id": "c_2",
             "expressionType": "condition",
-            "and": [
+            "logicOperator": "AND",
+            "conditions": [
               {
                 "expressionValue": {
-                  "id": "",
-                  "key": "",
-                  "value": "",
-                  "operator": ""
+                  "key": "#{properties.event_1['demo-anno-integration.integration.address']}",
+                  "value": "http",
+                  "operator": "CONTAINS"
+                }
+              },
+              {
+                "expressionValue": {
+                  "key": "#{properties.event_1['demo-anno-integration.integration.address']}",
+                  "operator": "IS_NOT_EMPTY"
                 }
               }
             ]
@@ -45,39 +51,38 @@
       }
     },
     {
-      "id": "id_2",
-      "nodeName": "node2",
+      "id": "codeId_1",
+      "nodeName": "code_1",
       "nodeRemark": "",
       "parameters": {
-        "eventbusName": "myEvent",
-        "entities": {}
+        "bean.inputArguments": {"entities":"a"} ,
+        "bean.expression": {"language":"groovy","expression":"def map = [:];  map['entities'] = entities; return map;"}
       },
-      "componentName": "eventListener"
+      "componentName": "code"
     },
     {
-      "id": "id_3",
-      "nodeName": "node3",
+      "id": "codeId_2",
+      "nodeName": "code_2",
       "nodeRemark": "",
       "parameters": {
-        "eventbusName": "myEvent",
-        "entities": {}
+        "bean.inputArguments": {"entities":"#{properties.event_1}"} ,
+        "bean.expression": {"language":"groovy","expression":"def map = [:];  map['entities'] = entities; return map;"}
       },
-      "componentName": "eventListener"
+      "componentName": "code"
     },
     {
-      "id": "id_4",
-      "nodeName": "node4",
+      "id": "codeId_3",
+      "nodeName": "code_3",
       "nodeRemark": "",
       "parameters": {
-        "eventbusName": "myEvent",
-        "entities": {}
+        "bean.expression": {"language":"js","expression":"var payload=body.entities; return payload;"}
       },
-      "componentName": "eventListener"
+      "componentName": "code"
     }
   ],
   "edges": [
     {
-      "source": "id_1",
+      "source": "event_1",
       "target": "choice_1"
     },
     {
@@ -90,19 +95,19 @@
     },
     {
       "source": "c_1",
-      "target": "id_2"
+      "target": "codeId_1"
     },
     {
       "source": "c_2",
-      "target": "id_3"
+      "target": "codeId_2"
     },
     {
-      "source": "id_3",
-      "target": "id_4"
+      "source": "codeId_1",
+      "target": "codeId_3"
     },
     {
-      "source": "id_2",
-      "target": "id_4"
+      "source": "codeId_2",
+      "target": "codeId_3"
     }
   ]
 }

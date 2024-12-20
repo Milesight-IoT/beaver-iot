@@ -20,7 +20,8 @@
           {
             "id": "c_1",
             "expressionType": "mvel",
-            "or": [
+            "logicOperator": "AND",
+            "conditions": [
               {
                 "expressionValue": "request.body['a.b.c'] != null"
               }
@@ -29,12 +30,19 @@
           {
             "id": "c_2",
             "expressionType": "condition",
-            "and": [
+            "logicOperator": "OR",
+            "conditions": [
               {
                 "expressionValue": {
                   "key": "a",
-                  "value": "b",
-                  "operator": "eq"
+                  "operator": "IS_EMPTY"
+                }
+              },
+              {
+                "expressionValue": {
+                  "key": "1",
+                  "value": 1,
+                  "operator": "EQ"
                 }
               }
             ]

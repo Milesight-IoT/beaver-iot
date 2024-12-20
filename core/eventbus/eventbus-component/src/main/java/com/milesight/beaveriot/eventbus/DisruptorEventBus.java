@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
+
 /**
  * @author leon
  */
@@ -132,7 +133,7 @@ public class DisruptorEventBus<T extends Event<? extends IdentityKey>> implement
 
     public void registerSubscribe(EventSubscribe eventSubscribe, Object bean, Method executeMethod){
 
-       registerSubscribe(eventSubscribe.payloadKeyExpression(), eventSubscribe.eventType(), bean, executeMethod);
+        registerSubscribe(eventSubscribe.payloadKeyExpression(), eventSubscribe.eventType(), bean, executeMethod);
     }
 
     public void registerSubscribe(String keyExpression, String eventType, Object bean, Method executeMethod){
