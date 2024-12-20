@@ -214,7 +214,7 @@ public class SearchFilter extends CompositeCondition implements Filterable{
         SearchFilter nextQuerySpecs = new SearchFilter(BooleanOperator.OR, new ArrayList<>());
         consumer.accept(nextQuerySpecs);
         searchConditions.add(nextQuerySpecs);
-        return nextQuerySpecs;
+        return this;
     }
 
     @Override
@@ -222,7 +222,7 @@ public class SearchFilter extends CompositeCondition implements Filterable{
         SearchFilter nextQuerySpecs = new SearchFilter(BooleanOperator.AND, new ArrayList<>());
         consumer.accept(nextQuerySpecs);
         searchConditions.add(nextQuerySpecs);
-        return nextQuerySpecs;
+        return this;
     }
 
 }
