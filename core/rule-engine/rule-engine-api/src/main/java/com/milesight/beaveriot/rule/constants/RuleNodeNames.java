@@ -13,6 +13,8 @@ public interface RuleNodeNames {
     String innerExchangeSaveAction = "innerExchangeSaveAction";
     String innerEventSubscribeAction = "innerEventSubscribeAction";
     String innerParallelSplitter = "innerParallelSplitter";
+    String innerDirectExchangePredicate = "innerDirectExchangePredicate";
+    String innerWorkflowDirectExchangeFlow = "innerWorkflowDirectExchangeFlow";
 
     String CAMEL_DIRECT = "direct";
     String CAMEL_CHOICE = "choice";
