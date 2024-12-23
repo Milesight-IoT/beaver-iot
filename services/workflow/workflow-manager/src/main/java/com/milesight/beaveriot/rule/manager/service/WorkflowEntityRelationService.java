@@ -36,7 +36,7 @@ public class WorkflowEntityRelationService {
         RuleNodeConfig triggerNodeConfig = null;
         if (ruleFlowConfig != null) {
             for (RuleNodeConfig nodeConfig : ruleFlowConfig.getNodes()) {
-                if (nodeConfig.getComponentName().equals("Trigger")) { // TODO: service call name
+                if (nodeConfig.getComponentName().equals("serviceInvocation")) {
                     triggerNodeConfig = nodeConfig;
                     break;
                 }

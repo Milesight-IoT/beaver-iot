@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -98,7 +99,7 @@ public class WorkflowController {
     }
 
     @GetMapping("/components")
-    public ResponseBody<WorkflowComponentResponse> getWorkflowComponents() {
+    public ResponseBody<Map<String, List<WorkflowComponentData>>> getWorkflowComponents() {
         return ResponseBuilder.success(workflowService.getWorkflowComponents());
     }
 

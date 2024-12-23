@@ -14,7 +14,6 @@ import com.milesight.beaveriot.rule.manager.po.WorkflowHistoryPO;
 import com.milesight.beaveriot.rule.manager.po.WorkflowPO;
 import com.milesight.beaveriot.rule.manager.repository.*;
 import com.milesight.beaveriot.rule.model.RuleLanguage;
-import com.milesight.beaveriot.rule.model.definition.BaseDefinition;
 import com.milesight.beaveriot.rule.model.flow.config.RuleFlowConfig;
 import com.milesight.beaveriot.rule.model.flow.config.RuleNodeConfig;
 import com.milesight.beaveriot.rule.model.trace.FlowTraceInfo;
@@ -69,8 +68,8 @@ public class WorkflowService {
         Page<WorkflowPO> workflowPOPage;
         do {
             workflowPOPage = workflowRepository
-                    .findAll(f -> f.eq(WorkflowPO.Fields.enabled, true), pageRequest.toPageable());
-            workflowPOPage.forEach((workflowPO -> deployFlow(workflowPO, true)));
+                    .findAll(f -> f.eq(WorkflowPO.Fields.enabled, true).isNotNull(WorkflowPO.Fields.routeData), pageRequest.toPageable());
+            workflowPOPage.forEach((this::deployFlow));
             pageRequest.setPageNumber(pageRequest.getPageNumber() + 1);
         } while (workflowPOPage.hasNext());
 
@@ -174,13 +173,17 @@ public class WorkflowService {
         return ruleFlowConfig;
     }
 
-    public String deployFlow(WorkflowPO wp, boolean useCache) {
-        if (StringUtils.hasLength(wp.getRouteData()) && useCache) {
-            ruleEngineLifecycleManager.deployFlow(wp.getId().toString(), wp.getRouteData());
-            return wp.getRouteData();
+    private void deployFlow(WorkflowPO wp) {
+        if (wp.getRouteData() == null) {
+            removeFlow(wp);
+            return;
         }
 
-        return ruleEngineLifecycleManager.deployFlow(parseRuleFlowConfig(wp.getId().toString(), wp.getDesignData()));
+        ruleEngineLifecycleManager.deployFlow(wp.getId().toString(), wp.getRouteData());
+    }
+
+    private void removeFlow(WorkflowPO wp) {
+        ruleEngineLifecycleManager.removeFlow(wp.getId().toString());
     }
 
     public void updateStatus(Long flowId, boolean status) {
@@ -192,12 +195,10 @@ public class WorkflowService {
             return;
         }
 
-        String flowIdStr = flowId.toString();
         if (status) {
-            wp.setRouteData(deployFlow(wp, true));
+            deployFlow(wp);
         } else {
-            wp.setRouteData(null);
-            ruleEngineLifecycleManager.removeFlow(flowIdStr);
+            removeFlow(wp);
         }
 
         wp.setEnabled(status);
@@ -252,8 +253,8 @@ public class WorkflowService {
         if (isCreate) {
             workflowPO = new WorkflowPO();
             workflowPO.setId(SnowflakeUtil.nextId());
-            workflowPO.setEnabled(false);
             workflowPO.setUserId(SecurityUserContext.getUserId());
+            workflowPO.setVersion(1);
         } else {
             workflowPO = getById(Long.valueOf(request.getId()));
             if (!workflowPO.getVersion().equals(request.getVersion())) {
@@ -272,27 +273,47 @@ public class WorkflowService {
         workflowPO.setUpdatedUser(SecurityUserContext.getUserId());
         workflowPO.setName(request.getName());
         workflowPO.setRemark(request.getRemark());
+
+        // Inc data version if design changed
+        Integer beforeVersion = workflowPO.getVersion();
+        if (!isCreate && !Objects.equals(workflowPO.getDesignData(), request.getDesignData())) {
+            workflowPO.setVersion(beforeVersion + 1);
+        }
+
         workflowPO.setDesignData(request.getDesignData());
-        if (Boolean.TRUE.equals(workflowPO.getEnabled())) {
-            workflowPO.setRouteData(deployFlow(workflowPO, false));
+
+        final String workflowIdStr = workflowPO.getId().toString();
+        RuleFlowConfig ruleFlowConfig = parseRuleFlowConfig(workflowIdStr, request.getDesignData());
+        String previousRoutingData = workflowPO.getRouteData();
+        if (ruleFlowConfig != null) {
+            workflowPO.setRouteData(ruleEngineLifecycleManager.generateRouteFlow(ruleFlowConfig));
         } else {
             workflowPO.setRouteData(null);
         }
 
-        Integer beforeVersion = workflowPO.getVersion();
+        boolean isEnableUpdated = !Objects.equals(workflowPO.getEnabled(), request.getEnabled());
+        boolean isRoutingUpdated = !Objects.equals(workflowPO.getRouteData(), previousRoutingData);
+
+        // Deploy or Remove
+        workflowPO.setEnabled(request.getEnabled());
+        if (Boolean.TRUE.equals(workflowPO.getEnabled()) && (isRoutingUpdated || isEnableUpdated)) {
+            deployFlow(workflowPO);
+        } else if (Boolean.FALSE.equals(workflowPO.getEnabled()) && isEnableUpdated) {
+            removeFlow(workflowPO);
+        }
+
+        // Save workflow and history
         workflowPO = workflowRepository.save(workflowPO);
         if (workflowHistoryPO != null && !workflowPO.getVersion().equals(beforeVersion)) {
             workflowHistoryRepository.save(workflowHistoryPO);
         }
-
-        final String workflowIdStr = workflowPO.getId().toString();
 
         // Build Response
         SaveWorkflowResponse swr = new SaveWorkflowResponse();
         swr.setFlowId(workflowIdStr);
         swr.setVersion(workflowPO.getVersion());
 
-        workflowEntityRelationService.saveEntity(workflowPO, parseRuleFlowConfig(workflowIdStr, request.getDesignData()));
+        workflowEntityRelationService.saveEntity(workflowPO, ruleFlowConfig);
 
         return swr;
     }
@@ -305,22 +326,26 @@ public class WorkflowService {
         return ruleEngineLifecycleManager.trackNode(JsonHelper.fromJSON(request.getNodeConfig(), RuleNodeConfig.class), request.getInput());
     }
 
-    public WorkflowComponentResponse getWorkflowComponents() {
-        WorkflowComponentResponse wcp = new WorkflowComponentResponse();
-        Map<String, List<BaseDefinition>> componentMap = new HashMap<>();
+    public Map<String, List<WorkflowComponentData>> getWorkflowComponents() {
+        Map<String, List<WorkflowComponentData>> componentMap = new HashMap<>();
         ruleEngineComponentManager.getDeclaredComponents().forEach((key, value) -> {
-            List<BaseDefinition> componentGroup = new ArrayList<>();
+            List<WorkflowComponentData> componentGroup = new ArrayList<>();
             value.forEach(componentDef -> {
-                BaseDefinition wc = new BaseDefinition();
+                WorkflowComponentData wc = new WorkflowComponentData();
                 wc.setName(componentDef.getName());
                 wc.setTitle(componentDef.getTitle());
+                try {
+                    wc.setData(ruleEngineComponentManager.getComponentDefinitionSchema(componentDef.getName()));
+                } catch (IllegalArgumentException e) {
+                    log.warn("List components failed: " + e.getMessage());
+                }
+
                 componentGroup.add(wc);
             });
             componentMap.put(key, componentGroup);
         });
 
-        wcp.setEntry(componentMap);
-        return wcp;
+        return componentMap;
     }
 
     public String getWorkflowComponentDetail(String componentId) {
