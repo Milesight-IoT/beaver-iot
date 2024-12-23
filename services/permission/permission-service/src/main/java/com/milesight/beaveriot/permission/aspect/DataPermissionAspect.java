@@ -13,6 +13,8 @@ import com.milesight.beaveriot.permission.service.DashboardPermissionService;
 import com.milesight.beaveriot.permission.service.DevicePermissionService;
 import com.milesight.beaveriot.permission.service.EntityPermissionService;
 import com.milesight.beaveriot.permission.service.WorkflowPermissionService;
+import com.milesight.beaveriot.permission.util.TypeUtil;
+import jakarta.persistence.Table;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -21,8 +23,12 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.data.repository.Repository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,9 +61,18 @@ public class DataPermissionAspect {
     public Object around(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         DataPermission dataPermission = signature.getMethod().getAnnotation(DataPermission.class);
+        String tableName = null;
         if (dataPermission == null) {
             Class<?> repositoryInterface = joinPoint.getTarget().getClass().getInterfaces()[0];
             dataPermission = repositoryInterface.getAnnotation(DataPermission.class);
+
+            if(Repository.class.isAssignableFrom(repositoryInterface)){
+                Table annotation = AnnotationUtils.getAnnotation(((Class) TypeUtil.getTypeArgument(repositoryInterface, 0)), Table.class);
+                tableName = annotation.name();
+            }
+        }
+        if (tableName == null) {
+            return joinPoint.proceed();
         }
         if (dataPermission == null) {
             return joinPoint.proceed();
@@ -101,14 +116,26 @@ public class DataPermissionAspect {
         if(dataIds.isEmpty()) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("user not have entity permission").build();
         }
-        DataAspectContext.setDataPermissionContext(DataAspectContext.DataPermissionContext.builder()
+        DataAspectContext.setDataPermissionContext(tableName, DataAspectContext.DataPermissionContext.builder()
                 .dataIds(dataIds)
                 .dataColumnName(columnName)
                 .build());
         try {
             return joinPoint.proceed();
         } finally {
-            DataAspectContext.clearDataPermissionContext();
+            if (TransactionSynchronizationManager.isActualTransactionActive() &&
+                    TransactionSynchronizationManager.isActualTransactionActive()) {
+                // Register a synchronization to clear the context after the transaction completes
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCompletion(int status) {
+                        DataAspectContext.clearDataPermissionContext();
+                    }
+                });
+            } else {
+                // If no transaction is active, clear the context immediately
+                DataAspectContext.clearDataPermissionContext();
+            }
         }
     }
 

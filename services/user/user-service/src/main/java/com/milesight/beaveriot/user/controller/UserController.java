@@ -2,9 +2,11 @@ package com.milesight.beaveriot.user.controller;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.model.request.ChangePasswordRequest;
 import com.milesight.beaveriot.user.model.request.CreateUserRequest;
 import com.milesight.beaveriot.user.model.request.UpdatePasswordRequest;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -74,7 +77,15 @@ public class UserController {
     }
 
     @GetMapping("/members")
-    public ResponseBody<Page<UserInfoResponse>> getUsers(@RequestBody UserListRequest userListRequest) {
+    public ResponseBody<Page<UserInfoResponse>> getUsers(@RequestParam(value = "keyword") String keyword,
+                                                         @RequestParam(value = "page_size") Integer pageSize,
+                                                         @RequestParam(value = "page_number") Integer pageNumber,
+                                                         @RequestParam(value = "sort") Sorts sort) {
+        UserListRequest userListRequest = new UserListRequest();
+        userListRequest.setPageSize(pageSize);
+        userListRequest.setPageNumber(pageNumber);
+        userListRequest.setSort(sort);
+        userListRequest.setKeyword(keyword);
         Page<UserInfoResponse> userInfoResponses = userService.getUsers(userListRequest);
         return ResponseBuilder.success(userInfoResponses);
     }
@@ -117,7 +128,12 @@ public class UserController {
     }
 
     @GetMapping("/members/{userId}/permission")
-    public ResponseBody<UserPermissionResponse> getUserPermission(@PathVariable("userId") Long userId, @RequestBody UserPermissionRequest userPermissionRequest) {
+    public ResponseBody<UserPermissionResponse> getUserPermission(@PathVariable("userId") Long userId,
+                                                                  @RequestParam(value = "resource_type") ResourceType resourceType,
+                                                                  @RequestParam(value = "resource_id") Long resourceId) {
+        UserPermissionRequest userPermissionRequest = new UserPermissionRequest();
+        userPermissionRequest.setResourceType(resourceType);
+        userPermissionRequest.setResourceId(resourceId);
         UserPermissionResponse userPermissionResponse = userService.getUserPermission(userId, userPermissionRequest);
         return ResponseBuilder.success(userPermissionResponse);
     }
