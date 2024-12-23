@@ -45,6 +45,8 @@ public class ComponentParameterConverter {
             return value.asDouble();
         } else if (value.isBoolean()) {
             return value.asBoolean();
+        } else if (value.isTextual()) {
+            return value.textValue();
         } else {
             return value.toString();
         }

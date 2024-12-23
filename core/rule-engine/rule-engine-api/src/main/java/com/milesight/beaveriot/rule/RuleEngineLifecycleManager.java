@@ -11,6 +11,8 @@ import org.apache.camel.Exchange;
  */
 public interface RuleEngineLifecycleManager {
 
+    String generateRouteFlow(RuleFlowConfig ruleFlowConfig);
+
     String deployFlow(RuleFlowConfig ruleFlowConfig);
 
     void deployFlow(String flowId, String flowRouteYaml);

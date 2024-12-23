@@ -48,6 +48,14 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
     }
 
     @Override
+    public String generateRouteFlow(RuleFlowConfig ruleFlowConfig) {
+        return RuleFlowYamlBuilder.builder(ComponentDefinitionCache::load, null)
+                .withRuleFlowConfig(ruleFlowConfig)
+                .build()
+                .dumpYaml();
+    }
+
+    @Override
     public String deployFlow(RuleFlowConfig ruleFlowConfig) {
         return deployFlow(ruleFlowConfig, null);
     }
@@ -55,10 +63,7 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
     private String deployFlow(RuleFlowConfig ruleFlowConfig, RuleNodeInterceptor ruleNodeInterceptor) {
         Assert.notNull(ruleFlowConfig.getFlowId(), "Rule flow id must not be null");
 
-        String dumpYaml = RuleFlowYamlBuilder.builder(ComponentDefinitionCache::load, ruleNodeInterceptor)
-                .withRuleFlowConfig(ruleFlowConfig)
-                .build()
-                .dumpYaml();
+        String dumpYaml = generateRouteFlow(ruleFlowConfig);
         deployFlow(ruleFlowConfig.getFlowId(), dumpYaml);
         return dumpYaml;
     }
