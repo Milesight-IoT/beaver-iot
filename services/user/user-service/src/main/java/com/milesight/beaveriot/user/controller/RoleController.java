@@ -1,6 +1,5 @@
 package com.milesight.beaveriot.user.controller;
 
-import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.user.model.request.CreateRoleRequest;
@@ -40,7 +39,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -74,16 +72,8 @@ public class RoleController {
         return ResponseBuilder.success();
     }
 
-    @GetMapping("")
-    public ResponseBody<Page<RoleResponse>> getRoles(@RequestParam(value = "keyword") String keyword,
-                                                     @RequestParam(value = "page_size") Integer pageSize,
-                                                     @RequestParam(value = "page_number") Integer pageNumber,
-                                                     @RequestParam(value = "sort") Sorts sort) {
-        RoleListRequest roleListRequest = new RoleListRequest();
-        roleListRequest.setPageNumber(pageNumber);
-        roleListRequest.setPageSize(pageSize);
-        roleListRequest.setKeyword(keyword);
-        roleListRequest.setSort(sort);
+    @PostMapping("/search")
+    public ResponseBody<Page<RoleResponse>> getRoles(@RequestBody RoleListRequest roleListRequest) {
         Page<RoleResponse> roleResponses = roleService.getRoles(roleListRequest);
         return ResponseBuilder.success(roleResponses);
     }
