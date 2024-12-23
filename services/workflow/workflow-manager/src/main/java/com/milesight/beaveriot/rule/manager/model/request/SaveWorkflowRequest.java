@@ -10,6 +10,8 @@ public class SaveWorkflowRequest {
 
     private String remark;
 
+    private Boolean enabled = false;
+
     private String designData;
 
     private Integer version;

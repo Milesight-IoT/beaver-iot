@@ -6,6 +6,9 @@ import lombok.experimental.FieldNameConstants;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+/**
+ * Mainly used for restoring the design at the time of log generation
+ */
 @Data
 @Entity
 @FieldNameConstants
