@@ -7,7 +7,7 @@
         - choice:
             id: flow.myId.choice_1
             when:
-              - mvel: "request.body['a.b.c'] != null"
+              - mvel: "true"
                 id: flow.myId.c_1
                 steps:
                   - to:
