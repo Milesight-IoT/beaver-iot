@@ -11,6 +11,7 @@ import com.milesight.beaveriot.rule.manager.model.TriggerNodeParameters;
 import com.milesight.beaveriot.rule.manager.po.WorkflowEntityRelationPO;
 import com.milesight.beaveriot.rule.manager.po.WorkflowPO;
 import com.milesight.beaveriot.rule.manager.repository.WorkflowEntityRelationRepository;
+import com.milesight.beaveriot.rule.manager.repository.WorkflowRepository;
 import com.milesight.beaveriot.rule.model.flow.config.RuleFlowConfig;
 import com.milesight.beaveriot.rule.model.flow.config.RuleNodeConfig;
 import com.milesight.beaveriot.rule.support.JsonHelper;
@@ -19,12 +20,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
 public class WorkflowEntityRelationService {
     @Autowired
     WorkflowEntityRelationRepository workflowEntityRelationRepository;
+
+    @Autowired
+    WorkflowRepository workflowRepository;
 
     @Autowired
     EntityServiceProvider entityServiceProvider;
@@ -100,5 +105,17 @@ public class WorkflowEntityRelationService {
             workflowEntityRelationRepository.deleteAll(relations);
             entityFacade.deleteCustomizedEntitiesByIds(entityIds);
         }
+    }
+
+    public WorkflowPO getFlowByEntityId(Long entityId) {
+        Optional<WorkflowEntityRelationPO> workflowEntityRelationPO = workflowEntityRelationRepository
+                .findOne(f -> f.eq(WorkflowEntityRelationPO.Fields.entityId, entityId));
+        if (workflowEntityRelationPO.isEmpty()) {
+            return null;
+        }
+
+        return workflowRepository
+                .findById(workflowEntityRelationPO.get().getFlowId())
+                .orElse(null);
     }
 }
