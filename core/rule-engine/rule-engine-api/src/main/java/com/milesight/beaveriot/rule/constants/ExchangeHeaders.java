@@ -15,4 +15,9 @@ public interface ExchangeHeaders {
      */
     String TRACE_RESPONSE = "CamelTraceResponse";
 
+    /**
+     * Direct exchange to the workflow and pass the entity
+     */
+    String DIRECT_EXCHANGE_ENTITY = "CamelDirectExchangeEntity";
+
 }
