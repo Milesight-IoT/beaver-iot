@@ -5,6 +5,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Expression;
 import org.springframework.util.ObjectUtils;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -29,6 +30,13 @@ public class SpELExpressionHelper {
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         entry -> resolveExpression(exchange, entry.getValue())));
+    }
+
+    public static List<String> resolveExpression(Exchange exchange, List<String> expressionList) {
+        if (ObjectUtils.isEmpty(expressionList)) {
+            return List.of();
+        }
+        return expressionList.stream().map(expression -> (String) resolveExpression(exchange, expression)).toList();
     }
 
     public static Object resolveExpression(Exchange exchange, Object expressionValue) {
