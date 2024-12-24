@@ -33,6 +33,7 @@ public class RuleEngineContextInterceptor implements InterceptStrategy {
             if (StringUtils.hasText(fromId) && fromId.startsWith(RuleFlowIdGenerator.FLOW_ID_PREFIX)) {
                 String fromNodeId = RuleFlowIdGenerator.removeNamespacedId(routeDefinition.getId(), fromId);
                 exchange.setProperty(fromNodeId, exchange.getIn().getBody());
+                exchange.setProperty(ExchangeHeaders.EXCHANGE_FLOW_ID, exchange.getFromRouteId());
             }
         }
     }
@@ -41,7 +42,6 @@ public class RuleEngineContextInterceptor implements InterceptStrategy {
         if (definition.getId().startsWith(RuleFlowIdGenerator.FLOW_ID_PREFIX)) {
             String configNodeId = RuleFlowIdGenerator.removeNamespacedId(exchange.getFromRouteId(), definition.getId());
             exchange.setProperty(configNodeId, exchange.getIn().getBody());
-            exchange.setProperty(ExchangeHeaders.EXCHANGE_FLOW_ID, exchange.getFromRouteId());
         }
     }
 
