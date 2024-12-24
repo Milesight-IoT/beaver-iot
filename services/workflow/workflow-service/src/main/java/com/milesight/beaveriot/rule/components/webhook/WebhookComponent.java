@@ -2,6 +2,7 @@ package com.milesight.beaveriot.rule.components.webhook;
 
 import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
+import com.milesight.beaveriot.rule.annotations.UriParamExtension;
 import com.milesight.beaveriot.rule.api.ProcessorNode;
 import com.milesight.beaveriot.rule.constants.RuleNodeType;
 import com.milesight.beaveriot.rule.support.SpELExpressionHelper;
@@ -24,9 +25,8 @@ import java.util.Random;
 public class WebhookComponent implements ProcessorNode<Exchange> {
 
     @UriParam
+    @UriParamExtension(uiComponent = "ParamAssignInput")
     private Map<String, Object> inputArguments;
-    @UriParam
-    private Map<String, Object> headers;
     @UriParam
     private String webhookUrl;
     @UriParam
@@ -37,9 +37,6 @@ public class WebhookComponent implements ProcessorNode<Exchange> {
 
     @Override
     public void processor(Exchange exchange) {
-        if (headers != null) {
-            exchange.getIn().setHeaders(headers);
-        }
         if(inputArguments != null) {
             Map<String, Object> inputArgumentsVariables = SpELExpressionHelper.resolveExpression(exchange, inputArguments);
             exchange.getIn().setBody(inputArgumentsVariables);
