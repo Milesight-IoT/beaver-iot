@@ -47,6 +47,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.DEVICE_NAME_ON_ADD;
+import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.DEVICE_ON_DELETE;
+
 @Service
 @Slf4j
 public class DeviceService implements IDeviceFacade {
@@ -102,11 +105,11 @@ public class DeviceService implements IDeviceFacade {
 
         // call service for adding
         ExchangePayload payload = createDeviceRequest.getParamEntities();
-        payload.putContext("device_name", createDeviceRequest.getName());
+        payload.putContext(DEVICE_NAME_ON_ADD, createDeviceRequest.getName());
 
         // Must return a device
         try {
-            exchangeFlowExecutor.syncExchangeDown(payload);
+            exchangeFlowExecutor.syncExchange(payload);
         } catch (Exception e) {
             throw ServiceException
                     .with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "add device failed")
@@ -202,12 +205,12 @@ public class DeviceService implements IDeviceFacade {
             }
 
             payload.put(deleteDeviceServiceKey, "");
-            payload.putContext("device", device);
+            payload.putContext(DEVICE_ON_DELETE, device);
             return payload;
         }).filter(Objects::nonNull).forEach((ExchangePayload payload) -> {
             // call service for deleting
             try {
-                exchangeFlowExecutor.syncExchangeDown(payload);
+                exchangeFlowExecutor.syncExchange(payload);
             } catch (Exception e) {
                 throw ServiceException
                         .with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "delete device failed")

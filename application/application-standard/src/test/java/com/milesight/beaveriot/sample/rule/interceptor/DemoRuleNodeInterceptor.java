@@ -12,9 +12,6 @@ public class DemoRuleNodeInterceptor implements RuleNodeInterceptor {
     @Override
     public FromNode interceptFromNode(String flowId, FromNode fromNode) {
         //modify fromNode
-        if(fromNode.getUri().startsWith("direct")) {
-            fromNode.getParameters().clear();
-        }
         return RuleNodeInterceptor.super.interceptFromNode(flowId, fromNode);
     }
 

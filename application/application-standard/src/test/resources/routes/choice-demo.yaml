@@ -2,7 +2,7 @@
     from:
       id: flow.choiceFlowId.event_1
       parameters:
-        entities: 'demo-anno-integration.integration.address,demo-anno-integration.integration.connect'
+        entities: '["demo-anno-integration.integration.address","demo-anno-integration.integration.connect"]'
       steps:
         - choice:
             id: flow.choiceFlowId.choice_1

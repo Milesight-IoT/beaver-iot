@@ -1,5 +1,7 @@
 package com.milesight.beaveriot.eventbus.annotations;
 
+import com.milesight.beaveriot.eventbus.enums.EventSource;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -15,5 +17,7 @@ public @interface EventSubscribe {
     String eventType() default "";
 
     String payloadKeyExpression() ;
+
+    EventSource[] eventSource() default {};
 
 }

@@ -2,7 +2,10 @@ package com.milesight.beaveriot.eventbus;
 
 import com.milesight.beaveriot.base.constants.StringConstant;
 import com.milesight.beaveriot.base.utils.KeyPatternMatcher;
+import com.milesight.beaveriot.eventbus.enums.EventSource;
 import lombok.Data;
+import org.apache.commons.lang3.ArrayUtils;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
@@ -18,9 +21,12 @@ public class ListenerCacheKey {
 
     private String eventType;
 
-    public ListenerCacheKey(String payloadKey, String eventType) {
+    private EventSource[] eventSources;
+
+    public ListenerCacheKey(String payloadKey, String eventType, EventSource[] eventSource) {
         this.payloadKey = payloadKey;
         this.eventType = eventType;
+        this.eventSources = eventSource;
     }
 
     public String[] matchMultiKeys(String payloadMultiKeys) {
@@ -32,6 +38,13 @@ public class ListenerCacheKey {
             return true;
         }
         return eventType.equals(payloadEventType);
+    }
+
+    public boolean matchEventSource(EventSource eventSource) {
+        if (ObjectUtils.isEmpty(eventSources)) {
+            return true;
+        }
+        return ArrayUtils.contains(eventSources, eventSource);
     }
 
     @Override

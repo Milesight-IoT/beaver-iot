@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.eventbus;
 
+import com.milesight.beaveriot.eventbus.enums.EventSource;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
@@ -12,8 +13,8 @@ public class UniqueListenerCacheKey extends ListenerCacheKey{
 
     private String id;
 
-    public UniqueListenerCacheKey(String id, String payloadKey, String eventType) {
-        super(payloadKey, eventType);
+    public UniqueListenerCacheKey(String id, String payloadKey, String eventType, EventSource[] eventSources) {
+        super(payloadKey, eventType, eventSources);
         this.id = id;
     }
 

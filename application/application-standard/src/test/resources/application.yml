@@ -34,12 +34,10 @@ camel:
   rule:
     components:
       entry:
-        - name: "timer"
+        - name: "simpleTimer"
           title: "timer"
         - name: "trigger"
-          title: "trigger"
-        - name: "direct"
-          title: "input"
+          title: "Trigger"
         - name: "eventListener"
           title: "Event Listener"
       control:
@@ -87,7 +85,7 @@ oauth2:
     - "/oauth2/token"
     - "/user/register"
     - "/user/status"
-    - "/public/**"
+    - "/**"
 
 logging:
   level:

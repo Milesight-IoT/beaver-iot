@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.rule.observe;
 
+import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
 import com.milesight.beaveriot.rule.support.RuleFlowIdGenerator;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
@@ -12,7 +13,7 @@ import org.springframework.util.StringUtils;
 /**
  * @author leon
  */
-public class RuleEngineOutputInterceptor implements InterceptStrategy {
+public class RuleEngineContextInterceptor implements InterceptStrategy {
 
     @Override
     public Processor wrapProcessorInInterceptors(CamelContext context, NamedNode definition, Processor target, Processor nextTarget) throws Exception {
@@ -32,6 +33,7 @@ public class RuleEngineOutputInterceptor implements InterceptStrategy {
             if (StringUtils.hasText(fromId) && fromId.startsWith(RuleFlowIdGenerator.FLOW_ID_PREFIX)) {
                 String fromNodeId = RuleFlowIdGenerator.removeNamespacedId(routeDefinition.getId(), fromId);
                 exchange.setProperty(fromNodeId, exchange.getIn().getBody());
+                exchange.setProperty(ExchangeHeaders.EXCHANGE_FLOW_ID, exchange.getFromRouteId());
             }
         }
     }

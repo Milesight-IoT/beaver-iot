@@ -4,6 +4,7 @@ import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.api.ExchangeFlowExecutor;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
+import com.milesight.beaveriot.context.util.ExchangeContextHelper;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
 import com.milesight.beaveriot.rule.api.ProcessorNode;
 import com.milesight.beaveriot.rule.constants.RuleNodeType;
@@ -41,7 +42,8 @@ public class EntityAssignerComponent implements ProcessorNode<Exchange> {
         Map<String, Object> propertyEntities = payload.getPayloadsByEntityType(EntityType.PROPERTY);
         if (!ObjectUtils.isEmpty(propertyEntities)) {
             ExchangePayload propertyPayload = ExchangePayload.create(propertyEntities);
-            exchangeFlowExecutor.asyncExchangeDown(propertyPayload);
+            ExchangeContextHelper.initializeEventSource(propertyPayload, exchange);
+            exchangeFlowExecutor.asyncExchange(propertyPayload);
 
             exchange.getIn().setBody(propertyPayload);
         }

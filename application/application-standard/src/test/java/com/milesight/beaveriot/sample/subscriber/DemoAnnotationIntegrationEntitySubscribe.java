@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class DemoAnnotationIntegrationEntitySubscribe {
-    @EventSubscribe(payloadKeyExpression="demo-anno-integration.integration.connect.*", eventType= ExchangeEvent.EventType.DOWN)
+    @EventSubscribe(payloadKeyExpression="demo-anno-integration.integration.connect.*")
     public EventResponse onConnect(Event<DemoIntegrationEntities.DemoGroupSettingEntities> event) {
         log.debug("DemoAnnotationIntegrationEntitySubscribe onConnect, AccessKey :{}, SecretKey {}",event.getPayload().getAccessKey(),event.getPayload().getSecretKey());
         return EventResponse.of("connectResult",event.getPayload().getAllPayloads());

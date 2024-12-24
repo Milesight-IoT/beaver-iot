@@ -3,10 +3,7 @@ package com.milesight.beaveriot.rule.flow.definition;
 import com.milesight.beaveriot.rule.annotations.OutputArguments;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
 import com.milesight.beaveriot.rule.annotations.UriParamExtension;
-import com.milesight.beaveriot.rule.model.definition.ComponentBaseDefinition;
-import com.milesight.beaveriot.rule.model.definition.ComponentDefinition;
-import com.milesight.beaveriot.rule.model.definition.ComponentOptionDefinition;
-import com.milesight.beaveriot.rule.model.definition.ComponentOutputDefinition;
+import com.milesight.beaveriot.rule.model.definition.*;
 import com.milesight.beaveriot.rule.support.JsonHelper;
 import com.milesight.beaveriot.rule.utils.ComponentDefinitionHelper;
 import com.milesight.beaveriot.rule.utils.StringHelper;
@@ -233,7 +230,7 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
         }
     }
 
-    protected void fillExtensionParameterProperties(ComponentOptionDefinition option, Field fieldElement) {
+    protected void fillExtensionParameterProperties(ComponentOptionExtensionDefinition option, Field fieldElement) {
         if (fieldElement.isAnnotationPresent(UriParamExtension.class)) {
             UriParamExtension uriParamExtension = fieldElement.getAnnotation(UriParamExtension.class);
             option.setUiComponent(uriParamExtension.uiComponent());
@@ -259,6 +256,7 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
                 componentOutputDefinition.setDisplayName(displayName);
                 componentOutputDefinition.setDescription(description);
                 componentOutputDefinition.setEditable(!model.getProperties().containsKey(name));
+                fillExtensionParameterProperties(componentOutputDefinition, fieldElement);
                 model.getOutputProperties().put(componentOutputDefinition.getName(), componentOutputDefinition);
             }
         }
