@@ -41,6 +41,46 @@ spring:
 camel:
   springboot:
     routes-include-pattern: classpath:routes/*.yaml
+  rule:
+    components:
+      entry:
+        - name: "simpleTimer"
+          title: "timer"
+        - name: "trigger"
+          title: "trigger"
+        - name: "direct"
+          title: "input"
+        - name: "eventListener"
+          title: "Event Listener"
+      control:
+        - name: "choice"
+          title: "IF/ELSE"
+      action:
+        - name: "entityAssigner"
+          title: "Entity Assigner"
+        - name: "entitySelector"
+          title: "Entity Selector"
+        - name: "serviceInvocation"
+          title: "Service Invocation"
+        - name: "code"
+          title: "code"
+      external:
+        - name: "email"
+          title: "email"
+        - name: "webhook"
+          title: "webhook"
+    languages:
+      - code:
+          - "groovy"
+          - "javascript"
+          - "python"
+          - "mvel"
+      - "choice":
+          - "jsonPath"
+          - "groovy"
+          - "javascript"
+          - "python"
+          - "mvel"
 websocket:
   enabled: true
   port: ${WEBSOCKET_PORT:9201}

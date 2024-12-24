@@ -16,6 +16,7 @@ import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriPath;
+import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -45,6 +46,7 @@ import static java.lang.reflect.Modifier.isStatic;
 @SuppressWarnings({"java:S3776", "java:S6541"})
 public class AnnotationComponentDefinitionLoader implements ComponentDefinitionLoader, ApplicationContextAware {
 
+    private static final String[] IGNORE_PROPERTIES = {"bridgeErrorHandler","exceptionHandler","exchangePattern","lazyStartProducer","autowiredEnabled"};
     private static final Map<String, Class<?>> KNOWN_CLASSES_CACHE = new ConcurrentHashMap<>();
     private ApplicationContext applicationContext;
 
@@ -149,6 +151,9 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
             for (final Field fieldElement : classElement.getDeclaredFields()) {
                 metadata = fieldElement.getAnnotation(Metadata.class);
                 if (metadata != null && metadata.skip()) {
+                    continue;
+                }
+                if (ArrayUtils.contains(IGNORE_PROPERTIES, fieldElement.getName())) {
                     continue;
                 }
 
