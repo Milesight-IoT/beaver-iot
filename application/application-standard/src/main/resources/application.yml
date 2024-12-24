@@ -46,7 +46,7 @@ camel:
       entry:
         - name: "simpleTimer"
           title: "Timer"
-        - name: "direct"
+        - name: "trigger"
           title: "Trigger"
         - name: "eventListener"
           title: "Event Listener"
