@@ -56,7 +56,8 @@ public class WebhookComponent implements ProcessorNode<Exchange> {
         exchange.getIn().setHeader("TIMESTAMP", timestamp);
         exchange.getIn().setHeader("NONCE", nonce);
         exchange.getIn().setHeader("SIGNATURE", signature);
-        exchange.getIn().setHeader(Exchange.HTTP_METHOD, "GET");
+        exchange.getIn().setHeader(Exchange.HTTP_METHOD, "POST");
+        exchange.getIn().setHeader(Exchange.CONTENT_TYPE, "application/json");
         producerTemplate.sendBodyAndHeaders(webhookUrl, body, exchange.getIn().getHeaders());
     }
 
