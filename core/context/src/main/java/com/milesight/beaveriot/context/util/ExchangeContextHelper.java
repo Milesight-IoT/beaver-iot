@@ -51,7 +51,7 @@ public class ExchangeContextHelper {
     }
 
     private static void putContextIfNecessary(ExchangePayload exchangePayload, String key, Serializable value) {
-        if (exchangePayload.containsKey(key)) {
+        if (exchangePayload.getContext().containsKey(key)) {
             return;
         }
         if (!ObjectUtils.isEmpty(value)) {
