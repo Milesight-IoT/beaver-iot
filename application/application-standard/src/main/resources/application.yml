@@ -45,11 +45,9 @@ camel:
     components:
       entry:
         - name: "simpleTimer"
-          title: "timer"
-        - name: "trigger"
-          title: "trigger"
+          title: "Timer"
         - name: "direct"
-          title: "input"
+          title: "Trigger"
         - name: "eventListener"
           title: "Event Listener"
       control:
@@ -63,12 +61,12 @@ camel:
         - name: "serviceInvocation"
           title: "Service Invocation"
         - name: "code"
-          title: "code"
+          title: "Code"
       external:
         - name: "email"
           title: "email"
         - name: "webhook"
-          title: "webhook"
+          title: "Webhook"
     languages:
       - code:
           - "groovy"
