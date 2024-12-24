@@ -28,7 +28,8 @@
       "javaType": "java.util.Map",
       "autowired": false,
       "secret": false,
-      "description": "The Choice Config"
+      "description": "The Choice Config",
+      "uiComponent": "ConditionsInput"
     }
   }
 }
