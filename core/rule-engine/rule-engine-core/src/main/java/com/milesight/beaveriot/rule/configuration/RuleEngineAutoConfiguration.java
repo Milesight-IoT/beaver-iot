@@ -10,7 +10,7 @@ import com.milesight.beaveriot.rule.flow.definition.CamelComponentDefinitionLoad
 import com.milesight.beaveriot.rule.flow.definition.ComponentDefinitionLoader;
 import com.milesight.beaveriot.rule.flow.definition.CustomizeJsonComponentDefinitionLoader;
 import com.milesight.beaveriot.rule.flow.parallel.ParallelSplitter;
-import com.milesight.beaveriot.rule.observe.RuleEngineOutputInterceptor;
+import com.milesight.beaveriot.rule.observe.RuleEngineContextInterceptor;
 import org.apache.camel.CamelContext;
 import org.apache.camel.spi.Tracer;
 import org.springframework.beans.factory.ObjectProvider;
@@ -80,8 +80,8 @@ public class RuleEngineAutoConfiguration {
         return new ParallelSplitter();
     }
 
-    public RuleEngineOutputInterceptor traceContextInterceptor() {
-        return new RuleEngineOutputInterceptor();
+    public RuleEngineContextInterceptor traceContextInterceptor() {
+        return new RuleEngineContextInterceptor();
     }
 
 }

@@ -1,6 +1,6 @@
 package com.milesight.beaveriot.rule.configuration;
 
-import com.milesight.beaveriot.rule.observe.RuleEngineOutputInterceptor;
+import com.milesight.beaveriot.rule.observe.RuleEngineContextInterceptor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -17,8 +17,8 @@ public class RuleEngineObserveAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public RuleEngineOutputInterceptor ruleEngineOutputInterceptor() {
-        return new RuleEngineOutputInterceptor();
+    public RuleEngineContextInterceptor ruleEngineContextInterceptor() {
+        return new RuleEngineContextInterceptor();
     }
 
 }

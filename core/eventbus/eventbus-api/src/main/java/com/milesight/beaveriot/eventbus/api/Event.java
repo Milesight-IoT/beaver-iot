@@ -1,5 +1,7 @@
 package com.milesight.beaveriot.eventbus.api;
 
+import com.milesight.beaveriot.eventbus.enums.EventSource;
+
 /**
  * @author leon
  */
@@ -16,5 +18,9 @@ public interface Event<T extends IdentityKey> {
     void setEventType(String eventType);
 
     T getPayload();
+
+    EventSource getEventSource();
+
+    void setEventSource(EventSource eventSource);
 
 }

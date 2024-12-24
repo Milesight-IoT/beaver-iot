@@ -3,6 +3,7 @@ package com.milesight.beaveriot.rule.components.serviceinvocation;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.api.ExchangeFlowExecutor;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
+import com.milesight.beaveriot.context.util.ExchangeContextHelper;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
 import com.milesight.beaveriot.rule.api.ProcessorNode;
 import com.milesight.beaveriot.rule.constants.RuleNodeType;
@@ -37,6 +38,8 @@ public class ServiceInvocationComponent implements ProcessorNode<Exchange> {
 
         exchange.getIn().setBody(payload);
 
-        exchangeFlowExecutor.syncExchangeDown(payload);
+        ExchangeContextHelper.initializeEventSource(payload, exchange);
+
+        exchangeFlowExecutor.syncExchange(payload);
     }
 }

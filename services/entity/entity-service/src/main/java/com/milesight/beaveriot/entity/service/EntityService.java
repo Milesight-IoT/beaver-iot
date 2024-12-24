@@ -650,7 +650,7 @@ public class EntityService implements EntityServiceProvider {
             throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
         }
         ExchangePayload payload = new ExchangePayload(exchange);
-        exchangeFlowExecutor.syncExchangeDown(payload);
+        exchangeFlowExecutor.syncExchange(payload);
     }
 
     public EventResponse serviceCall(ServiceCallRequest serviceCallRequest) {
@@ -678,7 +678,7 @@ public class EntityService implements EntityServiceProvider {
             throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
         }
         ExchangePayload payload = new ExchangePayload(exchange);
-        return exchangeFlowExecutor.syncExchangeDown(payload);
+        return exchangeFlowExecutor.syncExchange(payload);
     }
 
     /**

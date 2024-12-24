@@ -1,5 +1,7 @@
 package com.milesight.beaveriot.context.constants;
 
+import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
+
 /**
  * @author leon
  */
@@ -8,16 +10,52 @@ public class ExchangeContextKeys {
     private ExchangeContextKeys() {
     }
 
-    public static final String IGNORE_INVALID_KEY = "IGNORE_INVALID_KEY";
+    /**
+     * if the key is not found, ignore it
+     */
+    public static final String EXCHANGE_IGNORE_INVALID_KEY = "_exchangeIgnoreInvalidKey";
 
-    public static final String ENTITIES = "KEY_ENTITIES";
+    /**
+     * the key of the entities for exchange
+     */
+    public static final String EXCHANGE_ENTITIES = "_exchangeEntities";
 
-    public static final String SYNC_CALL = "KEY_SYNC_CALL";
+    /**
+     * if the exchange is sync call
+     */
+    public static final String EXCHANGE_SYNC_CALL = "_exchangeSyncCall";
 
-    public static final String EVENT_TYPE = "KEY_EVENT_TYPE";
+    /**
+     * the key of the exchange event type
+     */
+    public static final String EXCHANGE_EVENT_TYPE = "_exchangeEventType";
 
-    public static final String DEVICE_NAME_ON_ADD = "device_name";
+    /**
+     * the key of the exchange event source, such as USER, INTEGRATION, WORKFLOW
+     */
+    public static final String EXCHANGE_EVENT_SOURCE = "_exchangeEventSource";
 
-    public static final String DEVICE_ON_DELETE = "device";
+    /**
+     * the key of the exchange source flow id
+     */
+    public static final String SOURCE_FLOW_ID = ExchangeHeaders.EXCHANGE_FLOW_ID;
+    /**
+     * the key of the exchange source user id
+     */
+    public static final String SOURCE_USER_ID = "_sourceUserId";
+    /**
+     * the key of exchange source tenant id
+     */
+    public static final String SOURCE_TENANT_ID = "_sourceTenantId";
+
+    /**
+     * the key of device name on add
+     */
+    public static final String DEVICE_NAME_ON_ADD = "_deviceNameOnAdd";
+
+    /**
+     * the key of device on delete
+     */
+    public static final String DEVICE_ON_DELETE = "_deviceOnDelete";
 
 }
