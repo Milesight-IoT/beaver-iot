@@ -365,6 +365,10 @@ public class EntityService implements EntityServiceProvider {
     }
 
     private void deleteEntitiesByPOList(List<EntityPO> entityPOList) {
+        if (entityPOList.isEmpty()) {
+            return;
+        }
+
         List<Long> entityIdList = entityPOList.stream().map(EntityPO::getId).toList();
         log.info("delete entities: {}", entityIdList);
 
@@ -707,8 +711,12 @@ public class EntityService implements EntityServiceProvider {
         List<Long> parentEntityIds = entityPOList.stream()
                 .filter(t -> t.getParent() == null)
                 .map(EntityPO::getId).toList();
-        List<EntityPO> childrenEntityPOList = entityRepository.findAll(
-                filter -> filter.in(EntityPO.Fields.parent, parentEntityIds.toArray()));
+        List<EntityPO> childrenEntityPOList = List.of();
+        if (!parentEntityIds.isEmpty()) {
+            childrenEntityPOList = entityRepository.findAll(
+                    filter -> filter.in(EntityPO.Fields.parent, parentEntityIds.toArray()));
+        }
+
         return Stream.concat(entityPOList.stream(), childrenEntityPOList.stream())
                 .toList();
     }

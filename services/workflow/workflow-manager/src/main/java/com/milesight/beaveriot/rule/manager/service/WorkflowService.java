@@ -5,7 +5,11 @@ import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.GenericPageRequest;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
+import com.milesight.beaveriot.context.constants.IntegrationConstants;
+import com.milesight.beaveriot.context.integration.model.Entity;
+import com.milesight.beaveriot.context.integration.model.event.EntityEvent;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.eventbus.annotations.EventSubscribe;
 import com.milesight.beaveriot.rule.RuleEngineComponentManager;
 import com.milesight.beaveriot.rule.RuleEngineLifecycleManager;
 import com.milesight.beaveriot.rule.manager.model.request.*;
@@ -21,6 +25,7 @@ import com.milesight.beaveriot.rule.model.trace.NodeTraceInfo;
 import com.milesight.beaveriot.rule.support.JsonHelper;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.scheduling.annotation.Async;
@@ -297,9 +302,16 @@ public class WorkflowService {
         // Deploy or Remove
         workflowPO.setEnabled(request.getEnabled());
         if (Boolean.TRUE.equals(workflowPO.getEnabled()) && (isRoutingUpdated || isEnableUpdated)) {
+            // a workflow would be validated at the time it is deployed
             deployFlow(workflowPO);
-        } else if (Boolean.FALSE.equals(workflowPO.getEnabled()) && isEnableUpdated) {
-            removeFlow(workflowPO);
+        } else if (Boolean.FALSE.equals(workflowPO.getEnabled())) {
+            if (isEnableUpdated) {
+                removeFlow(workflowPO);
+            }
+
+            if (isRoutingUpdated && ruleFlowConfig != null) {
+                ruleEngineLifecycleManager.validateFlow(ruleFlowConfig);
+            }
         }
 
         // Save workflow and history
@@ -354,5 +366,24 @@ public class WorkflowService {
 
     public RuleLanguage getSupportedScriptLanguages() {
         return ruleEngineComponentManager.getDeclaredLanguages();
+    }
+
+
+    @EventSubscribe(eventType = EntityEvent.EventType.DELETED, payloadKeyExpression = "*")
+    public void onEntityDeleted(EntityEvent entityEvent) {
+        Entity entity = entityEvent.getPayload();
+        if (!entity.getIntegrationId().equals(IntegrationConstants.SYSTEM_INTEGRATION_ID)) {
+            return;
+        }
+
+        if (StringUtils.hasLength(entity.getParentKey())) {
+            return;
+        }
+
+        WorkflowPO workflowPO = workflowEntityRelationService.getFlowByEntityId(entity.getId());
+
+        if (workflowPO != null) {
+            ((WorkflowService) AopContext.currentProxy()).batchDelete(List.of(workflowPO.getId()));
+        }
     }
 }
