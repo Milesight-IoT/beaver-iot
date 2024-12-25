@@ -112,8 +112,8 @@ public class EntityController {
      * @return created entity's metadata
      */
     @PostMapping
-    public ResponseBody<EntityMetaResponse> create(@RequestBody EntityCreateRequest entityCreateRequest) {
-        return ResponseBuilder.success(entityService.createCustomizedEntity(entityCreateRequest));
+    public ResponseBody<EntityMetaResponse> createCustomEntity(@RequestBody EntityCreateRequest entityCreateRequest) {
+        return ResponseBuilder.success(entityService.createCustomEntity(entityCreateRequest));
     }
 
     /**
@@ -141,8 +141,8 @@ public class EntityController {
      * Export entity data as a CSV file
      * @param entityExportRequest request body
      */
-    @PostMapping("/export")
-    public void export(@RequestBody EntityExportRequest entityExportRequest, HttpServletResponse httpServletResponse) throws IOException {
+    @GetMapping("/export")
+    public void export(EntityExportRequest entityExportRequest, HttpServletResponse httpServletResponse) throws IOException {
         entityExportService.export(entityExportRequest, httpServletResponse);
     }
 

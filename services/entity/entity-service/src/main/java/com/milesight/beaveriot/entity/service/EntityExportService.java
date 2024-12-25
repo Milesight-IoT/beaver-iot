@@ -63,7 +63,7 @@ public class EntityExportService {
 
         log.info("Export entity data: {}", entityExportRequest);
 
-        val entityResponses = entityService.findEntityResponsesAndTheirChildrenByIds(entityExportRequest.getEntityIds());
+        val entityResponses = entityService.findEntityResponsesAndTheirChildrenByIds(entityExportRequest.getIds());
         if (entityResponses.isEmpty()) {
             throw ServiceException.with(ErrorCode.DATA_NO_FOUND).detailMessage("entity not found").build();
         }
