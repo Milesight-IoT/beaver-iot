@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.user.model.request;
 
+import com.milesight.beaveriot.base.page.GenericPageRequest;
 import lombok.Data;
 
 /**
@@ -7,7 +8,7 @@ import lombok.Data;
  * @date 2024/12/3 9:51
  */
 @Data
-public class IntegrationUndistributedRequest {
+public class IntegrationUndistributedRequest extends GenericPageRequest {
 
     private String keyword;
 }

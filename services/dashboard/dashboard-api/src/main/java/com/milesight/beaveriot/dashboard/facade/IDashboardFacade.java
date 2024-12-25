@@ -12,7 +12,7 @@ public interface IDashboardFacade {
 
     List<DashboardDTO> getUserDashboards(Long userId);
 
-    List<DashboardDTO> getDashboardsLike(String keyword);
+    List<DashboardDTO> getDashboardsLike(String keyword, String sortStr);
 
     List<DashboardDTO> getDashboardsByIds(List<Long> dashboardIds);
 }
