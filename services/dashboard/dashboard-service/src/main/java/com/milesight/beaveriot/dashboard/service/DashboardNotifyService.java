@@ -30,7 +30,7 @@ public class DashboardNotifyService {
 
     private void doDashboardNotify(ExchangePayload exchangePayload) {
         try {
-            //TODO
+            //TODO Ensure the presence of tenantId in the context
             Long tenantId = UserConstants.DEFAULT_TENANT_ID;
             List<String> entityKeys = exchangePayload.keySet().stream().toList();
             List<String> keys = DashboardWebSocketContext.getKeysByValues(entityKeys);

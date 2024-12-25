@@ -1,7 +1,6 @@
 package com.milesight.beaveriot.user.model.request;
 
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.milesight.beaveriot.base.page.Sorts;
+import com.milesight.beaveriot.base.page.GenericPageRequest;
 import lombok.Data;
 
 /**
@@ -9,9 +8,7 @@ import lombok.Data;
  * @date 2024/12/3 9:53
  */
 @Data
-public class DeviceUndistributedRequest {
+public class DeviceUndistributedRequest extends GenericPageRequest {
 
     private String keyword;
-    @JsonUnwrapped
-    protected Sorts sort;
 }

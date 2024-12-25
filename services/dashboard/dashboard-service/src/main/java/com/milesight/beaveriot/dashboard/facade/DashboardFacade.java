@@ -5,6 +5,7 @@ import com.milesight.beaveriot.dashboard.dto.DashboardDTO;
 import com.milesight.beaveriot.dashboard.po.DashboardPO;
 import com.milesight.beaveriot.dashboard.repository.DashboardRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -28,9 +29,8 @@ public class DashboardFacade implements IDashboardFacade {
     }
 
     @Override
-    public List<DashboardDTO> getDashboardsLike(String keyword) {
-        List<DashboardPO> dashboardPOS = dashboardRepository.findAll(filterable -> filterable.like(StringUtils.hasText(keyword), DashboardPO.Fields.name, keyword)
-        );
+    public List<DashboardDTO> getDashboardsLike(String keyword, Sort sort) {
+        List<DashboardPO> dashboardPOS = dashboardRepository.findAll(filterable -> filterable.like(StringUtils.hasText(keyword), DashboardPO.Fields.name, keyword), sort);
         return DashboardConvert.INSTANCE.convertDTOList(dashboardPOS);
     }
 
