@@ -66,7 +66,10 @@ public class WorkflowEntityRelationService {
         }
 
         TriggerNodeParameters parameters = JsonHelper.cast(triggerNodeConfig.getParameters(), TriggerNodeParameters.class);
-        List<Entity> childEntities = parameters.getEntityConfigs().stream().map(entityConfig -> new EntityBuilder()
+        List<Entity> childEntities = Optional
+                .ofNullable(parameters.getEntityConfigs())
+                .orElse(List.of())
+                .stream().map(entityConfig -> new EntityBuilder()
                 .identifier(entityConfig.get("identify"))
                 .service(entityConfig.get("name"))
                 .valueType(EntityValueType.valueOf(entityConfig.get("type")))
