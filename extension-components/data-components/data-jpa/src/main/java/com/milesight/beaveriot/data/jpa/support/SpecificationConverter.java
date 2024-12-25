@@ -97,10 +97,10 @@ public class SpecificationConverter {
                 predicates.add(criteriaBuilder.notLike(root.get(compareCondition.getName()), "%" + compareCondition.getValue() + "%"));
                 break;
             case LIKE_LEFT:
-                predicates.add(criteriaBuilder.like(root.get(compareCondition.getName()), "%" + compareCondition.getValue()));
+                predicates.add(criteriaBuilder.like(root.get(compareCondition.getName()), compareCondition.getValue() + "%"));
                 break;
             case LIKE_RIGHT:
-                predicates.add(criteriaBuilder.like(root.get(compareCondition.getName()), compareCondition.getValue() + "%"));
+                predicates.add(criteriaBuilder.like(root.get(compareCondition.getName()), "%" + compareCondition.getValue()));
                 break;
             case BETWEEN:
                 Pair<Object,Object> betweenValues = (Pair<Object,Object>) compareCondition.getValue();
