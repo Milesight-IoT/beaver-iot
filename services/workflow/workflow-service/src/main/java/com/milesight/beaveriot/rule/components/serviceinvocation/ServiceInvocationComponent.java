@@ -36,14 +36,16 @@ public class ServiceInvocationComponent implements ProcessorNode<Exchange> {
 
     @Override
     public void processor(Exchange exchange) {
-        Map<String,Object> serviceParams = JsonHelper.fromJSON(serviceInvocationSetting.get("serviceParams").toString(), Map.class);
-        Map<String, Object> exchangePayloadVariables = SpELExpressionHelper.resolveExpression(exchange, serviceParams);
-        ExchangePayload payload = ExchangePayload.create(exchangePayloadVariables);
+        if(serviceInvocationSetting != null && serviceInvocationSetting.get("serviceParams") != null) {
+            Map<String, Object> serviceParams = JsonHelper.fromJSON(serviceInvocationSetting.get("serviceParams").toString(), Map.class);
+            Map<String, Object> exchangePayloadVariables = SpELExpressionHelper.resolveExpression(exchange, serviceParams);
+            ExchangePayload payload = ExchangePayload.create(exchangePayloadVariables);
 
-        exchange.getIn().setBody(payload);
+            exchange.getIn().setBody(payload);
 
-        ExchangeContextHelper.initializeEventSource(payload, exchange);
+            ExchangeContextHelper.initializeEventSource(payload, exchange);
 
-        exchangeFlowExecutor.syncExchange(payload);
+            exchangeFlowExecutor.syncExchange(payload);
+        }
     }
 }
