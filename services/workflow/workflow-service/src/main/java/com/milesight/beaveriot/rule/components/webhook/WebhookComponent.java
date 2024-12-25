@@ -27,9 +27,9 @@ public class WebhookComponent implements ProcessorNode<Exchange> {
     @UriParam(prefix = "bean")
     @UriParamExtension(uiComponent = "ParamAssignInput")
     private Map<String, Object> inputArguments;
-    @UriParam
+    @UriParam(prefix = "bean")
     private String webhookUrl;
-    @UriParam
+    @UriParam(prefix = "bean")
     private String secretKey;
 
     @Autowired
