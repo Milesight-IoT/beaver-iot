@@ -6,6 +6,7 @@ import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.rule.annotations.OutputArguments;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
+import com.milesight.beaveriot.rule.annotations.UriParamExtension;
 import com.milesight.beaveriot.rule.api.ProcessorNode;
 import com.milesight.beaveriot.rule.constants.RuleNodeType;
 import com.milesight.beaveriot.rule.support.SpELExpressionHelper;
@@ -27,7 +28,8 @@ import java.util.stream.Collectors;
 public class EntitySelectorComponent implements ProcessorNode<Exchange> {
 
     @OutputArguments
-    @UriParam(javaType = "java.util.List")
+    @UriParam(javaType = "java.util.List", prefix = "bean")
+    @UriParamExtension(uiComponent = "EntityMultipleSelect")
     private List<String> entities;
 
     @Autowired

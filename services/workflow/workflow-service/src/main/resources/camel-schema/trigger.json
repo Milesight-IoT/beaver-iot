@@ -43,7 +43,8 @@
       "deprecated": false,
       "autowired": false,
       "secret": false,
-      "description": "Configuration settings for entities passed to the trigger."
+      "description": "Configuration settings for entities passed to the trigger.",
+      "uiComponent": "ParamDefineInput"
     }
   }
 }

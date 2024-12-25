@@ -5,6 +5,7 @@ import com.milesight.beaveriot.context.api.ExchangeFlowExecutor;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.util.ExchangeContextHelper;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
+import com.milesight.beaveriot.rule.annotations.UriParamExtension;
 import com.milesight.beaveriot.rule.api.ProcessorNode;
 import com.milesight.beaveriot.rule.constants.RuleNodeType;
 import com.milesight.beaveriot.rule.support.SpELExpressionHelper;
@@ -24,6 +25,7 @@ import java.util.Map;
 public class ServiceInvocationComponent implements ProcessorNode<Exchange> {
 
     @UriParam(javaType = "java.util.Map", prefix = "bean")
+    @UriParamExtension(uiComponent = "ServiceEntitySetting")
     private Map<String, Object> serviceParams;
 
     @Autowired
