@@ -4,6 +4,7 @@ package com.milesight.beaveriot.context.integration.model.event;
 import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.eventbus.api.Event;
 import com.milesight.beaveriot.eventbus.api.IdentityKey;
+import com.milesight.beaveriot.eventbus.enums.EventSource;
 
 /**
  * @author leon
@@ -12,6 +13,7 @@ public class DeviceEvent implements Event<Device> {
 
     private Device device;
     private String eventType;
+    private EventSource eventSource = EventSource.INTEGRATION;
 
     public DeviceEvent() {
     }
@@ -19,6 +21,16 @@ public class DeviceEvent implements Event<Device> {
     public DeviceEvent(String eventType, Device device) {
         this.eventType = eventType;
         this.device = device;
+    }
+
+    @Override
+    public EventSource getEventSource() {
+        return eventSource;
+    }
+
+    @Override
+    public void setEventSource(EventSource eventSource) {
+        this.eventSource = eventSource;
     }
 
     @Override

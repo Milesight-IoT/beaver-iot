@@ -20,4 +20,9 @@ public interface ExchangeHeaders {
      */
     String DIRECT_EXCHANGE_ENTITY = "CamelDirectExchangeEntity";
 
+    /**
+     * camel route id
+     */
+    String EXCHANGE_FLOW_ID = "CamelExchangeFlowId";
+
 }

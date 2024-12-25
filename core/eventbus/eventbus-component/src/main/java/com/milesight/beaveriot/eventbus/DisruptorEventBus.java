@@ -3,12 +3,12 @@ package com.milesight.beaveriot.eventbus;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.milesight.beaveriot.base.exception.EventBusExecutionException;
-import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
 import com.milesight.beaveriot.eventbus.annotations.EventSubscribe;
 import com.milesight.beaveriot.eventbus.api.Event;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
 import com.milesight.beaveriot.eventbus.api.IdentityKey;
 import com.milesight.beaveriot.eventbus.configuration.DisruptorOptions;
+import com.milesight.beaveriot.eventbus.enums.EventSource;
 import com.milesight.beaveriot.eventbus.invoke.EventInvoker;
 import com.milesight.beaveriot.eventbus.invoke.EventSubscribeInvoker;
 import com.milesight.beaveriot.eventbus.invoke.ListenerParameterResolver;
@@ -133,16 +133,16 @@ public class DisruptorEventBus<T extends Event<? extends IdentityKey>> implement
 
     public void registerSubscribe(EventSubscribe eventSubscribe, Object bean, Method executeMethod){
 
-        registerSubscribe(eventSubscribe.payloadKeyExpression(), eventSubscribe.eventType(), bean, executeMethod);
+        registerSubscribe(eventSubscribe.payloadKeyExpression(), eventSubscribe.eventType(), eventSubscribe.eventSource(), bean, executeMethod);
     }
 
-    public void registerSubscribe(String keyExpression, String eventType, Object bean, Method executeMethod){
+    public void registerSubscribe(String keyExpression, String eventType, EventSource[] eventSources, Object bean, Method executeMethod){
 
         Class<?> parameterTypes = parameterResolver.resolveParameterTypes(executeMethod);
 
         Class<T> eventClass = parameterResolver.resolveActualEventType(executeMethod);
 
-        ListenerCacheKey listenerCacheKey = new ListenerCacheKey(keyExpression, eventType);
+        ListenerCacheKey listenerCacheKey = new ListenerCacheKey(keyExpression, eventType, eventSources);
 
         log.debug("registerAsyncSubscribe: {}, subscriber expression: {}" , executeMethod, listenerCacheKey);
 
@@ -197,7 +197,10 @@ public class DisruptorEventBus<T extends Event<? extends IdentityKey>> implement
     }
 
     private String[] filterMatchMultiKeys(T event, ListenerCacheKey cacheKey) {
-        if(!cacheKey.matchEventType(event.getEventType())){
+        if (!cacheKey.matchEventType(event.getEventType())) {
+            return new String[0];
+        }
+        if (!cacheKey.matchEventSource(event.getEventSource())) {
             return new String[0];
         }
         return cacheKey.matchMultiKeys(event.getPayloadKey());

@@ -3,10 +3,7 @@ package com.milesight.beaveriot.rule.flow.definition;
 import com.milesight.beaveriot.rule.annotations.OutputArguments;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
 import com.milesight.beaveriot.rule.annotations.UriParamExtension;
-import com.milesight.beaveriot.rule.model.definition.ComponentBaseDefinition;
-import com.milesight.beaveriot.rule.model.definition.ComponentDefinition;
-import com.milesight.beaveriot.rule.model.definition.ComponentOptionDefinition;
-import com.milesight.beaveriot.rule.model.definition.ComponentOutputDefinition;
+import com.milesight.beaveriot.rule.model.definition.*;
 import com.milesight.beaveriot.rule.support.JsonHelper;
 import com.milesight.beaveriot.rule.utils.ComponentDefinitionHelper;
 import com.milesight.beaveriot.rule.utils.StringHelper;
@@ -16,6 +13,7 @@ import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriPath;
+import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -45,6 +43,7 @@ import static java.lang.reflect.Modifier.isStatic;
 @SuppressWarnings({"java:S3776", "java:S6541"})
 public class AnnotationComponentDefinitionLoader implements ComponentDefinitionLoader, ApplicationContextAware {
 
+    private static final String[] IGNORE_PROPERTIES = {"bridgeErrorHandler","exceptionHandler","exchangePattern","lazyStartProducer","autowiredEnabled"};
     private static final Map<String, Class<?>> KNOWN_CLASSES_CACHE = new ConcurrentHashMap<>();
     private ApplicationContext applicationContext;
 
@@ -151,6 +150,9 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
                 if (metadata != null && metadata.skip()) {
                     continue;
                 }
+                if (ArrayUtils.contains(IGNORE_PROPERTIES, fieldElement.getName())) {
+                    continue;
+                }
 
                 UriParam uriParam = fieldElement.getAnnotation(UriParam.class);
                 UriPath pathParam = fieldElement.getAnnotation(UriPath.class);
@@ -228,7 +230,7 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
         }
     }
 
-    protected void fillExtensionParameterProperties(ComponentOptionDefinition option, Field fieldElement) {
+    protected void fillExtensionParameterProperties(ComponentOptionExtensionDefinition option, Field fieldElement) {
         if (fieldElement.isAnnotationPresent(UriParamExtension.class)) {
             UriParamExtension uriParamExtension = fieldElement.getAnnotation(UriParamExtension.class);
             option.setUiComponent(uriParamExtension.uiComponent());
@@ -254,6 +256,7 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
                 componentOutputDefinition.setDisplayName(displayName);
                 componentOutputDefinition.setDescription(description);
                 componentOutputDefinition.setEditable(!model.getProperties().containsKey(name));
+                fillExtensionParameterProperties(componentOutputDefinition, fieldElement);
                 model.getOutputProperties().put(componentOutputDefinition.getName(), componentOutputDefinition);
             }
         }

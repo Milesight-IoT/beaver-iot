@@ -6,7 +6,7 @@ import lombok.Data;
  * @author leon
  */
 @Data
-public class ComponentOutputDefinition {
+public class ComponentOutputDefinition extends ComponentOptionExtensionDefinition {
 
     protected String name;
     protected int index;

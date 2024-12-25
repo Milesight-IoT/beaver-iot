@@ -1,9 +1,7 @@
 package com.milesight.beaveriot.rule.components.eventlistener;
 
-import com.milesight.beaveriot.context.constants.ExchangeContextKeys;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
-import com.milesight.beaveriot.context.support.SpringContext;
 import com.milesight.beaveriot.entity.rule.GenericExchangeValidator;
 import com.milesight.beaveriot.eventbus.DisruptorEventBus;
 import com.milesight.beaveriot.eventbus.UniqueListenerCacheKey;
@@ -50,7 +48,7 @@ public class EventListenerConsumer extends DefaultConsumer {
 
     private UniqueListenerCacheKey generateListenerCacheKey(List<String> entities) {
         String expressions = entities.stream().collect(Collectors.joining(","));
-        return new UniqueListenerCacheKey(endpoint.getEventListenerName(), expressions, ExchangeEvent.EventType.DOWN);
+        return new UniqueListenerCacheKey(endpoint.getEventListenerName(), expressions, ExchangeEvent.EventType.TRANSMIT, null);
     }
 
     @Override

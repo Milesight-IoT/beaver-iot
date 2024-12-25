@@ -17,7 +17,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.Map;
 
-import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.ENTITIES;
+import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.EXCHANGE_ENTITIES;
 
 /**
  * @author leon
@@ -43,7 +43,7 @@ public class GenericExchangeValidator implements PredicateNode<ExchangePayload> 
 
         Map<String, Entity> entityMap = entityServiceProvider.findByKeys(allPayloads.keySet().toArray(String[]::new));
 
-        Boolean ignoreInvalidKey = exchange.getContext(ExchangeContextKeys.IGNORE_INVALID_KEY, false);
+        Boolean ignoreInvalidKey = exchange.getContext(ExchangeContextKeys.EXCHANGE_IGNORE_INVALID_KEY, false);
 
         if(ignoreInvalidKey) {
             exchange.entrySet().removeIf(entry -> {
@@ -61,7 +61,7 @@ public class GenericExchangeValidator implements PredicateNode<ExchangePayload> 
             }
         }
 
-        exchange.putContext(ENTITIES, entityMap);
+        exchange.putContext(EXCHANGE_ENTITIES, entityMap);
 
         return true;
     }

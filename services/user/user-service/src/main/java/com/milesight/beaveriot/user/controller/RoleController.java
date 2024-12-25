@@ -72,13 +72,13 @@ public class RoleController {
         return ResponseBuilder.success();
     }
 
-    @GetMapping("")
+    @PostMapping("/search")
     public ResponseBody<Page<RoleResponse>> getRoles(@RequestBody RoleListRequest roleListRequest) {
         Page<RoleResponse> roleResponses = roleService.getRoles(roleListRequest);
         return ResponseBuilder.success(roleResponses);
     }
 
-    @GetMapping("/{roleId}/members")
+    @PostMapping("/{roleId}/members")
     public ResponseBody<Page<UserRoleResponse>> getUsersByRoleId(@PathVariable("roleId") Long roleId, @RequestBody UserRolePageRequest userRolePageRequest) {
         Page<UserRoleResponse> userRoles = roleService.getUsersByRoleId(roleId, userRolePageRequest);
         return ResponseBuilder.success(userRoles);
@@ -90,51 +90,51 @@ public class RoleController {
         return ResponseBuilder.success(roleMenus);
     }
 
-    @GetMapping("/{roleId}/resources")
+    @PostMapping("/{roleId}/resources")
     public ResponseBody<Page<RoleResourceResponse>> getResourcesByRoleId(@PathVariable("roleId") Long roleId, @RequestBody RoleResourceListRequest roleResourceListRequest) {
         Page<RoleResourceResponse> roleResources = roleService.getResourcesByRoleId(roleId, roleResourceListRequest);
         return ResponseBuilder.success(roleResources);
     }
 
-    @GetMapping("/{roleId}/integrations")
+    @PostMapping("/{roleId}/integrations")
     public ResponseBody<Page<RoleIntegrationResponse>> getIntegrationsByRoleId(@PathVariable("roleId") Long roleId, @RequestBody RoleIntegrationRequest roleIntegrationRequest) {
         Page<RoleIntegrationResponse> roleIntegrations = roleService.getIntegrationsByRoleId(roleId, roleIntegrationRequest);
         return ResponseBuilder.success(roleIntegrations);
     }
 
-    @GetMapping("/{roleId}/devices")
+    @PostMapping("/{roleId}/devices")
     public ResponseBody<Page<RoleDeviceResponse>> getDevicesByRoleId(@PathVariable("roleId") Long roleId, @RequestBody RoleDeviceRequest roleDeviceRequest) {
         Page<RoleDeviceResponse> roleDevices = roleService.getDevicesByRoleId(roleId, roleDeviceRequest);
         return ResponseBuilder.success(roleDevices);
     }
 
-    @GetMapping("/{roleId}/dashboards")
+    @PostMapping("/{roleId}/dashboards")
     public ResponseBody<Page<RoleDashboardResponse>> getDashboardsByRoleId(@PathVariable("roleId") Long roleId, @RequestBody RoleDashboardRequest roleDashboardRequest) {
         Page<RoleDashboardResponse> roleDashboards = roleService.getDashboardsByRoleId(roleId, roleDashboardRequest);
         return ResponseBuilder.success(roleDashboards);
     }
 
-    @GetMapping("/{roleId}/undistributed-dashboards")
-    public ResponseBody<List<DashboardUndistributedResponse>> getUndistributedDashboards(@PathVariable("roleId") Long roleId, @RequestBody DashboardUndistributedRequest dashboardUndistributedRequest) {
-        List<DashboardUndistributedResponse> dashboardResponseList = roleService.getUndistributedDashboards(roleId, dashboardUndistributedRequest);
+    @PostMapping("/{roleId}/undistributed-dashboards")
+    public ResponseBody<Page<DashboardUndistributedResponse>> getUndistributedDashboards(@PathVariable("roleId") Long roleId, @RequestBody DashboardUndistributedRequest dashboardUndistributedRequest) {
+        Page<DashboardUndistributedResponse> dashboardResponseList = roleService.getUndistributedDashboards(roleId, dashboardUndistributedRequest);
         return ResponseBuilder.success(dashboardResponseList);
     }
 
-    @GetMapping("/{roleId}/undistributed-users")
-    public ResponseBody<List<UserUndistributedResponse>> getUndistributedUsers(@PathVariable("roleId") Long roleId, @RequestBody UserUndistributedRequest userUndistributedRequest) {
-        List<UserUndistributedResponse> userUndistributedResponses = roleService.getUndistributedUsers(roleId, userUndistributedRequest);
+    @PostMapping("/{roleId}/undistributed-users")
+    public ResponseBody<Page<UserUndistributedResponse>> getUndistributedUsers(@PathVariable("roleId") Long roleId, @RequestBody UserUndistributedRequest userUndistributedRequest) {
+        Page<UserUndistributedResponse> userUndistributedResponses = roleService.getUndistributedUsers(roleId, userUndistributedRequest);
         return ResponseBuilder.success(userUndistributedResponses);
     }
 
-    @GetMapping("/{roleId}/undistributed-integrations")
-    public ResponseBody<List<IntegrationUndistributedResponse>> getUndistributedIntegrations(@PathVariable("roleId") Long roleId, @RequestBody IntegrationUndistributedRequest integrationUndistributedRequest) {
-        List<IntegrationUndistributedResponse> integrationUndistributedResponses = roleService.getUndistributedIntegrations(roleId, integrationUndistributedRequest);
+    @PostMapping("/{roleId}/undistributed-integrations")
+    public ResponseBody<Page<IntegrationUndistributedResponse>> getUndistributedIntegrations(@PathVariable("roleId") Long roleId, @RequestBody IntegrationUndistributedRequest integrationUndistributedRequest) {
+        Page<IntegrationUndistributedResponse> integrationUndistributedResponses = roleService.getUndistributedIntegrations(roleId, integrationUndistributedRequest);
         return ResponseBuilder.success(integrationUndistributedResponses);
     }
 
-    @GetMapping("/{roleId}/undistributed-devices")
-    public ResponseBody<List<DeviceUndistributedResponse>> getUndistributedDevices(@PathVariable("roleId") Long roleId, @RequestBody DeviceUndistributedRequest deviceUndistributedRequest) {
-        List<DeviceUndistributedResponse> deviceUndistributedResponses = roleService.getUndistributedDevices(roleId, deviceUndistributedRequest);
+    @PostMapping("/{roleId}/undistributed-devices")
+    public ResponseBody<Page<DeviceUndistributedResponse>> getUndistributedDevices(@PathVariable("roleId") Long roleId, @RequestBody DeviceUndistributedRequest deviceUndistributedRequest) {
+        Page<DeviceUndistributedResponse> deviceUndistributedResponses = roleService.getUndistributedDevices(roleId, deviceUndistributedRequest);
         return ResponseBuilder.success(deviceUndistributedResponses);
     }
 

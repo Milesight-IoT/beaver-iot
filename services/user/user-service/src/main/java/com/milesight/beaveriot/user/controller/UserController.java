@@ -73,7 +73,7 @@ public class UserController {
         return ResponseBuilder.success(userInfoResponse);
     }
 
-    @GetMapping("/members")
+    @PostMapping("/members/search")
     public ResponseBody<Page<UserInfoResponse>> getUsers(@RequestBody UserListRequest userListRequest) {
         Page<UserInfoResponse> userInfoResponses = userService.getUsers(userListRequest);
         return ResponseBuilder.success(userInfoResponses);
@@ -116,8 +116,9 @@ public class UserController {
         return ResponseBuilder.success(userMenuResponses);
     }
 
-    @GetMapping("/members/{userId}/permission")
-    public ResponseBody<UserPermissionResponse> getUserPermission(@PathVariable("userId") Long userId, @RequestBody UserPermissionRequest userPermissionRequest) {
+    @PostMapping("/members/{userId}/permission")
+    public ResponseBody<UserPermissionResponse> getUserPermission(@PathVariable("userId") Long userId,
+                                                                  @RequestBody UserPermissionRequest userPermissionRequest) {
         UserPermissionResponse userPermissionResponse = userService.getUserPermission(userId, userPermissionRequest);
         return ResponseBuilder.success(userPermissionResponse);
     }

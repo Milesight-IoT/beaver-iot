@@ -25,7 +25,7 @@ public class ListenerParameterResolver {
         ExchangePayload newPayload = ExchangePayload.createFrom(payload, List.of(matchMultiKeys));
 
         newPayload = new ExchangePayloadProxy<>(newPayload, parameterType).proxy();
-        return ExchangeEvent.of(event.getEventType(), newPayload);
+        return ExchangeEvent.of(event.getEventSource(), newPayload);
     }
 
     public <T extends Event<? extends IdentityKey>> Class<T> resolveActualEventType(Method method) {

@@ -60,6 +60,11 @@ public interface BaseJpaRepository<T,ID extends Serializable> extends JpaReposit
     }
 
     @Override
+    default List<T> findAll(Consumer<Filterable> consumer, Sort sort){
+        return findAll(SpecificationConverter.toSpecification(consumer), sort);
+    }
+
+    @Override
     default Page<T> findAll(Consumer<Filterable> filterable, Pageable pageable){
         return findAll(SpecificationConverter.toSpecification(filterable), pageable);
     }

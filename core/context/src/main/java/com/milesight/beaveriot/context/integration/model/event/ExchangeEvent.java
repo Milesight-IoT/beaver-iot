@@ -3,7 +3,10 @@ package com.milesight.beaveriot.context.integration.model.event;
 
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.eventbus.api.Event;
+import com.milesight.beaveriot.eventbus.enums.EventSource;
 import com.milesight.beaveriot.eventbus.api.IdentityKey;
+
+import static com.milesight.beaveriot.context.integration.model.event.ExchangeEvent.EventType.TRANSMIT;
 
 /**
  * @author leon
@@ -11,13 +14,18 @@ import com.milesight.beaveriot.eventbus.api.IdentityKey;
 public class ExchangeEvent implements Event<ExchangePayload> {
 
     private ExchangePayload exchangePayload;
-    private String eventType;
+    /**
+     * event type, Currently only Transmit
+     */
+    private String eventType = TRANSMIT;
+
+    private EventSource eventSource;
 
     public ExchangeEvent() {
     }
 
-    public ExchangeEvent(String eventType, ExchangePayload exchangePayload) {
-        this.eventType = eventType;
+    public ExchangeEvent(EventSource eventSource, ExchangePayload exchangePayload) {
+        this.eventSource = eventSource;
         this.exchangePayload = exchangePayload;
     }
 
@@ -49,15 +57,28 @@ public class ExchangeEvent implements Event<ExchangePayload> {
         return exchangePayload;
     }
 
-    public static ExchangeEvent of(String eventType, ExchangePayload exchangePayload) {
-        return new ExchangeEvent(eventType, exchangePayload);
+    @Override
+    public EventSource getEventSource() {
+        return eventSource;
+    }
+
+    @Override
+    public void setEventSource(EventSource eventSource) {
+        this.eventSource = eventSource;
+    }
+
+    public static ExchangeEvent of(EventSource eventSource, ExchangePayload exchangePayload) {
+        return new ExchangeEvent(eventSource, exchangePayload);
+    }
+
+    public static ExchangeEvent of(ExchangePayload exchangePayload) {
+        return new ExchangeEvent(EventSource.INTEGRATION, exchangePayload);
     }
 
     public static class EventType {
         private EventType() {
         }
 
-        public static final String DOWN = "Down";
-        public static final String UP = "Up";
+        public static final String TRANSMIT = "Transmit";
     }
 }

@@ -20,13 +20,15 @@ import java.util.Map;
 @RuleNode(type = RuleNodeType.ACTION, value = "code", title = "Script Code", description = "Script Code")
 public class ScriptCodeComponent implements ProcessorNode<Exchange> {
 
+    @UriParamExtension(uiComponent = "paramAssignInput")
+    @UriParam(displayName = "Input Arguments", prefix = "bean")
+    private Map<String, Object> inputArguments;
+
     @UriParamExtension(uiComponent = "codeEditor")
     @UriParam(displayName = "Expression", prefix = "bean")
     private ExpressionNode expression;
 
-    @UriParam(displayName = "Input Arguments", prefix = "bean")
-    private Map<String, Object> inputArguments;
-
+    @UriParamExtension(uiComponent = "paramDefineInput")
     @OutputArguments(name = "Payload", displayName = "Output Variables")
     private Map<String, String> payload;
 

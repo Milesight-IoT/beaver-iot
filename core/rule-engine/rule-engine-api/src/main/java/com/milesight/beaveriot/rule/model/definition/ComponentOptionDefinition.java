@@ -10,7 +10,7 @@ import java.util.List;
  * @author leon
  */
 @Data
-public class ComponentOptionDefinition {
+public class ComponentOptionDefinition extends ComponentOptionExtensionDefinition{
 
     protected String name;
     protected int index;
@@ -31,12 +31,7 @@ public class ComponentOptionDefinition {
     protected String description;
     protected boolean autowired;
 
-    //extension ui parameter
-    protected String uiComponent;
-    protected String uiComponentTags;
-    protected String uiComponentGroup;
-
-    public String getFullName() {
+    public String generateFullName() {
         return ObjectUtils.isEmpty(prefix) ? name : prefix + "." + name;
     }
 }

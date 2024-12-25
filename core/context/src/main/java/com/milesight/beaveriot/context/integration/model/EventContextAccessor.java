@@ -18,4 +18,5 @@ public interface EventContextAccessor {
     <T> T getContext(String key, T defaultValue);
 
     void putContext(String key, Object value);
+
 }
