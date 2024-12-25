@@ -29,7 +29,7 @@ public class ComponentParameterConverter {
             ObjectNode objectNode = (ObjectNode) parameters;
             objectNode.fields().forEachRemaining(field -> {
                 if (properties.containsKey(field.getKey())) {
-                    routeParameters.put(properties.get(field.getKey()).getFullName(), convertValue(field.getValue()));
+                    routeParameters.put(properties.get(field.getKey()).generateFullName(), convertValue(field.getValue()));
                 } else {
                     log.warn("Component {} does not have property {}", componentDefinition.getComponent().getName(), field.getKey());
                 }

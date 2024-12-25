@@ -31,7 +31,7 @@ public class ComponentOptionDefinition extends ComponentOptionExtensionDefinitio
     protected String description;
     protected boolean autowired;
 
-    public String getFullName() {
+    public String generateFullName() {
         return ObjectUtils.isEmpty(prefix) ? name : prefix + "." + name;
     }
 }

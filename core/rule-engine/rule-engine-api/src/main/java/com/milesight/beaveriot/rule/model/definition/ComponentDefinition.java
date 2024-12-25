@@ -32,13 +32,13 @@ public class ComponentDefinition {
                 .findFirst()
                 .orElse(null);
         if (pathOptionDefinition != null && !ObjectUtils.isEmpty(parameters)) {
-            if(!parameters.containsKey(pathOptionDefinition.getFullName())) {
+            if(!parameters.containsKey(pathOptionDefinition.generateFullName())) {
                 //else use id as uri
-                parameters.put(pathOptionDefinition.getFullName(), id);
+                parameters.put(pathOptionDefinition.generateFullName(), id);
             }
         }
 
-        return generateUri(component.getScheme(), (String) parameters.get(pathOptionDefinition.getFullName()));
+        return generateUri(component.getScheme(), (String) parameters.get(pathOptionDefinition.generateFullName()));
     }
 
     private String generateUri(String scheme, String path) {

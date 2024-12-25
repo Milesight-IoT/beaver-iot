@@ -15,7 +15,7 @@ public class NodeTraceInfo {
 
     private String nodeLabel;
 
-    private ExecutionStatus status;
+    private ExecutionStatus status = ExecutionStatus.SUCCESS;
 
     private String errorMessage;
 
