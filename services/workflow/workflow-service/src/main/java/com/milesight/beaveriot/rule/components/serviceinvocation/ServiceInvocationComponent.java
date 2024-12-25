@@ -25,7 +25,7 @@ import java.util.Map;
 public class ServiceInvocationComponent implements ProcessorNode<Exchange> {
 
     @UriParam(javaType = "java.util.Map", prefix = "bean")
-    @UriParamExtension(uiComponent = "serviceEntitySetting")
+    @UriParamExtension(uiComponent = "ServiceEntitySetting")
     private Map<String, Object> serviceParams;
 
     @Autowired
