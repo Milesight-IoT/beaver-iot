@@ -27,7 +27,7 @@ import java.util.Map;
 public class EntityAssignerComponent implements ProcessorNode<Exchange> {
 
     @UriParam(javaType = "exchangePayload", prefix = "bean")
-    @UriParamExtension(uiComponent = "EntityAssignSelect")
+    @UriParamExtension(uiComponent = "entityAssignSelect")
     private Map<String, Object> exchangePayload;
 
     @Autowired
