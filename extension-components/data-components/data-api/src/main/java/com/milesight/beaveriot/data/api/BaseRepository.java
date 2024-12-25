@@ -42,6 +42,14 @@ public interface BaseRepository<T,ID extends Serializable> {
     List<T> findAll(Consumer<Filterable> filterable);
 
     /**
+     * Query based on conditions, sorted
+     * @param filterable
+     * @param sort
+     * @return
+     */
+    List<T> findAll(Consumer<Filterable> filterable, Sort sort);
+
+    /**
      * Query based on conditions, search by page
      * @param filterable
      * @param pageable
