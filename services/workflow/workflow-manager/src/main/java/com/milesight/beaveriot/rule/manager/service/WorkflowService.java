@@ -297,9 +297,16 @@ public class WorkflowService {
         // Deploy or Remove
         workflowPO.setEnabled(request.getEnabled());
         if (Boolean.TRUE.equals(workflowPO.getEnabled()) && (isRoutingUpdated || isEnableUpdated)) {
+            // a workflow would be validated at the time it is deployed
             deployFlow(workflowPO);
-        } else if (Boolean.FALSE.equals(workflowPO.getEnabled()) && isEnableUpdated) {
-            removeFlow(workflowPO);
+        } else if (Boolean.FALSE.equals(workflowPO.getEnabled())) {
+            if (isEnableUpdated) {
+                removeFlow(workflowPO);
+            }
+
+            if (isRoutingUpdated && ruleFlowConfig != null) {
+                ruleEngineLifecycleManager.validateFlow(ruleFlowConfig);
+            }
         }
 
         // Save workflow and history
