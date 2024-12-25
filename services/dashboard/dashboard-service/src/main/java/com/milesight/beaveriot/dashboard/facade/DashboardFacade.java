@@ -1,6 +1,5 @@
 package com.milesight.beaveriot.dashboard.facade;
 
-import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.dashboard.convert.DashboardConvert;
 import com.milesight.beaveriot.dashboard.dto.DashboardDTO;
 import com.milesight.beaveriot.dashboard.po.DashboardPO;
@@ -30,13 +29,7 @@ public class DashboardFacade implements IDashboardFacade {
     }
 
     @Override
-    public List<DashboardDTO> getDashboardsLike(String keyword, String sortStr) {
-        Sort sort;
-        if (StringUtils.hasText(sortStr)) {
-            sort = JsonUtils.fromJSON(sortStr, Sort.class);
-        }else {
-            sort = Sort.unsorted();
-        }
+    public List<DashboardDTO> getDashboardsLike(String keyword, Sort sort) {
         List<DashboardPO> dashboardPOS = dashboardRepository.findAll(filterable -> filterable.like(StringUtils.hasText(keyword), DashboardPO.Fields.name, keyword), sort);
         return DashboardConvert.INSTANCE.convertDTOList(dashboardPOS);
     }

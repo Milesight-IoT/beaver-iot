@@ -2,7 +2,6 @@ package com.milesight.beaveriot.user.service;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
-import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
@@ -55,6 +54,7 @@ import com.milesight.beaveriot.user.repository.UserRoleRepository;
 import com.milesight.beaveriot.user.util.PageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -355,7 +355,7 @@ public class RoleService {
     public Page<RoleDashboardResponse> getDashboardsByRoleId(Long roleId, RoleDashboardRequest roleDashboardRequest) {
         List<Long> searchDashboardIds = new ArrayList<>();
         if (StringUtils.hasText(roleDashboardRequest.getKeyword())) {
-            List<DashboardDTO> dashboardPOS = dashboardFacade.getDashboardsLike(roleDashboardRequest.getKeyword(), null);
+            List<DashboardDTO> dashboardPOS = dashboardFacade.getDashboardsLike(roleDashboardRequest.getKeyword(), Sort.unsorted());
             if (dashboardPOS != null && !dashboardPOS.isEmpty()) {
                 searchDashboardIds.addAll(dashboardPOS.stream().map(DashboardDTO::getDashboardId).toList());
             }
@@ -392,7 +392,7 @@ public class RoleService {
     }
 
     public Page<DashboardUndistributedResponse> getUndistributedDashboards(Long roleId, DashboardUndistributedRequest dashboardUndistributedRequest) {
-        List<DashboardDTO> dashboardDTOList = dashboardFacade.getDashboardsLike(dashboardUndistributedRequest.getKeyword(), JsonUtils.toJSON(dashboardUndistributedRequest.getSort().toSort()));
+        List<DashboardDTO> dashboardDTOList = dashboardFacade.getDashboardsLike(dashboardUndistributedRequest.getKeyword(), dashboardUndistributedRequest.getSort().toSort());
         if (dashboardDTOList == null || dashboardDTOList.isEmpty()) {
             return Page.empty();
         }
