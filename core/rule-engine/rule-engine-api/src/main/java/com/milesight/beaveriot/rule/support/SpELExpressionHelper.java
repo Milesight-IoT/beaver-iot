@@ -41,7 +41,7 @@ public class SpELExpressionHelper {
 
     public static Object resolveExpression(Exchange exchange, Object expressionValue) {
         if (ObjectUtils.isEmpty(expressionValue)) {
-            return null;
+            return expressionValue;
         }
         if (containSpELExpression(expressionValue)) {
             Expression expression = languageExpression(ExpressionLanguage.spel.name(), (String) expressionValue);
