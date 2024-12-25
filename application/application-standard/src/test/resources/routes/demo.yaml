@@ -1,9 +1,16 @@
 - route:
     from:
       id: flow.myId.id_1
+      uri: timer:myId
       parameters:
-        period: 100000
+        period: 1000000
       steps:
+        - to:
+            id: flow.myId.id_4
+            parameters:
+              bean.emailContent: '"myEvent"'
+              bean.exchangePayload: '{"a":4}'
+            uri: bean:simpleAlarmComponent
         - choice:
             id: flow.myId.choice_1
             when:
@@ -33,5 +40,5 @@
               bean.emailContent: '"myEvent"'
               bean.exchangePayload: '{"a":4}'
             uri: bean:simpleAlarmComponent
-      uri: timer:myId
+
     id: myId
