@@ -7,6 +7,7 @@ import com.milesight.beaveriot.rule.model.definition.ComponentDefinition;
 import com.milesight.beaveriot.rule.model.definition.ComponentOptionDefinition;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -20,7 +21,7 @@ public class ComponentParameterConverter {
 
     public static Map<String, Object> convertParameters(JsonNode parameters, ComponentDefinition componentDefinition) {
         if (parameters == null) {
-            return Map.of();
+            return new LinkedHashMap<>();
         }
 
         Map<String, Object> routeParameters = Maps.newHashMap();

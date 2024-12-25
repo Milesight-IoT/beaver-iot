@@ -2,12 +2,11 @@ package com.milesight.beaveriot.rule.observe;
 
 import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
 import com.milesight.beaveriot.rule.support.RuleFlowIdGenerator;
-import org.apache.camel.CamelContext;
-import org.apache.camel.Exchange;
-import org.apache.camel.NamedNode;
-import org.apache.camel.Processor;
+import lombok.SneakyThrows;
+import org.apache.camel.*;
 import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.spi.InterceptStrategy;
+import org.apache.camel.support.AsyncProcessorSupport;
 import org.springframework.util.StringUtils;
 
 /**
@@ -17,13 +16,22 @@ public class RuleEngineContextInterceptor implements InterceptStrategy {
 
     @Override
     public Processor wrapProcessorInInterceptors(CamelContext context, NamedNode definition, Processor target, Processor nextTarget) throws Exception {
-        return exchange -> {
+        return new AsyncProcessorSupport() {
 
-            cacheFromArguments(definition, exchange);
+            @SneakyThrows
+            @Override
+            public boolean process(Exchange exchange, AsyncCallback callback) {
 
-            target.process(exchange);
+                cacheFromArguments(definition, exchange);
 
-            cacheOutputArguments(definition, exchange);
+                target.process(exchange);
+
+                cacheOutputArguments(definition, exchange);
+
+                callback.done(true);
+
+                return true;
+            }
         };
     }
 

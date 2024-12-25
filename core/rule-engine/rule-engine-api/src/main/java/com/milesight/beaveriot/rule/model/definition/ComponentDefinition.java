@@ -31,14 +31,19 @@ public class ComponentDefinition {
                 .filter(definition -> definition.getKind().equals("path"))
                 .findFirst()
                 .orElse(null);
-        if (pathOptionDefinition != null && !ObjectUtils.isEmpty(parameters)) {
-            if(!parameters.containsKey(pathOptionDefinition.generateFullName())) {
+        String path = id;
+        if (pathOptionDefinition != null ) {
+            if(ObjectUtils.isEmpty(parameters) || !parameters.containsKey(pathOptionDefinition.generateFullName())) {
                 //else use id as uri
-                parameters.put(pathOptionDefinition.generateFullName(), id);
+                if (pathOptionDefinition.isAutowired()) {
+                    parameters.put(pathOptionDefinition.generateFullName(), id);
+                }
+            } else {
+                path = (String) parameters.get(pathOptionDefinition.generateFullName());
             }
         }
 
-        return generateUri(component.getScheme(), (String) parameters.get(pathOptionDefinition.generateFullName()));
+        return generateUri(component.getScheme(), path);
     }
 
     private String generateUri(String scheme, String path) {

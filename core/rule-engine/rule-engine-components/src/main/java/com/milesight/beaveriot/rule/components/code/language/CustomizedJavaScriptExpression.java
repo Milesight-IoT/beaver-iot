@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.rule.components.code.language;
 
 import com.milesight.beaveriot.rule.components.code.ExpressionEvaluator;
+import com.milesight.beaveriot.rule.support.JsonHelper;
 import org.apache.camel.Exchange;
 import org.apache.camel.language.js.JavaScriptExpression;
 import org.apache.camel.language.js.JavaScriptHelper;
@@ -9,6 +10,7 @@ import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.springframework.util.ObjectUtils;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.graalvm.polyglot.Source.newBuilder;
@@ -49,11 +51,28 @@ public class CustomizedJavaScriptExpression extends JavaScriptExpression {
             Source source = newBuilder("js", expressionString, "Unnamed")
                     .mimeType("application/javascript+module").buildLiteral();
             Value o = cx.eval(source);
-            Object answer = o != null ? o.as(Object.class) : null;
-            if (type == Object.class) {
-                return (T) answer;
+
+            return (T) convertValue(o, exchange, type);
+        }
+    }
+
+    private Object convertValue(Value value, Exchange exchange, Class<?> type) {
+        if (value == null) {
+            return null;
+        }
+        if (value.isNumber()) {
+            return value.as(Number.class);
+        } else if (value.isBoolean()) {
+            return value.as(Boolean.class);
+        } else {
+            Object out = value != null ? value.as(Object.class) : null;
+            if (out instanceof List<?>) {
+                return JsonHelper.cast(out, List.class);
+            } else if (out instanceof Map) {
+                return JsonHelper.cast(out, Map.class);
+            } else {
+                return exchange.getContext().getTypeConverter().convertTo(type, exchange, out);
             }
-            return exchange.getContext().getTypeConverter().convertTo(type, exchange, answer);
         }
     }
 
