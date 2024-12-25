@@ -41,7 +41,7 @@ public class WorkflowEntityRelationService {
         RuleNodeConfig triggerNodeConfig = null;
         if (ruleFlowConfig != null) {
             for (RuleNodeConfig nodeConfig : ruleFlowConfig.getNodes()) {
-                if (nodeConfig.getComponentName().equals("serviceInvocation")) {
+                if (nodeConfig.getComponentName().equals("trigger")) {
                     triggerNodeConfig = nodeConfig;
                     break;
                 }
@@ -66,15 +66,16 @@ public class WorkflowEntityRelationService {
         }
 
         TriggerNodeParameters parameters = JsonHelper.cast(triggerNodeConfig.getParameters(), TriggerNodeParameters.class);
-        List<Entity> childEntities = Optional
-                .ofNullable(parameters.getEntityConfigs())
-                .orElse(List.of())
-                .stream().map(entityConfig -> new EntityBuilder()
-                .identifier(entityConfig.get("identify"))
-                .service(entityConfig.get("name"))
-                .valueType(EntityValueType.valueOf(entityConfig.get("type")))
-                .build()
-        ).toList();
+        List<Entity> childEntities = null;
+        if (parameters != null && parameters.getEntityConfigs() != null) {
+            childEntities = parameters.getEntityConfigs().stream().
+                    map(entityConfig -> new EntityBuilder()
+                        .identifier(entityConfig.get("identify"))
+                        .service(entityConfig.get("name"))
+                        .valueType(EntityValueType.valueOf(entityConfig.get("type")))
+                        .build()
+                    ).toList();
+        }
 
         if (serviceEntity == null) {
             EntityBuilder eb = new EntityBuilder(IntegrationConstants.SYSTEM_INTEGRATION_ID);
@@ -113,12 +114,8 @@ public class WorkflowEntityRelationService {
     public WorkflowPO getFlowByEntityId(Long entityId) {
         Optional<WorkflowEntityRelationPO> workflowEntityRelationPO = workflowEntityRelationRepository
                 .findOne(f -> f.eq(WorkflowEntityRelationPO.Fields.entityId, entityId));
-        if (workflowEntityRelationPO.isEmpty()) {
-            return null;
-        }
+        return workflowEntityRelationPO.flatMap(entityRelationPO -> workflowRepository
+                .findById(entityRelationPO.getFlowId())).orElse(null);
 
-        return workflowRepository
-                .findById(workflowEntityRelationPO.get().getFlowId())
-                .orElse(null);
     }
 }
