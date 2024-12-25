@@ -24,7 +24,7 @@ import java.util.Random;
 @Data
 public class WebhookComponent implements ProcessorNode<Exchange> {
 
-    @UriParam
+    @UriParam(prefix = "bean")
     @UriParamExtension(uiComponent = "ParamAssignInput")
     private Map<String, Object> inputArguments;
     @UriParam
