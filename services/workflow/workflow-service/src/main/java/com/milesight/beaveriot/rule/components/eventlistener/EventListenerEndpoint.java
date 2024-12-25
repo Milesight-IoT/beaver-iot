@@ -28,7 +28,7 @@ public class EventListenerEndpoint extends DefaultEndpoint {
     @Metadata(required = true, autowired = true)
     private String eventListenerName;
 
-    @UriParamExtension(uiComponent = "EntityMultipleSelect")
+    @UriParamExtension(uiComponent = "entityMultipleSelect")
     @UriParam(displayName = "Entity Listening Setting", description = "The entities to listen for events")
     private List<String> entities;
 

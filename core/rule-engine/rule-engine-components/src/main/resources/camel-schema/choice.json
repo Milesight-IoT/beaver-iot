@@ -14,7 +14,8 @@
     "consumerOnly": false,
     "producerOnly": false,
     "lenientProperties": false,
-    "remote": false
+    "remote": false,
+    "testable": false
   },
   "properties": {
     "choice": {
@@ -29,7 +30,7 @@
       "autowired": false,
       "secret": false,
       "description": "The Choice Config",
-      "uiComponent": "ConditionsInput"
+      "uiComponent": "conditionsInput"
     }
   }
 }

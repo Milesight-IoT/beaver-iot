@@ -29,7 +29,7 @@ public class EntitySelectorComponent implements ProcessorNode<Exchange> {
 
     @OutputArguments
     @UriParam(javaType = "java.util.List", prefix = "bean")
-    @UriParamExtension(uiComponent = "EntityMultipleSelect")
+    @UriParamExtension(uiComponent = "entityMultipleSelect")
     private List<String> entities;
 
     @Autowired
