@@ -24,8 +24,6 @@ import com.milesight.beaveriot.device.po.DevicePO;
 import com.milesight.beaveriot.device.repository.DeviceRepository;
 import com.milesight.beaveriot.device.support.DeviceConverter;
 import com.milesight.beaveriot.eventbus.EventBus;
-import com.milesight.beaveriot.permission.aspect.OperationPermission;
-import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import lombok.extern.slf4j.Slf4j;
@@ -38,13 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.DEVICE_NAME_ON_ADD;
@@ -77,17 +69,12 @@ public class DeviceService implements IDeviceFacade {
     @Autowired
     EventBus eventBus;
 
-
-    private Optional<Integration> getIntegrationConfig(String integrationIdentifier) {
-        return Optional.ofNullable(integrationServiceProvider.getIntegration(integrationIdentifier));
-    }
-
     @Transactional(rollbackFor = Exception.class)
     public void createDevice(CreateDeviceRequest createDeviceRequest) {
         String integrationIdentifier = createDeviceRequest.getIntegration();
-        Optional<Integration> integrationConfig = getIntegrationConfig(integrationIdentifier);
+        Integration integrationConfig = integrationServiceProvider.getIntegration(integrationIdentifier);
 
-        if (integrationConfig.isEmpty()) {
+        if (integrationConfig == null) {
             throw ServiceException
                     .with(ErrorCode.DATA_NO_FOUND.getErrorCode(), "integration " + integrationIdentifier + " not found!")
                     .status(HttpStatus.BAD_REQUEST.value())
@@ -95,7 +82,7 @@ public class DeviceService implements IDeviceFacade {
         }
 
         // check ability to add device
-        String addDeviceEntityId = integrationConfig.get().getEntityIdentifierAddDevice();
+        String addDeviceEntityId = integrationConfig.getEntityIdentifierAddDevice();
         if (addDeviceEntityId == null) {
             throw ServiceException
                     .with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "integration " + integrationIdentifier + " cannot add device!")
@@ -127,15 +114,29 @@ public class DeviceService implements IDeviceFacade {
         deviceResponseData.setCreatedAt(devicePO.getCreatedAt());
         deviceResponseData.setUpdatedAt(devicePO.getUpdatedAt());
 
-        Optional<Integration> integrationConfig = getIntegrationConfig(devicePO.getIntegration());
-        if (integrationConfig.isPresent()) {
-            deviceResponseData.setDeletable(integrationConfig.get().getEntityIdentifierDeleteDevice() != null);
-            deviceResponseData.setIntegrationName(integrationConfig.get().getName());
-        } else {
-            deviceResponseData.setDeletable(true);
-        }
-
         return deviceResponseData;
+    }
+
+    private Map<String, Integration> getIntegrationMap(List<String> identifiers) {
+        Set<String> integrationIdentifiers = new HashSet<>(identifiers);
+        return integrationServiceProvider
+                .findIntegrations(f -> integrationIdentifiers.contains(f.getId()))
+                .stream()
+                .collect(Collectors.toMap(Integration::getId, integration -> integration));
+    }
+
+    private void fillIntegrationInfo(List<DeviceResponseData> dataList) {
+        Map<String, Integration> integrationMap = getIntegrationMap(dataList.stream().map(DeviceResponseData::getIntegration).toList());
+        dataList.forEach(d -> {
+            Integration integration = integrationMap.get(d.getIntegration());
+            if (integration == null) {
+                d.setDeletable(true);
+                return;
+            }
+
+            d.setDeletable(StringUtils.hasLength(integration.getEntityIdentifierDeleteDevice()));
+            d.setIntegrationName(integration.getName());
+        });
     }
 
     public Page<DeviceResponseData> searchDevice(SearchDeviceRequest searchDeviceRequest) {
@@ -144,9 +145,11 @@ public class DeviceService implements IDeviceFacade {
             searchDeviceRequest.sort(new Sorts().desc(DevicePO.Fields.createdAt));
         }
 
-        return deviceRepository
+        Page<DeviceResponseData> responseDataList = deviceRepository
                 .findAllWithDataPermission(f -> f.like(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.name, searchDeviceRequest.getName()), searchDeviceRequest.toPageable())
                 .map(this::convertPOToResponseData);
+        fillIntegrationInfo(responseDataList.stream().toList());
+        return responseDataList;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -177,6 +180,7 @@ public class DeviceService implements IDeviceFacade {
         List<DevicePO> devicePOList = deviceRepository.findByIdInWithDataPermission(deviceIdList.stream().map(Long::valueOf).toList());
         Set<String> foundIds = devicePOList.stream().map(id -> id.getId().toString()).collect(Collectors.toSet());
 
+
         // check whether all devices exist
         if (!new HashSet<>(deviceIdList).containsAll(foundIds)) {
             throw ServiceException
@@ -187,16 +191,18 @@ public class DeviceService implements IDeviceFacade {
 
         List<Device> devices = deviceConverter.convertPO(devicePOList);
 
+        Map<String, Integration> integrationMap = getIntegrationMap(devices.stream().map(Device::getIntegrationId).toList());
+
         devices.stream().map((Device device) -> {
             // check ability to delete device
-            Optional<Integration> integrationConfig = getIntegrationConfig(device.getIntegrationId());
-            if (integrationConfig.isEmpty()) {
+            Integration integrationConfig = integrationMap.get(device.getIntegrationId());
+            if (integrationConfig == null) {
                 deleteDevice(device);
                 return null;
             }
 
             ExchangePayload payload = new ExchangePayload();
-            String deleteDeviceServiceKey = integrationConfig.get().getEntityKeyDeleteDevice();
+            String deleteDeviceServiceKey = integrationConfig.getEntityKeyDeleteDevice();
             if (deleteDeviceServiceKey == null) {
                 throw ServiceException
                         .with(ErrorCode.METHOD_NOT_ALLOWED)
@@ -227,6 +233,7 @@ public class DeviceService implements IDeviceFacade {
 
         DeviceDetailResponse deviceDetailResponse = new DeviceDetailResponse();
         BeanUtils.copyProperties(convertPOToResponseData(findResult.get()), deviceDetailResponse);
+        fillIntegrationInfo(List.of(deviceDetailResponse));
 
         // set entities
         List<Entity> entities = entityServiceProvider.findByTargetId(AttachTargetType.DEVICE, deviceId.toString());
@@ -256,24 +263,25 @@ public class DeviceService implements IDeviceFacade {
 
     // Device API Implementations
 
-    private DeviceNameDTO convertDevicePO(DevicePO devicePO) {
-        return DeviceNameDTO.builder()
+    private List<DeviceNameDTO> convertDevicePOList(List<DevicePO> devicePOList) {
+        Map<String, Integration> integrationMap = getIntegrationMap(devicePOList.stream().map(DevicePO::getIntegration).toList());
+        return devicePOList.stream().map(devicePO -> DeviceNameDTO.builder()
                 .id(devicePO.getId())
                 .name(devicePO.getName())
                 .key(devicePO.getKey())
                 .userId(devicePO.getUserId())
                 .createdAt(devicePO.getCreatedAt())
-                .integrationConfig(integrationServiceProvider.getIntegration(devicePO.getIntegration()))
-                .build();
+                .integrationConfig(integrationMap.get(devicePO.getIntegration()))
+                .build()
+        ).toList();
     }
 
     @Override
     public List<DeviceNameDTO> fuzzySearchDeviceByName(String name) {
-        return deviceRepository
+        return convertDevicePOList(deviceRepository
                 .findAll(f -> f.likeIgnoreCase(DevicePO.Fields.name, name))
                 .stream()
-                .map(this::convertDevicePO)
-                .toList();
+                .toList());
     }
 
     @Override
@@ -281,11 +289,10 @@ public class DeviceService implements IDeviceFacade {
         if (integrationIds == null || integrationIds.isEmpty()) {
             return new ArrayList<>();
         }
-        return deviceRepository
+        return convertDevicePOList(deviceRepository
                 .findAll(f -> f.in(DevicePO.Fields.integration, integrationIds.toArray()))
                 .stream()
-                .map(this::convertDevicePO)
-                .toList();
+                .toList());
     }
 
     @Override
@@ -293,10 +300,9 @@ public class DeviceService implements IDeviceFacade {
         if (deviceIds == null || deviceIds.isEmpty()) {
             return new ArrayList<>();
         }
-        return deviceRepository.findByIdIn(deviceIds)
+        return convertDevicePOList(deviceRepository.findByIdIn(deviceIds)
                 .stream()
-                .map(this::convertDevicePO)
-                .toList();
+                .toList());
     }
 
     @Override
@@ -304,17 +310,16 @@ public class DeviceService implements IDeviceFacade {
         if (deviceKeys == null || deviceKeys.isEmpty()) {
             return new ArrayList<>();
         }
-        return deviceRepository.findAll(f -> f.in(DevicePO.Fields.key, deviceKeys.toArray()))
+        return convertDevicePOList(deviceRepository.findAll(f -> f.in(DevicePO.Fields.key, deviceKeys.toArray()))
                 .stream()
-                .map(this::convertDevicePO)
-                .toList();
+                .toList());
     }
 
     @Override
     public DeviceNameDTO getDeviceNameByKey(String deviceKey) {
-        return deviceRepository.findOne(f -> f.eq(DevicePO.Fields.key, deviceKey))
-                .map(this::convertDevicePO)
-                .orElse(null);
+        Optional<DevicePO> devicePO = deviceRepository.findOne(f -> f.eq(DevicePO.Fields.key, deviceKey));
+        return devicePO.map(po -> convertDevicePOList(List.of(po)).get(0)).orElse(null);
+
     }
 
     public void deleteDevice(Device device) {
