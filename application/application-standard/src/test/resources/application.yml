@@ -64,7 +64,6 @@ camel:
           - "python"
           - "mvel"
       - "choice":
-          - "jsonPath"
           - "groovy"
           - "javascript"
           - "python"

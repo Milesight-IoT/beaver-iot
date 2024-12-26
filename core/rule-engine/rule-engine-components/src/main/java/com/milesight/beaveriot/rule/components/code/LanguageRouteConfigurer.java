@@ -41,6 +41,7 @@ public class LanguageRouteConfigurer implements RuleEngineRouteConfigurer {
                 Map<String, Object> inputVariablesMap = (Map<String, Object>) inputVariables;
                 variables.putAll(inputVariablesMap);
             }
+            variables.put("properties", exchange.getProperties());
             return variables;
         }
     }

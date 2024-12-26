@@ -36,9 +36,7 @@
     </licenses>
 
     <modules>
-        <module>application-edge</module>
         <module>application-standard</module>
-        <module>application-dev</module>
     </modules>
 
     <properties>
