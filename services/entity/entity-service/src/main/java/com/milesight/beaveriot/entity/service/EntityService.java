@@ -54,6 +54,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -219,7 +220,7 @@ public class EntityService implements EntityServiceProvider {
                 .distinct()
                 .map(Long::valueOf)
                 .toList();
-        HashMap<String, DeviceNameDTO> deviceIdToDetails = deviceIdToDetails(deviceIds);
+        Map<String, DeviceNameDTO> deviceIdToDetails = deviceIdToDetails(deviceIds);
 
         Map<String, List<Entity>> parentIdentifierToChildren = entityPOList.stream()
                 .filter(entityPO -> StringUtils.hasText(entityPO.getParent()))
@@ -245,8 +246,8 @@ public class EntityService implements EntityServiceProvider {
                 .toList();
     }
 
-    private HashMap<String, DeviceNameDTO> deviceIdToDetails(List<Long> deviceIds) {
-        HashMap<String, DeviceNameDTO> deviceIdToDetails = new HashMap<>();
+    private Map<String, DeviceNameDTO> deviceIdToDetails(List<Long> deviceIds) {
+        Map<String, DeviceNameDTO> deviceIdToDetails = new HashMap<>();
         if (deviceIds.isEmpty()) {
             return deviceIdToDetails;
         }
@@ -532,7 +533,7 @@ public class EntityService implements EntityServiceProvider {
         return convertEntityPOListToEntityResponses(entityPOList);
     }
 
-    private EntityResponse convertEntityPOToEntityResponse(EntityPO entityPO, HashMap<String, DeviceNameDTO> deviceIdToDetails) {
+    private EntityResponse convertEntityPOToEntityResponse(EntityPO entityPO, Map<String, Integration> integrationMap, Map<String, DeviceNameDTO> deviceIdToDetails) {
         String deviceName = null;
         String integrationName = null;
         String attachTargetId = entityPO.getAttachTargetId();
@@ -546,7 +547,7 @@ public class EntityService implements EntityServiceProvider {
                 }
             }
         } else if (attachTarget == AttachTargetType.INTEGRATION) {
-            Integration integration = integrationServiceProvider.getIntegration(attachTargetId);
+            Integration integration = integrationMap.get(attachTargetId);
             if (integration != null) {
                 integrationName = integration.getName();
             }
@@ -614,8 +615,15 @@ public class EntityService implements EntityServiceProvider {
                 .map(entityPO -> Long.parseLong(entityPO.getAttachTargetId()))
                 .distinct()
                 .toList();
-        HashMap<String, DeviceNameDTO> deviceIdToDetails = deviceIdToDetails(foundDeviceIds);
-        return entityPOList.map(entityPO -> convertEntityPOToEntityResponse(entityPO, deviceIdToDetails));
+        Map<String, DeviceNameDTO> deviceIdToDetails = deviceIdToDetails(foundDeviceIds);
+        Set<String> integrationIds = entityPOList.stream()
+                .filter(entityPO -> AttachTargetType.INTEGRATION.equals(entityPO.getAttachTarget()))
+                .map(EntityPO::getAttachTargetId)
+                .collect(Collectors.toSet());
+        Map<String, Integration> integrationMap = integrationServiceProvider.findIntegrations(i -> integrationIds.contains(i.getId()))
+                .stream()
+                .collect(Collectors.toMap(Integration::getId, Function.identity(), (v1, v2) -> v1));
+        return entityPOList.map(entityPO -> convertEntityPOToEntityResponse(entityPO, integrationMap, deviceIdToDetails));
     }
 
     public EntityMetaResponse getEntityMeta(Long entityId) {
