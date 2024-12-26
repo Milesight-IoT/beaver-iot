@@ -54,6 +54,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -152,6 +153,8 @@ public class EntityService implements EntityServiceProvider {
         response.setValueAttribute(entityPO.getValueAttribute());
         response.setValueType(entityPO.getValueType());
         response.setCustomized(isCustomizedEntity(entityPO.getAttachTargetId()));
+        response.setCreatedAt(entityPO.getCreatedAt());
+        response.setUpdatedAt(entityPO.getUpdatedAt());
         return response;
     }
 
@@ -217,7 +220,7 @@ public class EntityService implements EntityServiceProvider {
                 .distinct()
                 .map(Long::valueOf)
                 .toList();
-        HashMap<String, DeviceNameDTO> deviceIdToDetails = deviceIdToDetails(deviceIds);
+        Map<String, DeviceNameDTO> deviceIdToDetails = deviceIdToDetails(deviceIds);
 
         Map<String, List<Entity>> parentIdentifierToChildren = entityPOList.stream()
                 .filter(entityPO -> StringUtils.hasText(entityPO.getParent()))
@@ -243,8 +246,8 @@ public class EntityService implements EntityServiceProvider {
                 .toList();
     }
 
-    private HashMap<String, DeviceNameDTO> deviceIdToDetails(List<Long> deviceIds) {
-        HashMap<String, DeviceNameDTO> deviceIdToDetails = new HashMap<>();
+    private Map<String, DeviceNameDTO> deviceIdToDetails(List<Long> deviceIds) {
+        Map<String, DeviceNameDTO> deviceIdToDetails = new HashMap<>();
         if (deviceIds.isEmpty()) {
             return deviceIdToDetails;
         }
@@ -534,7 +537,7 @@ public class EntityService implements EntityServiceProvider {
         return convertEntityPOListToEntityResponses(entityPOList);
     }
 
-    private EntityResponse convertEntityPOToEntityResponse(EntityPO entityPO, HashMap<String, DeviceNameDTO> deviceIdToDetails) {
+    private EntityResponse convertEntityPOToEntityResponse(EntityPO entityPO, Map<String, Integration> integrationMap, Map<String, DeviceNameDTO> deviceIdToDetails) {
         String deviceName = null;
         String integrationName = null;
         String attachTargetId = entityPO.getAttachTargetId();
@@ -548,7 +551,7 @@ public class EntityService implements EntityServiceProvider {
                 }
             }
         } else if (attachTarget == AttachTargetType.INTEGRATION) {
-            Integration integration = integrationServiceProvider.getIntegration(attachTargetId);
+            Integration integration = integrationMap.get(attachTargetId);
             if (integration != null) {
                 integrationName = integration.getName();
             }
@@ -565,6 +568,8 @@ public class EntityService implements EntityServiceProvider {
         response.setEntityValueAttribute(entityPO.getValueAttribute());
         response.setEntityValueType(entityPO.getValueType());
         response.setEntityIsCustomized(isCustomizedEntity(entityPO.getAttachTargetId()));
+        response.setEntityCreatedAt(entityPO.getCreatedAt());
+        response.setEntityUpdatedAt(entityPO.getUpdatedAt());
         return response;
     }
 
@@ -614,8 +619,15 @@ public class EntityService implements EntityServiceProvider {
                 .map(entityPO -> Long.parseLong(entityPO.getAttachTargetId()))
                 .distinct()
                 .toList();
-        HashMap<String, DeviceNameDTO> deviceIdToDetails = deviceIdToDetails(foundDeviceIds);
-        return entityPOList.map(entityPO -> convertEntityPOToEntityResponse(entityPO, deviceIdToDetails));
+        Map<String, DeviceNameDTO> deviceIdToDetails = deviceIdToDetails(foundDeviceIds);
+        Set<String> integrationIds = entityPOList.stream()
+                .filter(entityPO -> AttachTargetType.INTEGRATION.equals(entityPO.getAttachTarget()))
+                .map(EntityPO::getAttachTargetId)
+                .collect(Collectors.toSet());
+        Map<String, Integration> integrationMap = integrationServiceProvider.findIntegrations(i -> integrationIds.contains(i.getId()))
+                .stream()
+                .collect(Collectors.toMap(Integration::getId, Function.identity(), (v1, v2) -> v1));
+        return entityPOList.map(entityPO -> convertEntityPOToEntityResponse(entityPO, integrationMap, deviceIdToDetails));
     }
 
     public EntityMetaResponse getEntityMeta(Long entityId) {
@@ -754,22 +766,47 @@ public class EntityService implements EntityServiceProvider {
     }
 
     @Transactional(rollbackFor = Throwable.class)
-    public EntityMetaResponse createCustomizedEntity(EntityCreateRequest entityCreateRequest) {
+    public EntityMetaResponse createCustomEntity(EntityCreateRequest entityCreateRequest) {
+        String parentKey = entityCreateRequest.getParentIdentifier() != null
+                ? getCustomEntityKey(entityCreateRequest.getParentIdentifier())
+                : null;
+        String key = parentKey != null
+                ? getEntityKey(parentKey, entityCreateRequest.getIdentifier())
+                : getCustomEntityKey(entityCreateRequest.getIdentifier());
+        if (key == null) {
+            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("identifier is empty").build();
+        }
+
         EntityPO entityPO = new EntityPO();
+        entityPO.setId(SnowflakeUtil.nextId());
         entityPO.setName(entityCreateRequest.getName());
         entityPO.setType(entityCreateRequest.getType());
         entityPO.setAccessMod(entityCreateRequest.getAccessMod());
         entityPO.setValueAttribute(entityCreateRequest.getValueAttribute());
         entityPO.setValueType(entityCreateRequest.getValueType());
-        entityPO.setParent(entityCreateRequest.getParentIdentifier());
-        entityPO.setKey(entityCreateRequest.getIdentifier());
-        entityPO.setVisible(entityCreateRequest.getVisible());
+        entityPO.setKey(key);
+        entityPO.setParent(parentKey);
+        entityPO.setVisible(entityCreateRequest.getVisible() == null || entityCreateRequest.getVisible());
         entityPO.setTenantId(SecurityUserContext.getTenantId());
         entityPO.setUserId(SecurityUserContext.getUserId());
         entityPO.setAttachTarget(AttachTargetType.INTEGRATION);
         entityPO.setAttachTargetId(IntegrationConstants.SYSTEM_INTEGRATION_ID);
         entityPO = entityRepository.save(entityPO);
         return convertEntityPOToEntityMetaResponse(entityPO);
+    }
+
+    private String getCustomEntityKey(String identifier) {
+        if (identifier == null) {
+            return null;
+        }
+        return String.format("%s.integration.%s", IntegrationConstants.SYSTEM_INTEGRATION_ID, identifier);
+    }
+
+    private String getEntityKey(String parent, String identifier) {
+        if (parent == null || identifier == null) {
+            return null;
+        }
+        return String.format("%s.%s", parent, identifier);
     }
 
     private static boolean isCustomizedEntity(String integrationId) {

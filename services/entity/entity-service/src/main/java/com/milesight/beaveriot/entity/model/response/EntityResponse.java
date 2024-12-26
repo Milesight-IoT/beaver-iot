@@ -34,6 +34,8 @@ public class EntityResponse {
 
     private Boolean entityIsCustomized;
 
-    private Long entityWorkflowId;
+    private Long entityCreatedAt;
+
+    private Long entityUpdatedAt;
 
 }

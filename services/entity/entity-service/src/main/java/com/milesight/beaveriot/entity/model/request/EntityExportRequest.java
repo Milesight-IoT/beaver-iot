@@ -16,7 +16,7 @@ public class EntityExportRequest {
     /**
      * The IDs of the entities to be exported.
      */
-    private List<Long> entityIds;
+    private List<Long> ids;
 
     /**
      * The start timestamp of the data to be exported. <br>
