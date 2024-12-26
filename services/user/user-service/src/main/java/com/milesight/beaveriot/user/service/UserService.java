@@ -16,6 +16,7 @@ import com.milesight.beaveriot.user.model.request.UpdateUserRequest;
 import com.milesight.beaveriot.user.model.request.UserListRequest;
 import com.milesight.beaveriot.user.model.request.UserPermissionRequest;
 import com.milesight.beaveriot.user.model.request.UserRegisterRequest;
+import com.milesight.beaveriot.user.model.response.MenuResponse;
 import com.milesight.beaveriot.user.model.response.UserInfoResponse;
 import com.milesight.beaveriot.user.model.response.UserMenuResponse;
 import com.milesight.beaveriot.user.model.response.UserPermissionResponse;
@@ -125,16 +126,31 @@ public class UserService {
         userInfoResponse.setEmail(securityUser.getPayload().get("email").toString());
         userInfoResponse.setCreatedAt(securityUser.getPayload().get("createdAt").toString());
 
-        List<UserInfoResponse.Menu> menus = getMenusByUserId(userId).stream().map(userMenuResponse -> {
-            UserInfoResponse.Menu menu = new UserInfoResponse.Menu();
-            menu.setMenuId(userMenuResponse.getMenuId());
-            menu.setCode(userMenuResponse.getCode());
-            menu.setName(userMenuResponse.getName());
-            menu.setType(userMenuResponse.getType());
-            menu.setParentId(userMenuResponse.getParentId());
-            return menu;
-        }).toList();
-        userInfoResponse.setMenus(menus);
+        List<MenuPO> menuPOS = menuRepository.findAll();
+        if (menuPOS != null && !menuPOS.isEmpty()) {
+            List<UserMenuResponse> userMenuResponses = getMenusByUserId(userId);
+            List<String> userMenuParentIds = userMenuResponses.stream().map(UserMenuResponse::getParentId).filter(Objects::nonNull).distinct().toList();
+            List<UserMenuResponse> allUserMenuResponses = new ArrayList<>();
+            allUserMenuResponses.addAll(userMenuResponses);
+            recurrenceParentMenu(menuPOS, userMenuParentIds, allUserMenuResponses);
+
+            List<MenuResponse> menuResponses = new ArrayList<>();
+            List<UserMenuResponse> rootUserMenuResponses = allUserMenuResponses.stream().filter(userMenuResponse -> userMenuResponse.getParentId() == null).distinct().toList();
+            rootUserMenuResponses.forEach(UserMenuResponse -> {
+                MenuResponse menuResponse = new MenuResponse();
+                menuResponse.setMenuId(UserMenuResponse.getMenuId());
+                menuResponse.setCode(UserMenuResponse.getCode());
+                menuResponse.setName(UserMenuResponse.getName());
+                menuResponse.setType(UserMenuResponse.getType());
+                menuResponse.setParentId(UserMenuResponse.getParentId());
+
+                List<MenuResponse> menuChild = recurrenceChildMenu(allUserMenuResponses, UserMenuResponse.getMenuId());
+                menuResponse.setChildren(menuChild);
+                menuResponses.add(menuResponse);
+            });
+
+            userInfoResponse.setMenus(menuResponses);
+        }
 
         AtomicBoolean isSuperAdmin = new AtomicBoolean(false);
         List<UserRolePO> userRolePOS = userRoleRepository.findAll(filter -> filter.eq(UserRolePO.Fields.userId, userId));
@@ -154,6 +170,50 @@ public class UserService {
         }
         userInfoResponse.setIsSuperAdmin(isSuperAdmin.get());
         return userInfoResponse;
+    }
+
+    private void recurrenceParentMenu(List<MenuPO> menuPOS, List<String> userMenuParentIds, List<UserMenuResponse> allUserMenuResponses) {
+        if (userMenuParentIds == null || userMenuParentIds.isEmpty()) {
+            return;
+        }
+        List<MenuPO> parentMenuPOS = menuPOS.stream().filter(t -> userMenuParentIds.contains(t.getId().toString())).toList();
+        if (parentMenuPOS.isEmpty()) {
+            return;
+        }
+        List<UserMenuResponse> parentUserMenuResponses = parentMenuPOS.stream().map(menuPO -> {
+            UserMenuResponse userMenuResponse = new UserMenuResponse();
+            userMenuResponse.setMenuId(menuPO.getId().toString());
+            userMenuResponse.setCode(menuPO.getCode());
+            userMenuResponse.setName(menuPO.getName());
+            userMenuResponse.setType(menuPO.getType());
+            userMenuResponse.setParentId(menuPO.getParentId() == null ? null : menuPO.getParentId().toString());
+            return userMenuResponse;
+        }).toList();
+        allUserMenuResponses.addAll(parentUserMenuResponses);
+
+        List<String> parentMenuParentIds = parentMenuPOS.stream().map(MenuPO::getParentId).filter(Objects::nonNull).map(Objects::toString).distinct().toList();
+
+        recurrenceParentMenu(menuPOS, parentMenuParentIds, allUserMenuResponses);
+    }
+
+    private List<MenuResponse> recurrenceChildMenu(List<UserMenuResponse> menuResponses, String parentId) {
+        List<UserMenuResponse> menuChs = menuResponses.stream().filter(t -> t.getParentId() != null && t.getParentId().equals(parentId)).distinct().toList();
+        if (menuChs.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<MenuResponse> menuChResponses = new ArrayList<>();
+        menuChs.forEach(t -> {
+            MenuResponse menuChResponse = new MenuResponse();
+            menuChResponse.setMenuId(t.getMenuId());
+            menuChResponse.setCode(t.getCode());
+            menuChResponse.setName(t.getName());
+            menuChResponse.setType(t.getType());
+            menuChResponse.setParentId(t.getParentId());
+            List<MenuResponse> menuChild = recurrenceChildMenu(menuResponses, t.getMenuId());
+            menuChResponse.setChildren(menuChild);
+            menuChResponses.add(menuChResponse);
+        });
+        return menuChResponses;
     }
 
     public Page<UserInfoResponse> getUsers(UserListRequest userListRequest) {
