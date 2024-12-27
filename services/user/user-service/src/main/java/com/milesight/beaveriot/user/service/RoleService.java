@@ -185,6 +185,8 @@ public class RoleService {
             );
             if (userSearchPOs != null && !userSearchPOs.isEmpty()) {
                 searchUserIds.addAll(userSearchPOs.stream().map(UserPO::getId).toList());
+            }else {
+                return Page.empty();
             }
         }
         Page<UserRolePO> userRolePOS = userRoleRepository.findAll(filterable -> filterable.eq(UserRolePO.Fields.roleId, roleId)
@@ -284,6 +286,7 @@ public class RoleService {
     public Page<RoleDeviceResponse> getDevicesByRoleId(Long roleId, RoleDeviceRequest roleDeviceRequest) {
         List<String> searchIntegrationIds = new ArrayList<>();
         List<Long> searchDeviceIds = new ArrayList<>();
+        boolean isKeywordSearch = false;
         if (StringUtils.hasText(roleDeviceRequest.getKeyword())) {
             List<Integration> integrations = integrationServiceProvider.findIntegrations(f -> f.getName().toLowerCase().contains(roleDeviceRequest.getKeyword().toLowerCase()));
             if (integrations != null && !integrations.isEmpty()) {
@@ -301,13 +304,20 @@ public class RoleService {
             if (searchDeviceIds.isEmpty() && searchIntegrationIds.isEmpty()) {
                 return Page.empty();
             }
+            isKeywordSearch = true;
         }
-        List<RoleResourcePO> roleIntegrationPOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
-                .eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION.name())
-                .in(!searchIntegrationIds.isEmpty(), RoleResourcePO.Fields.resourceId, searchIntegrationIds.toArray()));
-        List<RoleResourcePO> roleDevicePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
-                .eq(RoleResourcePO.Fields.resourceType, ResourceType.DEVICE.name())
-                .in(!searchDeviceIds.isEmpty(), RoleResourcePO.Fields.resourceId, searchDeviceIds.toArray()));
+        List<RoleResourcePO> roleIntegrationPOS = new ArrayList<>();
+        if(!isKeywordSearch || !searchIntegrationIds.isEmpty()) {
+            roleIntegrationPOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
+                    .eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION.name())
+                    .in(!searchIntegrationIds.isEmpty(), RoleResourcePO.Fields.resourceId, searchIntegrationIds.toArray()));
+        }
+        List<RoleResourcePO> roleDevicePOS = new ArrayList<>();
+        if(!isKeywordSearch || !searchDeviceIds.isEmpty()) {
+            roleDevicePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
+                    .eq(RoleResourcePO.Fields.resourceType, ResourceType.DEVICE.name())
+                    .in(!searchDeviceIds.isEmpty(), RoleResourcePO.Fields.resourceId, searchDeviceIds.toArray()));
+        }
         List<Long> responseDeviceIds = new ArrayList<>();
         if (roleDevicePOS != null && !roleDevicePOS.isEmpty()) {
             responseDeviceIds.addAll(roleDevicePOS.stream().map(RoleResourcePO::getResourceId).map(Long::parseLong).toList());
@@ -351,6 +361,7 @@ public class RoleService {
             roleDeviceResponse.setRoleIntegration(responseIntegrationDeviceIds.contains(deviceId));
             return roleDeviceResponse;
         }).toList();
+        roleDeviceResponseList = roleDeviceResponseList.stream().filter(t -> !t.isRoleIntegration()).collect(Collectors.toList());
         return PageConverter.convertToPage(roleDeviceResponseList, roleDeviceRequest.toPageable());
     }
 
@@ -446,6 +457,9 @@ public class RoleService {
             integrations.addAll(integrationServiceProvider.findIntegrations(f -> f.getName().toLowerCase().contains(integrationUndistributedRequest.getKeyword().toLowerCase())));
         } else {
             integrations.addAll(integrationServiceProvider.findIntegrations());
+        }
+        if (integrations.isEmpty()) {
+            return Page.empty();
         }
         List<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
                 .eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION.name()));
