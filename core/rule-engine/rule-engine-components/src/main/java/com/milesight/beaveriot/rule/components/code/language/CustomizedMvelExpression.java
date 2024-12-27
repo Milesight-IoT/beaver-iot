@@ -34,9 +34,13 @@ public class CustomizedMvelExpression extends MvelExpression {
 
             Object inputVariables = exchange.getIn().getHeader(ExpressionEvaluator.HEADER_INPUT_VARIABLES);
             Map<String, Object> variables = new HashMap<>();
+            variables.put("exchange", exchange);
+            variables.put("message", exchange.getMessage());
+            variables.put("exchangeId", exchange.getExchangeId());
             variables.put("headers", exchange.getIn().getHeaders());
             variables.put("properties", exchange.getAllProperties());
             variables.put("body", exchange.getMessage().getBody());
+
             if (!ObjectUtils.isEmpty(inputVariables) && inputVariables instanceof Map) {
                 Map<String, Object> inputVariablesMap = (Map<String, Object>) inputVariables;
                 inputVariablesMap.entrySet().forEach(entry -> variables.put(entry.getKey(), entry.getValue()));
