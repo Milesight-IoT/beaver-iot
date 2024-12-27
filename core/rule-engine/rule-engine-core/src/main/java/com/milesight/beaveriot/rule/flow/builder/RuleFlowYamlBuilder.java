@@ -111,8 +111,13 @@ public class RuleFlowYamlBuilder {
         AtomicInteger branchCounter = new AtomicInteger(0);
         for (RuleConfig successor : successors) {
             List<OutputNode> parallelNodes = new ArrayList<>();
-            parallelNodes.add(ruleNodeInterceptor.interceptOutputNode(flowId, RuleNode.create(flowId, (RuleNodeConfig) successor, componentDefinitionLoader.apply(successor.getComponentName()))));
-            retrieveOutputNodes(parallelNodes, successor.getId(), ruleConfigs -> isBranchEnd(branchStartId, ruleConfigs));
+            if (isChoiceNode(successor)) {
+                retrieveChoiceOutputNodes(parallelNodes, Set.of(successor));
+            } else {
+                parallelNodes.add(ruleNodeInterceptor.interceptOutputNode(flowId, RuleNode.create(flowId, (RuleNodeConfig) successor, componentDefinitionLoader.apply(successor.getComponentName()))));
+                retrieveOutputNodes(parallelNodes, successor.getId(), ruleConfigs -> isBranchEnd(branchStartId, ruleConfigs));
+            }
+
             builder.then(RuleFlowIdGenerator.generateNamespacedBranchId(parallelNodeId, branchCounter.getAndIncrement()), parallelNodes);
         }
         outputNodes.addAll(builder.build().getOutputNodes());
@@ -169,7 +174,11 @@ public class RuleFlowYamlBuilder {
     }
 
     private boolean isChoiceNode(Set<RuleConfig> successors) {
-        return successors.size() == 1 && RuleConfig.COMPONENT_CHOICE.equals(successors.iterator().next().getComponentName());
+        return successors.size() == 1 && isChoiceNode(successors.iterator().next());
+    }
+
+    private boolean isChoiceNode(RuleConfig successor) {
+        return RuleConfig.COMPONENT_CHOICE.equals(successor.getComponentName()) ;
     }
 
     private boolean isSequentialNode(Set<RuleConfig> successors) {

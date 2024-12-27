@@ -3,33 +3,39 @@
   "nodes": [
     {
       "id": "id_1",
-      "nodeName": "node1",
-      "nodeRemark": "",
-      "parameters": {
-        "period": 1000
+      "data": {
+        "nodeName": "node1",
+        "nodeRemark": "",
+        "parameters": {
+          "period": 1000
+        }
       },
       "componentName": "timer"
     },
     {
       "id": "id_2",
-      "nodeName": "node2",
-      "nodeRemark": "",
-      "parameters": {
-        "emailContent": "myEvent",
-        "exchangePayload": {
-          "a": 1
+      "data": {
+        "nodeName": "node2",
+        "nodeRemark": "",
+        "parameters": {
+          "emailContent": "myEvent",
+          "exchangePayload": {
+            "a": 1
+          }
         }
       },
       "componentName": "simpleAlarmComponent"
     },
     {
       "id": "id_3",
-      "nodeName": "node3",
-      "nodeRemark": "",
-      "parameters": {
-        "emailContent": "myEvent",
-        "exchangePayload": {
-          "b": 2
+      "data": {
+        "nodeName": "node3",
+        "nodeRemark": "",
+        "parameters": {
+          "emailContent": "myEvent",
+          "exchangePayload": {
+            "b": 2
+          }
         }
       },
       "componentName": "simpleAlarmComponent"

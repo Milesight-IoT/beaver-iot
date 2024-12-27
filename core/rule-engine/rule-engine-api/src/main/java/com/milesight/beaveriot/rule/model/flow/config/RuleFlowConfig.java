@@ -30,7 +30,7 @@ public class RuleFlowConfig {
         for (int i = 0; i < nodes.size() - 1; i++) {
             RuleNodeConfig source = nodes.get(i);
             RuleNodeConfig target = nodes.get(i + 1);
-            edgeConfigs.add(RuleEdgeConfig.create(source.getId(), target.getId()));
+            edgeConfigs.add(RuleEdgeConfig.create(source.getId(), target.getId(),null));
         }
         flow.setEdges(edgeConfigs);
         return flow;
