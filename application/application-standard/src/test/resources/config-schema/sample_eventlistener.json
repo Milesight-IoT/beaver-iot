@@ -3,35 +3,41 @@
   "nodes": [
     {
       "id": "id_1",
-      "nodeName": "node1",
-      "nodeRemark": "",
-      "parameters": {
-        "entities": "demo-anno-integration.device.deviceId.status,demo-anno-integration.device.deviceId.change_status"
+      "data": {
+        "nodeName": "node1",
+        "nodeRemark": "",
+        "parameters": {
+          "entities": "demo-anno-integration.device.deviceId.status,demo-anno-integration.device.deviceId.change_status"
+        }
       },
       "componentName": "eventListener"
     },
     {
       "id": "id_2",
-      "nodeName": "node2",
-      "nodeRemark": "",
-      "parameters": {
-        "emailContent": "myEvent",
-        "exchangePayload": {
-          "a": 1
+      "data": {
+        "nodeName": "node2",
+        "nodeRemark": "",
+        "parameters": {
+          "emailContent": "myEvent",
+          "exchangePayload": {
+            "a": 1
+          }
         }
       },
       "componentName": "simpleAlarmComponent"
     },
     {
       "id": "id_3",
-      "nodeName": "node3",
-      "nodeRemark": "",
-      "parameters": {
-        "emailContent": "myEvent",
-        "exchangePayload": {
-          "b": 2
-        }
-      },
+       "data": {
+       "nodeName": "node3",
+       "nodeRemark": "",
+       "parameters": {
+         "emailContent": "myEvent",
+         "exchangePayload": {
+           "b": 2
+         }
+       }
+     },
       "componentName": "simpleAlarmComponent"
     }
   ],

@@ -11,16 +11,27 @@ public class RuleNodeConfig implements RuleConfig {
 
     private String id;
     private String componentName;
-    private String nodeName;
-    private JsonNode parameters;
+    private RuleNodeDataConfig data;
 
     public static RuleNodeConfig create(String id, String componentName, String nodeName, JsonNode parameters) {
         RuleNodeConfig ruleNodeConfig = new RuleNodeConfig();
         ruleNodeConfig.setId(id);
         ruleNodeConfig.setComponentName(componentName);
-        ruleNodeConfig.setNodeName(nodeName);
-        ruleNodeConfig.setParameters(parameters);
+        RuleNodeDataConfig ruleNodeDataConfig = new RuleNodeDataConfig();
+        ruleNodeDataConfig.setNodeName(nodeName);
+        ruleNodeDataConfig.setParameters(parameters);
+        ruleNodeConfig.setData(ruleNodeDataConfig);
         return ruleNodeConfig;
+    }
+
+    public JsonNode getParameters() {
+        return data != null ? data.getParameters() : null;
+    }
+
+    @Data
+    public static class RuleNodeDataConfig {
+        private String nodeName;
+        private JsonNode parameters;
     }
 
 }

@@ -14,10 +14,13 @@ public class RuleEdgeConfig {
 
     private String target;
 
-    public static RuleEdgeConfig create(String source, String target) {
+    private String sourceHandle;
+
+    public static RuleEdgeConfig create(String source, String target, String sourceHandle) {
         RuleEdgeConfig ruleEdgeConfig = new RuleEdgeConfig();
         ruleEdgeConfig.setSource(source);
         ruleEdgeConfig.setTarget(target);
+        ruleEdgeConfig.setSourceHandle(sourceHandle);
         return ruleEdgeConfig;
     }
 

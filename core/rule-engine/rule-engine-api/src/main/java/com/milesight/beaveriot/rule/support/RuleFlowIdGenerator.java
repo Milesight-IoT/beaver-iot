@@ -12,7 +12,8 @@ public class RuleFlowIdGenerator {
 
     public static final String PARALLEL_NODE_ID_PREFIX = "PARALLEL_";
     public static final String BRANCH_NODE_ID_PREFIX = "BRANCH_";
-    public static final String INNER_NODE_ID_TEMPLATE = "inner.{0}.{1}";
+    public static final String INNER_FLOW_ID_PREFIX = "inner.";
+    public static final String INNER_NODE_ID_TEMPLATE = INNER_FLOW_ID_PREFIX + "{0}.{1}";
     public static final String FLOW_ID_PREFIX = "flow.";
     public static final String FLOW_NODE_ID_TEMPLATE = FLOW_ID_PREFIX + "{0}.{1}";
 
@@ -39,7 +40,8 @@ public class RuleFlowIdGenerator {
         return MessageFormat.format(INNER_NODE_ID_TEMPLATE, flowId, PARALLEL_NODE_ID_PREFIX + order);
     }
 
-    public static String generateNamespacedBranchId(String flowId, int order) {
-        return MessageFormat.format(INNER_NODE_ID_TEMPLATE, flowId, BRANCH_NODE_ID_PREFIX + order);
+    public static String generateNamespacedBranchId(String parallelId, int order) {
+        String removePrefixId = parallelId.replace(INNER_FLOW_ID_PREFIX, "");
+        return MessageFormat.format(INNER_NODE_ID_TEMPLATE, removePrefixId, BRANCH_NODE_ID_PREFIX + order);
     }
 }
