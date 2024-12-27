@@ -248,15 +248,14 @@ public class RoleService {
     }
 
     public Page<RoleIntegrationResponse> getIntegrationsByRoleId(Long roleId, RoleIntegrationRequest roleIntegrationRequest) {
-        List<Long> searchIntegrationIds = new ArrayList<>();
+        List<String> searchIntegrationIds = new ArrayList<>();
         if (StringUtils.hasText(roleIntegrationRequest.getKeyword())) {
             List<Integration> integrations = integrationServiceProvider.findIntegrations(f -> f.getName().toLowerCase().contains(roleIntegrationRequest.getKeyword().toLowerCase()));
             if (integrations != null && !integrations.isEmpty()) {
                 List<String> integrationIds = integrations.stream().map(Integration::getId).toList();
-                List<DeviceNameDTO> integrationDevices = deviceFacade.getDeviceNameByIntegrations(integrationIds);
-                if (integrationDevices != null && !integrationDevices.isEmpty()) {
-                    searchIntegrationIds.addAll(integrationDevices.stream().map(DeviceNameDTO::getId).toList());
-                }
+                searchIntegrationIds.addAll(integrationIds);
+            }else {
+                return Page.empty();
             }
         }
         Page<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
@@ -298,6 +297,9 @@ public class RoleService {
             List<DeviceNameDTO> deviceNameDTOList = deviceFacade.fuzzySearchDeviceByName(roleDeviceRequest.getKeyword());
             if (deviceNameDTOList != null && !deviceNameDTOList.isEmpty()) {
                 searchDeviceIds.addAll(deviceNameDTOList.stream().map(DeviceNameDTO::getId).toList());
+            }
+            if (searchDeviceIds.isEmpty() && searchIntegrationIds.isEmpty()) {
+                return Page.empty();
             }
         }
         List<RoleResourcePO> roleIntegrationPOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
@@ -358,6 +360,8 @@ public class RoleService {
             List<DashboardDTO> dashboardPOS = dashboardFacade.getDashboardsLike(roleDashboardRequest.getKeyword(), Sort.unsorted());
             if (dashboardPOS != null && !dashboardPOS.isEmpty()) {
                 searchDashboardIds.addAll(dashboardPOS.stream().map(DashboardDTO::getDashboardId).toList());
+            }else{
+                return Page.empty();
             }
         }
         Page<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
