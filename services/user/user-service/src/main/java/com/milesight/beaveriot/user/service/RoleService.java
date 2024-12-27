@@ -508,9 +508,10 @@ public class RoleService {
                 deviceUndistributedResponse.setUserEmail(userMap.get(userId) == null ? null : userMap.get(userId).getEmail());
                 deviceUndistributedResponse.setUserNickname(userMap.get(userId) == null ? null : userMap.get(userId).getNickname());
             }
+
+            deviceUndistributedResponse.setIntegrationId(deviceNameDTO.getIntegrationId());
             Integration integrationConfig = deviceNameDTO.getIntegrationConfig();
             if (integrationConfig != null) {
-                deviceUndistributedResponse.setIntegrationId(integrationConfig.getId());
                 deviceUndistributedResponse.setIntegrationName(integrationConfig.getName());
             }
             return deviceUndistributedResponse;

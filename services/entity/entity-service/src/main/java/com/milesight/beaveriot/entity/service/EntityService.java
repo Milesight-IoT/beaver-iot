@@ -106,9 +106,7 @@ public class EntityService implements EntityServiceProvider {
             DeviceNameDTO deviceDetail = deviceIdToDetails.get(attachTargetId);
             if (deviceDetail != null) {
                 deviceKey = deviceDetail.getKey();
-                if (deviceDetail.getIntegrationConfig() != null) {
-                    integrationId = deviceDetail.getIntegrationConfig().getId();
-                }
+                integrationId = deviceDetail.getIntegrationId();
             }
         } else if (attachTarget == AttachTargetType.INTEGRATION) {
             integrationId = attachTargetId;
