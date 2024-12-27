@@ -19,15 +19,19 @@ import java.util.List;
 public class PageConverter {
 
     public static <T> Page<T> convertToPage(List<T> list, Pageable pageable) {
+        if (list == null || list.isEmpty()) {
+            return Page.empty();
+        }
+        List<T> sortList = new ArrayList<>(list);
         if (pageable.getSort().isSorted()) {
-            list = sortList(list, pageable.getSort());
+            sortList = sortList(sortList, pageable.getSort());
         }
         int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), list.size());
+        int end = Math.min((start + pageable.getPageSize()), sortList.size());
 
-        List<T> subList = list.subList(start, end);
+        List<T> subList = sortList.subList(start, end);
 
-        return new PageImpl<>(subList, pageable, list.size());
+        return new PageImpl<>(subList, pageable, sortList.size());
     }
 
     private static <T> List<T> sortList(List<T> list, Sort sort) {
@@ -41,7 +45,6 @@ public class PageConverter {
             }
             return result;
         };
-
         List<T> sortedList = new ArrayList<>(list);
         sortedList.sort(comparator);
         return sortedList;

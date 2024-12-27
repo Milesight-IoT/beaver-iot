@@ -342,7 +342,7 @@ public class RoleService {
             List<UserPO> userPOList = userRepository.findAll(filterable -> filterable.in(UserPO.Fields.id, userIds.toArray()));
             userMap.putAll(userPOList.stream().collect(Collectors.toMap(UserPO::getId, Function.identity())));
         }
-        List<RoleDeviceResponse> roleDeviceResponseList = responseDeviceIds.stream().map(deviceId -> {
+        List<RoleDeviceResponse> roleDeviceResponseList = responseDeviceIds.stream().distinct().map(deviceId -> {
             RoleDeviceResponse roleDeviceResponse = new RoleDeviceResponse();
             roleDeviceResponse.setDeviceId(deviceId.toString());
             roleDeviceResponse.setDeviceName(deviceMap.get(deviceId) == null ? null : deviceMap.get(deviceId).getName());
