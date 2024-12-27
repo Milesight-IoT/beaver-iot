@@ -10,6 +10,7 @@ public class DeviceNameDTO {
     private Long id;
     private String key;
     private Long userId;
+    private String integrationId;
     private Integration integrationConfig;
     private String name;
     private Long createdAt;
