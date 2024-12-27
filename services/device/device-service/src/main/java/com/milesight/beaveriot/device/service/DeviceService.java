@@ -146,7 +146,7 @@ public class DeviceService implements IDeviceFacade {
         }
 
         Page<DeviceResponseData> responseDataList = deviceRepository
-                .findAllWithDataPermission(f -> f.like(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.name, searchDeviceRequest.getName()), searchDeviceRequest.toPageable())
+                .findAllWithDataPermission(f -> f.likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.name, searchDeviceRequest.getName()), searchDeviceRequest.toPageable())
                 .map(this::convertPOToResponseData);
         fillIntegrationInfo(responseDataList.stream().toList());
         return responseDataList;

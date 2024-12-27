@@ -150,7 +150,7 @@ public class RoleService {
     }
 
     public Page<RoleResponse> getRoles(RoleListRequest roleListRequest) {
-        Page<RolePO> rolePages = roleRepository.findAll(filterable -> filterable.like(StringUtils.hasText(roleListRequest.getKeyword()), RolePO.Fields.name, roleListRequest.getKeyword())
+        Page<RolePO> rolePages = roleRepository.findAll(filterable -> filterable.likeIgnoreCase(StringUtils.hasText(roleListRequest.getKeyword()), RolePO.Fields.name, roleListRequest.getKeyword())
                 , roleListRequest.toPageable());
         if (rolePages == null || rolePages.getContent().isEmpty()) {
             return Page.empty();
@@ -180,8 +180,8 @@ public class RoleService {
     public Page<UserRoleResponse> getUsersByRoleId(Long roleId, UserRolePageRequest userRolePageRequest) {
         List<Long> searchUserIds = new ArrayList<>();
         if (StringUtils.hasText(userRolePageRequest.getKeyword())) {
-            List<UserPO> userSearchPOs = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.like(StringUtils.hasText(userRolePageRequest.getKeyword()), UserPO.Fields.email, userRolePageRequest.getKeyword())
-                            .like(StringUtils.hasText(userRolePageRequest.getKeyword()), UserPO.Fields.nickname, userRolePageRequest.getKeyword()))
+            List<UserPO> userSearchPOs = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(userRolePageRequest.getKeyword()), UserPO.Fields.email, userRolePageRequest.getKeyword())
+                            .likeIgnoreCase(StringUtils.hasText(userRolePageRequest.getKeyword()), UserPO.Fields.nickname, userRolePageRequest.getKeyword()))
             );
             if (userSearchPOs != null && !userSearchPOs.isEmpty()) {
                 searchUserIds.addAll(userSearchPOs.stream().map(UserPO::getId).toList());
@@ -424,7 +424,7 @@ public class RoleService {
     }
 
     public Page<UserUndistributedResponse> getUndistributedUsers(Long roleId, UserUndistributedRequest userUndistributedRequest) {
-        List<UserPO> userPOS = userRepository.findAll(filterable -> filterable.like(StringUtils.hasText(userUndistributedRequest.getKeyword()), UserPO.Fields.nickname, userUndistributedRequest.getKeyword()), userUndistributedRequest.getSort().toSort());
+        List<UserPO> userPOS = userRepository.findAll(filterable -> filterable.likeIgnoreCase(StringUtils.hasText(userUndistributedRequest.getKeyword()), UserPO.Fields.nickname, userUndistributedRequest.getKeyword()), userUndistributedRequest.getSort().toSort());
         if (userPOS == null || userPOS.isEmpty()) {
             return Page.empty();
         }
