@@ -1,24 +1,65 @@
 package com.milesight.beaveriot.user.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
  * @author loong
  * @date 2024/12/4 17:20
  */
+@Slf4j
 public class PageConverter {
 
     public static <T> Page<T> convertToPage(List<T> list, Pageable pageable) {
+        if (pageable.getSort().isSorted()) {
+            list = sortList(list, pageable.getSort());
+        }
         int start = (int) pageable.getOffset();
         int end = Math.min((start + pageable.getPageSize()), list.size());
 
         List<T> subList = list.subList(start, end);
 
         return new PageImpl<>(subList, pageable, list.size());
+    }
+
+    private static <T> List<T> sortList(List<T> list, Sort sort) {
+        Comparator<T> comparator = (o1, o2) -> {
+            int result = 0;
+            for (Sort.Order order : sort) {
+                result = compare(order.getProperty(), o1, o2, order.isAscending());
+                if (result != 0) {
+                    return result;
+                }
+            }
+            return result;
+        };
+
+        List<T> sortedList = new ArrayList<>(list);
+        sortedList.sort(comparator);
+        return sortedList;
+    }
+
+    private static <T> int compare(String property, T o1, T o2, boolean ascending) {
+        try {
+            Field field = o1.getClass().getDeclaredField(property);
+            field.setAccessible(true);
+            Comparable<Object> value1 = (Comparable<Object>) field.get(o1);
+            Comparable<Object> value2 = (Comparable<Object>) field.get(o2);
+
+            int result = value1.compareTo(value2);
+            return ascending ? result : -result;
+        } catch (Exception e) {
+            log.error("Failed to compare property: " + property, e);
+        }
+        return 0;
     }
 
 }
