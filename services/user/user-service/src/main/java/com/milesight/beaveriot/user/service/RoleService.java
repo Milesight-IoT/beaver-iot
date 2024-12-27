@@ -361,7 +361,6 @@ public class RoleService {
             roleDeviceResponse.setRoleIntegration(responseIntegrationDeviceIds.contains(deviceId));
             return roleDeviceResponse;
         }).toList();
-        roleDeviceResponseList = roleDeviceResponseList.stream().filter(t -> !t.isRoleIntegration()).collect(Collectors.toList());
         return PageConverter.convertToPage(roleDeviceResponseList, roleDeviceRequest.toPageable());
     }
 
@@ -508,7 +507,7 @@ public class RoleService {
                 .eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION.name()));
         List<String> roleIntegrationIds = roleIntegrationPOS.stream().map(RoleResourcePO::getResourceId).toList();
         if (!roleIntegrationIds.isEmpty()) {
-            List<DeviceNameDTO> deviceNameDTOListByIntegration = deviceFacade.getDeviceNameByKey(roleIntegrationIds);
+            List<DeviceNameDTO> deviceNameDTOListByIntegration = deviceFacade.getDeviceNameByIntegrations(roleIntegrationIds);
             roleDeviceIds.addAll(deviceNameDTOListByIntegration.stream().map(DeviceNameDTO::getId).toList());
         }
         List<RoleResourcePO> roleDevicePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
