@@ -24,6 +24,7 @@ public interface DashboardConvert {
     List<DashboardResponse> convertResponseList(List<DashboardPO> dashboardPOList);
 
     @Mapping(source = "id", target = "dashboardId")
+    @Mapping(source = "name", target = "dashboardName")
     DashboardDTO convertDTO(DashboardPO dashboardPO);
 
     List<DashboardDTO> convertDTOList(List<DashboardPO> dashboardPOList);

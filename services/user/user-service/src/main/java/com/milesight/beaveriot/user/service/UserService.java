@@ -9,6 +9,7 @@ import com.milesight.beaveriot.user.dto.UserResourceDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.enums.UserErrorCode;
 import com.milesight.beaveriot.user.enums.UserStatus;
+import com.milesight.beaveriot.user.model.request.BatchDeleteUserRequest;
 import com.milesight.beaveriot.user.model.request.ChangePasswordRequest;
 import com.milesight.beaveriot.user.model.request.CreateUserRequest;
 import com.milesight.beaveriot.user.model.request.UpdatePasswordRequest;
@@ -221,6 +222,9 @@ public class UserService {
         Page<UserPO> userPages = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.nickname, keyword)
                                 .likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.email, keyword))
                 , userListRequest.toPageable());
+        if (userPages == null || userPages.getContent().isEmpty()) {
+            return Page.empty();
+        }
         Map<Long, List<Long>> userRoleIdMap = new HashMap<>();
         Map<Long, String> roleNameMap = new HashMap<>();
         List<Long> userIds = userPages.stream().map(UserPO::getId).toList();
@@ -306,6 +310,16 @@ public class UserService {
     public void deleteUser(Long userId) {
         userRepository.deleteById(userId);
         userRoleRepository.deleteByUserId(userId);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void batchDeleteUsers(BatchDeleteUserRequest batchDeleteUserRequest) {
+        List<Long> userIds = batchDeleteUserRequest.getUserIdList();
+        if (userIds == null || userIds.isEmpty()) {
+            return;
+        }
+        userRepository.deleteAllById(userIds);
+        userRoleRepository.deleteByUserIds(userIds);
     }
 
     public List<UserMenuResponse> getMenusByUserId(Long userId) {

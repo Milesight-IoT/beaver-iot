@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 /**
  * @author loong
  * @date 2024/11/19 17:52
@@ -21,5 +23,9 @@ public interface UserRoleRepository extends BaseJpaRepository<UserRolePO, Long> 
     @Modifying
     @Query("delete from UserRolePO ur where ur.userId = :userId")
     void deleteByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Query("delete from UserRolePO ur where ur.userId in :userIds")
+    void deleteByUserIds(@Param("userIds") List<Long> userIds);
 
 }
