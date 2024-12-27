@@ -30,7 +30,7 @@ public class DashboardFacade implements IDashboardFacade {
 
     @Override
     public List<DashboardDTO> getDashboardsLike(String keyword, Sort sort) {
-        List<DashboardPO> dashboardPOS = dashboardRepository.findAll(filterable -> filterable.like(StringUtils.hasText(keyword), DashboardPO.Fields.name, keyword), sort);
+        List<DashboardPO> dashboardPOS = dashboardRepository.findAll(filterable -> filterable.likeIgnoreCase(StringUtils.hasText(keyword), DashboardPO.Fields.name, keyword), sort);
         return DashboardConvert.INSTANCE.convertDTOList(dashboardPOS);
     }
 

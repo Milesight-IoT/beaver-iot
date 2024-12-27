@@ -218,8 +218,8 @@ public class UserService {
 
     public Page<UserInfoResponse> getUsers(UserListRequest userListRequest) {
         String keyword = userListRequest.getKeyword();
-        Page<UserPO> userPages = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.like(StringUtils.hasText(keyword), UserPO.Fields.nickname, keyword)
-                                .like(StringUtils.hasText(keyword), UserPO.Fields.email, keyword))
+        Page<UserPO> userPages = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.nickname, keyword)
+                                .likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.email, keyword))
                 , userListRequest.toPageable());
         Map<Long, List<Long>> userRoleIdMap = new HashMap<>();
         Map<Long, String> roleNameMap = new HashMap<>();
