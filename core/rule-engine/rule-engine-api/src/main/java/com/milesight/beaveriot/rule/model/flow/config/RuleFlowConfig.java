@@ -18,6 +18,26 @@ public class RuleFlowConfig {
 
     private List<RuleEdgeConfig> edges;
 
+    private List<RuleConfig> initializedNodes = new ArrayList<>();
+
+    public void initialize() {
+        Assert.notNull(flowId, "flowId must not be empty");
+
+        nodes.stream().forEach(node -> {
+            if (node.getComponentName().equals(RuleConfig.COMPONENT_CHOICE)) {
+                initializedNodes.add(RuleChoiceConfig.create(node));
+            } else {
+                initializedNodes.add(node);
+            }
+        });
+    }
+
+    public static RuleFlowConfig create(String flowId) {
+        RuleFlowConfig flow = new RuleFlowConfig();
+        flow.setFlowId(flowId);
+        return flow;
+    }
+
     public static RuleFlowConfig createSequenceFlow(String flowId, List<RuleNodeConfig> nodes) {
 
         Assert.notEmpty(nodes, "nodes must not be empty");
@@ -28,9 +48,9 @@ public class RuleFlowConfig {
 
         List<RuleEdgeConfig> edgeConfigs = new ArrayList<>();
         for (int i = 0; i < nodes.size() - 1; i++) {
-            RuleNodeConfig source = nodes.get(i);
-            RuleNodeConfig target = nodes.get(i + 1);
-            edgeConfigs.add(RuleEdgeConfig.create(source.getId(), target.getId(),null));
+            RuleConfig source = nodes.get(i);
+            RuleConfig target = nodes.get(i + 1);
+            edgeConfigs.add(RuleEdgeConfig.create(source.getId(), target.getId(), null));
         }
         flow.setEdges(edgeConfigs);
         return flow;

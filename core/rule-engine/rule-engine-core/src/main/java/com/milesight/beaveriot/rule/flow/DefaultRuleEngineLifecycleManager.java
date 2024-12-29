@@ -8,18 +8,21 @@ import com.milesight.beaveriot.rule.constants.RuleNodeNames;
 import com.milesight.beaveriot.rule.exception.RuleEngineException;
 import com.milesight.beaveriot.rule.flow.builder.DefaultRuleNodeInterceptor;
 import com.milesight.beaveriot.rule.flow.builder.RuleFlowYamlBuilder;
+import com.milesight.beaveriot.rule.flow.graph.GraphRouteDefinitionGenerator;
 import com.milesight.beaveriot.rule.model.flow.config.RuleFlowConfig;
 import com.milesight.beaveriot.rule.model.flow.config.RuleNodeConfig;
 import com.milesight.beaveriot.rule.model.flow.route.FromNode;
 import com.milesight.beaveriot.rule.model.trace.FlowTraceInfo;
 import com.milesight.beaveriot.rule.model.trace.NodeTraceInfo;
 import com.milesight.beaveriot.rule.support.RuleFlowIdGenerator;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.RoutesBuilder;
 import org.apache.camel.dsl.yaml.YamlRoutesBuilderLoader;
 import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.model.Model;
 import org.apache.camel.spi.Resource;
 import org.apache.camel.support.DefaultExchange;
 import org.apache.camel.support.ResourceHelper;
@@ -55,9 +58,11 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
                 .dumpYaml();
     }
 
+    @SneakyThrows
     @Override
-    public String deployFlow(RuleFlowConfig ruleFlowConfig) {
-        return deployFlow(ruleFlowConfig, null);
+    public void deployFlow(RuleFlowConfig ruleFlowConfig) {
+        camelContext.getCamelContextExtension().getContextPlugin(Model.class)
+                .addRouteDefinitions(GraphRouteDefinitionGenerator.generateRouteDefinition(ruleFlowConfig));
     }
 
     private String deployFlow(RuleFlowConfig ruleFlowConfig, RuleNodeInterceptor ruleNodeInterceptor) {

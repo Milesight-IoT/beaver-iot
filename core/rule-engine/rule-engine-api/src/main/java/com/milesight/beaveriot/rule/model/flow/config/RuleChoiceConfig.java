@@ -1,12 +1,12 @@
 package com.milesight.beaveriot.rule.model.flow.config;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.milesight.beaveriot.rule.enums.LogicOperator;
 import com.milesight.beaveriot.rule.support.JsonHelper;
 import lombok.Data;
 import lombok.SneakyThrows;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author leon
@@ -16,20 +16,44 @@ public class RuleChoiceConfig implements RuleConfig {
 
     private String id;
     private String componentName;
-    private String nodeName;
-    private ChoiceSettingConfig choice;
+    private RuleChoiceDataConfig data;
 
     @SneakyThrows
-    public static RuleChoiceConfig create(JsonNode parameters) {
-        return JsonHelper.fromJSON(JsonHelper.toJSON(parameters), RuleChoiceConfig.class);
+    public static RuleChoiceConfig create(RuleNodeConfig ruleNodeConfig) {
+        RuleChoiceConfig ruleChoiceConfig = new RuleChoiceConfig();
+        RuleChoiceDataConfig dataConfig = JsonHelper.fromJSON(JsonHelper.toJSON(ruleNodeConfig.getParameters()), RuleChoiceDataConfig.class);
+        ruleChoiceConfig.setData(dataConfig);
+        ruleChoiceConfig.setId(ruleNodeConfig.getId());
+        ruleChoiceConfig.setComponentName(ruleNodeConfig.getComponentName());
+        return ruleChoiceConfig;
+    }
+
+    @Override
+    public String getName() {
+        return getConfigDataOptional().orElse(null).getNodeName();
+    }
+
+    private Optional<RuleChoiceDataConfig> getConfigDataOptional() {
+        RuleChoiceDataConfig dataConfig = getData();
+        return dataConfig == null ? Optional.empty() : Optional.of(dataConfig);
     }
 
     public List<RuleChoiceWhenConfig> getWhen() {
+        Optional<RuleChoiceDataConfig> dataConfig = getConfigDataOptional();
+        ChoiceSettingConfig choice = dataConfig.orElse(null).getChoice();
         return choice != null ? choice.getWhen() : null;
     }
 
     public RuleChoiceOtherwiseConfig getOtherwise() {
+        Optional<RuleChoiceDataConfig> dataConfig = getConfigDataOptional();
+        ChoiceSettingConfig choice = dataConfig.orElse(null).getChoice();
         return choice != null ? choice.getOtherwise() : null;
+    }
+
+    @Data
+    public static class RuleChoiceDataConfig {
+        private String nodeName;
+        private ChoiceSettingConfig choice;
     }
 
     @Data

@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.rule.model.flow.route;
+package com.milesight.beaveriot.rule.model.flow;
 
 import com.milesight.beaveriot.rule.enums.ExpressionLanguage;
 import com.milesight.beaveriot.rule.enums.LogicOperator;

@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.rule.model.flow.route;
 
 import com.milesight.beaveriot.rule.constants.RuleNodeNames;
+import com.milesight.beaveriot.rule.model.flow.ExpressionNode;
 import com.milesight.beaveriot.rule.model.flow.route.base.MultiOutputNode;
 import com.milesight.beaveriot.rule.model.flow.route.base.OutputNode;
 import lombok.AllArgsConstructor;

@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.rule.support;
 
+import com.milesight.beaveriot.rule.model.flow.ExpressionNode;
 import com.milesight.beaveriot.rule.model.flow.route.*;
 import com.milesight.beaveriot.rule.model.flow.route.base.ExpressionAware;
 import com.milesight.beaveriot.rule.model.flow.route.base.OutputNode;

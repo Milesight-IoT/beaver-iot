@@ -48,7 +48,7 @@ public class RuleFlowGraph {
 
             //choice edge and nodes init
             if (node.getComponentName().equals(RuleConfig.COMPONENT_CHOICE)) {
-                RuleChoiceConfig ruleChoiceConfig = RuleChoiceConfig.create(node.getParameters());
+                RuleChoiceConfig ruleChoiceConfig = RuleChoiceConfig.create(node);
                 Assert.notNull(ruleChoiceConfig, "Invalid choice config, parameters is null");
 
                 ruleChoiceConfig.getWhen().forEach(when -> {

@@ -3,6 +3,7 @@ package com.milesight.beaveriot.rule.flow.builder;
 import com.milesight.beaveriot.rule.RuleNodeInterceptor;
 import com.milesight.beaveriot.rule.flow.ComponentDefinitionCache;
 import com.milesight.beaveriot.rule.model.definition.ComponentDefinition;
+import com.milesight.beaveriot.rule.model.flow.ExpressionNode;
 import com.milesight.beaveriot.rule.model.flow.config.RuleChoiceConfig;
 import com.milesight.beaveriot.rule.model.flow.config.RuleConfig;
 import com.milesight.beaveriot.rule.model.flow.config.RuleFlowConfig;
@@ -178,7 +179,7 @@ public class RuleFlowYamlBuilder {
     }
 
     private boolean isChoiceNode(RuleConfig successor) {
-        return RuleConfig.COMPONENT_CHOICE.equals(successor.getComponentName()) ;
+        return RuleConfig.COMPONENT_CHOICE.equals(successor.getComponentName());
     }
 
     private boolean isSequentialNode(Set<RuleConfig> successors) {

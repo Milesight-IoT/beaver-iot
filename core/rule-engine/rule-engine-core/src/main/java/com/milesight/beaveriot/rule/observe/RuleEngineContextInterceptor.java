@@ -28,8 +28,6 @@ public class RuleEngineContextInterceptor implements InterceptStrategy {
 
                 cacheOutputArguments(definition, exchange);
 
-                callback.done(true);
-
                 return true;
             }
         };

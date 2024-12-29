@@ -6,6 +6,8 @@ import com.milesight.beaveriot.rule.model.flow.route.base.OutputNode;
 import org.springframework.core.Ordered;
 
 /**
+ * todo: interceptor for graph process
+ *
  * @author leon
  */
 public interface RuleNodeInterceptor extends Ordered {
