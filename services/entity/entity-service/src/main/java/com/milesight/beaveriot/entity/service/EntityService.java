@@ -714,11 +714,16 @@ public class EntityService implements EntityServiceProvider {
      */
     public List<EntityPO> findEntityPOListAndTheirChildrenByIds(List<Long> entityIds) {
         List<EntityPO> entityPOList = entityRepository.findAllById(entityIds);
-        List<Long> parentEntityIds = entityPOList.stream()
+        List<String> parentEntityKeys = entityPOList.stream()
                 .filter(t -> t.getParent() == null)
-                .map(EntityPO::getId).toList();
-        List<EntityPO> childrenEntityPOList = entityRepository.findAll(
-                filter -> filter.in(EntityPO.Fields.parent, parentEntityIds.toArray()));
+                .map(EntityPO::getKey)
+                .toList();
+        List<EntityPO> childrenEntityPOList = List.of();
+        if (!parentEntityKeys.isEmpty()) {
+            childrenEntityPOList = entityRepository.findAll(
+                    filter -> filter.in(EntityPO.Fields.parent, parentEntityKeys.toArray()));
+        }
+
         return Stream.concat(entityPOList.stream(), childrenEntityPOList.stream())
                 .toList();
     }
