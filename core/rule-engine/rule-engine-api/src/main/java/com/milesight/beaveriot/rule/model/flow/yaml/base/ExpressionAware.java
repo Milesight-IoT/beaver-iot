@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.rule.model.flow.route.base;
+package com.milesight.beaveriot.rule.model.flow.yaml.base;
 
 import com.milesight.beaveriot.rule.model.flow.ExpressionNode;
 

@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.rule.flow.builder;
+package com.milesight.beaveriot.rule.flow.yaml;
 
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;

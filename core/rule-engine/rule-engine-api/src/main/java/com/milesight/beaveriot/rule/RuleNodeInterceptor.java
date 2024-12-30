@@ -1,8 +1,8 @@
 package com.milesight.beaveriot.rule;
 
-import com.milesight.beaveriot.rule.model.flow.route.FromNode;
-import com.milesight.beaveriot.rule.model.flow.route.RouteNode;
-import com.milesight.beaveriot.rule.model.flow.route.base.OutputNode;
+import com.milesight.beaveriot.rule.model.flow.yaml.FromNode;
+import com.milesight.beaveriot.rule.model.flow.yaml.RouteNode;
+import com.milesight.beaveriot.rule.model.flow.yaml.base.OutputNode;
 import org.springframework.core.Ordered;
 
 /**

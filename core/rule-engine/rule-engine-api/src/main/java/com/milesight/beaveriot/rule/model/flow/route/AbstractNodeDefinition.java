@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.rule.model.flow.node;
+package com.milesight.beaveriot.rule.model.flow.route;
 
 import lombok.Getter;
 import lombok.Setter;

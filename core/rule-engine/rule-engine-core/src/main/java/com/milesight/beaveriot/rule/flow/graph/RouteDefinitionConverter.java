@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.rule.flow.graph;
 
 import com.milesight.beaveriot.rule.model.flow.ExpressionNode;
-import com.milesight.beaveriot.rule.model.flow.node.*;
+import com.milesight.beaveriot.rule.model.flow.route.*;
 import com.milesight.beaveriot.rule.support.RuleFlowIdGenerator;
 import org.apache.camel.Expression;
 import org.apache.camel.model.FromDefinition;

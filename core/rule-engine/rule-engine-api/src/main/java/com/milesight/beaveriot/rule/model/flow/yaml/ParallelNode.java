@@ -1,9 +1,9 @@
-package com.milesight.beaveriot.rule.model.flow.route;
+package com.milesight.beaveriot.rule.model.flow.yaml;
 
 import com.milesight.beaveriot.rule.constants.RuleNodeNames;
 import com.milesight.beaveriot.rule.model.flow.ExpressionNode;
-import com.milesight.beaveriot.rule.model.flow.route.base.MultiOutputNode;
-import com.milesight.beaveriot.rule.model.flow.route.base.OutputNode;
+import com.milesight.beaveriot.rule.model.flow.yaml.base.MultiOutputNode;
+import com.milesight.beaveriot.rule.model.flow.yaml.base.OutputNode;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
