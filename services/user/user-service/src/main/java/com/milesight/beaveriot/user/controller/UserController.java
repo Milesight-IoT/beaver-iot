@@ -5,6 +5,7 @@ import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.user.model.request.BatchDeleteUserRequest;
 import com.milesight.beaveriot.user.model.request.ChangePasswordRequest;
 import com.milesight.beaveriot.user.model.request.CreateUserRequest;
 import com.milesight.beaveriot.user.model.request.UpdatePasswordRequest;
@@ -107,6 +108,12 @@ public class UserController {
     @DeleteMapping("/members/{userId}")
     public ResponseBody<Void> deleteUser(@PathVariable("userId") Long userId) {
         userService.deleteUser(userId);
+        return ResponseBuilder.success();
+    }
+
+    @PostMapping("/batch-delete")
+    public ResponseBody<Void> batchDeleteUsers(@RequestBody BatchDeleteUserRequest batchDeleteUserRequest) {
+        userService.batchDeleteUsers(batchDeleteUserRequest);
         return ResponseBuilder.success();
     }
 
