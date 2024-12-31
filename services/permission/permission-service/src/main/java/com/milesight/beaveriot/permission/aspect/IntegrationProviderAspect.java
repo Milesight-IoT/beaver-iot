@@ -5,8 +5,8 @@ import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.permission.dto.IntegrationPermissionDTO;
 import com.milesight.beaveriot.permission.service.IntegrationPermissionService;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.AfterReturning;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,8 +37,9 @@ public class IntegrationProviderAspect {
     public void pointCut() {
     }
 
-    @AfterReturning(pointcut = "pointCut()", returning = "result")
-    public Object afterReturning(JoinPoint joinPoint, Object result) {
+    @Around("pointCut()")
+    public Object aroundAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
+        Object result = joinPoint.proceed();
         if (result == null) {
             return null;
         }
