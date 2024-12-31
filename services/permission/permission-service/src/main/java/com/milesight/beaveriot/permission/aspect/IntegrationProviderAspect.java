@@ -48,7 +48,7 @@ public class IntegrationProviderAspect {
         Long userId = SecurityUserContext.getUserId();
         if (userId == null){
             log.warn("user not login");
-            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not login").build();
+            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not logged in").build();
         }
         IntegrationPermissionDTO integrationPermissionDTO = integrationPermissionService.getIntegrationPermission(userId);
         boolean hasAllPermission = integrationPermissionDTO.isHasAllPermission();
@@ -61,7 +61,7 @@ public class IntegrationProviderAspect {
             if (dataIds.contains(integration.getId())) {
                 return integration;
             } else {
-                throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not have permission").build();
+                throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have permission").build();
             }
         } else if (result instanceof Collection) {
             if (((Collection<?>) result).isEmpty()) {
@@ -72,7 +72,7 @@ public class IntegrationProviderAspect {
                     .filter(item -> item instanceof Integration && dataIds.contains(((Integration) item).getId()))
                     .collect(Collectors.toList());
             if (filteredResult.isEmpty()) {
-                throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not have permission").build();
+                throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have permission").build();
             }
             return filteredResult;
         }
