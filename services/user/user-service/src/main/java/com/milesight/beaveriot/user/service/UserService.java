@@ -2,6 +2,7 @@ package com.milesight.beaveriot.user.service;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.aspect.SecurityUserContext;
 import com.milesight.beaveriot.user.constants.UserConstants;
@@ -218,6 +219,9 @@ public class UserService {
     }
 
     public Page<UserInfoResponse> getUsers(UserListRequest userListRequest) {
+        if (userListRequest.getSort().getOrders().isEmpty()) {
+            userListRequest.sort(new Sorts().desc(UserPO.Fields.createdAt));
+        }
         String keyword = userListRequest.getKeyword();
         Page<UserPO> userPages = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.nickname, keyword)
                                 .likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.email, keyword))
