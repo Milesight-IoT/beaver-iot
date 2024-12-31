@@ -41,6 +41,7 @@ import com.milesight.beaveriot.user.repository.UserRepository;
 import com.milesight.beaveriot.user.repository.UserRoleRepository;
 import com.milesight.beaveriot.user.util.SignUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -78,6 +79,7 @@ public class UserService {
     @Autowired
     TenantRepository tenantRepository;
     @Autowired
+    @Lazy
     IDeviceFacade deviceFacade;
 
     @SecurityUserContext(tenantId = "#tenantId")

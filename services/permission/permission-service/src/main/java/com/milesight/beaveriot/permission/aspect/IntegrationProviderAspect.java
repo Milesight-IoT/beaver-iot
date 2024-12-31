@@ -1,5 +1,7 @@
 package com.milesight.beaveriot.permission.aspect;
 
+import com.milesight.beaveriot.base.enums.ErrorCode;
+import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.integration.model.Integration;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.permission.dto.IntegrationPermissionDTO;
@@ -46,7 +48,7 @@ public class IntegrationProviderAspect {
         Long userId = SecurityUserContext.getUserId();
         if (userId == null){
             log.warn("user not login");
-            return null;
+            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not logged in").build();
         }
         IntegrationPermissionDTO integrationPermissionDTO = integrationPermissionService.getIntegrationPermission(userId);
         boolean hasAllPermission = integrationPermissionDTO.isHasAllPermission();
@@ -59,16 +61,20 @@ public class IntegrationProviderAspect {
             if (dataIds.contains(integration.getId())) {
                 return integration;
             } else {
-                return null;
+                throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have permission").build();
             }
         } else if (result instanceof Collection) {
             if (((Collection<?>) result).isEmpty()) {
                 return result;
             }
             Collection<?> collectionResult = (Collection<?>) result;
-            return collectionResult.stream()
+            Collection<?> filteredResult = collectionResult.stream()
                     .filter(item -> item instanceof Integration && dataIds.contains(((Integration) item).getId()))
                     .collect(Collectors.toList());
+            if (filteredResult.isEmpty()) {
+                throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have permission").build();
+            }
+            return filteredResult;
         }
         return result;
     }

@@ -87,7 +87,7 @@ public class DataPermissionAspect {
         }
         Long userId = SecurityUserContext.getUserId();
         if (userId == null) {
-            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not login").build();
+            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not logged in").build();
         }
         boolean isHasAllPermission = false;
         List<Long> dataIds = new ArrayList<>();
@@ -114,7 +114,7 @@ public class DataPermissionAspect {
             return joinPoint.proceed();
         }
         if(dataIds.isEmpty()) {
-            throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("user not have entity permission").build();
+            throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("user does not have data permission").build();
         }
         DataAspectContext.setDataPermissionContext(tableName, DataAspectContext.DataPermissionContext.builder()
                 .dataIds(dataIds)
