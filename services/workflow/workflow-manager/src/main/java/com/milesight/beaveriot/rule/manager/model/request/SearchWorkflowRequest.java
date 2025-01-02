@@ -10,4 +10,6 @@ import lombok.ToString;
 @EqualsAndHashCode(callSuper = true)
 public class SearchWorkflowRequest extends GenericPageRequest {
     private String name;
+
+    private Boolean enabled;
 }

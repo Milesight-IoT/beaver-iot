@@ -103,7 +103,10 @@ public class WorkflowService {
 
         // get workflows
         Page<WorkflowPO> workflowPOPage = workflowRepository
-                .findAllWithDataPermission(f -> f.like(StringUtils.hasText(request.getName()), WorkflowPO.Fields.name, request.getName()), request.toPageable());
+                .findAllWithDataPermission(f -> f
+                            .likeIgnoreCase(StringUtils.hasText(request.getName().trim()), WorkflowPO.Fields.name, request.getName().trim())
+                            .eq(request.getEnabled() != null, WorkflowPO.Fields.enabled, request.getEnabled())
+                        , request.toPageable());
 
         // get user nicknames
         Map<String, String> userNicknameMap = new HashMap<>();
