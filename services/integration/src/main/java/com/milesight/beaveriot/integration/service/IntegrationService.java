@@ -10,10 +10,12 @@ import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
 import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.Integration;
+import com.milesight.beaveriot.context.support.SpringContext;
 import com.milesight.beaveriot.integration.model.request.SearchIntegrationRequest;
 import com.milesight.beaveriot.integration.model.response.IntegrationDetailData;
 import com.milesight.beaveriot.integration.model.response.IntegrationEntityData;
 import com.milesight.beaveriot.integration.model.response.SearchIntegrationResponseData;
+import com.milesight.beaveriot.permission.aspect.IntegrationPermission;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,7 +23,6 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class IntegrationService {
@@ -47,8 +48,13 @@ public class IntegrationService {
         return data;
     }
 
+    @IntegrationPermission
+    public List<Integration> findVisibleIntegrations() {
+        return integrationServiceProvider.findVisibleIntegrations();
+    }
+
     public List<SearchIntegrationResponseData> searchIntegration(SearchIntegrationRequest searchDeviceRequest) {
-        List<Integration> integrations = integrationServiceProvider.findVisibleIntegrations();
+        List<Integration> integrations = SpringContext.getBean(IntegrationService.class).findVisibleIntegrations();
         if (integrations.isEmpty()) {
             return new ArrayList<>();
         }
@@ -82,8 +88,13 @@ public class IntegrationService {
                 }).toList();
     }
 
+    @IntegrationPermission
+    public Integration getIntegration(String integrationId) {
+        return integrationServiceProvider.getIntegration(integrationId);
+    }
+
     public IntegrationDetailData getDetailData(String integrationId) {
-        Integration integration = integrationServiceProvider.getIntegration(integrationId);
+        Integration integration = SpringContext.getBean(IntegrationService.class).getIntegration(integrationId);
         if (integration == null) {
             throw ServiceException
                     .with(ErrorCode.DATA_NO_FOUND)

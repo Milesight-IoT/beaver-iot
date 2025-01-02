@@ -29,13 +29,12 @@ import java.util.stream.Collectors;
 @Aspect
 @ConditionalOnClass(Pointcut.class)
 @EnableAspectJAutoProxy(proxyTargetClass = true)
-public class IntegrationProviderAspect {
+public class IntegrationPermissionAspect {
 
     @Autowired
     IntegrationPermissionService integrationPermissionService;
 
-    @Pointcut("execution(* com.milesight.beaveriot..*IntegrationServiceProvider.get*(..)) || " +
-            "execution(* com.milesight.beaveriot..*IntegrationServiceProvider.find*(..))")
+    @Pointcut("@annotation(IntegrationPermission)")
     public void pointCut() {
     }
 
