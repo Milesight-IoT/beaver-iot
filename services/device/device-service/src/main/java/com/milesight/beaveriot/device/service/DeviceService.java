@@ -12,6 +12,7 @@ import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.Integration;
 import com.milesight.beaveriot.context.integration.model.event.DeviceEvent;
+import com.milesight.beaveriot.context.support.SpringContext;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.device.model.request.CreateDeviceRequest;
@@ -24,6 +25,7 @@ import com.milesight.beaveriot.device.po.DevicePO;
 import com.milesight.beaveriot.device.repository.DeviceRepository;
 import com.milesight.beaveriot.device.support.DeviceConverter;
 import com.milesight.beaveriot.eventbus.EventBus;
+import com.milesight.beaveriot.permission.aspect.IntegrationPermission;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +38,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.DEVICE_NAME_ON_ADD;
@@ -69,10 +78,15 @@ public class DeviceService implements IDeviceFacade {
     @Autowired
     EventBus eventBus;
 
+    @IntegrationPermission
+    public Integration getIntegration(String integrationIdentifier) {
+        return integrationServiceProvider.getIntegration(integrationIdentifier);
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public void createDevice(CreateDeviceRequest createDeviceRequest) {
         String integrationIdentifier = createDeviceRequest.getIntegration();
-        Integration integrationConfig = integrationServiceProvider.getIntegration(integrationIdentifier);
+        Integration integrationConfig = SpringContext.getBean(DeviceService.class).getIntegration(integrationIdentifier);
 
         if (integrationConfig == null) {
             throw ServiceException
