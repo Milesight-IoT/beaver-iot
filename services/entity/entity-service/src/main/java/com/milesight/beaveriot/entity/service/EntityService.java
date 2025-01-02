@@ -323,10 +323,30 @@ public class EntityService implements EntityServiceProvider {
         List<String> entityKeys = entityList.stream().map(Entity::getKey).filter(StringUtils::hasText).toList();
         List<EntityPO> dataEntityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, entityKeys.toArray()));
         Map<String, EntityPO> dataEntityKeyMap = new HashMap<>();
+        List<EntityPO> deleteEntityPOList = new ArrayList<>();
         if (dataEntityPOList != null && !dataEntityPOList.isEmpty()) {
             dataEntityKeyMap.putAll(dataEntityPOList.stream().collect(Collectors.toMap(EntityPO::getKey, Function.identity())));
+
+            List<String> parentEntityKeys = dataEntityPOList.stream()
+                    .filter(t -> t.getParent() == null)
+                    .map(EntityPO::getKey)
+                    .distinct()
+                    .toList();
+            if (!parentEntityKeys.isEmpty()) {
+                List<EntityPO> childrenEntityPOList = entityRepository.findAll(
+                        filter -> filter.in(EntityPO.Fields.parent, parentEntityKeys.toArray()));
+                childrenEntityPOList.forEach(entityPO -> {
+                    if (!entityKeys.contains(entityPO.getKey())) {
+                        deleteEntityPOList.add(entityPO);
+                    }
+                });
+            }
+        }
+        if (!deleteEntityPOList.isEmpty()) {
+            entityRepository.deleteAll(deleteEntityPOList);
         }
         List<EntityPO> entityPOList = new ArrayList<>();
+
         entityList.forEach(t -> {
             EntityPO entityPO = saveConvert(userId, t, deviceKeyMap, dataEntityKeyMap);
             EntityPO dataEntityPO = dataEntityKeyMap.get(t.getKey());
