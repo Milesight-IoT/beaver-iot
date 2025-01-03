@@ -6,12 +6,10 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.*;
 import org.apache.camel.impl.engine.DefaultChannel;
-import org.apache.camel.spi.AsyncProcessorAwaitManager;
-import org.apache.camel.spi.IdAware;
-import org.apache.camel.spi.InterceptableProcessor;
-import org.apache.camel.spi.RouteIdAware;
+import org.apache.camel.spi.*;
 import org.apache.camel.support.AsyncProcessorConverterHelper;
 import org.apache.camel.support.AsyncProcessorSupport;
+import org.apache.camel.support.ExchangeHelper;
 import org.apache.camel.support.PluginHelper;
 import org.apache.camel.support.service.ServiceHelper;
 import org.springframework.util.CollectionUtils;
@@ -31,7 +29,6 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
     private final MutableGraph<String> graphStructure;
     private final String beginNodeId;
     private final CamelContext camelContext;
-
     public GraphProcessor(CamelContext camelContext, String beginNodeId, Map<String, AsyncProcessor> processors, MutableGraph<String> graphStructure) {
         this.processors = processors;
         this.graphStructure = graphStructure;
@@ -44,7 +41,7 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
 
         Set<String> successors = graphStructure.successors(beginNodeId);
 
-        GraphTaskExecutor graphTaskExecutor = GraphTaskExecutor.create(successors, graphStructure, processors, camelContext);
+        GraphTaskExecutor graphTaskExecutor = GraphTaskExecutor.create(beginNodeId, successors, graphStructure, processors, camelContext);
 
         graphTaskExecutor.execute(exchange, callback);
 
@@ -118,11 +115,11 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
             this.context = context;
         }
 
-        public static GraphTaskExecutor create(Set<String> successors, MutableGraph<String> graphStructure, Map<String, AsyncProcessor> processors, CamelContext context) {
+        public static GraphTaskExecutor create(String parentNodeId, Set<String> successors, MutableGraph<String> graphStructure, Map<String, AsyncProcessor> processors, CamelContext context) {
             if (successors.size() == 1) {
                 return new SequenceTaskExecutor(successors.iterator().next(), graphStructure, processors, context);
             } else {
-                return new ParallelTaskExecutor(successors, graphStructure, processors, context);
+                return new ParallelTaskExecutor(parentNodeId, successors, graphStructure, processors, context);
             }
         }
 
@@ -131,6 +128,10 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
         protected boolean doExecute(String successor, Exchange exchange, AsyncCallback asyncCallback) {
 
             try {
+                if (exchange.getException() != null) {
+                    return true;
+                }
+
                 Processor processor = processors.get(successor);
                 AsyncProcessor asyncProcessor = AsyncProcessorConverterHelper.convert(processor);
 
@@ -143,16 +144,30 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
 
                 if (successors.size() == 1) {
                     String nextSuccessor = successors.iterator().next();
+                    setExchangeTraceId(exchange, exchange.getExchangeId(), successor);
                     doExecute(nextSuccessor, exchange, asyncCallback);
                 } else {
-                    GraphTaskExecutor graphTaskExecutor = GraphTaskExecutor.create(successors, graphStructure, processors, context);
+                    GraphTaskExecutor graphTaskExecutor = GraphTaskExecutor.create(successor, successors, graphStructure, processors, context);
                     graphTaskExecutor.execute(exchange, asyncCallback);
                 }
 
             } catch (Exception e) {
-                exchange.setException(e);
+                catchExceptionIfNecessary(exchange, e);
+                throw e;
             }
             return true;
+        }
+
+        protected void setExchangeTraceId(Exchange exchange, String parentExchangeId, String parentNodeId) {
+            String traceId = parentExchangeId + "-" + parentNodeId;
+            exchange.getIn().setHeader(ExchangeHeaders.EXCHANGE_LATEST_TRACE_ID, traceId);
+        }
+
+
+        protected void catchExceptionIfNecessary(Exchange exchange, Exception e) {
+            if (exchange.getException() == null) {
+                exchange.setException(e);
+            }
         }
 
         protected Set<String> calculateOutputs(String successor, Exchange exchange, Processor processor) {
@@ -165,7 +180,6 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
             }
         }
     }
-
     public static class SequenceTaskExecutor extends GraphTaskExecutor {
         private String successor;
 
@@ -179,18 +193,23 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
 
             asyncCallback.done(true);
 
+            setExchangeTraceId(exchange, exchange.getExchangeId(), successor);
+
             return doExecute(successor, exchange, asyncCallback);
         }
     }
 
     public static class ParallelTaskExecutor extends GraphTaskExecutor {
 
+        private final String parentNodeId;
         private final Set<String> successors;
         private final AsyncProcessorAwaitManager awaitManager;
 
-        public ParallelTaskExecutor(Set<String> successors, MutableGraph<String> graphStructure, Map<String, AsyncProcessor> processors, CamelContext context) {
+
+        public ParallelTaskExecutor(String parentNodeId, Set<String> successors, MutableGraph<String> graphStructure, Map<String, AsyncProcessor> processors, CamelContext context) {
             super(graphStructure, processors, context);
             this.successors = successors;
+            this.parentNodeId = parentNodeId;
             this.awaitManager = PluginHelper.getAsyncProcessorAwaitManager(context);
         }
 
@@ -203,19 +222,44 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
                 awaitManager.process(new AsyncProcessorSupport() {
                     @Override
                     public boolean process(Exchange exchange, AsyncCallback callback) {
+                        Exception caughtException = null;
                         for (String successor : successors) {
-//                            Exchange copy = exchange.copy();
-                            doExecute(successor, exchange, callback);
-                            //todo parallel process copy exchange, and also restore properties
-//                            if (copy.getException() != null) {
-//                                exchange.setException(copy.getException());
-//                            }
+                            Exchange copyExchange = exchange.copy();
+                            copyExchange.getIn().setMessageId(null);
+                            try {
+                                setExchangeTraceId(copyExchange, exchange.getExchangeId(), parentNodeId);
+                                doExecute(successor, copyExchange, callback);
+                            } catch (Exception ex) {
+                                catchExceptionIfNecessary(copyExchange, ex);
+                            } finally {
+                                if (copyExchange.getException() != null) {
+                                    caughtException = copyExchange.getException();
+                                }
+                                copyPropertiesResult(exchange, copyExchange);
+                            }
                         }
+
+                        if (caughtException != null) {
+                            exchange.setException(caughtException);
+                        }
+
                         return true;
                     }
+                    private void copyPropertiesResult(Exchange target, Exchange source) {
+                        if (source.hasProperties()) {
+                            target.getProperties().putAll(source.getProperties());
+                        }
+
+                        final ExchangeExtension sourceExtension = source.getExchangeExtension();
+                        sourceExtension.copyInternalProperties(target);
+
+                        final ExchangeExtension resultExtension = target.getExchangeExtension();
+                        sourceExtension.copySafeCopyPropertiesTo(resultExtension);
+                    }
+
                 }, exchange);
             } catch (Exception e) {
-                exchange.setException(e);
+                catchExceptionIfNecessary(exchange, e);
             } finally {
                 asyncCallback.done(true);
             }

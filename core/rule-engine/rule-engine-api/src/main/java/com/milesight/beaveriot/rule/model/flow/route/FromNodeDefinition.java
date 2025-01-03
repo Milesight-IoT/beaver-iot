@@ -26,6 +26,7 @@ public class FromNodeDefinition extends AbstractNodeDefinition {
         nodeDefinition.setId(ruleNodeConfig.getId());
         nodeDefinition.setNameNode(ruleNodeConfig.getName());
         nodeDefinition.setUri(uri);
+        nodeDefinition.setParameters(parameters);
 
         return nodeDefinition;
     }

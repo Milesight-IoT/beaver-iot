@@ -30,6 +30,7 @@ public class RouteDefinitionConverter {
         FromDefinition fromDefinition = new FromDefinition();
         fromDefinition.setId(RuleFlowIdGenerator.generateNamespacedId(flowId, nodeDefinition.getId()));
         fromDefinition.setUri(generateUri(nodeDefinition.getUri(), nodeDefinition.getParameters()));
+        fromDefinition.setDescription(nodeDefinition.getNameNode());
         return fromDefinition;
     }
 
@@ -39,6 +40,7 @@ public class RouteDefinitionConverter {
             ToDefinition toDefinition = new ToDefinition();
             toDefinition.setUri(generateUri(toNodeDefinition.getUri(), toNodeDefinition.getParameters()));
             toDefinition.setId(namespacedId);
+            toDefinition.setDescription(toNodeDefinition.getNameNode());
             return toDefinition;
         } else if (nodeDefinition instanceof ChoiceNodeDefinition choiceNodeDefinition) {
             GraphChoiceDefinition choiceDefinition = new GraphChoiceDefinition();

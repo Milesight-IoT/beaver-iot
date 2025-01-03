@@ -27,6 +27,7 @@ public class GraphRouteDefinitionGenerator {
         routeDefinition.setId(graphProcessorDefinition.getId());
         routeDefinition.from(fromDefinition.getUri()).addOutput(graphProcessorDefinition);
         routeDefinition.getInput().setId(fromDefinition.getId());
+        routeDefinition.setDescription(fromDefinition.getDescription());
 
         List<RouteDefinition> routeDefinitions = new ArrayList<>();
         routeDefinitions.add(routeDefinition);
