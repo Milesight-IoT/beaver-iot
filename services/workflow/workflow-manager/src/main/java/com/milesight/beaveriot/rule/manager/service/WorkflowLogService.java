@@ -56,6 +56,7 @@ public class WorkflowLogService {
                         .startTime(workflowLogPO.getStartTime())
                         .timeCost(workflowLogPO.getTimeCost())
                         .status(workflowLogPO.getStatus())
+                        .version(workflowLogPO.getVersion())
                         .build()
                 );
     }
@@ -79,6 +80,7 @@ public class WorkflowLogService {
                 .status(wl.getStatus())
                 .timeCost(wl.getTimeCost())
                 .startTime(wl.getStartTime())
+                .version(wl.getVersion())
                 .traceInfo(JsonHelper.fromJSON(wld.getData(), new TypeReference<List<NodeTraceInfo>>() {}))
                 .build();
     }

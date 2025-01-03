@@ -11,6 +11,6 @@ import lombok.Data;
 public class UserPermissionRequest {
 
     private ResourceType resourceType;
-    private Long resourceId;
+    private String resourceId;
 
 }

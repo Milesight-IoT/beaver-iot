@@ -1,12 +1,14 @@
 package com.milesight.beaveriot.permission.aspect;
 
+import com.milesight.beaveriot.base.enums.ErrorCode;
+import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.integration.model.Integration;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.permission.dto.IntegrationPermissionDTO;
 import com.milesight.beaveriot.permission.service.IntegrationPermissionService;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.AfterReturning;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,25 +29,25 @@ import java.util.stream.Collectors;
 @Aspect
 @ConditionalOnClass(Pointcut.class)
 @EnableAspectJAutoProxy(proxyTargetClass = true)
-public class IntegrationProviderAspect {
+public class IntegrationPermissionAspect {
 
     @Autowired
     IntegrationPermissionService integrationPermissionService;
 
-    @Pointcut("execution(* com.milesight.beaveriot..*IntegrationServiceProvider.get*(..)) || " +
-            "execution(* com.milesight.beaveriot..*IntegrationServiceProvider.find*(..))")
+    @Pointcut("@annotation(IntegrationPermission)")
     public void pointCut() {
     }
 
-    @AfterReturning(pointcut = "pointCut()", returning = "result")
-    public Object afterReturning(JoinPoint joinPoint, Object result) {
+    @Around("pointCut()")
+    public Object aroundAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
+        Object result = joinPoint.proceed();
         if (result == null) {
             return null;
         }
         Long userId = SecurityUserContext.getUserId();
         if (userId == null){
             log.warn("user not login");
-            return null;
+            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not logged in").build();
         }
         IntegrationPermissionDTO integrationPermissionDTO = integrationPermissionService.getIntegrationPermission(userId);
         boolean hasAllPermission = integrationPermissionDTO.isHasAllPermission();
@@ -58,16 +60,20 @@ public class IntegrationProviderAspect {
             if (dataIds.contains(integration.getId())) {
                 return integration;
             } else {
-                return null;
+                throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have permission").build();
             }
         } else if (result instanceof Collection) {
             if (((Collection<?>) result).isEmpty()) {
                 return result;
             }
             Collection<?> collectionResult = (Collection<?>) result;
-            return collectionResult.stream()
+            Collection<?> filteredResult = collectionResult.stream()
                     .filter(item -> item instanceof Integration && dataIds.contains(((Integration) item).getId()))
                     .collect(Collectors.toList());
+            if (filteredResult.isEmpty()) {
+                throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have permission").build();
+            }
+            return filteredResult;
         }
         return result;
     }

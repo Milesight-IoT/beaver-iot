@@ -2,8 +2,11 @@ package com.milesight.beaveriot.user.service;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.aspect.SecurityUserContext;
+import com.milesight.beaveriot.device.dto.DeviceNameDTO;
+import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.user.constants.UserConstants;
 import com.milesight.beaveriot.user.dto.UserResourceDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
@@ -38,6 +41,7 @@ import com.milesight.beaveriot.user.repository.UserRepository;
 import com.milesight.beaveriot.user.repository.UserRoleRepository;
 import com.milesight.beaveriot.user.util.SignUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -74,6 +78,9 @@ public class UserService {
     MenuRepository menuRepository;
     @Autowired
     TenantRepository tenantRepository;
+    @Autowired
+    @Lazy
+    IDeviceFacade deviceFacade;
 
     @SecurityUserContext(tenantId = "#tenantId")
     @Transactional(rollbackFor = Exception.class)
@@ -218,6 +225,9 @@ public class UserService {
     }
 
     public Page<UserInfoResponse> getUsers(UserListRequest userListRequest) {
+        if (userListRequest.getSort().getOrders().isEmpty()) {
+            userListRequest.sort(new Sorts().desc(UserPO.Fields.createdAt));
+        }
         String keyword = userListRequest.getKeyword();
         Page<UserPO> userPages = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.nickname, keyword)
                                 .likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.email, keyword))
@@ -399,6 +409,26 @@ public class UserService {
         List<RolePO> rolePOS = roleRepository.findAll(filter -> filter.in(RolePO.Fields.id, roleIds.toArray()));
         if (rolePOS == null || rolePOS.isEmpty()) {
             return userPermissionResponse;
+        }
+        if (rolePOS.stream().anyMatch(rolePO -> Objects.equals(rolePO.getName(), UserConstants.SUPER_ADMIN_ROLE_NAME))) {
+            userPermissionResponse.setHasPermission(true);
+            return userPermissionResponse;
+        }
+        if (userPermissionRequest.getResourceType() == ResourceType.DEVICE) {
+            List<DeviceNameDTO> deviceNameDTOList = deviceFacade.getDeviceNameByIds(List.of(Long.parseLong(userPermissionRequest.getResourceId())));
+            if (deviceNameDTOList == null || deviceNameDTOList.isEmpty()) {
+                return userPermissionResponse;
+            }
+            String integrationId = deviceNameDTOList.get(0).getIntegrationConfig() == null ? null : deviceNameDTOList.get(0).getIntegrationConfig().getId();
+            if (integrationId != null) {
+                List<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filter -> filter.in(RoleResourcePO.Fields.roleId, roleIds.toArray())
+                        .eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION)
+                        .eq(RoleResourcePO.Fields.resourceId, integrationId));
+                if (roleResourcePOS != null && !roleResourcePOS.isEmpty()) {
+                    userPermissionResponse.setHasPermission(true);
+                    return userPermissionResponse;
+                }
+            }
         }
         List<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filter -> filter.in(RoleResourcePO.Fields.roleId, roleIds.toArray())
                 .eq(RoleResourcePO.Fields.resourceType, userPermissionRequest.getResourceType())

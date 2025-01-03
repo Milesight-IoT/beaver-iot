@@ -14,4 +14,6 @@ public class WorkflowLogResponse {
     private Integer timeCost;
 
     private String status;
+
+    private Integer version;
 }
