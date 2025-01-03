@@ -63,7 +63,7 @@ public class RouteDefinitionConverter {
         whenDefinition.setId(namespacedId);
 
         ExpressionNode expressionNode = nodeDefinition.getExpression();
-        Expression expression = ExpressionBuilder.languageExpression(expressionNode.getLanguage(), expressionNode.getLanguage());
+        Expression expression = ExpressionBuilder.languageExpression(expressionNode.getLanguage(), expressionNode.getExpression());
         ExpressionDefinition exp = new ExpressionDefinition(expression);
         whenDefinition.setExpression(exp);
         return whenDefinition;

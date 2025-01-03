@@ -1,6 +1,8 @@
 package com.milesight.beaveriot.rule.flow.graph;
 
+import com.milesight.beaveriot.rule.RuleNodeDefinitionInterceptor;
 import com.milesight.beaveriot.rule.model.flow.config.RuleFlowConfig;
+import jakarta.annotation.Nullable;
 import org.apache.camel.model.FromDefinition;
 import org.apache.camel.model.RouteDefinition;
 
@@ -15,9 +17,13 @@ public class GraphRouteDefinitionGenerator {
     private GraphRouteDefinitionGenerator() {
     }
 
-    public static List<RouteDefinition> generateRouteDefinition(RuleFlowConfig ruleFlowConfig) {
+    public static List<RouteDefinition> generateRouteDefinition(RuleFlowConfig ruleFlowConfig, @Nullable RuleNodeDefinitionInterceptor ruleNodeDefinitionInterceptor) {
 
-        FlowGraph flowGraph = FlowGraph.builder(ruleFlowConfig).build();
+        FlowGraph.FlowGraphBuilder graphBuilder = FlowGraph.builder(ruleFlowConfig);
+        if (ruleNodeDefinitionInterceptor != null) {
+            graphBuilder.ruleNodeDefinitionInterceptor(ruleNodeDefinitionInterceptor);
+        }
+        FlowGraph flowGraph = graphBuilder.build();
         GraphProcessorDefinition graphProcessorDefinition = new GraphProcessorDefinition(flowGraph);
 
         FromDefinition fromDefinition = graphProcessorDefinition.getFlowGraph().getFromDefinition();

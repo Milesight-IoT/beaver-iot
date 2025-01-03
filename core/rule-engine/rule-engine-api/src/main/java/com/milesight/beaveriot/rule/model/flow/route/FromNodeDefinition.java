@@ -18,6 +18,15 @@ public class FromNodeDefinition extends AbstractNodeDefinition {
     private String uri;
     private Map<String, Object> parameters;
 
+    public static FromNodeDefinition create(String id, String nodeName, String uri, Map<String, Object> parameters) {
+        FromNodeDefinition fromNodeDefinition = new FromNodeDefinition();
+        fromNodeDefinition.setId(id);
+        fromNodeDefinition.setNameNode(nodeName);
+        fromNodeDefinition.setUri(uri);
+        fromNodeDefinition.setParameters(parameters);
+        return fromNodeDefinition;
+    }
+
     public static FromNodeDefinition create(String flowId, RuleNodeConfig ruleNodeConfig, ComponentDefinition componentDefinition) {
         Map<String, Object> parameters = ComponentParameterConverter.convertParameters(ruleNodeConfig.getParameters(), componentDefinition);
         String uri = componentDefinition.generateUri(flowId, parameters);

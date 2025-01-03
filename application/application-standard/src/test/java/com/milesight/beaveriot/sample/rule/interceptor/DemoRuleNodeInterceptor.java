@@ -1,6 +1,6 @@
 package com.milesight.beaveriot.sample.rule.interceptor;
 
-import com.milesight.beaveriot.rule.RuleNodeInterceptor;
+import com.milesight.beaveriot.rule.flow.yaml.RuleNodeInterceptor;
 import com.milesight.beaveriot.rule.model.flow.yaml.FromNode;
 import com.milesight.beaveriot.rule.model.flow.yaml.RouteNode;
 import com.milesight.beaveriot.rule.model.flow.yaml.base.OutputNode;

@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.rule;
+package com.milesight.beaveriot.rule.flow.yaml;
 
 import com.milesight.beaveriot.rule.model.flow.yaml.FromNode;
 import com.milesight.beaveriot.rule.model.flow.yaml.RouteNode;
@@ -6,7 +6,6 @@ import com.milesight.beaveriot.rule.model.flow.yaml.base.OutputNode;
 import org.springframework.core.Ordered;
 
 /**
- * todo: interceptor for graph process
  *
  * @author leon
  */

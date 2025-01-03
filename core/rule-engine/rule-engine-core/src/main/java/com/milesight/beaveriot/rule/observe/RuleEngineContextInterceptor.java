@@ -1,7 +1,6 @@
 package com.milesight.beaveriot.rule.observe;
 
 import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
-import com.milesight.beaveriot.rule.flow.graph.GraphProcessor;
 import com.milesight.beaveriot.rule.flow.graph.GraphProcessorDefinition;
 import com.milesight.beaveriot.rule.support.RuleFlowIdGenerator;
 import lombok.SneakyThrows;

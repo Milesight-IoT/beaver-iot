@@ -2,16 +2,18 @@ package com.milesight.beaveriot.rule.flow;
 
 import com.milesight.beaveriot.rule.RuleEngineExecutor;
 import com.milesight.beaveriot.rule.RuleEngineLifecycleManager;
-import com.milesight.beaveriot.rule.RuleNodeInterceptor;
+import com.milesight.beaveriot.rule.RuleNodeDefinitionInterceptor;
 import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
 import com.milesight.beaveriot.rule.constants.RuleNodeNames;
 import com.milesight.beaveriot.rule.exception.RuleEngineException;
-import com.milesight.beaveriot.rule.flow.yaml.DefaultRuleNodeInterceptor;
-import com.milesight.beaveriot.rule.flow.yaml.RuleFlowYamlBuilder;
+import com.milesight.beaveriot.rule.flow.graph.DefaultRuleNodeDefinitionInterceptor;
 import com.milesight.beaveriot.rule.flow.graph.GraphRouteDefinitionGenerator;
+import com.milesight.beaveriot.rule.flow.yaml.RuleFlowYamlBuilder;
+import com.milesight.beaveriot.rule.flow.yaml.RuleNodeInterceptor;
 import com.milesight.beaveriot.rule.model.flow.config.RuleFlowConfig;
 import com.milesight.beaveriot.rule.model.flow.config.RuleNodeConfig;
-import com.milesight.beaveriot.rule.model.flow.yaml.FromNode;
+import com.milesight.beaveriot.rule.model.flow.route.FromNodeDefinition;
+import com.milesight.beaveriot.rule.model.flow.route.ToNodeDefinition;
 import com.milesight.beaveriot.rule.model.trace.FlowTraceInfo;
 import com.milesight.beaveriot.rule.model.trace.NodeTraceInfo;
 import com.milesight.beaveriot.rule.support.RuleFlowIdGenerator;
@@ -30,6 +32,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -65,16 +68,15 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
     @SneakyThrows
     @Override
     public void deployFlow(RuleFlowConfig ruleFlowConfig) {
-        camelContext.getCamelContextExtension().getContextPlugin(Model.class)
-                .addRouteDefinitions(GraphRouteDefinitionGenerator.generateRouteDefinition(ruleFlowConfig));
+        deployFlow(ruleFlowConfig, null);
     }
 
-    private String deployFlow(RuleFlowConfig ruleFlowConfig, RuleNodeInterceptor ruleNodeInterceptor) {
+    @SneakyThrows
+    private void deployFlow(RuleFlowConfig ruleFlowConfig, RuleNodeDefinitionInterceptor ruleNodeDefinitionInterceptor) {
         Assert.notNull(ruleFlowConfig.getFlowId(), "Rule flow id must not be null");
 
-        String dumpYaml = generateRouteFlow(ruleFlowConfig, ruleNodeInterceptor);
-        deployFlow(ruleFlowConfig.getFlowId(), dumpYaml);
-        return dumpYaml;
+        camelContext.getCamelContextExtension().getContextPlugin(Model.class)
+                .addRouteDefinitions(GraphRouteDefinitionGenerator.generateRouteDefinition(ruleFlowConfig, ruleNodeDefinitionInterceptor));
     }
 
     @Override
@@ -124,7 +126,7 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
     public boolean validateFlow(RuleFlowConfig ruleFlowConfig) {
         ruleFlowConfig.setFlowId(RuleFlowIdGenerator.generateRandomId());
         try {
-            return executeWithRollback(ruleFlowConfig, () -> true);
+            return executeWithRollback(ruleFlowConfig, new TraceFlowRuleNodeDefinitionInterceptor(), () -> true);
         } catch (Exception e) {
             return false;
         }
@@ -132,6 +134,10 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
 
     @Override
     public FlowTraceInfo trackFlow(RuleFlowConfig ruleFlowConfig, Exchange exchange) {
+        return trackFlow(ruleFlowConfig, exchange, new TraceFlowRuleNodeDefinitionInterceptor());
+    }
+
+    private FlowTraceInfo trackFlow(RuleFlowConfig ruleFlowConfig, Exchange exchange, RuleNodeDefinitionInterceptor ruleNodeDefinitionInterceptor) {
 
         exchange.setProperty(ExchangeHeaders.TRACE_FOR_TEST, true);
         exchange.setProperty(ExchangeHeaders.TRACE_RESPONSE, FlowTraceInfo.create(ruleFlowConfig.getFlowId()));
@@ -139,7 +145,7 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
         final String newFlowId = RuleFlowIdGenerator.generateRandomId();
         ruleFlowConfig.setFlowId(newFlowId);
 
-        return executeWithRollback(ruleFlowConfig, () -> {
+        return executeWithRollback(ruleFlowConfig, ruleNodeDefinitionInterceptor, () -> {
             String endpointUri = camelContext.getRoute(newFlowId).getEndpoint().getEndpointUri();
             ruleEngineExecutor.execute(endpointUri, exchange);
             return exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE, FlowTraceInfo.class);
@@ -157,7 +163,7 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
     public NodeTraceInfo trackNode(RuleNodeConfig nodeConfig, Exchange exchange) {
         RuleNodeConfig fromNode = RuleNodeConfig.create(RuleFlowIdGenerator.generateRandomId(), RuleNodeNames.CAMEL_DIRECT, "TestMockNode", null);
         RuleFlowConfig sequenceFlow = RuleFlowConfig.createSequenceFlow(RuleFlowIdGenerator.generateRandomId(), List.of(fromNode, nodeConfig));
-        FlowTraceInfo flowTraceResponse = trackFlow(sequenceFlow, exchange);
+        FlowTraceInfo flowTraceResponse = trackFlow(sequenceFlow, exchange, new TraceNodeRuleNodeDefinitionInterceptor(exchange.getIn().getBody(Map.class)));
         return flowTraceResponse.findLastNodeTrace();
     }
 
@@ -168,25 +174,37 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
         return trackNode(nodeConfig, defaultExchange);
     }
 
-    private <T> T executeWithRollback(RuleFlowConfig ruleFlowConfig, Supplier<T> supplier) {
+    private <T> T executeWithRollback(RuleFlowConfig ruleFlowConfig, RuleNodeDefinitionInterceptor ruleNodeDefinitionInterceptor, Supplier<T> supplier) {
 
-        String routeYaml = null;
         try {
-            routeYaml = deployFlow(ruleFlowConfig, new TraceRuleNodeInterceptor());
+            deployFlow(ruleFlowConfig, ruleNodeDefinitionInterceptor);
             return supplier.get();
         } catch (Exception ex) {
-            log.error("Execute route withRollback exception, Yaml content is : {}", routeYaml, ex);
+            log.error("Execute route withRollback exception, Design content is : {}", ruleFlowConfig, ex);
             throw new RuleEngineException("Execute route withRollback exception", ex);
         } finally {
             removeFlow(ruleFlowConfig.getFlowId());
         }
     }
 
-    public static class TraceRuleNodeInterceptor extends DefaultRuleNodeInterceptor {
+    public class TraceFlowRuleNodeDefinitionInterceptor extends DefaultRuleNodeDefinitionInterceptor {
+        @Override
+        public FromNodeDefinition interceptFromNodeDefinition(String flowId, FromNodeDefinition fromNode) {
+            return FromNodeDefinition.create(fromNode.getId(), fromNode.getNameNode(), "direct:" + flowId, null);
+        }
+    }
+
+    public class TraceNodeRuleNodeDefinitionInterceptor extends DefaultRuleNodeDefinitionInterceptor {
+        private final Map<String, Object> parameters;
+
+        public TraceNodeRuleNodeDefinitionInterceptor(Map<String, Object> parameters) {
+            this.parameters = parameters;
+        }
 
         @Override
-        public FromNode interceptFromNode(String flowId, FromNode fromNode) {
-            return new FromNode(fromNode.getId(), "direct:" + flowId, null, fromNode.getSteps());
+        public ToNodeDefinition interceptToNodeDefinition(String flowId, ToNodeDefinition toNodeDefinition) {
+            toNodeDefinition.setParameters(parameters);
+            return toNodeDefinition;
         }
     }
 }

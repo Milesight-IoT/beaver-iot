@@ -60,12 +60,12 @@ camel:
     languages:
       - code:
           - "groovy"
-          - "javascript"
+          - "js"
           - "python"
           - "mvel"
       - "choice":
           - "groovy"
-          - "javascript"
+          - "js"
           - "python"
           - "mvel"
 
@@ -84,7 +84,7 @@ oauth2:
     - "/oauth2/token"
     - "/user/register"
     - "/user/status"
-    - "/**"
+    - "/public/**"
 
 logging:
   level:

@@ -43,7 +43,7 @@ import static java.lang.reflect.Modifier.isStatic;
 @SuppressWarnings({"java:S3776", "java:S6541"})
 public class AnnotationComponentDefinitionLoader implements ComponentDefinitionLoader, ApplicationContextAware {
 
-    private static final String[] IGNORE_PROPERTIES = {"bridgeErrorHandler","exceptionHandler","exchangePattern","lazyStartProducer","autowiredEnabled"};
+    private static final String[] IGNORE_PROPERTIES = {"bridgeErrorHandler", "exceptionHandler", "exchangePattern", "lazyStartProducer", "autowiredEnabled"};
     private static final Map<String, Class<?>> KNOWN_CLASSES_CACHE = new ConcurrentHashMap<>();
     private ApplicationContext applicationContext;
 

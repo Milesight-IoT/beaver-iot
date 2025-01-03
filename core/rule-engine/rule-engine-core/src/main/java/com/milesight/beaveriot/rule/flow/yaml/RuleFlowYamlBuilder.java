@@ -1,6 +1,5 @@
 package com.milesight.beaveriot.rule.flow.yaml;
 
-import com.milesight.beaveriot.rule.RuleNodeInterceptor;
 import com.milesight.beaveriot.rule.flow.ComponentDefinitionCache;
 import com.milesight.beaveriot.rule.model.definition.ComponentDefinition;
 import com.milesight.beaveriot.rule.model.flow.ExpressionNode;

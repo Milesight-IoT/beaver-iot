@@ -2,6 +2,7 @@ package com.milesight.beaveriot.rule.flow.graph;
 
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
+import com.milesight.beaveriot.rule.RuleNodeDefinitionInterceptor;
 import com.milesight.beaveriot.rule.flow.ComponentDefinitionCache;
 import com.milesight.beaveriot.rule.model.definition.ComponentDefinition;
 import com.milesight.beaveriot.rule.model.flow.config.*;
@@ -12,6 +13,7 @@ import com.milesight.beaveriot.rule.model.flow.route.ToNodeDefinition;
 import lombok.Getter;
 import org.apache.camel.model.FromDefinition;
 import org.apache.camel.model.ProcessorDefinition;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -57,6 +59,7 @@ public class FlowGraph {
         private Map<String, List<String>> choiceWhenEdges = new ConcurrentHashMap<>();
         private final RuleFlowConfig ruleFlowConfig;
         private final Function<String, ComponentDefinition> componentDefinitionLoader;
+        private RuleNodeDefinitionInterceptor ruleNodeDefinitionInterceptor = new DefaultRuleNodeDefinitionInterceptor();
 
         public FlowGraphBuilder(String flowId) {
             this(RuleFlowConfig.create(flowId), null);
@@ -69,6 +72,12 @@ public class FlowGraph {
         public FlowGraphBuilder(RuleFlowConfig ruleFlowConfig, Function<String, ComponentDefinition> componentDefinitionLoader) {
             this.ruleFlowConfig = ruleFlowConfig;
             this.componentDefinitionLoader = componentDefinitionLoader == null ? ComponentDefinitionCache::load : componentDefinitionLoader;
+        }
+
+        public FlowGraphBuilder ruleNodeDefinitionInterceptor(RuleNodeDefinitionInterceptor ruleNodeDefinitionInterceptor) {
+            Assert.notNull(ruleNodeDefinitionInterceptor, "RuleNodeDefinitionInterceptor must not be null");
+            this.ruleNodeDefinitionInterceptor = ruleNodeDefinitionInterceptor;
+            return this;
         }
 
         public FlowGraph build() {
@@ -128,7 +137,8 @@ public class FlowGraph {
 
         private FromNodeDefinition convertToFromNodeDefinition(RuleConfig nodeConfig) {
             ComponentDefinition componentDefinition = componentDefinitionLoader.apply(nodeConfig.getComponentName());
-            return FromNodeDefinition.create(ruleFlowConfig.getFlowId(), (RuleNodeConfig) nodeConfig, componentDefinition);
+            FromNodeDefinition fromNodeDefinition = FromNodeDefinition.create(ruleFlowConfig.getFlowId(), (RuleNodeConfig) nodeConfig, componentDefinition);
+            return ruleNodeDefinitionInterceptor.interceptFromNodeDefinition(ruleFlowConfig.getFlowId(), fromNodeDefinition);
         }
 
         private AbstractNodeDefinition convertToNodeDefinition(RuleConfig nodeConfig) {
@@ -136,7 +146,7 @@ public class FlowGraph {
             if (nodeConfig instanceof RuleChoiceConfig ruleChoiceConfig) {
                 return ChoiceNodeDefinition.create(ruleChoiceConfig);
             } else if (nodeConfig instanceof RuleNodeConfig ruleNodeConfig) {
-                return ToNodeDefinition.create(ruleNodeConfig, componentDefinition);
+                return ruleNodeDefinitionInterceptor.interceptToNodeDefinition(ruleFlowConfig.getFlowId(), ToNodeDefinition.create(ruleNodeConfig, componentDefinition));
             } else {
                 throw new IllegalArgumentException("Unsupported node type: " + nodeConfig.getClass().getName());
             }

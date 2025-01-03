@@ -6,10 +6,12 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.*;
 import org.apache.camel.impl.engine.DefaultChannel;
-import org.apache.camel.spi.*;
+import org.apache.camel.spi.AsyncProcessorAwaitManager;
+import org.apache.camel.spi.IdAware;
+import org.apache.camel.spi.InterceptableProcessor;
+import org.apache.camel.spi.RouteIdAware;
 import org.apache.camel.support.AsyncProcessorConverterHelper;
 import org.apache.camel.support.AsyncProcessorSupport;
-import org.apache.camel.support.ExchangeHelper;
 import org.apache.camel.support.PluginHelper;
 import org.apache.camel.support.service.ServiceHelper;
 import org.springframework.util.CollectionUtils;
@@ -29,6 +31,7 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
     private final MutableGraph<String> graphStructure;
     private final String beginNodeId;
     private final CamelContext camelContext;
+
     public GraphProcessor(CamelContext camelContext, String beginNodeId, Map<String, AsyncProcessor> processors, MutableGraph<String> graphStructure) {
         this.processors = processors;
         this.graphStructure = graphStructure;
@@ -180,6 +183,7 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
             }
         }
     }
+
     public static class SequenceTaskExecutor extends GraphTaskExecutor {
         private String successor;
 
@@ -245,6 +249,7 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
 
                         return true;
                     }
+
                     private void copyPropertiesResult(Exchange target, Exchange source) {
                         if (source.hasProperties()) {
                             target.getProperties().putAll(source.getProperties());
