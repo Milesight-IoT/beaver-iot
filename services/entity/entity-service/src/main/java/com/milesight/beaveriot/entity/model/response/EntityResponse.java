@@ -28,6 +28,8 @@ public class EntityResponse {
 
     private String entityName;
 
+    private String entityParentName;
+
     private Map<String, Object> entityValueAttribute;
 
     private EntityValueType entityValueType;
