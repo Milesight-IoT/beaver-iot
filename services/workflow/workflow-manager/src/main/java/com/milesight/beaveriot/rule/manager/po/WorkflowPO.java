@@ -29,9 +29,6 @@ public class WorkflowPO {
     @Column(name = "design_data", columnDefinition = "TEXT")
     private String designData;
 
-    @Column(name = "route_data", columnDefinition = "TEXT")
-    private String routeData;
-
     @Column(name = "enabled")
     private Boolean enabled;
 

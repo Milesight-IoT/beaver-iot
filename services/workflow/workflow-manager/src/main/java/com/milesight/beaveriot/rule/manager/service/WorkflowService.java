@@ -18,6 +18,7 @@ import com.milesight.beaveriot.rule.manager.po.WorkflowHistoryPO;
 import com.milesight.beaveriot.rule.manager.po.WorkflowPO;
 import com.milesight.beaveriot.rule.manager.repository.*;
 import com.milesight.beaveriot.rule.model.RuleLanguage;
+import com.milesight.beaveriot.rule.model.flow.config.RuleEdgeConfig;
 import com.milesight.beaveriot.rule.model.flow.config.RuleFlowConfig;
 import com.milesight.beaveriot.rule.model.flow.config.RuleNodeConfig;
 import com.milesight.beaveriot.rule.model.trace.FlowTraceInfo;
@@ -73,7 +74,7 @@ public class WorkflowService {
         Page<WorkflowPO> workflowPOPage;
         do {
             workflowPOPage = workflowRepository
-                    .findAll(f -> f.eq(WorkflowPO.Fields.enabled, true).isNotNull(WorkflowPO.Fields.routeData), pageRequest.toPageable());
+                    .findAll(f -> f.eq(WorkflowPO.Fields.enabled, true).isNotNull(WorkflowPO.Fields.designData), pageRequest.toPageable());
             workflowPOPage.forEach((this::deployFlow));
             pageRequest.setPageNumber(pageRequest.getPageNumber() + 1);
         } while (workflowPOPage.hasNext());
@@ -182,12 +183,13 @@ public class WorkflowService {
     }
 
     private void deployFlow(WorkflowPO wp) {
-        if (wp.getRouteData() == null) {
+        RuleFlowConfig ruleFlowConfig = parseRuleFlowConfig(wp.getId().toString(), wp.getDesignData());
+        if (ruleFlowConfig == null) {
             removeFlow(wp);
             return;
         }
 
-        ruleEngineLifecycleManager.deployFlow(wp.getId().toString(), wp.getRouteData());
+        ruleEngineLifecycleManager.deployFlow(ruleFlowConfig);
     }
 
     private void removeFlow(WorkflowPO wp) {
@@ -250,6 +252,50 @@ public class WorkflowService {
         return ruleEngineLifecycleManager.validateFlow(JsonHelper.fromJSON(request.getDesignData(), RuleFlowConfig.class));
     }
 
+    private boolean isRuleFlowEqual(RuleFlowConfig config1, RuleFlowConfig config2) {
+        if (config1 == config2) {
+            return true;
+        }
+
+        if (config1 == null || config2 == null) {
+            return false;
+        }
+
+        final List<RuleNodeConfig> config1Nodes = Optional.ofNullable(config1.getNodes()).orElse(new ArrayList<>());
+        final List<RuleNodeConfig> config2Nodes = Optional.ofNullable(config2.getNodes()).orElse(new ArrayList<>());
+
+        if (config1Nodes.size() != config2Nodes.size()) {
+            return false;
+        }
+
+        final List<RuleEdgeConfig> config1Edges = Optional.ofNullable(config1.getEdges()).orElse(new ArrayList<>());
+        final List<RuleEdgeConfig> config2Edges = Optional.ofNullable(config2.getEdges()).orElse(new ArrayList<>());
+
+        if (config1Edges.size() != config2Edges.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < config1Nodes.size(); i++) {
+            RuleNodeConfig ruleNode1 = config1Nodes.get(i);
+            RuleNodeConfig ruleNode2 = config2Nodes.get(i);
+            if (
+                    !Objects.equals(ruleNode1.getId(), ruleNode2.getId())
+                            || !Objects.equals(ruleNode1.getComponentName(), ruleNode2.getComponentName())
+                            || !Objects.equals(ruleNode1.getParameters(), ruleNode2.getParameters())
+            ) {
+                return false;
+            }
+        }
+
+        for (int i = 0; i < config1Edges.size(); i++) {
+            if (!Objects.equals(config1Edges.get(i), config2Edges.get(i))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 //    @Transactional(rollbackFor = Exception.class)
     public SaveWorkflowResponse saveWorkflow(SaveWorkflowRequest request) {
         assertWorkflowPrepared();
@@ -288,23 +334,16 @@ public class WorkflowService {
             workflowPO.setVersion(beforeVersion + 1);
         }
 
-        workflowPO.setDesignData(request.getDesignData());
-
         final String workflowIdStr = workflowPO.getId().toString();
         RuleFlowConfig ruleFlowConfig = parseRuleFlowConfig(workflowIdStr, request.getDesignData());
-        String previousRoutingData = workflowPO.getRouteData();
-        if (ruleFlowConfig != null) {
-            workflowPO.setRouteData(ruleEngineLifecycleManager.generateRouteFlow(ruleFlowConfig));
-        } else {
-            workflowPO.setRouteData(null);
-        }
+
+        final boolean isFlowUpdated = !isRuleFlowEqual(parseRuleFlowConfig(workflowIdStr, workflowPO.getDesignData()), ruleFlowConfig);
+        workflowPO.setDesignData(request.getDesignData());
 
         boolean isEnableUpdated = !Objects.equals(workflowPO.getEnabled(), request.getEnabled());
-        boolean isRoutingUpdated = !Objects.equals(workflowPO.getRouteData(), previousRoutingData);
-
         // Deploy or Remove
         workflowPO.setEnabled(request.getEnabled());
-        if (Boolean.TRUE.equals(workflowPO.getEnabled()) && (isRoutingUpdated || isEnableUpdated)) {
+        if (Boolean.TRUE.equals(workflowPO.getEnabled()) && (isFlowUpdated || isEnableUpdated)) {
             // a workflow would be validated at the time it is deployed
             deployFlow(workflowPO);
         } else if (Boolean.FALSE.equals(workflowPO.getEnabled())) {
@@ -312,7 +351,7 @@ public class WorkflowService {
                 removeFlow(workflowPO);
             }
 
-            if (isRoutingUpdated && ruleFlowConfig != null) {
+            if (isFlowUpdated && ruleFlowConfig != null) {
                 ruleEngineLifecycleManager.validateFlow(ruleFlowConfig);
             }
         }
@@ -385,7 +424,7 @@ public class WorkflowService {
 
         WorkflowPO workflowPO = workflowEntityRelationService.getFlowByEntityId(entity.getId());
 
-        if (workflowPO != null) {
+        if (workflowEntityRelationService.getTriggerNode(parseRuleFlowConfig(workflowPO.getId().toString(), workflowPO.getDesignData())) != null) {
             ((WorkflowService) AopContext.currentProxy()).batchDelete(List.of(workflowPO.getId()));
         }
     }
