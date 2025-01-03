@@ -8,7 +8,6 @@ CREATE TABLE "t_flow"
     name             VARCHAR(255) NOT NULL,
     remark           VARCHAR(255) DEFAULT NULL,
     design_data      TEXT DEFAULT NULL,
-    route_data       TEXT DEFAULT NULL,
     enabled          BOOLEAN NOT NULL,
     tenant_id        BIGINT NOT NULL,
     updated_user     BIGINT NOT NULL,

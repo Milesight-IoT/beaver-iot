@@ -37,16 +37,22 @@ public class WorkflowEntityRelationService {
     @Autowired
     IEntityFacade entityFacade;
 
-    public void saveEntity(WorkflowPO workflowPO, RuleFlowConfig ruleFlowConfig) {
-        RuleNodeConfig triggerNodeConfig = null;
-        if (ruleFlowConfig != null) {
-            for (RuleNodeConfig nodeConfig : ruleFlowConfig.getNodes()) {
-                if (nodeConfig.getComponentName().equals("trigger")) {
-                    triggerNodeConfig = nodeConfig;
-                    break;
-                }
+    public RuleNodeConfig getTriggerNode(RuleFlowConfig ruleFlowConfig) {
+        if (ruleFlowConfig == null) {
+            return null;
+        }
+
+        for (RuleNodeConfig nodeConfig : ruleFlowConfig.getNodes()) {
+            if (nodeConfig.getComponentName().equals("trigger")) {
+                return nodeConfig;
             }
         }
+
+        return null;
+    }
+
+    public void saveEntity(WorkflowPO workflowPO, RuleFlowConfig ruleFlowConfig) {
+        RuleNodeConfig triggerNodeConfig = getTriggerNode(ruleFlowConfig);
 
         WorkflowEntityRelationPO relationPO = workflowEntityRelationRepository.findOne(f -> f.eq(WorkflowEntityRelationPO.Fields.flowId, workflowPO.getId())).orElse(null);
         Entity serviceEntity = null;
