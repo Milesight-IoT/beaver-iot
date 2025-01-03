@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.rule.converter;
 
 import com.milesight.beaveriot.rule.AutowiredTypeConverter;
-import com.milesight.beaveriot.rule.model.flow.route.ExpressionNode;
+import com.milesight.beaveriot.rule.model.flow.ExpressionNode;
 import com.milesight.beaveriot.rule.support.JsonHelper;
 import org.apache.camel.Exchange;
 import org.apache.camel.TypeConversionException;

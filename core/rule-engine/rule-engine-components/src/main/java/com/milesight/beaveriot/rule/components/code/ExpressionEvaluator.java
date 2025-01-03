@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.rule.components.code;
 
 import com.milesight.beaveriot.rule.enums.ExpressionLanguage;
-import com.milesight.beaveriot.rule.model.flow.route.ExpressionNode;
+import com.milesight.beaveriot.rule.model.flow.ExpressionNode;
 import org.apache.camel.Exchange;
 import org.apache.camel.Expression;
 

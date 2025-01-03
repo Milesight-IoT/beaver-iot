@@ -38,6 +38,11 @@ public class RuleEngineTracer extends DefaultTracer {
             super.traceBeforeRoute(route, exchange);
         }
 
+        // only trace node with prefix
+        if (!shouldTraceNodeByPrefix(route.getInput())) {
+            return;
+        }
+
         FlowTraceInfo flowTraceInfo = (FlowTraceInfo) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
         if (flowTraceInfo == null) {
             flowTraceInfo = new FlowTraceInfo();
@@ -48,7 +53,7 @@ public class RuleEngineTracer extends DefaultTracer {
         //add from node trace info
         if (route instanceof RouteDefinition routeDefinition) {
             FromDefinition input = routeDefinition.getInput();
-            NodeTraceInfo nodeTraceInfo = createNodeTraceInfo(input.getId(), input.getLabel(), exchange);
+            NodeTraceInfo nodeTraceInfo = createNodeTraceInfo(input.getId(), input.getLabel(), routeDefinition.getDescriptionText(), exchange);
             nodeTraceInfo.setOutput(getExchangeBody(exchange));
             flowTraceInfo.getTraceInfos().add(nodeTraceInfo);
         }
@@ -62,7 +67,7 @@ public class RuleEngineTracer extends DefaultTracer {
         FlowTraceInfo traceContext = (FlowTraceInfo) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
         if (traceContext != null && shouldTraceNodeByPrefix(node)) {
             try {
-                NodeTraceInfo nodeTraceResponse = createNodeTraceInfo(node.getId(), node.getLabel(), exchange);
+                NodeTraceInfo nodeTraceResponse = createNodeTraceInfo(node.getId(), node.getLabel(), node.getDescriptionText(), exchange);
                 nodeTraceResponse.setInput(getExchangeBody(exchange));
                 traceContext.getTraceInfos().add(nodeTraceResponse);
             } catch (Exception ex) {
@@ -71,7 +76,7 @@ public class RuleEngineTracer extends DefaultTracer {
         }
     }
 
-    private NodeTraceInfo createNodeTraceInfo(String nodeId, String nodeLabel, Exchange exchange) {
+    private NodeTraceInfo createNodeTraceInfo(String nodeId, String nodeLabel, String nodeName, Exchange exchange) {
         NodeTraceInfo nodeTraceResponse = new NodeTraceInfo();
         if (StringUtils.hasText(nodeLabel)) {
             nodeTraceResponse.setNodeLabel(nodeLabel.split("\\?")[0]);
@@ -79,6 +84,7 @@ public class RuleEngineTracer extends DefaultTracer {
         nodeTraceResponse.setNodeId(RuleFlowIdGenerator.removeNamespacedId(exchange.getFromRouteId(), nodeId));
         nodeTraceResponse.setStartTime(System.currentTimeMillis());
         nodeTraceResponse.setMessageId(exchange.getIn().getMessageId());
+        nodeTraceResponse.setNodeName(nodeName);
         return nodeTraceResponse;
     }
 
@@ -91,10 +97,11 @@ public class RuleEngineTracer extends DefaultTracer {
         FlowTraceInfo traceContext = (FlowTraceInfo) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
         if (traceContext != null) {
             try {
-                NodeTraceInfo traceInfo = traceContext.findTraceInfo(RuleFlowIdGenerator.removeNamespacedId(exchange.getFromRouteId(), node.getId()));
+                NodeTraceInfo traceInfo = traceContext.findTraceInfo(RuleFlowIdGenerator.removeNamespacedId(exchange.getFromRouteId(), node.getId()), exchange.getIn().getMessageId());
                 if (traceInfo != null) {
                     traceInfo.setOutput(getExchangeBody(exchange));
                     traceInfo.setTimeCost(System.currentTimeMillis() - traceInfo.getStartTime());
+                    traceInfo.setParentTraceId(exchange.getIn().getHeader(ExchangeHeaders.EXCHANGE_LATEST_TRACE_ID, String.class));
                     if (exchange.getException() != null) {
                         traceInfo.causeException(exchange.getException());
                     }

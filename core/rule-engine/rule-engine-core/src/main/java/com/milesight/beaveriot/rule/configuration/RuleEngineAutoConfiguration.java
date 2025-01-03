@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * @author leon
  */
+@SuppressWarnings("java:S3740")
 @EnableConfigurationProperties(RuleProperties.class)
 @Configuration
 public class RuleEngineAutoConfiguration {

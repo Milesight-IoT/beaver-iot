@@ -32,8 +32,8 @@ public class ComponentDefinition {
                 .findFirst()
                 .orElse(null);
         String path = id;
-        if (pathOptionDefinition != null ) {
-            if(ObjectUtils.isEmpty(parameters) || !parameters.containsKey(pathOptionDefinition.generateFullName())) {
+        if (pathOptionDefinition != null) {
+            if (ObjectUtils.isEmpty(parameters) || !parameters.containsKey(pathOptionDefinition.generateFullName())) {
                 //else use id as uri
                 if (pathOptionDefinition.isAutowired()) {
                     parameters.put(pathOptionDefinition.generateFullName(), id);

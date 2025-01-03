@@ -15,6 +15,8 @@ public class NodeTraceInfo {
 
     private String nodeLabel;
 
+    private String nodeName;
+
     private ExecutionStatus status = ExecutionStatus.SUCCESS;
 
     private String errorMessage;
@@ -26,6 +28,8 @@ public class NodeTraceInfo {
     private String input;
 
     private String output;
+
+    private String parentTraceId;
 
     public void causeException(Exception ex) {
         this.status = ExecutionStatus.ERROR;

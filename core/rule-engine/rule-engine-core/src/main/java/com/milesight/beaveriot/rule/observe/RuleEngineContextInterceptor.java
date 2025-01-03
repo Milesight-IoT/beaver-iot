@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.rule.observe;
 
 import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
+import com.milesight.beaveriot.rule.flow.graph.GraphProcessorDefinition;
 import com.milesight.beaveriot.rule.support.RuleFlowIdGenerator;
 import lombok.SneakyThrows;
 import org.apache.camel.*;
@@ -36,13 +37,21 @@ public class RuleEngineContextInterceptor implements InterceptStrategy {
     }
 
     private void cacheFromArguments(NamedNode definition, Exchange exchange) {
-        if (definition.getParent() instanceof RouteDefinition routeDefinition) {
-            String fromId = routeDefinition.getInput().getId();
-            if (StringUtils.hasText(fromId) && fromId.startsWith(RuleFlowIdGenerator.FLOW_ID_PREFIX)) {
-                String fromNodeId = RuleFlowIdGenerator.removeNamespacedId(routeDefinition.getId(), fromId);
-                exchange.setProperty(fromNodeId, exchange.getIn().getBody());
-                exchange.setProperty(ExchangeHeaders.EXCHANGE_FLOW_ID, exchange.getFromRouteId());
-            }
+        // if the definition is a route definition, then cache the input arguments
+        RouteDefinition routeDefinition = null;
+        if (definition.getParent() instanceof GraphProcessorDefinition graphProcessorDefinition) {
+            routeDefinition = (RouteDefinition) graphProcessorDefinition.getParent();
+        } else if (definition.getParent() instanceof RouteDefinition) {
+            routeDefinition = (RouteDefinition) definition.getParent();
+        } else {
+            return;
+        }
+
+        String fromId = routeDefinition.getInput().getId();
+        if (StringUtils.hasText(fromId) && fromId.startsWith(RuleFlowIdGenerator.FLOW_ID_PREFIX)) {
+            String fromNodeId = RuleFlowIdGenerator.removeNamespacedId(routeDefinition.getId(), fromId);
+            exchange.setProperty(fromNodeId, exchange.getIn().getBody());
+            exchange.setProperty(ExchangeHeaders.EXCHANGE_FLOW_ID, exchange.getFromRouteId());
         }
     }
 

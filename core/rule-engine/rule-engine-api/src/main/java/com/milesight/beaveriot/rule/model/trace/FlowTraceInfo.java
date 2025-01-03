@@ -33,9 +33,9 @@ public class FlowTraceInfo {
         return flowTraceInfo;
     }
 
-    public NodeTraceInfo findTraceInfo(String nodeId) {
+    public NodeTraceInfo findTraceInfo(String nodeId, String messageId) {
         return traceInfos.stream()
-                .filter(node -> node.getNodeId().equals(nodeId))
+                .filter(node -> node.getNodeId().equals(nodeId) && messageId.equals(node.getMessageId()))
                 .findFirst()
                 .orElse(null);
     }

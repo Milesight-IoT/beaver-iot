@@ -13,6 +13,10 @@ public interface RuleConfig {
 
     String getId();
 
+    default String getName() {
+        return null;
+    }
+
     String getComponentName();
 
 }

@@ -10,7 +10,7 @@ import java.util.List;
  * @author leon
  */
 @Data
-public class ComponentOptionDefinition extends ComponentOptionExtensionDefinition{
+public class ComponentOptionDefinition extends ComponentOptionExtensionDefinition {
 
     protected String name;
     protected int index;

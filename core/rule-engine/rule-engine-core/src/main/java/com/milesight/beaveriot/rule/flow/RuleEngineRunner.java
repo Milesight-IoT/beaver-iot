@@ -4,8 +4,13 @@ import com.milesight.beaveriot.rule.AutowiredTypeConverter;
 import com.milesight.beaveriot.rule.RuleEngineRouteConfigurer;
 import com.milesight.beaveriot.rule.configuration.RuleProperties;
 import com.milesight.beaveriot.rule.exception.RuleEngineException;
+import com.milesight.beaveriot.rule.flow.graph.GraphChoiceDefinition;
+import com.milesight.beaveriot.rule.flow.graph.GraphChoiceReifier;
+import com.milesight.beaveriot.rule.flow.graph.GraphProcessorDefinition;
+import com.milesight.beaveriot.rule.flow.graph.GraphProcessorReifier;
 import lombok.SneakyThrows;
 import org.apache.camel.CamelContext;
+import org.apache.camel.reifier.ProcessorReifier;
 import org.apache.camel.spi.Tracer;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.SmartInitializingSingleton;
@@ -13,6 +18,7 @@ import org.springframework.beans.factory.SmartInitializingSingleton;
 /**
  * @author leon
  */
+@SuppressWarnings("java:S3740")
 public class RuleEngineRunner implements SmartInitializingSingleton {
 
     private ObjectProvider<RuleEngineRouteConfigurer> ruleEngineRouteConfigurers;
@@ -53,10 +59,18 @@ public class RuleEngineRunner implements SmartInitializingSingleton {
             camelContext.setTracer(tracerObjectProvider.getIfAvailable());
         }
 
+        //register graph definition
+        registerGraphDefinition();
+
         //set camel context to camelRuleEngineExecutor
         camelRuleEngineExecutor.initializeCamelContext(camelContext);
 
         //register autowired type converters
         autowiredTypeConverters.stream().forEach(autowiredTypeConverter -> camelContext.getTypeConverterRegistry().addConverter(autowiredTypeConverter.getTypeConvertible(), autowiredTypeConverter));
+    }
+
+    protected void registerGraphDefinition() {
+        ProcessorReifier.registerReifier(GraphProcessorDefinition.class, GraphProcessorReifier::new);
+        ProcessorReifier.registerReifier(GraphChoiceDefinition.class, GraphChoiceReifier::new);
     }
 }

@@ -25,4 +25,8 @@ public interface ExchangeHeaders {
      */
     String EXCHANGE_FLOW_ID = "CamelExchangeFlowId";
 
+    String GRAPH_CHOICE_MATCH_ID = "CamelGraphChoiceMatchId";
+
+    String EXCHANGE_LATEST_TRACE_ID = "CamelExchangeLatestNodeId";
+
 }

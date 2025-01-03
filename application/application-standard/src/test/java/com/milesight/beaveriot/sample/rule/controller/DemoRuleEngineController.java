@@ -7,6 +7,7 @@ import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
 import com.milesight.beaveriot.rule.RuleEngineComponentManager;
+import com.milesight.beaveriot.rule.RuleEngineExecutor;
 import com.milesight.beaveriot.rule.RuleEngineLifecycleManager;
 import com.milesight.beaveriot.rule.model.flow.config.RuleFlowConfig;
 import com.milesight.beaveriot.rule.model.flow.config.RuleNodeConfig;
@@ -14,6 +15,7 @@ import com.milesight.beaveriot.rule.model.trace.FlowTraceInfo;
 import com.milesight.beaveriot.rule.model.trace.NodeTraceInfo;
 import com.milesight.beaveriot.rule.support.JsonHelper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.camel.CamelContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.bind.annotation.*;
@@ -37,6 +39,15 @@ public class DemoRuleEngineController {
     ExchangeFlowExecutor exchangeFlowExecutor;
     @Autowired
     private RuleEngineComponentManager ruleEngineComponentManager;
+    @Autowired
+    private RuleEngineExecutor ruleEngineExecutor;
+
+    @PostMapping("/public/exec/{directName}")
+    public String exec(@PathVariable("directName") String name, @RequestBody ExchangePayload exchangePayload) {
+        ruleEngineExecutor.execute("direct:" + name, exchangePayload);
+        return "success";
+    }
+
 
     @GetMapping("/public/schema/{name}")
     public String schema(@PathVariable("name") String name) {
@@ -77,13 +88,13 @@ public class DemoRuleEngineController {
     @PostMapping("/public/test-deploy/{config}")
     public String testDeploy(@PathVariable("config") String config) throws IOException {
 
-        ClassPathResource classPathResource = new ClassPathResource("config-schema/"+config + ".json");
+        ClassPathResource classPathResource = new ClassPathResource("config-schema/choice/"+config + ".json");
         String flowConfig = classPathResource.getContentAsString(Charset.defaultCharset());
 
         RuleFlowConfig ruleFlowConfig = JsonHelper.fromJSON(flowConfig, RuleFlowConfig.class);
-        String yaml = ruleEngineLifecycleManager.deployFlow(ruleFlowConfig);
+        ruleEngineLifecycleManager.deployFlow(ruleFlowConfig);
 
-        return yaml;
+        return "success";
     }
 
 }

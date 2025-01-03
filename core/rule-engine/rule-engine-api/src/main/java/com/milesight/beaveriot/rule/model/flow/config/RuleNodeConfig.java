@@ -28,6 +28,11 @@ public class RuleNodeConfig implements RuleConfig {
         return data != null ? data.getParameters() : null;
     }
 
+    @Override
+    public String getName() {
+        return data != null ? data.getNodeName() : null;
+    }
+
     @Data
     public static class RuleNodeDataConfig {
         private String nodeName;
