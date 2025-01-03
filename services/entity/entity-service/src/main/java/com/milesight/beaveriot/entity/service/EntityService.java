@@ -557,7 +557,7 @@ public class EntityService implements EntityServiceProvider {
         return convertEntityPOListToEntityResponses(entityPOList);
     }
 
-    private EntityResponse convertEntityPOToEntityResponse(EntityPO entityPO, Map<String, Integration> integrationMap, Map<String, DeviceNameDTO> deviceIdToDetails) {
+    private EntityResponse convertEntityPOToEntityResponse(EntityPO entityPO, Map<String, Integration> integrationMap, Map<String, DeviceNameDTO> deviceIdToDetails, Map<String, EntityPO> parentKeyMap) {
         String deviceName = null;
         String integrationName = null;
         String attachTargetId = entityPO.getAttachTargetId();
@@ -585,6 +585,7 @@ public class EntityService implements EntityServiceProvider {
         response.setEntityKey(entityPO.getKey());
         response.setEntityType(entityPO.getType());
         response.setEntityName(entityPO.getName());
+        response.setEntityParentName(entityPO.getParent() == null ? null : parentKeyMap.get(entityPO.getParent()) == null? null : parentKeyMap.get(entityPO.getParent()).getName());
         response.setEntityValueAttribute(entityPO.getValueAttribute());
         response.setEntityValueType(entityPO.getValueType());
         response.setEntityIsCustomized(isCustomizedEntity(entityPO.getAttachTargetId()));
@@ -634,6 +635,19 @@ public class EntityService implements EntityServiceProvider {
     }
 
     private Page<EntityResponse> convertEntityPOListToEntityResponses(Page<EntityPO> entityPOList) {
+        List<String> parentKeys = entityPOList.stream()
+                .map(EntityPO::getParent)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+        List<EntityPO> parentEntityPOList = new ArrayList<>();
+        if(!parentKeys.isEmpty()) {
+            parentEntityPOList.addAll(entityRepository.findAllWithDataPermission(f -> f.in(EntityPO.Fields.key, parentKeys.toArray())));
+        }
+        Map<String, EntityPO> parentKeyMap = new HashMap<>();
+        if(!parentEntityPOList.isEmpty()) {
+            parentKeyMap.putAll(parentEntityPOList.stream().collect(Collectors.toMap(EntityPO::getKey, Function.identity())));
+        }
         List<Long> foundDeviceIds = entityPOList.stream()
                 .filter(entityPO -> AttachTargetType.DEVICE.equals(entityPO.getAttachTarget()))
                 .map(entityPO -> Long.parseLong(entityPO.getAttachTargetId()))
@@ -647,7 +661,7 @@ public class EntityService implements EntityServiceProvider {
         Map<String, Integration> integrationMap = integrationServiceProvider.findIntegrations(i -> integrationIds.contains(i.getId()))
                 .stream()
                 .collect(Collectors.toMap(Integration::getId, Function.identity(), (v1, v2) -> v1));
-        return entityPOList.map(entityPO -> convertEntityPOToEntityResponse(entityPO, integrationMap, deviceIdToDetails));
+        return entityPOList.map(entityPO -> convertEntityPOToEntityResponse(entityPO, integrationMap, deviceIdToDetails, parentKeyMap));
     }
 
     public EntityMetaResponse getEntityMeta(Long entityId) {
