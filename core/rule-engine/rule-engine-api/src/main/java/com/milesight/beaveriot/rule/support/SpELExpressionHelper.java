@@ -5,9 +5,9 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Expression;
 import org.springframework.util.ObjectUtils;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.apache.camel.support.builder.ExpressionBuilder.languageExpression;
 
@@ -26,10 +26,9 @@ public class SpELExpressionHelper {
         if (ObjectUtils.isEmpty(expressionMap)) {
             return Map.of();
         }
-        return expressionMap.entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> resolveExpression(exchange, entry.getValue())));
+        Map<String,Object> result = new HashMap<>();
+        expressionMap.entrySet().stream().forEach(entry -> result.put(entry.getKey(), resolveExpression(exchange, entry.getValue())));
+        return result;
     }
 
     public static List<String> resolveExpression(Exchange exchange, List<String> expressionList) {
