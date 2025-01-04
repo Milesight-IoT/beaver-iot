@@ -75,7 +75,13 @@ public class WorkflowService {
         do {
             workflowPOPage = workflowRepository
                     .findAll(f -> f.eq(WorkflowPO.Fields.enabled, true).isNotNull(WorkflowPO.Fields.designData), pageRequest.toPageable());
-            workflowPOPage.forEach((this::deployFlow));
+            workflowPOPage.forEach(workflowPO -> {
+                try {
+                    this.deployFlow(workflowPO);
+                } catch (Exception e) {
+                    log.error("Load Workflow Error: {} {} {}", workflowPO.getId(), workflowPO.getName(), e.getMessage());
+                }
+            });
             pageRequest.setPageNumber(pageRequest.getPageNumber() + 1);
         } while (workflowPOPage.hasNext());
 
