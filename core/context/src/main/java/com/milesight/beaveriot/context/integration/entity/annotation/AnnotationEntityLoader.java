@@ -93,6 +93,7 @@ public class AnnotationEntityLoader implements EntityLoader {
                     children.forEach(entity -> {
                         entity.setType(entityAnnotation.type());
                         entity.setAccessMod(entityAnnotation.accessMod());
+                        entity.setVisible(entityAnnotation.visible());
                     });
                     entityBuilder.children(children);
                 }
