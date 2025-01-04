@@ -50,6 +50,9 @@ public class RuleEngineContextInterceptor implements InterceptStrategy {
         String fromId = routeDefinition.getInput().getId();
         if (StringUtils.hasText(fromId) && fromId.startsWith(RuleFlowIdGenerator.FLOW_ID_PREFIX)) {
             String fromNodeId = RuleFlowIdGenerator.removeNamespacedId(routeDefinition.getId(), fromId);
+            if (exchange.getProperties().containsKey(fromNodeId)) {
+                return;
+            }
             exchange.setProperty(fromNodeId, exchange.getIn().getBody());
             exchange.setProperty(ExchangeHeaders.EXCHANGE_FLOW_ID, exchange.getFromRouteId());
         }

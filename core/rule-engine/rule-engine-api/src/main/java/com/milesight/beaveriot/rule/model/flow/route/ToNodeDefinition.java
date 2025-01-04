@@ -30,6 +30,7 @@ public class ToNodeDefinition extends AbstractNodeDefinition {
         ToNodeDefinition nodeDefinition = new ToNodeDefinition(uri, parameters);
         nodeDefinition.setId(ruleNodeConfig.getId());
         nodeDefinition.setNameNode(ruleNodeConfig.getName());
+        nodeDefinition.setParameters(parameters);
 
         return nodeDefinition;
     }

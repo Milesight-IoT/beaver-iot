@@ -163,7 +163,7 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
     public NodeTraceInfo trackNode(RuleNodeConfig nodeConfig, Exchange exchange) {
         RuleNodeConfig fromNode = RuleNodeConfig.create(RuleFlowIdGenerator.generateRandomId(), RuleNodeNames.CAMEL_DIRECT, "TestMockNode", null);
         RuleFlowConfig sequenceFlow = RuleFlowConfig.createSequenceFlow(RuleFlowIdGenerator.generateRandomId(), List.of(fromNode, nodeConfig));
-        FlowTraceInfo flowTraceResponse = trackFlow(sequenceFlow, exchange, new TraceNodeRuleNodeDefinitionInterceptor(exchange.getIn().getBody(Map.class)));
+        FlowTraceInfo flowTraceResponse = trackFlow(sequenceFlow, exchange);
         return flowTraceResponse.findLastNodeTrace();
     }
 
@@ -194,17 +194,4 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
         }
     }
 
-    public class TraceNodeRuleNodeDefinitionInterceptor extends DefaultRuleNodeDefinitionInterceptor {
-        private final Map<String, Object> parameters;
-
-        public TraceNodeRuleNodeDefinitionInterceptor(Map<String, Object> parameters) {
-            this.parameters = parameters;
-        }
-
-        @Override
-        public ToNodeDefinition interceptToNodeDefinition(String flowId, ToNodeDefinition toNodeDefinition) {
-            toNodeDefinition.setParameters(parameters);
-            return toNodeDefinition;
-        }
-    }
 }

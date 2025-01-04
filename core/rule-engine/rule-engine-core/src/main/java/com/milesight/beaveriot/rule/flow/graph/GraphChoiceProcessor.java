@@ -26,7 +26,7 @@ import static com.milesight.beaveriot.rule.constants.ExchangeHeaders.GRAPH_CHOIC
 @Getter
 @Setter
 @Slf4j
-public class GraphChoiceProcessor extends AsyncProcessorSupport implements Traceable, IdAware, RouteIdAware, InterceptableProcessor {
+public class GraphChoiceProcessor extends AsyncProcessorSupport implements Traceable, IdAware, RouteIdAware {
 
     private final Map<String, WhenDefinition> whenClause;
     private final String otherwiseNodeId;
@@ -44,31 +44,36 @@ public class GraphChoiceProcessor extends AsyncProcessorSupport implements Trace
         String matchedId = null;
         exchange.getIn().removeHeader(GRAPH_CHOICE_MATCH_ID);
 
-        for (Map.Entry<String, WhenDefinition> entry : whenClause.entrySet()) {
-            WhenDefinition choiceWhenClause = entry.getValue();
-            ExpressionDefinition exp = choiceWhenClause.getExpression();
-            exp.initPredicate(exchange.getContext());
+        try {
+            for (Map.Entry<String, WhenDefinition> entry : whenClause.entrySet()) {
+                WhenDefinition choiceWhenClause = entry.getValue();
+                ExpressionDefinition exp = choiceWhenClause.getExpression();
+                exp.initPredicate(exchange.getContext());
 
-            Predicate predicate = exp.getPredicate();
-            predicate.initPredicate(exchange.getContext());
+                Predicate predicate = exp.getPredicate();
+                predicate.initPredicate(exchange.getContext());
 
-            boolean matches = predicate.matches(exchange);
-            if (matches) {
-                log.debug("doSwitch selected: {}", choiceWhenClause.getLabel());
-                matchedId = entry.getKey();
-                break;
+                boolean matches = predicate.matches(exchange);
+                if (matches) {
+                    log.debug("doSwitch selected: {}", choiceWhenClause.getLabel());
+                    matchedId = entry.getKey();
+                    break;
+                }
             }
-        }
 
-        if (!StringUtils.hasText(matchedId)) {
-            log.debug("doSwitch selected: otherwise");
-            matchedId = otherwiseNodeId;
-        }
+            if (!StringUtils.hasText(matchedId)) {
+                log.debug("doSwitch selected: otherwise");
+                matchedId = otherwiseNodeId;
+            }
 
-        if (StringUtils.hasText(matchedId)) {
-            exchange.getIn().setHeader(GRAPH_CHOICE_MATCH_ID, matchedId);
-        } else {
-            log.debug("doSwitch no when or otherwise selected");
+            if (StringUtils.hasText(matchedId)) {
+                exchange.getIn().setHeader(GRAPH_CHOICE_MATCH_ID, matchedId);
+            } else {
+                log.debug("doSwitch no when or otherwise selected");
+            }
+        } catch (Exception ex) {
+            exchange.setException(ex);
+        } finally {
             callback.done(true);
         }
 
@@ -105,8 +110,4 @@ public class GraphChoiceProcessor extends AsyncProcessorSupport implements Trace
         this.routeId = routeId;
     }
 
-    @Override
-    public boolean canIntercept() {
-        return false;
-    }
 }
