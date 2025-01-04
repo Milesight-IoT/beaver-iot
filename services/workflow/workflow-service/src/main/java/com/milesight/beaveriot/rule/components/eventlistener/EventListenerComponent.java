@@ -25,7 +25,7 @@ public class EventListenerComponent extends DefaultComponent {
     @Override
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
         this.parameters = parameters;
-        EventListenerEndpoint endpoint = new EventListenerEndpoint(uri, this);
+        EventListenerEndpoint endpoint = new EventListenerEndpoint(uri, remaining, this);
         setProperties(endpoint, parameters);
         return endpoint;
     }

@@ -36,8 +36,9 @@ public class EventListenerEndpoint extends DefaultEndpoint {
     @UriParam(displayName = "verifyEntitiesValidation", description = "Whether it is necessary to verify the legality of the entity")
     private boolean verifyEntitiesValidation = false;
 
-    public EventListenerEndpoint(String uri, EventListenerComponent component) {
+    public EventListenerEndpoint(String uri, String eventListenerName, EventListenerComponent component) {
         super(uri, component);
+        this.eventListenerName = eventListenerName;
     }
     public EventListenerEndpoint() {
     }
