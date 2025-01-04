@@ -20,7 +20,7 @@ public class SimpleTimerComponent extends DefaultComponent implements ExtendedSt
 
     @Override
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
-        var endpoint = new SimpleTimerEndpoint(uri, this);
+        var endpoint = new SimpleTimerEndpoint(uri, remaining, this);
         setProperties(endpoint, parameters);
         return endpoint;
     }

@@ -38,8 +38,9 @@ public class SimpleTimerEndpoint extends DefaultEndpoint {
 
     }
 
-    public SimpleTimerEndpoint(String uri, SimpleTimerComponent component) {
+    public SimpleTimerEndpoint(String uri, String flowId, SimpleTimerComponent component) {
         setEndpointUri(uri);
+        setFlowId(flowId);
         setComponent(component);
         setCamelContext(component.getCamelContext());
         log.info("SimpleTimerEndpoint created");
