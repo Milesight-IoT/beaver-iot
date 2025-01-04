@@ -24,10 +24,10 @@ import java.util.List;
         remote = false, category = { Category.WORKFLOW}, headersClass = EventListenerConstants.class)
 public class EventListenerEndpoint extends DefaultEndpoint {
 
+
     @UriPath
     @Metadata(required = true, autowired = true)
     private String eventListenerName;
-
     @UriParamExtension(uiComponent = "entityMultipleSelect")
     @UriParam(displayName = "Entity Listening Setting", description = "The entities to listen for events")
     private List<String> entities;
