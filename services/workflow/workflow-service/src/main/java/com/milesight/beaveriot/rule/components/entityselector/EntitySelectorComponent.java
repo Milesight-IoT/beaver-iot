@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * @author loong
  * @date 2024/12/18 8:47
  */
-@RuleNode(value = "entitySelector", type = RuleNodeType.ACTION, description = "EntitySelector")
+@RuleNode(value = "entitySelector", type = RuleNodeType.ACTION, description = "EntitySelector", testable = false)
 @Data
 public class EntitySelectorComponent implements ProcessorNode<Exchange> {
 
