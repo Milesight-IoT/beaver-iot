@@ -21,7 +21,7 @@ import java.util.Map;
  * @author loong
  * @date 2024/12/23 11:34
  */
-@RuleNode(value = "serviceInvocation", type = RuleNodeType.ACTION, description = "Service Invocation")
+@RuleNode(value = "serviceInvocation", type = RuleNodeType.ACTION, description = "Service Invocation", testable = false)
 @Data
 public class ServiceInvocationComponent implements ProcessorNode<Exchange> {
 

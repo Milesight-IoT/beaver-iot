@@ -22,7 +22,7 @@ import java.util.Map;
  * @author loong
  * @date 2024/12/17 13:49
  */
-@RuleNode(value = "entityAssigner", type = RuleNodeType.ACTION, description = "Entity Assigner")
+@RuleNode(value = "entityAssigner", type = RuleNodeType.ACTION, description = "Entity Assigner", testable = false)
 @Data
 public class EntityAssignerComponent implements ProcessorNode<Exchange> {
 
