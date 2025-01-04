@@ -26,7 +26,7 @@ public class WebhookComponent implements ProcessorNode<Exchange> {
 
     @UriParam(prefix = "bean")
     @UriParamExtension(uiComponent = "paramAssignInput")
-    private Map<String, Object> inputArguments;
+    private Map<String, Object> payload;
     @UriParam(prefix = "bean")
     private String webhookUrl;
     @UriParam(prefix = "bean")
@@ -37,8 +37,8 @@ public class WebhookComponent implements ProcessorNode<Exchange> {
 
     @Override
     public void processor(Exchange exchange) {
-        if(inputArguments != null) {
-            Map<String, Object> inputArgumentsVariables = SpELExpressionHelper.resolveExpression(exchange, inputArguments);
+        if(payload != null) {
+            Map<String, Object> inputArgumentsVariables = SpELExpressionHelper.resolveExpression(exchange, payload);
             exchange.getIn().setBody(inputArgumentsVariables);
         }
         String timestamp = System.currentTimeMillis() + "";
