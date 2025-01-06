@@ -106,9 +106,7 @@ public class EntityService implements EntityServiceProvider {
             DeviceNameDTO deviceDetail = deviceIdToDetails.get(attachTargetId);
             if (deviceDetail != null) {
                 deviceKey = deviceDetail.getKey();
-                if (deviceDetail.getIntegrationConfig() != null) {
-                    integrationId = deviceDetail.getIntegrationConfig().getId();
-                }
+                integrationId = deviceDetail.getIntegrationId();
             }
         } else if (attachTarget == AttachTargetType.INTEGRATION) {
             integrationId = attachTargetId;
@@ -497,9 +495,13 @@ public class EntityService implements EntityServiceProvider {
         if (entityPOList == null || entityPOList.isEmpty()) {
             return new HashMap<>();
         }
+        List<EntityPO> childrenEntityPOList = findChildrenEntityPOListByParents(entityPOList);
 
+        List<EntityPO> parentAndChildren = Stream.concat(entityPOList.stream(), childrenEntityPOList.stream()).toList();
         try {
-            return convertPOListToEntities(entityPOList).stream()
+            List<Entity> entities = convertPOListToEntities(parentAndChildren);
+            return mapKeysToEntities(entities, List.of(entityKeys), Entity::getKey)
+                    .stream()
                     .collect(Collectors.toMap(Entity::getKey, Function.identity()));
         } catch (Exception e) {
             log.error("find entity by keys error: {}", e.getMessage(), e);
@@ -521,13 +523,14 @@ public class EntityService implements EntityServiceProvider {
             return new ArrayList<>();
         }
 
-        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.id, ids.toArray()));
+        List<EntityPO> entityPOList = findEntityPOListAndTheirChildrenByIds(ids);
         if (entityPOList == null || entityPOList.isEmpty()) {
             return new ArrayList<>();
         }
 
         try {
-            return convertPOListToEntities(entityPOList);
+            List<Entity> entities = convertPOListToEntities(entityPOList);
+            return mapKeysToEntities(entities, ids, Entity::getId);
         } catch (Exception e) {
             log.error("find entity by ids error: {}", e.getMessage(), e);
             throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
@@ -754,16 +757,37 @@ public class EntityService implements EntityServiceProvider {
      */
     public List<EntityPO> findEntityPOListAndTheirChildrenByIds(List<Long> entityIds) {
         List<EntityPO> entityPOList = entityRepository.findAllById(entityIds);
-        List<Long> parentEntityIds = entityPOList.stream()
-                .filter(t -> t.getParent() == null)
-                .map(EntityPO::getId).toList();
-        List<EntityPO> childrenEntityPOList = List.of();
-        if (!parentEntityIds.isEmpty()) {
-            childrenEntityPOList = entityRepository.findAll(
-                    filter -> filter.in(EntityPO.Fields.parent, parentEntityIds.toArray()));
-        }
+        List<EntityPO> childrenEntityPOList = findChildrenEntityPOListByParents(entityPOList);
 
         return Stream.concat(entityPOList.stream(), childrenEntityPOList.stream())
+                .toList();
+    }
+
+    private List<EntityPO> findChildrenEntityPOListByParents(List<EntityPO> entityPOList) {
+        List<String> parentEntityKeys = entityPOList.stream()
+                .filter(t -> t.getParent() == null)
+                .map(EntityPO::getKey)
+                .distinct()
+                .toList();
+        List<EntityPO> childrenEntityPOList = List.of();
+        if (!parentEntityKeys.isEmpty()) {
+            childrenEntityPOList = entityRepository.findAll(
+                    filter -> filter.in(EntityPO.Fields.parent, parentEntityKeys.toArray()));
+        }
+        return childrenEntityPOList;
+    }
+
+    /**
+     * Return a list of entities corresponding one-to-one with the given keys
+     */
+    private <T> List<Entity> mapKeysToEntities(List<Entity> entities, List<T> keys, Function<Entity, T> keyMapper) {
+        Map<T, Entity> entityMap = entities.stream()
+                .flatMap(entity -> entity.getChildren() == null
+                        ? Stream.of(entity)
+                        : Stream.concat(Stream.of(entity), entity.getChildren().stream()))
+                .collect(Collectors.toMap(keyMapper, Function.identity()));
+        return keys.stream()
+                .map(entityMap::get)
                 .toList();
     }
 

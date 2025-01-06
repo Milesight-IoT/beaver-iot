@@ -285,6 +285,7 @@ public class DeviceService implements IDeviceFacade {
                 .key(devicePO.getKey())
                 .userId(devicePO.getUserId())
                 .createdAt(devicePO.getCreatedAt())
+                .integrationId(devicePO.getIntegration())
                 .integrationConfig(integrationMap.get(devicePO.getIntegration()))
                 .build()
         ).toList();
