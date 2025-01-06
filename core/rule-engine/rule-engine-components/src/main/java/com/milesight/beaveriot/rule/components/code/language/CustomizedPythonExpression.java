@@ -6,6 +6,8 @@ import org.apache.camel.ExpressionIllegalSyntaxException;
 import org.apache.camel.language.python.PythonExpression;
 import org.python.core.PyBoolean;
 import org.python.core.PyObject;
+import org.python.core.PySingleton;
+import org.python.core.PyUnicode;
 import org.python.util.PythonInterpreter;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
@@ -59,17 +61,27 @@ public class CustomizedPythonExpression extends PythonExpression {
     }
 
     private Object convertValue(PyObject out) {
+        Object result = null;
         if (out instanceof PyBoolean) {
-            return out.__tojava__(Boolean.class);
+            result = out.__tojava__(Boolean.class);
+        } else if (out instanceof PyUnicode) {
+            result = out.__tojava__(String.class);
         } else if (out.isNumberType()) {
-            return out.__tojava__(Number.class);
+            result = out.__tojava__(Number.class);
         } else if (out.isMappingType()) {
-            return out.__tojava__(Map.class);
+            result = out.__tojava__(Map.class);
         } else if (out.isSequenceType()) {
-            return out.__tojava__(List.class);
+            result = out.__tojava__(List.class);
         } else {
-            return out.toString();
+            result = out.toString();
         }
+
+        //todo:
+        if (result instanceof PySingleton pySingleton && "Error".equals(pySingleton.toString())) {
+            throw new ExpressionIllegalSyntaxException(expressionString, new Exception(pySingleton.toString()));
+        }
+
+        return result;
     }
 
 }

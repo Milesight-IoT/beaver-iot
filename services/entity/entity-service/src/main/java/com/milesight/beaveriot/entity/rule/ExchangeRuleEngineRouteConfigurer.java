@@ -4,6 +4,7 @@ import com.milesight.beaveriot.rule.RuleEngineRouteConfigurer;
 import com.milesight.beaveriot.rule.constants.RuleNodeNames;
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.model.RouteDefinition;
 import org.springframework.stereotype.Component;
 
 /**
@@ -16,8 +17,9 @@ public class ExchangeRuleEngineRouteConfigurer implements RuleEngineRouteConfigu
         context.addRoutes(new RouteBuilder() {
             @Override
             public void configure() {
-                from(RuleNodeNames.innerExchangeUpFlow)
-                        .choice()
+                RouteDefinition exchangeUpRoute = from(RuleNodeNames.innerExchangeFlow);
+                exchangeUpRoute.setId(RuleNodeNames.innerExchangeRouteId);
+                exchangeUpRoute.choice()
                         .when().method(RuleNodeNames.innerExchangeValidator)
                         .bean(RuleNodeNames.innerExchangeSaveAction)
                         .choice()
@@ -33,22 +35,6 @@ public class ExchangeRuleEngineRouteConfigurer implements RuleEngineRouteConfigu
                         .log("ExchangeValidator failed on innerExchangeUpFlow.")
                         .end();
 
-                from(RuleNodeNames.innerExchangeDownFlow)
-                        .choice()
-                        .when().method(RuleNodeNames.innerExchangeValidator)
-                        .bean(RuleNodeNames.innerExchangeSaveAction)
-                        .choice()
-                        .when().method(RuleNodeNames.innerDirectExchangePredicate)
-                        .bean(RuleNodeNames.innerWorkflowTriggerByEntity)
-                        .when().method(RuleNodeNames.innerSyncCallPredicate)
-                        .bean(RuleNodeNames.innerEventHandlerAction)
-                        .otherwise()
-                        .bean(RuleNodeNames.innerEventSubscribeAction)
-                        .end()
-                        .endChoice()
-                        .otherwise()
-                        .log("ExchangeValidator failed on innerExchangeDownFlow")
-                        .end();
             }
         });
     }

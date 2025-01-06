@@ -117,10 +117,15 @@ public class RuleEngineTracer extends DefaultTracer {
         if (body == null) {
             return null;
         }
-        if (body instanceof Exchange exchangeBody) {
-            return JsonHelper.toJSON(exchangeBody.getIn().getBody());
-        } else {
-            return JsonHelper.toJSON(body);
+        try {
+            if (body instanceof Exchange exchangeBody) {
+                return JsonHelper.toJSON(exchangeBody.getIn().getBody());
+            } else {
+                return JsonHelper.toJSON(body);
+            }
+        } catch (Exception ex) {
+            log.error("Convert exchange body failed", ex);
+            return "Convert exchange body failed";
         }
     }
 

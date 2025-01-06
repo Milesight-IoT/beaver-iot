@@ -2,6 +2,7 @@ package com.milesight.beaveriot.rule.model.trace;
 
 import com.milesight.beaveriot.rule.enums.ExecutionStatus;
 import lombok.Data;
+import org.springframework.util.StringUtils;
 
 /**
  * @author leon
@@ -33,6 +34,6 @@ public class NodeTraceInfo {
 
     public void causeException(Exception ex) {
         this.status = ExecutionStatus.ERROR;
-        this.errorMessage = ex.getMessage();
+        this.errorMessage = StringUtils.hasText(ex.getMessage()) ? ex.getMessage() : ex.toString();
     }
 }

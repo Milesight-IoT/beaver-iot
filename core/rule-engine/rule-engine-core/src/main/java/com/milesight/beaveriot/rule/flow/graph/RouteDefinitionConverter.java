@@ -42,7 +42,7 @@ public class RouteDefinitionConverter {
             toDefinition.setId(namespacedId);
             toDefinition.setDescription(toNodeDefinition.getNameNode());
             return toDefinition;
-        } else if (nodeDefinition instanceof ChoiceNodeDefinition choiceNodeDefinition) {
+        }  else if (nodeDefinition instanceof ChoiceNodeDefinition choiceNodeDefinition) {
             GraphChoiceDefinition choiceDefinition = new GraphChoiceDefinition();
             choiceDefinition.setId(namespacedId);
             Map<String, WhenDefinition> whenClause = choiceNodeDefinition.getWhenNodeDefinitions()
@@ -77,7 +77,8 @@ public class RouteDefinitionConverter {
     private static String generateUri(String uri, Map<String, Object> parameters) {
         if (!ObjectUtils.isEmpty(parameters)) {
             return uri + "?" + parameters.entrySet().stream()
-                    .map(entry -> entry.getKey() + "=" + entry.getValue())
+                    .filter(entry -> entry.getValue() != null)
+                    .map(entry -> entry.getKey() + "=RAW(" + entry.getValue() +")")
                     .collect(Collectors.joining("&"));
         } else {
             return uri;

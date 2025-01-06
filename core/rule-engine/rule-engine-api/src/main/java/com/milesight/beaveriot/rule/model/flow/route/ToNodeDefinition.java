@@ -25,7 +25,7 @@ public class ToNodeDefinition extends AbstractNodeDefinition {
 
     public static ToNodeDefinition create(RuleNodeConfig ruleNodeConfig, ComponentDefinition componentDefinition) {
 
-        Map<String, Object> parameters = ComponentParameterConverter.convertParameters(ruleNodeConfig.getParameters(), componentDefinition);
+         Map<String, Object> parameters = ComponentParameterConverter.convertParameters(ruleNodeConfig.getParameters(), componentDefinition);
         String uri = componentDefinition.generateUri(ruleNodeConfig.getId(), parameters);
         ToNodeDefinition nodeDefinition = new ToNodeDefinition(uri, parameters);
         nodeDefinition.setId(ruleNodeConfig.getId());

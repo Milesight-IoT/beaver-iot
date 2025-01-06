@@ -28,7 +28,7 @@ public class GenericExchangeFlowExecutor implements ExchangeFlowExecutor {
     @Override
     public EventResponse syncExchange(ExchangePayload exchangePayload, EventSource eventSource) {
         initializeEventContext(eventSource, exchangePayload, true);
-        Object response = ruleEngineExecutor.executeWithResponse(RuleNodeNames.innerExchangeDownFlow, exchangePayload);
+        Object response = ruleEngineExecutor.executeWithResponse(RuleNodeNames.innerExchangeFlow, exchangePayload);
         if (response != null && !(response instanceof EventResponse)) {
             log.warn("syncExchangeDown response is not EventResponse, response:{}", response);
             return EventResponse.empty();
@@ -40,7 +40,7 @@ public class GenericExchangeFlowExecutor implements ExchangeFlowExecutor {
     @Override
     public void asyncExchange(ExchangePayload exchangePayload, EventSource eventSource) {
         initializeEventContext(eventSource, exchangePayload, false);
-        ruleEngineExecutor.execute(RuleNodeNames.innerExchangeUpFlow, exchangePayload);
+        ruleEngineExecutor.execute(RuleNodeNames.innerExchangeFlow, exchangePayload);
     }
 
     @Override

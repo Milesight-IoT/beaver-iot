@@ -5,8 +5,8 @@ package com.milesight.beaveriot.rule.constants;
  */
 public interface RuleNodeNames {
 
-    String innerExchangeDownFlow = "direct:innerExchangeDownFlow";
-    String innerExchangeUpFlow = "direct:innerExchangeUpFlow";
+    String innerExchangeRouteId = "innerExchangeRoute";
+    String innerExchangeFlow = "direct:innerExchangeFlow";
     String innerExchangeValidator = "innerExchangeValidator";
     String innerSyncCallPredicate = "innerSyncCallPredicate";
     String innerEventHandlerAction = "innerEventHandlerAction";
