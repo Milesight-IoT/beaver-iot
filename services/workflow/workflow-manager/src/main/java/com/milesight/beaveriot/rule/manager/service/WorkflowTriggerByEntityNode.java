@@ -7,10 +7,15 @@ import com.milesight.beaveriot.rule.api.ProcessorNode;
 import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
 import com.milesight.beaveriot.rule.constants.RuleNodeNames;
 import com.milesight.beaveriot.rule.manager.po.WorkflowPO;
+import com.milesight.beaveriot.rule.support.SpELExpressionHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 /**
  * WorkflowExecuteTriggerNode class.
@@ -20,9 +25,9 @@ import org.springframework.stereotype.Component;
  */
 
 @Component
-@RuleNode(value = RuleNodeNames.innerWorkflowDirectExchangeFlow, description = "innerEventHandlerAction")
+@RuleNode(value = RuleNodeNames.innerWorkflowTriggerByEntity, description = "innerWorkflowTriggerByEntity")
 @Slf4j
-public class WorkflowDirectExchangeNode implements ProcessorNode<Exchange> {
+public class WorkflowTriggerByEntityNode implements ProcessorNode<Exchange> {
     @Autowired
     RuleEngineExecutor ruleEngineExecutor;
 
@@ -43,6 +48,17 @@ public class WorkflowDirectExchangeNode implements ProcessorNode<Exchange> {
             return;
         }
 
-        ruleEngineExecutor.execute("direct:" + workflowPO.getId(), exchange);
+        Map<String, String> keyToIdentity = entity.getChildren().stream().collect(Collectors.toMap(Entity::getKey, Entity::getIdentifier));
+        Object exchangeData = exchange.getIn().getBody();
+        if (exchangeData instanceof Map) {
+            Map<String, Object> nextExchange = ((Map<String, Object>) exchangeData).entrySet().stream().collect(Collectors.toMap(
+                    (Entry<String, Object> entry) -> keyToIdentity.get(entry.getKey()),
+                    Entry::getValue
+            ));
+
+            ruleEngineExecutor.execute("direct:" + workflowPO.getId(), nextExchange);
+        } else {
+            log.error("Wrong exchange data type, should be a map!");
+        }
     }
 }

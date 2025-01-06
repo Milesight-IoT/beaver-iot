@@ -14,7 +14,7 @@ public interface RuleNodeNames {
     String innerEventSubscribeAction = "innerEventSubscribeAction";
     String innerParallelSplitter = "innerParallelSplitter";
     String innerDirectExchangePredicate = "innerDirectExchangePredicate";
-    String innerWorkflowDirectExchangeFlow = "innerWorkflowDirectExchangeFlow";
+    String innerWorkflowTriggerByEntity = "innerWorkflowTriggerByEntity";
 
     String CAMEL_DIRECT = "direct";
     String CAMEL_CHOICE = "choice";
