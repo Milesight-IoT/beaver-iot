@@ -1,0 +1,29 @@
+
+
+
+integration:
+   demo-anno-integration:
+      iconUrl: public/msc-integration.png
+      name: "anno-integration"
+      description: "This is a sample integration"
+      enabled: true
+
+      # Add device service entity key
+      entity-identifier-add-device: addDevice
+      # Delete device service entity key
+      entity-identifier-delete-device: deleteDevice
+      initial-devices:
+         - name: device1
+           identifier: demoSN
+           entities:
+              - identifier: 'switch'
+                name: switch
+                access_mod: rw
+                value_type: boolean
+                type: property
+      initial-entities:
+         - identifier: 'address'
+           name: mscAddress
+           access_mod: rw
+           value_type: string
+           type: property

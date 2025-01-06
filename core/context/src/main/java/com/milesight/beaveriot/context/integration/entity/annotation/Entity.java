@@ -25,4 +25,6 @@ public @interface Entity {
 
     Attribute[] attributes() default {};
 
+    boolean visible() default true;
+
 }

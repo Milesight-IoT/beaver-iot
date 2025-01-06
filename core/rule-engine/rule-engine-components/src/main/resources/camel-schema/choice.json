@@ -1,0 +1,36 @@
+{
+  "component": {
+    "kind": "component",
+    "name": "choice",
+    "title": "IF-ELSE",
+    "description": "Generate messages in specified intervals using java.util.Timer.",
+    "firstVersion": "1.0.0",
+    "label": "choice",
+    "supportLevel": "Stable",
+    "version": "4.4.3",
+    "scheme": "choice",
+    "async": false,
+    "api": false,
+    "consumerOnly": false,
+    "producerOnly": false,
+    "lenientProperties": false,
+    "remote": false,
+    "testable": false
+  },
+  "properties": {
+    "choice": {
+      "index": 0,
+      "kind": "parameter",
+      "displayName": "Choice Config",
+      "group": "consumer",
+      "label": "",
+      "required": true,
+      "type": "object",
+      "javaType": "java.util.Map",
+      "autowired": false,
+      "secret": false,
+      "description": "The Choice Config",
+      "uiComponent": "conditionsInput"
+    }
+  }
+}

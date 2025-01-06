@@ -50,7 +50,6 @@ public class IntegrationConfig {
                 .enabled(enabled)
                 .entityIdentifierAddDevice(entityIdentifierAddDevice)
                 .entityIdentifierDeleteDevice(entityIdentifierDeleteDevice)
-                .flowExchangeDownHandler(flowExchangeDownHandler)
                 .end()
                 .initialEntities(()-> initialEntities.stream().map(entityConfig -> entityConfig.toEntity()).toList())
                 .initialDevices(devices)

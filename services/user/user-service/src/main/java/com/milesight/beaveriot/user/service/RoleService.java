@@ -54,6 +54,7 @@ import com.milesight.beaveriot.user.repository.UserRoleRepository;
 import com.milesight.beaveriot.user.util.PageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -149,7 +150,7 @@ public class RoleService {
     }
 
     public Page<RoleResponse> getRoles(RoleListRequest roleListRequest) {
-        Page<RolePO> rolePages = roleRepository.findAll(filterable -> filterable.like(StringUtils.hasText(roleListRequest.getKeyword()), RolePO.Fields.name, roleListRequest.getKeyword())
+        Page<RolePO> rolePages = roleRepository.findAll(filterable -> filterable.likeIgnoreCase(StringUtils.hasText(roleListRequest.getKeyword()), RolePO.Fields.name, roleListRequest.getKeyword())
                 , roleListRequest.toPageable());
         if (rolePages == null || rolePages.getContent().isEmpty()) {
             return Page.empty();
@@ -179,11 +180,13 @@ public class RoleService {
     public Page<UserRoleResponse> getUsersByRoleId(Long roleId, UserRolePageRequest userRolePageRequest) {
         List<Long> searchUserIds = new ArrayList<>();
         if (StringUtils.hasText(userRolePageRequest.getKeyword())) {
-            List<UserPO> userSearchPOs = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.like(StringUtils.hasText(userRolePageRequest.getKeyword()), UserPO.Fields.email, userRolePageRequest.getKeyword())
-                            .like(StringUtils.hasText(userRolePageRequest.getKeyword()), UserPO.Fields.nickname, userRolePageRequest.getKeyword()))
+            List<UserPO> userSearchPOs = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(userRolePageRequest.getKeyword()), UserPO.Fields.email, userRolePageRequest.getKeyword())
+                            .likeIgnoreCase(StringUtils.hasText(userRolePageRequest.getKeyword()), UserPO.Fields.nickname, userRolePageRequest.getKeyword()))
             );
             if (userSearchPOs != null && !userSearchPOs.isEmpty()) {
                 searchUserIds.addAll(userSearchPOs.stream().map(UserPO::getId).toList());
+            }else {
+                return Page.empty();
             }
         }
         Page<UserRolePO> userRolePOS = userRoleRepository.findAll(filterable -> filterable.eq(UserRolePO.Fields.roleId, roleId)
@@ -247,15 +250,14 @@ public class RoleService {
     }
 
     public Page<RoleIntegrationResponse> getIntegrationsByRoleId(Long roleId, RoleIntegrationRequest roleIntegrationRequest) {
-        List<Long> searchIntegrationIds = new ArrayList<>();
+        List<String> searchIntegrationIds = new ArrayList<>();
         if (StringUtils.hasText(roleIntegrationRequest.getKeyword())) {
             List<Integration> integrations = integrationServiceProvider.findIntegrations(f -> f.getName().toLowerCase().contains(roleIntegrationRequest.getKeyword().toLowerCase()));
             if (integrations != null && !integrations.isEmpty()) {
                 List<String> integrationIds = integrations.stream().map(Integration::getId).toList();
-                List<DeviceNameDTO> integrationDevices = deviceFacade.getDeviceNameByIntegrations(integrationIds);
-                if (integrationDevices != null && !integrationDevices.isEmpty()) {
-                    searchIntegrationIds.addAll(integrationDevices.stream().map(DeviceNameDTO::getId).toList());
-                }
+                searchIntegrationIds.addAll(integrationIds);
+            }else {
+                return Page.empty();
             }
         }
         Page<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
@@ -284,6 +286,7 @@ public class RoleService {
     public Page<RoleDeviceResponse> getDevicesByRoleId(Long roleId, RoleDeviceRequest roleDeviceRequest) {
         List<String> searchIntegrationIds = new ArrayList<>();
         List<Long> searchDeviceIds = new ArrayList<>();
+        boolean isKeywordSearch = false;
         if (StringUtils.hasText(roleDeviceRequest.getKeyword())) {
             List<Integration> integrations = integrationServiceProvider.findIntegrations(f -> f.getName().toLowerCase().contains(roleDeviceRequest.getKeyword().toLowerCase()));
             if (integrations != null && !integrations.isEmpty()) {
@@ -298,13 +301,23 @@ public class RoleService {
             if (deviceNameDTOList != null && !deviceNameDTOList.isEmpty()) {
                 searchDeviceIds.addAll(deviceNameDTOList.stream().map(DeviceNameDTO::getId).toList());
             }
+            if (searchDeviceIds.isEmpty() && searchIntegrationIds.isEmpty()) {
+                return Page.empty();
+            }
+            isKeywordSearch = true;
         }
-        List<RoleResourcePO> roleIntegrationPOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
-                .eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION.name())
-                .in(!searchIntegrationIds.isEmpty(), RoleResourcePO.Fields.resourceId, searchIntegrationIds.toArray()));
-        List<RoleResourcePO> roleDevicePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
-                .eq(RoleResourcePO.Fields.resourceType, ResourceType.DEVICE.name())
-                .in(!searchDeviceIds.isEmpty(), RoleResourcePO.Fields.resourceId, searchDeviceIds.toArray()));
+        List<RoleResourcePO> roleIntegrationPOS = new ArrayList<>();
+        if(!isKeywordSearch || !searchIntegrationIds.isEmpty()) {
+            roleIntegrationPOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
+                    .eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION.name())
+                    .in(!searchIntegrationIds.isEmpty(), RoleResourcePO.Fields.resourceId, searchIntegrationIds.toArray()));
+        }
+        List<RoleResourcePO> roleDevicePOS = new ArrayList<>();
+        if(!isKeywordSearch || !searchDeviceIds.isEmpty()) {
+            roleDevicePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
+                    .eq(RoleResourcePO.Fields.resourceType, ResourceType.DEVICE.name())
+                    .in(!searchDeviceIds.isEmpty(), RoleResourcePO.Fields.resourceId, searchDeviceIds.toArray()));
+        }
         List<Long> responseDeviceIds = new ArrayList<>();
         if (roleDevicePOS != null && !roleDevicePOS.isEmpty()) {
             responseDeviceIds.addAll(roleDevicePOS.stream().map(RoleResourcePO::getResourceId).map(Long::parseLong).toList());
@@ -329,7 +342,7 @@ public class RoleService {
             List<UserPO> userPOList = userRepository.findAll(filterable -> filterable.in(UserPO.Fields.id, userIds.toArray()));
             userMap.putAll(userPOList.stream().collect(Collectors.toMap(UserPO::getId, Function.identity())));
         }
-        List<RoleDeviceResponse> roleDeviceResponseList = responseDeviceIds.stream().map(deviceId -> {
+        List<RoleDeviceResponse> roleDeviceResponseList = responseDeviceIds.stream().distinct().map(deviceId -> {
             RoleDeviceResponse roleDeviceResponse = new RoleDeviceResponse();
             roleDeviceResponse.setDeviceId(deviceId.toString());
             roleDeviceResponse.setDeviceName(deviceMap.get(deviceId) == null ? null : deviceMap.get(deviceId).getName());
@@ -354,9 +367,11 @@ public class RoleService {
     public Page<RoleDashboardResponse> getDashboardsByRoleId(Long roleId, RoleDashboardRequest roleDashboardRequest) {
         List<Long> searchDashboardIds = new ArrayList<>();
         if (StringUtils.hasText(roleDashboardRequest.getKeyword())) {
-            List<DashboardDTO> dashboardPOS = dashboardFacade.getDashboardsLike(roleDashboardRequest.getKeyword());
+            List<DashboardDTO> dashboardPOS = dashboardFacade.getDashboardsLike(roleDashboardRequest.getKeyword(), Sort.unsorted());
             if (dashboardPOS != null && !dashboardPOS.isEmpty()) {
                 searchDashboardIds.addAll(dashboardPOS.stream().map(DashboardDTO::getDashboardId).toList());
+            }else{
+                return Page.empty();
             }
         }
         Page<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
@@ -390,11 +405,10 @@ public class RoleService {
         });
     }
 
-    public List<DashboardUndistributedResponse> getUndistributedDashboards(Long roleId, DashboardUndistributedRequest dashboardUndistributedRequest) {
-        //TODO sort
-        List<DashboardDTO> dashboardDTOList = dashboardFacade.getDashboardsLike(dashboardUndistributedRequest.getKeyword());
+    public Page<DashboardUndistributedResponse> getUndistributedDashboards(Long roleId, DashboardUndistributedRequest dashboardUndistributedRequest) {
+        List<DashboardDTO> dashboardDTOList = dashboardFacade.getDashboardsLike(dashboardUndistributedRequest.getKeyword(), dashboardUndistributedRequest.getSort().toSort());
         if (dashboardDTOList == null || dashboardDTOList.isEmpty()) {
-            return Collections.emptyList();
+            return Page.empty();
         }
         List<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
                 .eq(RoleResourcePO.Fields.resourceType, ResourceType.DASHBOARD.name()));
@@ -406,7 +420,7 @@ public class RoleService {
             List<UserPO> userPOList = userRepository.findAll(filterable -> filterable.in(UserPO.Fields.id, userIds.toArray()));
             userMap.putAll(userPOList.stream().collect(Collectors.toMap(UserPO::getId, Function.identity())));
         }
-        return dashboardUndistributedList.stream().map(dashboardDTO -> {
+        List<DashboardUndistributedResponse> dashboardUndistributedResponseList = dashboardUndistributedList.stream().map(dashboardDTO -> {
             DashboardUndistributedResponse dashboardListResponse = new DashboardUndistributedResponse();
             dashboardListResponse.setDashboardId(dashboardDTO.getDashboardId().toString());
             dashboardListResponse.setDashboardName(dashboardDTO.getDashboardName());
@@ -416,49 +430,54 @@ public class RoleService {
             dashboardListResponse.setUserNickname(userMap.get(dashboardDTO.getUserId()) == null ? null : userMap.get(dashboardDTO.getUserId()).getNickname());
             return dashboardListResponse;
         }).collect(Collectors.toList());
+        return PageConverter.convertToPage(dashboardUndistributedResponseList, dashboardUndistributedRequest.toPageable());
     }
 
-    public List<UserUndistributedResponse> getUndistributedUsers(Long roleId, UserUndistributedRequest userUndistributedRequest) {
-        //TODO sort
-        List<UserPO> userPOS = userRepository.findAll(filterable -> filterable.like(StringUtils.hasText(userUndistributedRequest.getKeyword()), UserPO.Fields.nickname, userUndistributedRequest.getKeyword()));
+    public Page<UserUndistributedResponse> getUndistributedUsers(Long roleId, UserUndistributedRequest userUndistributedRequest) {
+        List<UserPO> userPOS = userRepository.findAll(filterable -> filterable.likeIgnoreCase(StringUtils.hasText(userUndistributedRequest.getKeyword()), UserPO.Fields.nickname, userUndistributedRequest.getKeyword()), userUndistributedRequest.getSort().toSort());
         if (userPOS == null || userPOS.isEmpty()) {
-            return Collections.emptyList();
+            return Page.empty();
         }
         List<UserRolePO> userRolePOS = userRoleRepository.findAll(filterable -> filterable.eq(UserRolePO.Fields.roleId, roleId));
         List<Long> userIds = userRolePOS.stream().map(UserRolePO::getUserId).distinct().toList();
-        return userPOS.stream().filter(userPO -> !userIds.contains(userPO.getId())).map(userPO -> {
+        List<UserUndistributedResponse> userUndistributedResponseList = userPOS.stream().filter(userPO -> !userIds.contains(userPO.getId())).map(userPO -> {
             UserUndistributedResponse userUndistributedResponse = new UserUndistributedResponse();
             userUndistributedResponse.setUserId(userPO.getId().toString());
             userUndistributedResponse.setEmail(userPO.getEmail());
             userUndistributedResponse.setNickname(userPO.getNickname());
             return userUndistributedResponse;
         }).collect(Collectors.toList());
+        return PageConverter.convertToPage(userUndistributedResponseList, userUndistributedRequest.toPageable());
     }
 
-    public List<IntegrationUndistributedResponse> getUndistributedIntegrations(Long roleId, IntegrationUndistributedRequest integrationUndistributedRequest) {
+    public Page<IntegrationUndistributedResponse> getUndistributedIntegrations(Long roleId, IntegrationUndistributedRequest integrationUndistributedRequest) {
         List<Integration> integrations = new ArrayList<>();
         if (StringUtils.hasText(integrationUndistributedRequest.getKeyword())) {
             integrations.addAll(integrationServiceProvider.findIntegrations(f -> f.getName().toLowerCase().contains(integrationUndistributedRequest.getKeyword().toLowerCase())));
         } else {
             integrations.addAll(integrationServiceProvider.findIntegrations());
         }
+        if (integrations.isEmpty()) {
+            return Page.empty();
+        }
         List<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
                 .eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION.name()));
         List<String> roleIntegrationIds = roleResourcePOS.stream().map(RoleResourcePO::getResourceId).toList();
-        return integrations.stream().filter(integration -> !roleIntegrationIds.contains(integration.getId())).map(integration -> {
+        List<IntegrationUndistributedResponse> integrationUndistributedResponseList = integrations.stream().filter(integration -> !roleIntegrationIds.contains(integration.getId())).map(integration -> {
             IntegrationUndistributedResponse integrationUndistributedResponse = new IntegrationUndistributedResponse();
             integrationUndistributedResponse.setIntegrationId(integration.getId());
             integrationUndistributedResponse.setIntegrationName(integration.getName());
             return integrationUndistributedResponse;
         }).toList();
+        return PageConverter.convertToPage(integrationUndistributedResponseList, integrationUndistributedRequest.toPageable());
     }
 
-    public List<DeviceUndistributedResponse> getUndistributedDevices(Long roleId, DeviceUndistributedRequest deviceUndistributedRequest) {
+    public Page<DeviceUndistributedResponse> getUndistributedDevices(Long roleId, DeviceUndistributedRequest deviceUndistributedRequest) {
         List<Integration> integrations = integrationServiceProvider.findIntegrations().stream().toList();
         List<String> integrationIds = integrations.stream().map(Integration::getId).toList();
         List<DeviceNameDTO> deviceNameDTOList = deviceFacade.getDeviceNameByIntegrations(integrationIds);
         if (deviceNameDTOList == null || deviceNameDTOList.isEmpty()) {
-            return Collections.emptyList();
+            return Page.empty();
         }
         if (StringUtils.hasText(deviceUndistributedRequest.getKeyword())) {
             deviceNameDTOList = deviceNameDTOList.stream().filter(deviceNameDTO -> {
@@ -475,7 +494,7 @@ public class RoleService {
             }).toList();
         }
         if (deviceNameDTOList.isEmpty()) {
-            return Collections.emptyList();
+            return Page.empty();
         }
         List<Long> deviceUserIds = deviceNameDTOList.stream().map(DeviceNameDTO::getUserId).filter(Objects::nonNull).distinct().toList();
         Map<Long, UserPO> userMap = new HashMap<>();
@@ -488,7 +507,7 @@ public class RoleService {
                 .eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION.name()));
         List<String> roleIntegrationIds = roleIntegrationPOS.stream().map(RoleResourcePO::getResourceId).toList();
         if (!roleIntegrationIds.isEmpty()) {
-            List<DeviceNameDTO> deviceNameDTOListByIntegration = deviceFacade.getDeviceNameByKey(roleIntegrationIds);
+            List<DeviceNameDTO> deviceNameDTOListByIntegration = deviceFacade.getDeviceNameByIntegrations(roleIntegrationIds);
             roleDeviceIds.addAll(deviceNameDTOListByIntegration.stream().map(DeviceNameDTO::getId).toList());
         }
         List<RoleResourcePO> roleDevicePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
@@ -497,7 +516,7 @@ public class RoleService {
         if (!roleDeviceIdsByDevice.isEmpty()) {
             roleDeviceIds.addAll(roleDeviceIdsByDevice);
         }
-        return deviceNameDTOList.stream().filter(deviceNameDTO -> !roleDeviceIds.contains(deviceNameDTO.getId())).map(deviceNameDTO -> {
+        List<DeviceUndistributedResponse> deviceUndistributedResponseList = deviceNameDTOList.stream().filter(deviceNameDTO -> !roleDeviceIds.contains(deviceNameDTO.getId())).map(deviceNameDTO -> {
             DeviceUndistributedResponse deviceUndistributedResponse = new DeviceUndistributedResponse();
             deviceUndistributedResponse.setDeviceId(deviceNameDTO.getId().toString());
             deviceUndistributedResponse.setDeviceName(deviceNameDTO.getName());
@@ -516,6 +535,7 @@ public class RoleService {
             }
             return deviceUndistributedResponse;
         }).toList();
+        return PageConverter.convertToPage(deviceUndistributedResponseList, deviceUndistributedRequest.toPageable());
     }
 
     @Transactional(rollbackFor = Exception.class)

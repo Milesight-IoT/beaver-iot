@@ -4,14 +4,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.milesight.beaveriot.base.annotations.SFunction;
 import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
+import com.milesight.beaveriot.context.constants.ExchangeContextKeys;
 import com.milesight.beaveriot.context.integration.entity.annotation.AnnotationEntityCache;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
 import com.milesight.beaveriot.base.utils.lambada.LambdaMeta;
 import com.milesight.beaveriot.base.utils.lambada.LambdaUtils;
 import com.milesight.beaveriot.context.support.SpringContext;
+import com.milesight.beaveriot.context.util.ExchangeContextHelper;
 import com.milesight.beaveriot.eventbus.EventBus;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
+import com.milesight.beaveriot.eventbus.enums.EventSource;
 import org.springframework.data.util.ReflectionUtils;
 import org.springframework.util.Assert;
 
@@ -61,36 +64,41 @@ public abstract class AbstractWrapper {
             this.exchangePayload = exchangePayload;
         }
 
-        public void publish(String eventType) {
+        public void publish(EventSource eventSource) {
 
             Assert.notNull(exchangePayload, "ExchangePayload is null, please save value first");
 
-            doPublish(exchangePayload, eventType);
+            doPublish(exchangePayload, eventSource);
         }
 
         public void publish() {
-            publish("");
+            publish(retrieveEventSource());
         }
 
-        public void publish(String eventType, Consumer<EventResponse> consumer) {
+        private EventSource retrieveEventSource() {
+            ExchangeContextHelper.initializeEventSource(exchangePayload);
+            return (EventSource) exchangePayload.get(ExchangeContextKeys.EXCHANGE_EVENT_SOURCE);
+        }
+
+        public void publish(EventSource eventSource, Consumer<EventResponse> consumer) {
 
             Assert.notNull(exchangePayload, "ExchangePayload is null, please save value first");
 
-            EventResponse eventResponse = doHandle(exchangePayload, eventType);
+            EventResponse eventResponse = doHandle(exchangePayload, eventSource);
 
             consumer.accept(eventResponse);
         }
 
         public void publish(Consumer<EventResponse> consumer) {
-            publish("", consumer);
+            publish(retrieveEventSource(), consumer);
         }
 
-        protected void doPublish(ExchangePayload exchangePayload, String eventType) {
-            SpringContext.getBean(EventBus.class).publish(ExchangeEvent.of(eventType, exchangePayload));
+        protected void doPublish(ExchangePayload exchangePayload, EventSource eventSource) {
+            SpringContext.getBean(EventBus.class).publish(ExchangeEvent.of(eventSource, exchangePayload));
         }
 
-        protected EventResponse doHandle(ExchangePayload exchangePayload, String eventType) {
-            return SpringContext.getBean(EventBus.class).handle(ExchangeEvent.of(eventType, exchangePayload));
+        protected EventResponse doHandle(ExchangePayload exchangePayload, EventSource eventSource) {
+            return SpringContext.getBean(EventBus.class).handle(ExchangeEvent.of(eventSource, exchangePayload));
         }
     }
 

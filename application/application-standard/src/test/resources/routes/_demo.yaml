@@ -1,0 +1,44 @@
+- route:
+    from:
+      id: flow.myId.id_1
+      uri: timer:myId
+      parameters:
+        period: 1000000
+      steps:
+        - to:
+            id: flow.myId.id_4
+            parameters:
+              bean.emailContent: '"myEvent"'
+              bean.exchangePayload: '{"a":4}'
+            uri: bean:simpleAlarmComponent
+        - choice:
+            id: flow.myId.choice_1
+            when:
+              - mvel: "true"
+                id: flow.myId.c_1
+                steps:
+                  - to:
+                      id: flow.myId.id_2
+                      parameters:
+                        bean.emailContent: '"myEvent"'
+                        bean.exchangePayload: '{"a":1}'
+                      uri: bean:simpleAlarmComponent
+              - spel: "#{ T(com.milesight.beaveriot.rule.enums.ExpressionOperator).isEmpty('a')\
+              \ || T(com.milesight.beaveriot.rule.enums.ExpressionOperator).equals('1','1')\
+              \ }"
+                id: flow.myId.c_2
+                steps:
+                  - to:
+                      id: flow.myId.id_3
+                      parameters:
+                        bean.emailContent: '"myEvent"'
+                        bean.exchangePayload: '{"a":3}'
+                      uri: bean:simpleAlarmComponent
+        - to:
+            id: flow.myId.id_4
+            parameters:
+              bean.emailContent: '"myEvent"'
+              bean.exchangePayload: '{"a":4}'
+            uri: bean:simpleAlarmComponent
+
+    id: myId

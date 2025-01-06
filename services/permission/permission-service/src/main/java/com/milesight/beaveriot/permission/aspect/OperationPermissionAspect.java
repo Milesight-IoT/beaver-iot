@@ -45,16 +45,16 @@ public class OperationPermissionAspect {
             if (codes != null && codes.length > 0) {
                 Long userId = SecurityUserContext.getUserId();
                 if (userId == null) {
-                    throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not login").build();
+                    throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not logged in").build();
                 }
                 List<MenuDTO> menuDTOList = userFacade.getMenusByUserId(userId);
                 if (menuDTOList == null || menuDTOList.isEmpty()) {
-                    throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not have permission").build();
+                    throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have permission").build();
                 }
                 List<String> operationPermissionCodes = Arrays.stream(codes).map(OperationPermissionCode::getCode).toList();
                 boolean hasPermission = menuDTOList.stream().anyMatch(menuDTO -> operationPermissionCodes.contains(menuDTO.getMenuCode()));
                 if (!hasPermission) {
-                    throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not have permission").build();
+                    throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have permission").build();
                 }
             }
         }

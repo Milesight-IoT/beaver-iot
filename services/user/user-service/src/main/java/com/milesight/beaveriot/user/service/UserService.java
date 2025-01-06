@@ -2,13 +2,17 @@ package com.milesight.beaveriot.user.service;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.aspect.SecurityUserContext;
+import com.milesight.beaveriot.device.dto.DeviceNameDTO;
+import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.user.constants.UserConstants;
 import com.milesight.beaveriot.user.dto.UserResourceDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.enums.UserErrorCode;
 import com.milesight.beaveriot.user.enums.UserStatus;
+import com.milesight.beaveriot.user.model.request.BatchDeleteUserRequest;
 import com.milesight.beaveriot.user.model.request.ChangePasswordRequest;
 import com.milesight.beaveriot.user.model.request.CreateUserRequest;
 import com.milesight.beaveriot.user.model.request.UpdatePasswordRequest;
@@ -16,6 +20,7 @@ import com.milesight.beaveriot.user.model.request.UpdateUserRequest;
 import com.milesight.beaveriot.user.model.request.UserListRequest;
 import com.milesight.beaveriot.user.model.request.UserPermissionRequest;
 import com.milesight.beaveriot.user.model.request.UserRegisterRequest;
+import com.milesight.beaveriot.user.model.response.MenuResponse;
 import com.milesight.beaveriot.user.model.response.UserInfoResponse;
 import com.milesight.beaveriot.user.model.response.UserMenuResponse;
 import com.milesight.beaveriot.user.model.response.UserPermissionResponse;
@@ -36,6 +41,7 @@ import com.milesight.beaveriot.user.repository.UserRepository;
 import com.milesight.beaveriot.user.repository.UserRoleRepository;
 import com.milesight.beaveriot.user.util.SignUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -72,6 +78,9 @@ public class UserService {
     MenuRepository menuRepository;
     @Autowired
     TenantRepository tenantRepository;
+    @Autowired
+    @Lazy
+    IDeviceFacade deviceFacade;
 
     @SecurityUserContext(tenantId = "#tenantId")
     @Transactional(rollbackFor = Exception.class)
@@ -125,16 +134,31 @@ public class UserService {
         userInfoResponse.setEmail(securityUser.getPayload().get("email").toString());
         userInfoResponse.setCreatedAt(securityUser.getPayload().get("createdAt").toString());
 
-        List<UserInfoResponse.Menu> menus = getMenusByUserId(userId).stream().map(userMenuResponse -> {
-            UserInfoResponse.Menu menu = new UserInfoResponse.Menu();
-            menu.setMenuId(userMenuResponse.getMenuId());
-            menu.setCode(userMenuResponse.getCode());
-            menu.setName(userMenuResponse.getName());
-            menu.setType(userMenuResponse.getType());
-            menu.setParentId(userMenuResponse.getParentId());
-            return menu;
-        }).toList();
-        userInfoResponse.setMenus(menus);
+        List<MenuPO> menuPOS = menuRepository.findAll();
+        if (menuPOS != null && !menuPOS.isEmpty()) {
+            List<UserMenuResponse> userMenuResponses = getMenusByUserId(userId);
+            List<String> userMenuParentIds = userMenuResponses.stream().map(UserMenuResponse::getParentId).filter(Objects::nonNull).distinct().toList();
+            List<UserMenuResponse> allUserMenuResponses = new ArrayList<>();
+            allUserMenuResponses.addAll(userMenuResponses);
+            recurrenceParentMenu(menuPOS, userMenuParentIds, allUserMenuResponses);
+
+            List<MenuResponse> menuResponses = new ArrayList<>();
+            List<UserMenuResponse> rootUserMenuResponses = allUserMenuResponses.stream().filter(userMenuResponse -> userMenuResponse.getParentId() == null).distinct().toList();
+            rootUserMenuResponses.forEach(UserMenuResponse -> {
+                MenuResponse menuResponse = new MenuResponse();
+                menuResponse.setMenuId(UserMenuResponse.getMenuId());
+                menuResponse.setCode(UserMenuResponse.getCode());
+                menuResponse.setName(UserMenuResponse.getName());
+                menuResponse.setType(UserMenuResponse.getType());
+                menuResponse.setParentId(UserMenuResponse.getParentId());
+
+                List<MenuResponse> menuChild = recurrenceChildMenu(allUserMenuResponses, UserMenuResponse.getMenuId());
+                menuResponse.setChildren(menuChild);
+                menuResponses.add(menuResponse);
+            });
+
+            userInfoResponse.setMenus(menuResponses);
+        }
 
         AtomicBoolean isSuperAdmin = new AtomicBoolean(false);
         List<UserRolePO> userRolePOS = userRoleRepository.findAll(filter -> filter.eq(UserRolePO.Fields.userId, userId));
@@ -156,11 +180,61 @@ public class UserService {
         return userInfoResponse;
     }
 
+    private void recurrenceParentMenu(List<MenuPO> menuPOS, List<String> userMenuParentIds, List<UserMenuResponse> allUserMenuResponses) {
+        if (userMenuParentIds == null || userMenuParentIds.isEmpty()) {
+            return;
+        }
+        List<MenuPO> parentMenuPOS = menuPOS.stream().filter(t -> userMenuParentIds.contains(t.getId().toString())).toList();
+        if (parentMenuPOS.isEmpty()) {
+            return;
+        }
+        List<UserMenuResponse> parentUserMenuResponses = parentMenuPOS.stream().map(menuPO -> {
+            UserMenuResponse userMenuResponse = new UserMenuResponse();
+            userMenuResponse.setMenuId(menuPO.getId().toString());
+            userMenuResponse.setCode(menuPO.getCode());
+            userMenuResponse.setName(menuPO.getName());
+            userMenuResponse.setType(menuPO.getType());
+            userMenuResponse.setParentId(menuPO.getParentId() == null ? null : menuPO.getParentId().toString());
+            return userMenuResponse;
+        }).toList();
+        allUserMenuResponses.addAll(parentUserMenuResponses);
+
+        List<String> parentMenuParentIds = parentMenuPOS.stream().map(MenuPO::getParentId).filter(Objects::nonNull).map(Objects::toString).distinct().toList();
+
+        recurrenceParentMenu(menuPOS, parentMenuParentIds, allUserMenuResponses);
+    }
+
+    private List<MenuResponse> recurrenceChildMenu(List<UserMenuResponse> menuResponses, String parentId) {
+        List<UserMenuResponse> menuChs = menuResponses.stream().filter(t -> t.getParentId() != null && t.getParentId().equals(parentId)).distinct().toList();
+        if (menuChs.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<MenuResponse> menuChResponses = new ArrayList<>();
+        menuChs.forEach(t -> {
+            MenuResponse menuChResponse = new MenuResponse();
+            menuChResponse.setMenuId(t.getMenuId());
+            menuChResponse.setCode(t.getCode());
+            menuChResponse.setName(t.getName());
+            menuChResponse.setType(t.getType());
+            menuChResponse.setParentId(t.getParentId());
+            List<MenuResponse> menuChild = recurrenceChildMenu(menuResponses, t.getMenuId());
+            menuChResponse.setChildren(menuChild);
+            menuChResponses.add(menuChResponse);
+        });
+        return menuChResponses;
+    }
+
     public Page<UserInfoResponse> getUsers(UserListRequest userListRequest) {
+        if (userListRequest.getSort().getOrders().isEmpty()) {
+            userListRequest.sort(new Sorts().desc(UserPO.Fields.createdAt));
+        }
         String keyword = userListRequest.getKeyword();
-        Page<UserPO> userPages = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.like(StringUtils.hasText(keyword), UserPO.Fields.nickname, keyword)
-                                .like(StringUtils.hasText(keyword), UserPO.Fields.email, keyword))
+        Page<UserPO> userPages = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.nickname, keyword)
+                                .likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.email, keyword))
                 , userListRequest.toPageable());
+        if (userPages == null || userPages.getContent().isEmpty()) {
+            return Page.empty();
+        }
         Map<Long, List<Long>> userRoleIdMap = new HashMap<>();
         Map<Long, String> roleNameMap = new HashMap<>();
         List<Long> userIds = userPages.stream().map(UserPO::getId).toList();
@@ -248,6 +322,16 @@ public class UserService {
         userRoleRepository.deleteByUserId(userId);
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    public void batchDeleteUsers(BatchDeleteUserRequest batchDeleteUserRequest) {
+        List<Long> userIds = batchDeleteUserRequest.getUserIdList();
+        if (userIds == null || userIds.isEmpty()) {
+            return;
+        }
+        userRepository.deleteAllById(userIds);
+        userRoleRepository.deleteByUserIds(userIds);
+    }
+
     public List<UserMenuResponse> getMenusByUserId(Long userId) {
         boolean permissionMode = permissionModule();
         if (!permissionMode) {
@@ -325,6 +409,26 @@ public class UserService {
         List<RolePO> rolePOS = roleRepository.findAll(filter -> filter.in(RolePO.Fields.id, roleIds.toArray()));
         if (rolePOS == null || rolePOS.isEmpty()) {
             return userPermissionResponse;
+        }
+        if (rolePOS.stream().anyMatch(rolePO -> Objects.equals(rolePO.getName(), UserConstants.SUPER_ADMIN_ROLE_NAME))) {
+            userPermissionResponse.setHasPermission(true);
+            return userPermissionResponse;
+        }
+        if (userPermissionRequest.getResourceType() == ResourceType.DEVICE) {
+            List<DeviceNameDTO> deviceNameDTOList = deviceFacade.getDeviceNameByIds(List.of(Long.parseLong(userPermissionRequest.getResourceId())));
+            if (deviceNameDTOList == null || deviceNameDTOList.isEmpty()) {
+                return userPermissionResponse;
+            }
+            String integrationId = deviceNameDTOList.get(0).getIntegrationConfig() == null ? null : deviceNameDTOList.get(0).getIntegrationConfig().getId();
+            if (integrationId != null) {
+                List<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filter -> filter.in(RoleResourcePO.Fields.roleId, roleIds.toArray())
+                        .eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION)
+                        .eq(RoleResourcePO.Fields.resourceId, integrationId));
+                if (roleResourcePOS != null && !roleResourcePOS.isEmpty()) {
+                    userPermissionResponse.setHasPermission(true);
+                    return userPermissionResponse;
+                }
+            }
         }
         List<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filter -> filter.in(RoleResourcePO.Fields.roleId, roleIds.toArray())
                 .eq(RoleResourcePO.Fields.resourceType, userPermissionRequest.getResourceType())

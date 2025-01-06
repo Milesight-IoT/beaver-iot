@@ -1,0 +1,3 @@
+com.milesight.beaveriot.rule.configuration.RuleEngineAutoConfiguration
+com.milesight.beaveriot.rule.configuration.RuleEngineTraceAutoConfiguration
+com.milesight.beaveriot.rule.configuration.RuleEngineObserveAutoConfiguration

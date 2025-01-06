@@ -8,23 +8,6 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * EntityBuilder is a builder class for Entity, eg:
- * Entity entityConfig = new EntityBuilder()
- * .property("humidity", AccessMod.RW)
- * .identifier("humidity")
- * .children()
- * .property("value", AccessMod.RW)
- * .end()
- * .children()
- * .property("unit", AccessMod.RW)
- * .end()
- * .children()
- * .property("timestamp", AccessMod.RW)
- * .end()
- * .build();
- * <p>
- * <p>
- * []
  *
  * @author leon
  */

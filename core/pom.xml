@@ -38,7 +38,8 @@
     <modules>
         <module>base</module>
         <module>context</module>
-        <module>core-components</module>
+        <module>eventbus</module>
+        <module>rule-engine</module>
     </modules>
 
     <properties>

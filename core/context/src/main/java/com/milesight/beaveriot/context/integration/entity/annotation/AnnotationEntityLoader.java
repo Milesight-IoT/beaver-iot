@@ -70,7 +70,11 @@ public class AnnotationEntityLoader implements EntityLoader {
                 EntityValueType valueType = EntityValueType.of(field.getType());
                 String name = propertyResolver.resolvePlaceholders(entityAnnotation.name(), field);
                 String identifier = propertyResolver.resolvePlaceholders(entityAnnotation.identifier(), field);
-                EntityBuilder entityBuilder = new EntityBuilder(integration.getId()).identifier(propertyResolver.resolvePlaceholders(entityAnnotation.identifier(), field)).attributes(resolveAttributes(entityAnnotation.attributes())).valueType(valueType);
+                EntityBuilder entityBuilder = new EntityBuilder(integration.getId())
+                        .identifier(identifier)
+                        .attributes(resolveAttributes(entityAnnotation.attributes()))
+                        .valueType(valueType)
+                        .visible(entityAnnotation.visible());
                 switch (entityAnnotation.type()) {
                     case EVENT:
                         entityBuilder.event(name);
@@ -89,6 +93,7 @@ public class AnnotationEntityLoader implements EntityLoader {
                     children.forEach(entity -> {
                         entity.setType(entityAnnotation.type());
                         entity.setAccessMod(entityAnnotation.accessMod());
+                        entity.setVisible(entityAnnotation.visible());
                     });
                     entityBuilder.children(children);
                 }

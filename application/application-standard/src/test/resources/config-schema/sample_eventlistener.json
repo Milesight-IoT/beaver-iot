@@ -1,0 +1,56 @@
+{
+  "flowId": "myEventId",
+  "nodes": [
+    {
+      "id": "id_1",
+      "data": {
+        "nodeName": "node1",
+        "nodeRemark": "",
+        "parameters": {
+          "entities": "demo-anno-integration.device.deviceId.status,demo-anno-integration.device.deviceId.change_status"
+        }
+      },
+      "componentName": "eventListener"
+    },
+    {
+      "id": "id_2",
+      "data": {
+        "nodeName": "node2",
+        "nodeRemark": "",
+        "parameters": {
+          "emailContent": "myEvent",
+          "exchangePayload": {
+            "a": 1
+          }
+        }
+      },
+      "componentName": "simpleAlarmComponent"
+    },
+    {
+      "id": "id_3",
+       "data": {
+       "nodeName": "node3",
+       "nodeRemark": "",
+       "parameters": {
+         "emailContent": "myEvent",
+         "exchangePayload": {
+           "b": 2
+         }
+       }
+     },
+      "componentName": "simpleAlarmComponent"
+    }
+  ],
+  "edges": [
+    {
+      "id": "1",
+      "source": "id_1",
+      "target": "id_2"
+    },
+    {
+      "id": "2",
+      "source": "id_2",
+      "target": "id_3"
+    }
+  ]
+}

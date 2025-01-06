@@ -47,7 +47,8 @@
         <groovy.version>3.0.8</groovy.version>
         <mockito.version>4.11.0</mockito.version>
         <h2.version>2.3.232</h2.version>
-
+        <cron-util.version>9.2.0</cron-util.version>
+        <simple-java-mail.version>8.12.4</simple-java-mail.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <lombok-mapstruct.version>0.2.0</lombok-mapstruct.version>
         <jsqlparser.version>4.4</jsqlparser.version>
@@ -75,7 +76,7 @@
             </dependency>
             <dependency>
                 <groupId>com.milesight.beaveriot</groupId>
-                <artifactId>rule-engine-component</artifactId>
+                <artifactId>rule-engine-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- beaver iot service -->

@@ -30,15 +30,29 @@ public class UserAuthenticationService {
     public void loadSecurityContext(HttpServletRequest request) {
         String authorizationValue = request.getHeader("Authorization");
         boolean isAuthorization = !OAuth2EndpointUtils.getWhiteListMatcher(oAuth2Properties.getIgnoreUrls()).matches(request);
-        if (isAuthorization && authorizationValue != null && authorizationValue.startsWith("Bearer ")) {
-            String token = authorizationValue.substring(7);
-
-            Jwt jwt = readAccessToken(token);
-            SecurityUserContext.SecurityUser securityUser = SecurityUserContext.SecurityUser.builder()
-                    .header(jwt.getHeaders())
-                    .payload(jwt.getClaims())
-                    .build();
-            SecurityUserContext.setSecurityUser(securityUser);
+        if (isAuthorization && authorizationValue == null) {
+            OAuth2EndpointUtils.throwError(OAuth2ErrorCodes.INVALID_REQUEST, "Missing access token", null);
+        }
+        if (authorizationValue != null) {
+            if (!authorizationValue.startsWith("Bearer ")) {
+                if(isAuthorization) {
+                    OAuth2EndpointUtils.throwError(OAuth2ErrorCodes.INVALID_REQUEST, "Invalid access token", null);
+                }
+            }else {
+                String token = authorizationValue.substring(7);
+                try {
+                    Jwt jwt = readAccessToken(token);
+                    SecurityUserContext.SecurityUser securityUser = SecurityUserContext.SecurityUser.builder()
+                            .header(jwt.getHeaders())
+                            .payload(jwt.getClaims())
+                            .build();
+                    SecurityUserContext.setSecurityUser(securityUser);
+                } catch (Exception e) {
+                    if(isAuthorization) {
+                        OAuth2EndpointUtils.throwError(OAuth2ErrorCodes.INVALID_REQUEST, "Invalid access token", null);
+                    }
+                }
+            }
         }
     }
 

@@ -1,0 +1,47 @@
+- route:
+    from:
+      id: flow.choiceFlowId.event_1
+      parameters:
+        entities: '["demo-anno-integration.integration.address","demo-anno-integration.integration.connect"]'
+      steps:
+        - choice:
+            id: flow.choiceFlowId.choice_1
+            when:
+              - mvel: "false"
+                id: c_1
+                steps:
+                  - to:
+                      id: flow.choiceFlowId.codeId_1
+                      parameters:
+                        bean.expression: '{"language":"groovy","expression":"def map = [:];  map[''entities'']
+                    = entities; return map;"}'
+                        bean.inputArguments: '{"entities":"a"}'
+                      uri: bean:code
+                  - to:
+                      id: flow.choiceFlowId.codeId_3
+                      parameters:
+                        bean.expression: '{"language":"js","expression":"var payload=body.entities;
+                    return payload;"}'
+                        bean.inputArguments: '{"entities":"a"}'
+                      uri: bean:code
+              - spel: "#{ T(com.milesight.beaveriot.rule.enums.ExpressionOperator).contains(properties.event_1['demo-anno-integration.integration.address'],'http')\
+              \ && T(com.milesight.beaveriot.rule.enums.ExpressionOperator).isNotEmpty(properties.event_1['demo-anno-integration.integration.address'])\
+              \ }"
+                id: c_2
+                steps:
+                  - to:
+                      id: flow.choiceFlowId.codeId_2
+                      parameters:
+                        bean.expression: '{"language":"groovy","expression":"def map = [:];  map[''entities'']
+                    = entities; return map;"}'
+                        bean.inputArguments: '{"entities":"#{properties.event_1}"}'
+                      uri: bean:code
+                  - to:
+                      id: flow.choiceFlowId.codeId_3
+                      parameters:
+                        bean.expression: '{"language":"js","expression":"var payload=entities;
+                    return payload;"}'
+                        bean.inputArguments: '{"entities":"a"}'
+                      uri: bean:code
+      uri: eventListener:choiceFlowId
+    id: choiceFlowId

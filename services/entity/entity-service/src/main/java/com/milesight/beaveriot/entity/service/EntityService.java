@@ -321,10 +321,30 @@ public class EntityService implements EntityServiceProvider {
         List<String> entityKeys = entityList.stream().map(Entity::getKey).filter(StringUtils::hasText).toList();
         List<EntityPO> dataEntityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, entityKeys.toArray()));
         Map<String, EntityPO> dataEntityKeyMap = new HashMap<>();
+        List<EntityPO> deleteEntityPOList = new ArrayList<>();
         if (dataEntityPOList != null && !dataEntityPOList.isEmpty()) {
             dataEntityKeyMap.putAll(dataEntityPOList.stream().collect(Collectors.toMap(EntityPO::getKey, Function.identity())));
+
+            List<String> parentEntityKeys = dataEntityPOList.stream()
+                    .filter(t -> t.getParent() == null)
+                    .map(EntityPO::getKey)
+                    .distinct()
+                    .toList();
+            if (!parentEntityKeys.isEmpty()) {
+                List<EntityPO> childrenEntityPOList = entityRepository.findAll(
+                        filter -> filter.in(EntityPO.Fields.parent, parentEntityKeys.toArray()));
+                childrenEntityPOList.forEach(entityPO -> {
+                    if (!entityKeys.contains(entityPO.getKey())) {
+                        deleteEntityPOList.add(entityPO);
+                    }
+                });
+            }
+        }
+        if (!deleteEntityPOList.isEmpty()) {
+            entityRepository.deleteAll(deleteEntityPOList);
         }
         List<EntityPO> entityPOList = new ArrayList<>();
+
         entityList.forEach(t -> {
             EntityPO entityPO = saveConvert(userId, t, deviceKeyMap, dataEntityKeyMap);
             EntityPO dataEntityPO = dataEntityKeyMap.get(t.getKey());
@@ -366,6 +386,10 @@ public class EntityService implements EntityServiceProvider {
     }
 
     private void deleteEntitiesByPOList(List<EntityPO> entityPOList) {
+        if (entityPOList.isEmpty()) {
+            return;
+        }
+
         List<Long> entityIdList = entityPOList.stream().map(EntityPO::getId).toList();
         log.info("delete entities: {}", entityIdList);
 
@@ -536,7 +560,7 @@ public class EntityService implements EntityServiceProvider {
         return convertEntityPOListToEntityResponses(entityPOList);
     }
 
-    private EntityResponse convertEntityPOToEntityResponse(EntityPO entityPO, Map<String, Integration> integrationMap, Map<String, DeviceNameDTO> deviceIdToDetails) {
+    private EntityResponse convertEntityPOToEntityResponse(EntityPO entityPO, Map<String, Integration> integrationMap, Map<String, DeviceNameDTO> deviceIdToDetails, Map<String, EntityPO> parentKeyMap) {
         String deviceName = null;
         String integrationName = null;
         String attachTargetId = entityPO.getAttachTargetId();
@@ -564,6 +588,7 @@ public class EntityService implements EntityServiceProvider {
         response.setEntityKey(entityPO.getKey());
         response.setEntityType(entityPO.getType());
         response.setEntityName(entityPO.getName());
+        response.setEntityParentName(entityPO.getParent() == null ? null : parentKeyMap.get(entityPO.getParent()) == null? null : parentKeyMap.get(entityPO.getParent()).getName());
         response.setEntityValueAttribute(entityPO.getValueAttribute());
         response.setEntityValueType(entityPO.getValueType());
         response.setEntityIsCustomized(isCustomizedEntity(entityPO.getAttachTargetId()));
@@ -613,6 +638,19 @@ public class EntityService implements EntityServiceProvider {
     }
 
     private Page<EntityResponse> convertEntityPOListToEntityResponses(Page<EntityPO> entityPOList) {
+        List<String> parentKeys = entityPOList.stream()
+                .map(EntityPO::getParent)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+        List<EntityPO> parentEntityPOList = new ArrayList<>();
+        if(!parentKeys.isEmpty()) {
+            parentEntityPOList.addAll(entityRepository.findAllWithDataPermission(f -> f.in(EntityPO.Fields.key, parentKeys.toArray())));
+        }
+        Map<String, EntityPO> parentKeyMap = new HashMap<>();
+        if(!parentEntityPOList.isEmpty()) {
+            parentKeyMap.putAll(parentEntityPOList.stream().collect(Collectors.toMap(EntityPO::getKey, Function.identity())));
+        }
         List<Long> foundDeviceIds = entityPOList.stream()
                 .filter(entityPO -> AttachTargetType.DEVICE.equals(entityPO.getAttachTarget()))
                 .map(entityPO -> Long.parseLong(entityPO.getAttachTargetId()))
@@ -626,7 +664,7 @@ public class EntityService implements EntityServiceProvider {
         Map<String, Integration> integrationMap = integrationServiceProvider.findIntegrations(i -> integrationIds.contains(i.getId()))
                 .stream()
                 .collect(Collectors.toMap(Integration::getId, Function.identity(), (v1, v2) -> v1));
-        return entityPOList.map(entityPO -> convertEntityPOToEntityResponse(entityPO, integrationMap, deviceIdToDetails));
+        return entityPOList.map(entityPO -> convertEntityPOToEntityResponse(entityPO, integrationMap, deviceIdToDetails, parentKeyMap));
     }
 
     public EntityMetaResponse getEntityMeta(Long entityId) {
@@ -665,7 +703,7 @@ public class EntityService implements EntityServiceProvider {
             throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
         }
         ExchangePayload payload = new ExchangePayload(exchange);
-        exchangeFlowExecutor.syncExchangeDown(payload);
+        exchangeFlowExecutor.syncExchange(payload);
     }
 
     public EventResponse serviceCall(ServiceCallRequest serviceCallRequest) {
@@ -693,7 +731,7 @@ public class EntityService implements EntityServiceProvider {
             throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
         }
         ExchangePayload payload = new ExchangePayload(exchange);
-        return exchangeFlowExecutor.syncExchangeDown(payload);
+        return exchangeFlowExecutor.syncExchange(payload);
     }
 
     /**

@@ -4,6 +4,7 @@ import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.integration.bootstrap.IntegrationBootstrap;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.core.env.StandardEnvironment;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -29,7 +30,7 @@ public class Integration {
 
     private Class<? extends IntegrationBootstrap> integrationClass;
 
-    private String flowExchangeDownHandler;
+    private StandardEnvironment environment;
 
     private String entityIdentifierAddDevice;
 

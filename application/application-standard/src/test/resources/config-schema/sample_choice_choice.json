@@ -1,0 +1,180 @@
+{
+  "flowId": "myId",
+  "nodes": [
+    {
+      "id": "id_1",
+      "data": {
+        "nodeName": "node1",
+        "nodeRemark": "",
+        "parameters": {
+          "period": 100000
+        }
+      },
+      "componentName": "timer"
+    },
+    {
+      "id": "choice_1",
+      "componentName": "choice",
+      "data": {
+        "nodeName": "choice",
+        "nodeRemark": "",
+        "parameters": {
+          "choice": {
+            "when": [
+              {
+                "id": "c_1",
+                "expressionType": "mvel",
+                "logicOperator": "AND",
+                "conditions": [
+                  {
+                    "expressionValue": "request.body['a.b.c'] != null"
+                  }
+                ]
+              },
+              {
+                "id": "c_2",
+                "expressionType": "condition",
+                "logicOperator": "OR",
+                "conditions": [
+                  {
+                    "expressionValue": {
+                      "key": "a",
+                      "operator": "IS_EMPTY"
+                    }
+                  },
+                  {
+                    "expressionValue": {
+                      "key": "1",
+                      "value": 1,
+                      "operator": "EQ"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "id_2",
+      "data": {
+        "nodeName": "node2",
+        "nodeRemark": "",
+        "parameters": {
+          "emailContent": "myEvent",
+          "exchangePayload": {
+            "a": 1
+          }
+        }
+      },
+      "componentName": "simpleAlarmComponent"
+    },
+    {
+      "id": "id_3",
+      "data": {
+        "nodeName": "node3",
+        "nodeRemark": "",
+        "parameters": {
+          "emailContent": "myEvent",
+          "exchangePayload": {
+            "a": 3
+          }
+        }
+      },
+      "componentName": "simpleAlarmComponent"
+    },
+    {
+      "id": "id_4",
+      "data": {
+        "nodeName": "node4",
+        "nodeRemark": "",
+        "parameters": {
+          "emailContent": "myEvent",
+          "exchangePayload": {
+            "a": 4
+          }
+        }
+      },
+      "componentName": "simpleAlarmComponent"
+    },
+    {
+      "id": "id_3_1",
+      "data": {
+        "nodeName": "node_3_1",
+        "nodeRemark": "",
+        "parameters": {
+          "emailContent": "myEvent",
+          "exchangePayload": {
+            "a": 4
+          }
+        }
+      },
+      "componentName": "simpleAlarmComponent"
+    },
+    {
+      "id": "id_3_2",
+      "data": {
+        "nodeName": "node_3_2",
+        "nodeRemark": "",
+        "parameters": {
+          "emailContent": "myEvent",
+          "exchangePayload": {
+            "a": 4
+          }
+        }
+      },
+      "componentName": "simpleAlarmComponent"
+    },
+    {
+      "id": "id_3_e",
+     "data": {
+       "nodeName": "node_3_2",
+       "nodeRemark": "",
+       "parameters": {
+         "emailContent": "myEvent",
+         "exchangePayload": {
+           "a": 4
+         }
+       }
+     },
+      "componentName": "simpleAlarmComponent"
+    }
+  ],
+  "edges": [
+    {
+      "source": "id_1",
+      "target": "choice_1"
+    },
+    {
+      "source": "choice_1",
+      "target": "id_2",
+      "sourceHandler": "c_1"
+    },
+    {
+      "source": "choice_1",
+      "target": "id_3",
+      "sourceHandler": "c_2"
+    },
+    {
+      "source": "id_3",
+      "target": "id_3_1"
+    },
+    {
+      "source": "id_3",
+      "target": "id_3_2"
+    },
+    {
+      "source": "id_3_1",
+      "target": "id_4"
+    },
+    {
+      "source": "id_3_2",
+      "target": "id_4"
+    },
+    {
+      "source": "id_2",
+      "target": "id_4"
+    }
+  ]
+}

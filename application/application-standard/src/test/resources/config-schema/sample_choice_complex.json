@@ -1,0 +1,143 @@
+{
+  "flowId": "choiceFlowId",
+  "nodes": [
+    {
+      "id": "event_1",
+      "data": {
+        "nodeName": "event listener",
+        "nodeRemark": "",
+        "parameters": {
+          "entities": "demo-anno-integration.integration.address,demo-anno-integration.integration.connect"
+        }
+      },
+      "componentName": "eventListener"
+    },
+    {
+      "id": "choice_1",
+      "data": {
+        "nodeName": "choice",
+        "nodeRemark": "",
+        "componentName": "choice",
+        "parameters": {
+          "choice" :{
+            "when": [
+              {
+                "id": "c_1",
+                "expressionType": "mvel",
+                "logicOperator": "AND",
+                "conditions": [
+                  {
+                    "expressionValue": "request.body['a.b.c'] != null"
+                  }
+                ]
+              },
+              {
+                "id": "c_2",
+                "expressionType": "condition",
+                "logicOperator": "AND",
+                "conditions": [
+                  {
+                    "expressionValue": {
+                      "key": "#{properties.event_1['demo-anno-integration.integration.address']}",
+                      "value": "http",
+                      "operator": "CONTAINS"
+                    }
+                  },
+                  {
+                    "expressionValue": {
+                      "key": "#{properties.event_1['demo-anno-integration.integration.address']}",
+                      "operator": "IS_NOT_EMPTY"
+                    }
+                  }
+                ]
+              }
+            ],
+            "otherwise": {
+              "id": "c_3"
+            }
+          }
+
+        }
+      }
+    },
+    {
+      "id": "codeId_1",
+      "data": {
+        "nodeName": "code_1",
+        "nodeRemark": "",
+        "parameters": {
+          "inputArguments": {"entities":"a"} ,
+          "expression": {"language":"groovy","expression":"def map = [:];  map['entities'] = entities; return map;"}
+        }
+      },
+      "componentName": "code"
+    },
+    {
+      "id": "codeId_2",
+      "data": {
+        "nodeName": "code_2",
+        "nodeRemark": "",
+        "parameters": {
+          "inputArguments": {"entities":"#{properties.event_1}"} ,
+          "expression": {"language":"groovy","expression":"def map = [:];  map['entities'] = entities; return map;"}
+        }
+      },
+      "componentName": "code"
+    },
+    {
+      "id": "codeId_3",
+      "data": {
+        "nodeName": "code_3",
+        "nodeRemark": "",
+        "parameters": {
+          "expression": {"language":"js","expression":"var payload=body.entities; return payload;"}
+        }
+      },
+      "componentName": "code"
+    },
+    {
+      "id": "codeId_4",
+      "data": {
+        "nodeName": "code_4",
+        "nodeRemark": "",
+        "parameters": {
+          "expression": {"language":"js","expression":"var payload=body.entities; return payload;"}
+        }
+      },
+      "componentName": "code"
+    }
+  ],
+  "edges": [
+    {
+      "source": "event_1",
+      "target": "choice_1"
+    },
+    {
+      "source": "choice_1",
+      "target": "codeId_1",
+      "sourceHandle": "c_1"
+    },
+    {
+      "source": "choice_1",
+      "target": "codeId_2",
+      "sourceHandle": "c_2"
+    },
+    {
+      "source": "choice_1",
+      "target": "codeId_3",
+      "sourceHandle": "c_3"
+    },
+    {
+      "source": "codeId_1",
+      "target": "codeId_4"
+    },
+    {
+      "source": "codeId_2",
+      "target": "codeId_4"
+    },
+    {
+      "source": "codeId_3",
+      "target": "codeId_4"
+    }
+  ]
+}
