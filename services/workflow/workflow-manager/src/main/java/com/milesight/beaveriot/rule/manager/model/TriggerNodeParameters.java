@@ -7,5 +7,5 @@ import java.util.Map;
 
 @Data
 public class TriggerNodeParameters {
-    private List<Map<String, String>> arguments;
+    private List<Map<String, String>> entityConfigs;
 }

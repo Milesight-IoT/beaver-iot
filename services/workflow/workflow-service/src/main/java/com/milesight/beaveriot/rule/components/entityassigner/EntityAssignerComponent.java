@@ -26,9 +26,9 @@ import java.util.Map;
 @Data
 public class EntityAssignerComponent implements ProcessorNode<Exchange> {
 
-    @UriParam(javaType = "exchangePayload", prefix = "bean")
+    @UriParam(javaType = "exchangePayload", prefix = "bean", displayName = "Assignment Setting")
     @UriParamExtension(uiComponent = "entityAssignSelect")
-    private Map<String, Object> assignmentSetting;
+    private Map<String, Object> exchangePayload;
 
     @Autowired
     EntityValueServiceProvider entityValueServiceProvider;
@@ -37,7 +37,7 @@ public class EntityAssignerComponent implements ProcessorNode<Exchange> {
 
     @Override
     public void processor(Exchange exchange) {
-        Map<String, Object> exchangePayloadVariables = SpELExpressionHelper.resolveExpression(exchange, assignmentSetting);
+        Map<String, Object> exchangePayloadVariables = SpELExpressionHelper.resolveExpression(exchange, exchangePayload);
         ExchangePayload payload = ExchangePayload.create(exchangePayloadVariables);
 
         // Save property entities

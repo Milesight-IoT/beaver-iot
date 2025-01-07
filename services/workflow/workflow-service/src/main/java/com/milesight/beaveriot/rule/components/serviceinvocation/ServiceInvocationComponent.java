@@ -25,9 +25,9 @@ import java.util.Map;
 @Data
 public class ServiceInvocationComponent implements ProcessorNode<Exchange> {
 
-    @UriParam(javaType = "java.util.Map", prefix = "bean")
+    @UriParam(javaType = "java.util.Map", prefix = "bean", displayName = "Service Setting")
     @UriParamExtension(uiComponent = "serviceEntitySetting")
-    private Map<String, Object> serviceSetting;
+    private Map<String, Object> serviceInvocationSetting;
 
     @Autowired
     EntityValueServiceProvider entityValueServiceProvider;
@@ -36,8 +36,8 @@ public class ServiceInvocationComponent implements ProcessorNode<Exchange> {
 
     @Override
     public void processor(Exchange exchange) {
-        if(serviceSetting != null && serviceSetting.get("serviceParams") != null) {
-            Map<String, Object> serviceParams = JsonHelper.fromJSON(serviceSetting.get("serviceParams").toString(), Map.class);
+        if(serviceInvocationSetting != null && serviceInvocationSetting.get("serviceParams") != null) {
+            Map<String, Object> serviceParams = JsonHelper.fromJSON(serviceInvocationSetting.get("serviceParams").toString(), Map.class);
             Map<String, Object> exchangePayloadVariables = SpELExpressionHelper.resolveExpression(exchange, serviceParams);
             ExchangePayload payload = ExchangePayload.create(exchangePayloadVariables);
 
