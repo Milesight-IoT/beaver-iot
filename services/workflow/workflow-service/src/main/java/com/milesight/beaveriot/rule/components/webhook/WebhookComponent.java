@@ -37,7 +37,7 @@ public class WebhookComponent implements ProcessorNode<Exchange> {
 
     @Override
     public void processor(Exchange exchange) {
-        if(payload != null) {
+        if(payload != null && !payload.isEmpty()) {
             Map<String, Object> inputArgumentsVariables = SpELExpressionHelper.resolveExpression(exchange, payload);
             exchange.getIn().setBody(inputArgumentsVariables);
         }
