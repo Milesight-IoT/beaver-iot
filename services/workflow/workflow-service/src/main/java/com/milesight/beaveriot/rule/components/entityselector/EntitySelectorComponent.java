@@ -30,14 +30,14 @@ public class EntitySelectorComponent implements ProcessorNode<Exchange> {
     @OutputArguments
     @UriParam(javaType = "java.util.List", prefix = "bean")
     @UriParamExtension(uiComponent = "entityMultipleSelect")
-    private List<String> entities;
+    private List<String> entitySelectSetting;
 
     @Autowired
     EntityValueServiceProvider entityValueServiceProvider;
 
     @Override
     public void processor(Exchange exchange) {
-        List<String> entitiesVariables = (List<String>) SpELExpressionHelper.resolveExpression(exchange, entities);
+        List<String> entitiesVariables = SpELExpressionHelper.resolveExpression(exchange, entitySelectSetting);
         Map<String, JsonNode> entityValues = entityValueServiceProvider.findValuesByKeys(entitiesVariables);
         Map<String, Object> entityValuesMap = entityValues.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> JsonUtils.cast(entry.getValue(), Object.class)));
         ExchangePayload exchangePayload = ExchangePayload.create(entityValuesMap);

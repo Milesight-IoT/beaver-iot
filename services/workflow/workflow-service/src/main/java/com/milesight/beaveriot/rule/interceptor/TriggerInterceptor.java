@@ -16,7 +16,7 @@ public class TriggerInterceptor implements RuleNodeDefinitionInterceptor {
         if (uri.startsWith("direct")) {
             Map<String, Object> parameters = fromNode.getParameters();
             if (parameters != null) {
-                parameters.remove("entityConfigs");
+                parameters.remove("arguments");
             }
         }
         return fromNode;
