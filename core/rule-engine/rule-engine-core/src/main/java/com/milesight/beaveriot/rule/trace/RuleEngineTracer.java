@@ -125,7 +125,7 @@ public class RuleEngineTracer extends DefaultTracer {
             }
         } catch (Exception ex) {
             log.error("Convert exchange body failed", ex);
-            return "Convert exchange body failed";
+            return "Convert exchange body failed:" + ex.getMessage();
         }
     }
 
@@ -144,7 +144,7 @@ public class RuleEngineTracer extends DefaultTracer {
             log.debug("traceAfterRoute: {}", flowTraceResponse);
             // if trace for test, do not publish event
             Boolean traceForTest = exchange.getProperty(ExchangeHeaders.TRACE_FOR_TEST, false, boolean.class);
-            if (Boolean.FALSE.equals(traceForTest)) {
+             if (Boolean.FALSE.equals(traceForTest)) {
                 applicationEventPublisher.publishEvent(flowTraceResponse);
             }
         }

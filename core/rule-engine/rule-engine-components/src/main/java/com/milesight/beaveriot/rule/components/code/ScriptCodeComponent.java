@@ -5,11 +5,13 @@ import com.milesight.beaveriot.rule.annotations.RuleNode;
 import com.milesight.beaveriot.rule.annotations.UriParamExtension;
 import com.milesight.beaveriot.rule.api.ProcessorNode;
 import com.milesight.beaveriot.rule.constants.RuleNodeType;
+import com.milesight.beaveriot.rule.enums.DataTypeEnums;
 import com.milesight.beaveriot.rule.model.flow.ExpressionNode;
 import com.milesight.beaveriot.rule.support.SpELExpressionHelper;
 import lombok.Data;
 import org.apache.camel.Exchange;
 import org.apache.camel.spi.UriParam;
+import org.springframework.util.ObjectUtils;
 
 import java.util.Map;
 
@@ -39,7 +41,22 @@ public class ScriptCodeComponent implements ProcessorNode<Exchange> {
 
         Object result = ExpressionEvaluator.evaluate(expression, exchange, inputVariables, Object.class);
 
+        validatePayload(result);
+
         exchange.getIn().setBody(result);
 
+    }
+
+    private void validatePayload(Object result) {
+        if (ObjectUtils.isEmpty(payload) || !(result instanceof Map resultMap) ) {
+            return;
+        }
+
+        for (Map.Entry<String, String> entry : payload.entrySet()) {
+            if (resultMap.containsKey(entry.getKey()) ) {
+                DataTypeEnums dataTypeEnums = DataTypeEnums.valueOf(entry.getKey());
+                dataTypeEnums.validate(entry.getKey(), entry.getValue());
+            }
+        }
     }
 }
