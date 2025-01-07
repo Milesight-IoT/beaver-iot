@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 public class EntitySelectorComponent implements ProcessorNode<Exchange> {
 
     @OutputArguments
-    @UriParam(javaType = "java.util.List", prefix = "bean")
+    @UriParam(javaType = "java.util.List", prefix = "bean", displayName = "Entity Select Setting")
     @UriParamExtension(uiComponent = "entityMultipleSelect")
     private List<String> entities;
 

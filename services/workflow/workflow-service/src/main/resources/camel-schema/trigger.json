@@ -34,7 +34,7 @@
     "entityConfigs": {
       "index": 1,
       "kind": "parameter",
-      "displayName": "Entity Configurations",
+      "displayName": "Arguments",
       "group": "producer",
       "label": "producer",
       "required": true,

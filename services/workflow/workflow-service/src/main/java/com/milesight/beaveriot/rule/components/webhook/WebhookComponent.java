@@ -24,9 +24,9 @@ import java.util.Random;
 @Data
 public class WebhookComponent implements ProcessorNode<Exchange> {
 
-    @UriParam(prefix = "bean")
+    @UriParam(prefix = "bean", displayName = "Payload")
     @UriParamExtension(uiComponent = "paramAssignInput")
-    private Map<String, Object> payload;
+    private Map<String, Object> inputArguments;
     @UriParam(prefix = "bean")
     private String webhookUrl;
     @UriParam(prefix = "bean")
@@ -37,8 +37,8 @@ public class WebhookComponent implements ProcessorNode<Exchange> {
 
     @Override
     public void processor(Exchange exchange) {
-        if(payload != null) {
-            Map<String, Object> inputArgumentsVariables = SpELExpressionHelper.resolveExpression(exchange, payload);
+        if(inputArguments != null && !inputArguments.isEmpty()) {
+            Map<String, Object> inputArgumentsVariables = SpELExpressionHelper.resolveExpression(exchange, inputArguments);
             exchange.getIn().setBody(inputArgumentsVariables);
         }
         String timestamp = System.currentTimeMillis() + "";
