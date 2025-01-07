@@ -41,16 +41,15 @@ public class TenantAspect {
     @Transactional(rollbackFor = Exception.class)
     public Object around(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        Class<?> repositoryInterface = joinPoint.getTarget().getClass().getInterfaces()[0];
         Tenant tenant = signature.getMethod().getAnnotation(Tenant.class);
         String tableName = null;
         if (tenant == null) {
-            Class<?> repositoryInterface = joinPoint.getTarget().getClass().getInterfaces()[0];
             tenant = repositoryInterface.getAnnotation(Tenant.class);
-
-            if(Repository.class.isAssignableFrom(repositoryInterface)){
-                Table annotation = AnnotationUtils.getAnnotation(((Class) TypeUtil.getTypeArgument(repositoryInterface, 0)), Table.class);
-                tableName = annotation.name();
-            }
+        }
+        if(Repository.class.isAssignableFrom(repositoryInterface)){
+            Table annotation = AnnotationUtils.getAnnotation(((Class) TypeUtil.getTypeArgument(repositoryInterface, 0)), Table.class);
+            tableName = annotation == null? null:annotation.name();
         }
         if (tableName == null) {
             return joinPoint.proceed();
