@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.user.util;
+package com.milesight.beaveriot.data.util;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;

@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class IntegrationService {
@@ -54,7 +55,15 @@ public class IntegrationService {
     }
 
     public List<SearchIntegrationResponseData> searchIntegration(SearchIntegrationRequest searchDeviceRequest) {
-        List<Integration> integrations = SpringContext.getBean(IntegrationService.class).findVisibleIntegrations();
+        List<Integration> integrations;
+        try {
+            integrations = SpringContext.getBean(IntegrationService.class).findVisibleIntegrations();
+        }catch (Exception e) {
+            if (e instanceof ServiceException && Objects.equals(((ServiceException) e).getErrorCode(), ErrorCode.FORBIDDEN_PERMISSION.getErrorCode())) {
+                return new ArrayList<>();
+            }
+            throw e;
+        }
         if (integrations.isEmpty()) {
             return new ArrayList<>();
         }

@@ -25,13 +25,13 @@ public class EntityFacade implements IEntityFacade {
 
     public List<EntityDTO> getUserOrTargetEntities(Long userId, List<String> targetIds) {
         List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.or(filter1 -> filter1.eq(EntityPO.Fields.userId, userId)
-                        .in(!targetIds.isEmpty(), EntityPO.Fields.attachTargetId, targetIds.stream().map(Long::parseLong).toArray())
+                        .in(!targetIds.isEmpty(), EntityPO.Fields.attachTargetId, targetIds.toArray())
                 ));
         return EntityConverter.INSTANCE.convertDTOList(entityPOList);
     }
 
     public List<EntityDTO> getTargetEntities(List<String> targetIds) {
-        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(!targetIds.isEmpty(), EntityPO.Fields.attachTargetId, targetIds.stream().map(Long::parseLong).toArray())
+        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(!targetIds.isEmpty(), EntityPO.Fields.attachTargetId, targetIds.toArray())
         );
         return EntityConverter.INSTANCE.convertDTOList(entityPOList);
     }

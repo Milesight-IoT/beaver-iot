@@ -159,9 +159,17 @@ public class DeviceService implements IDeviceFacade {
             searchDeviceRequest.sort(new Sorts().desc(DevicePO.Fields.createdAt));
         }
 
-        Page<DeviceResponseData> responseDataList = deviceRepository
-                .findAllWithDataPermission(f -> f.likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.name, searchDeviceRequest.getName()), searchDeviceRequest.toPageable())
-                .map(this::convertPOToResponseData);
+        Page<DeviceResponseData> responseDataList;
+        try {
+            responseDataList = deviceRepository
+                    .findAllWithDataPermission(f -> f.likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.name, searchDeviceRequest.getName()), searchDeviceRequest.toPageable())
+                    .map(this::convertPOToResponseData);
+        }catch (Exception e) {
+            if (e instanceof ServiceException && Objects.equals(((ServiceException) e).getErrorCode(), ErrorCode.FORBIDDEN_PERMISSION.getErrorCode())) {
+                return Page.empty();
+            }
+            throw e;
+        }
         fillIntegrationInfo(responseDataList.stream().toList());
         return responseDataList;
     }

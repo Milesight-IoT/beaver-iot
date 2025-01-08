@@ -2,6 +2,7 @@ package com.milesight.beaveriot.entity.service;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.DeviceServiceProvider;
@@ -20,6 +21,7 @@ import com.milesight.beaveriot.context.integration.model.Integration;
 import com.milesight.beaveriot.context.integration.model.event.EntityEvent;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.data.filterable.Filterable;
+import com.milesight.beaveriot.data.util.PageConverter;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.entity.model.request.EntityCreateRequest;
@@ -35,10 +37,12 @@ import com.milesight.beaveriot.entity.repository.EntityLatestRepository;
 import com.milesight.beaveriot.entity.repository.EntityRepository;
 import com.milesight.beaveriot.eventbus.EventBus;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
+import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
+import com.milesight.beaveriot.user.dto.MenuDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
-import lombok.*;
-import lombok.extern.slf4j.*;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -541,6 +545,19 @@ public class EntityService implements EntityServiceProvider {
         boolean isExcludeChildren = entityQuery.getExcludeChildren() != null && entityQuery.getExcludeChildren();
         List<String> attachTargetIds = searchAttachTargetIdsByKeyword(entityQuery.getKeyword());
 
+        Long userId = SecurityUserContext.getUserId();
+        if (userId == null) {
+            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not logged in").build();
+        }
+        List<MenuDTO> menuDTOList = userFacade.getMenusByUserId(userId);
+        if (menuDTOList == null || menuDTOList.isEmpty()) {
+            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have permission").build();
+        }
+        boolean hasEntityCustomViewPermission = menuDTOList.stream().anyMatch(menuDTO -> OperationPermissionCode.ENTITY_CUSTOM_VIEW.getCode().equals(menuDTO.getMenuCode()));
+        if(!hasEntityCustomViewPermission){
+            entityQuery.setCustomized(false);
+        }
+
         Consumer<Filterable> filterable = f -> f.isNull(isExcludeChildren, EntityPO.Fields.parent)
                 .in(entityQuery.getEntityType() != null && !entityQuery.getEntityType().isEmpty(), EntityPO.Fields.type, entityQuery.getEntityType() == null ? null : entityQuery.getEntityType().toArray())
                 .in(entityQuery.getEntityIds() != null && !entityQuery.getEntityIds().isEmpty(), EntityPO.Fields.id, entityQuery.getEntityIds() == null ? null : entityQuery.getEntityIds().toArray())
@@ -552,12 +569,35 @@ public class EntityService implements EntityServiceProvider {
                 .or(f1 -> f1.likeIgnoreCase(StringUtils.hasText(entityQuery.getKeyword()), EntityPO.Fields.name, entityQuery.getKeyword())
                         .likeIgnoreCase(StringUtils.hasText(entityQuery.getKeyword()), EntityPO.Fields.key, entityQuery.getKeyword())
                         .in(!attachTargetIds.isEmpty(), EntityPO.Fields.attachTargetId, attachTargetIds.toArray()));
-        Page<EntityPO> entityPOList = entityRepository.findAllWithDataPermission(filterable, entityQuery.toPageable());
-        if (entityPOList == null || entityPOList.getContent().isEmpty()) {
+        List<EntityPO> entityPOList = new ArrayList<>();
+        if (!Boolean.TRUE.equals(entityQuery.getCustomized())) {
+            try {
+                entityPOList = entityRepository.findAllWithDataPermission(filterable);
+            } catch (Exception e) {
+                if (e instanceof ServiceException && Objects.equals(((ServiceException) e).getErrorCode(), ErrorCode.FORBIDDEN_PERMISSION.getErrorCode())) {
+                    entityPOList = new ArrayList<>();
+                } else {
+                    throw e;
+                }
+            }
+        }
+        // custom entities belong to system integration, don`t use permission , so we need to add them to the list
+        if (!Boolean.FALSE.equals(entityQuery.getCustomized())) {
+            List<EntityPO> entityCustomizedPOList = entityRepository.findAll(filterable.andThen(f1 -> f1.eq(EntityPO.Fields.attachTargetId, IntegrationConstants.SYSTEM_INTEGRATION_ID)));
+            entityPOList.addAll(entityCustomizedPOList);
+        }
+        if (entityPOList == null || entityPOList.isEmpty()) {
             return Page.empty();
         }
 
-        return convertEntityPOListToEntityResponses(entityPOList);
+        entityPOList = entityPOList.stream().distinct().toList();
+        if (entityQuery.getSort().getOrders().isEmpty()) {
+            entityQuery.sort(new Sorts().desc(EntityPO.Fields.createdAt));
+        }
+
+        Page<EntityPO> entityPOPage = PageConverter.convertToPage(entityPOList, entityQuery.toPageable());
+
+        return convertEntityPOListToEntityResponses(entityPOPage);
     }
 
     private EntityResponse convertEntityPOToEntityResponse(EntityPO entityPO, Map<String, Integration> integrationMap, Map<String, DeviceNameDTO> deviceIdToDetails, Map<String, EntityPO> parentKeyMap) {
