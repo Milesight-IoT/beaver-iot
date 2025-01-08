@@ -351,7 +351,6 @@ public class DeviceService implements IDeviceFacade {
         deviceRepository.deleteById(device.getId());
 
         userFacade.deleteResource(ResourceType.DEVICE, Collections.singletonList(device.getId()));
-        userFacade.deleteResource(ResourceType.ENTITY, device.getEntities().stream().map(Entity::getId).collect(Collectors.toList()));
 
         eventBus.publish(DeviceEvent.of(DeviceEvent.EventType.DELETED, device));
     }

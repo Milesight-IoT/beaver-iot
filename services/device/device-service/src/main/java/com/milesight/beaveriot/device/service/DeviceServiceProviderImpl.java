@@ -10,6 +10,8 @@ import com.milesight.beaveriot.device.po.DevicePO;
 import com.milesight.beaveriot.device.repository.DeviceRepository;
 import com.milesight.beaveriot.device.support.DeviceConverter;
 import com.milesight.beaveriot.eventbus.EventBus;
+import com.milesight.beaveriot.user.enums.ResourceType;
+import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -34,6 +36,9 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
 
     @Autowired
     DeviceService deviceService;
+
+    @Autowired
+    IUserFacade userFacade;
 
     @Override
     public void save(Device device) {
@@ -92,9 +97,11 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
             devicePO = deviceRepository.save(devicePO);
             eventBus.publish(DeviceEvent.of(DeviceEvent.EventType.UPDATED, device));
         }
-
         device.setId(devicePO.getId());
 
+        if(userId != null) {
+            userFacade.associateResource(userId, ResourceType.DEVICE, List.of(device.getId()));
+        }
         entityServiceProvider.batchSave(device.getEntities());
     }
 

@@ -363,6 +363,9 @@ public class EntityService implements EntityServiceProvider {
         });
         entityRepository.saveAll(entityPOList);
 
+        if(userId != null) {
+            userFacade.associateResource(userId, ResourceType.ENTITY, entityList.stream().map(Entity::getId).toList());
+        }
         entityList.forEach(entity -> {
             boolean isCreate = dataEntityKeyMap.get(entity.getKey()) == null;
             if (isCreate) {
