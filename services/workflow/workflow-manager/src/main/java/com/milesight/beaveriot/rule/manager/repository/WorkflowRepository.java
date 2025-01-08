@@ -17,17 +17,18 @@ import java.util.function.Consumer;
 public interface WorkflowRepository extends BaseJpaRepository<WorkflowPO, Long> {
     public List<WorkflowPO> findByIdIn(List<Long> ids);
 
-    @DataPermission(type = DataPermissionType.WORKFLOW, column = "id")
+    // We do not control the data permission of workflow
+    // @DataPermission(type = DataPermissionType.WORKFLOW, column = "id")
     default Optional<WorkflowPO> findByIdWithDataPermission(Long id) {
         return findById(id);
     }
 
-    @DataPermission(type = DataPermissionType.WORKFLOW, column = "id")
+    // @DataPermission(type = DataPermissionType.WORKFLOW, column = "id")
     default Page<WorkflowPO> findAllWithDataPermission(Consumer<Filterable> filterable, Pageable pageable){
         return findAll(filterable, pageable);
     }
 
-    @DataPermission(type = DataPermissionType.WORKFLOW, column = "id")
+    // @DataPermission(type = DataPermissionType.WORKFLOW, column = "id")
     default List<WorkflowPO> findByIdInWithDataPermission(List<Long> ids) {
         return findByIdIn(ids);
     }
