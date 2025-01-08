@@ -138,7 +138,15 @@ public class DashboardService {
     }
 
     public List<DashboardResponse> getDashboards() {
-        List<DashboardPO> dashboardPOList = dashboardRepository.findAllWithDataPermission().stream().sorted(Comparator.comparing(DashboardPO::getCreatedAt)).collect(Collectors.toList());
+        List<DashboardPO> dashboardPOList;
+        try {
+            dashboardPOList = dashboardRepository.findAllWithDataPermission().stream().sorted(Comparator.comparing(DashboardPO::getCreatedAt)).collect(Collectors.toList());
+        }catch (Exception e) {
+            if (e instanceof ServiceException && Objects.equals(((ServiceException) e).getErrorCode(), ErrorCode.FORBIDDEN_PERMISSION.getErrorCode())) {
+                return new ArrayList<>();
+            }
+            throw e;
+        }
         if (dashboardPOList.isEmpty()) {
             return new ArrayList<>();
         }

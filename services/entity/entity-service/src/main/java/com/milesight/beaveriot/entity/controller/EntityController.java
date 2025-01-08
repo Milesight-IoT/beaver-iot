@@ -51,7 +51,7 @@ public class EntityController {
     @Autowired
     EntityExportService entityExportService;
 
-    @OperationPermission(codes = OperationPermissionCode.DASHBOARD_EDIT)
+    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.ENTITY_CUSTOM_VIEW, OperationPermissionCode.ENTITY_DATA_VIEW})
     @PostMapping("/search")
     public ResponseBody<Page<EntityResponse>> search(@RequestBody EntityQuery entityQuery) {
         Page<EntityResponse> entityResponse = entityService.search(entityQuery);
@@ -111,6 +111,7 @@ public class EntityController {
      * @param entityCreateRequest request body
      * @return created entity's metadata
      */
+    @OperationPermission(codes = {OperationPermissionCode.ENTITY_CUSTOM_ADD})
     @PostMapping
     public ResponseBody<EntityMetaResponse> createCustomEntity(@RequestBody EntityCreateRequest entityCreateRequest) {
         return ResponseBuilder.success(entityService.createCustomEntity(entityCreateRequest));
@@ -122,6 +123,7 @@ public class EntityController {
      * @param entityModifyRequest request body
      * @return updated entity's metadata
      */
+    @OperationPermission(codes = {OperationPermissionCode.ENTITY_DATA_EDIT, OperationPermissionCode.ENTITY_CUSTOM_EDIT})
     @PutMapping("/{entityId}")
     public ResponseBody<EntityMetaResponse> update(@PathVariable("entityId") Long entityId, @RequestBody EntityModifyRequest entityModifyRequest) {
         return ResponseBuilder.success(entityService.updateEntityBasicInfo(entityId, entityModifyRequest));
@@ -131,6 +133,7 @@ public class EntityController {
      * Delete customized entity and its children
      * @param entityDeleteRequest request body
      */
+    @OperationPermission(codes = {OperationPermissionCode.ENTITY_CUSTOM_DELETE})
     @PostMapping("/delete")
     public ResponseBody<Void> delete(@RequestBody EntityDeleteRequest entityDeleteRequest) {
         entityService.deleteCustomizedEntitiesByIds(entityDeleteRequest.getEntityIds());
@@ -141,6 +144,7 @@ public class EntityController {
      * Export entity data as a CSV file
      * @param entityExportRequest request body
      */
+    @OperationPermission(codes = OperationPermissionCode.ENTITY_DATA_EXPORT)
     @GetMapping("/export")
     public void export(EntityExportRequest entityExportRequest, HttpServletResponse httpServletResponse) throws IOException {
         entityExportService.export(entityExportRequest, httpServletResponse);

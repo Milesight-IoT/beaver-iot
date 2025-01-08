@@ -51,7 +51,7 @@ import com.milesight.beaveriot.user.repository.RoleRepository;
 import com.milesight.beaveriot.user.repository.RoleResourceRepository;
 import com.milesight.beaveriot.user.repository.UserRepository;
 import com.milesight.beaveriot.user.repository.UserRoleRepository;
-import com.milesight.beaveriot.user.util.PageConverter;
+import com.milesight.beaveriot.data.util.PageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -453,9 +453,9 @@ public class RoleService {
     public Page<IntegrationUndistributedResponse> getUndistributedIntegrations(Long roleId, IntegrationUndistributedRequest integrationUndistributedRequest) {
         List<Integration> integrations = new ArrayList<>();
         if (StringUtils.hasText(integrationUndistributedRequest.getKeyword())) {
-            integrations.addAll(integrationServiceProvider.findIntegrations(f -> f.getName().toLowerCase().contains(integrationUndistributedRequest.getKeyword().toLowerCase())));
+            integrations.addAll(integrationServiceProvider.findIntegrations(f -> f.getName().toLowerCase().contains(integrationUndistributedRequest.getKeyword().toLowerCase()) && f.isVisible()));
         } else {
-            integrations.addAll(integrationServiceProvider.findIntegrations());
+            integrations.addAll(integrationServiceProvider.findVisibleIntegrations());
         }
         if (integrations.isEmpty()) {
             return Page.empty();
@@ -473,7 +473,7 @@ public class RoleService {
     }
 
     public Page<DeviceUndistributedResponse> getUndistributedDevices(Long roleId, DeviceUndistributedRequest deviceUndistributedRequest) {
-        List<Integration> integrations = integrationServiceProvider.findIntegrations().stream().toList();
+        List<Integration> integrations = integrationServiceProvider.findVisibleIntegrations().stream().toList();
         List<String> integrationIds = integrations.stream().map(Integration::getId).toList();
         List<DeviceNameDTO> deviceNameDTOList = deviceFacade.getDeviceNameByIntegrations(integrationIds);
         if (deviceNameDTOList == null || deviceNameDTOList.isEmpty()) {

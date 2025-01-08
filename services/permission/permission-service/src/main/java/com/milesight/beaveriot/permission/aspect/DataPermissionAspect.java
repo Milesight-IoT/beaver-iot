@@ -113,7 +113,7 @@ public class DataPermissionAspect {
             return joinPoint.proceed();
         }
         if(dataIds.isEmpty()) {
-            throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("user does not have data permission").build();
+            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have data permission").build();
         }
         DataAspectContext.setDataPermissionContext(tableName, DataAspectContext.DataPermissionContext.builder()
                 .dataIds(dataIds)
