@@ -10,6 +10,8 @@ import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.event.EntityEvent;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.eventbus.annotations.EventSubscribe;
+import com.milesight.beaveriot.permission.aspect.OperationPermission;
+import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.rule.RuleEngineComponentManager;
 import com.milesight.beaveriot.rule.RuleEngineLifecycleManager;
 import com.milesight.beaveriot.rule.manager.model.request.*;
@@ -302,33 +304,54 @@ public class WorkflowService {
         return true;
     }
 
-//    @Transactional(rollbackFor = Exception.class)
-    public SaveWorkflowResponse saveWorkflow(SaveWorkflowRequest request) {
+    @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_ADD})
+    public SaveWorkflowResponse createWorkflow(SaveWorkflowRequest request) {
         assertWorkflowPrepared();
+        WorkflowPO workflowPO = new WorkflowPO();
+        workflowPO.setId(SnowflakeUtil.nextId());
+        workflowPO.setUserId(SecurityUserContext.getUserId());
+        workflowPO.setVersion(1);
+        workflowPO.setUpdatedUser(SecurityUserContext.getUserId());
+        workflowPO.setName(request.getName());
+        workflowPO.setRemark(request.getRemark());
+        workflowPO.setEnabled(request.getEnabled());
+        workflowPO.setDesignData(request.getDesignData());
 
-        boolean isCreate = request.getId() == null || request.getId().isEmpty();
-        // Save Workflow Data
-        WorkflowPO workflowPO;
-        WorkflowHistoryPO workflowHistoryPO = null;
-        if (isCreate) {
-            workflowPO = new WorkflowPO();
-            workflowPO.setId(SnowflakeUtil.nextId());
-            workflowPO.setUserId(SecurityUserContext.getUserId());
-            workflowPO.setVersion(1);
-        } else {
-            workflowPO = getById(Long.valueOf(request.getId()));
-            if (!workflowPO.getVersion().equals(request.getVersion())) {
-                throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "Version Expired: " + request.getVersion()).build();
-            }
+        final String workflowIdStr = workflowPO.getId().toString();
+        RuleFlowConfig ruleFlowConfig = parseRuleFlowConfig(workflowIdStr, request.getDesignData());
 
-            // init history
-            workflowHistoryPO = new WorkflowHistoryPO();
-            workflowHistoryPO.setId(SnowflakeUtil.nextId());
-            workflowHistoryPO.setFlowId(workflowPO.getId());
-            workflowHistoryPO.setUserId(workflowPO.getUpdatedUser());
-            workflowHistoryPO.setVersion(workflowPO.getVersion());
-            workflowHistoryPO.setDesignData(workflowPO.getDesignData());
+        if (Boolean.TRUE.equals(workflowPO.getEnabled())) {
+            deployFlow(workflowPO);
+        } else if (ruleFlowConfig != null) {
+            ruleEngineLifecycleManager.validateFlow(ruleFlowConfig);
         }
+
+        workflowPO = workflowRepository.save(workflowPO);
+
+        // Build Response
+        SaveWorkflowResponse swr = new SaveWorkflowResponse();
+        swr.setFlowId(workflowIdStr);
+        swr.setVersion(workflowPO.getVersion());
+
+        workflowEntityRelationService.saveEntity(workflowPO, ruleFlowConfig);
+
+        return swr;
+    }
+
+    @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT})
+    public SaveWorkflowResponse updateWorkflow(SaveWorkflowRequest request) {
+        assertWorkflowPrepared();
+        WorkflowPO workflowPO = getById(Long.valueOf(request.getId()));
+        if (!workflowPO.getVersion().equals(request.getVersion())) {
+            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "Version Expired: " + request.getVersion()).build();
+        }
+
+        WorkflowHistoryPO workflowHistoryPO = new WorkflowHistoryPO();
+        workflowHistoryPO.setId(SnowflakeUtil.nextId());
+        workflowHistoryPO.setFlowId(workflowPO.getId());
+        workflowHistoryPO.setUserId(workflowPO.getUpdatedUser());
+        workflowHistoryPO.setVersion(workflowPO.getVersion());
+        workflowHistoryPO.setDesignData(workflowPO.getDesignData());
 
         workflowPO.setUpdatedUser(SecurityUserContext.getUserId());
         workflowPO.setName(request.getName());
@@ -336,18 +359,16 @@ public class WorkflowService {
 
         // Inc data version if design changed
         Integer beforeVersion = workflowPO.getVersion();
-        if (!isCreate && !Objects.equals(workflowPO.getDesignData(), request.getDesignData())) {
+        if (!Objects.equals(workflowPO.getDesignData(), request.getDesignData())) {
             workflowPO.setVersion(beforeVersion + 1);
         }
 
         final String workflowIdStr = workflowPO.getId().toString();
         RuleFlowConfig ruleFlowConfig = parseRuleFlowConfig(workflowIdStr, request.getDesignData());
-
         final boolean isFlowUpdated = !isRuleFlowEqual(parseRuleFlowConfig(workflowIdStr, workflowPO.getDesignData()), ruleFlowConfig);
         workflowPO.setDesignData(request.getDesignData());
 
         boolean isEnableUpdated = !Objects.equals(workflowPO.getEnabled(), request.getEnabled());
-        // Deploy or Remove
         workflowPO.setEnabled(request.getEnabled());
         if (Boolean.TRUE.equals(workflowPO.getEnabled()) && (isFlowUpdated || isEnableUpdated)) {
             // a workflow would be validated at the time it is deployed
@@ -364,7 +385,7 @@ public class WorkflowService {
 
         // Save workflow and history
         workflowPO = workflowRepository.save(workflowPO);
-        if (workflowHistoryPO != null && !workflowPO.getVersion().equals(beforeVersion)) {
+        if (!workflowPO.getVersion().equals(beforeVersion)) {
             workflowHistoryRepository.save(workflowHistoryPO);
         }
 
