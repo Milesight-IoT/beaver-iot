@@ -2,6 +2,7 @@ package com.milesight.beaveriot.user.service;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
@@ -150,6 +151,9 @@ public class RoleService {
     }
 
     public Page<RoleResponse> getRoles(RoleListRequest roleListRequest) {
+        if (roleListRequest.getSort().getOrders().isEmpty()) {
+            roleListRequest.sort(new Sorts().desc(RolePO.Fields.createdAt));
+        }
         Page<RolePO> rolePages = roleRepository.findAll(filterable -> filterable.likeIgnoreCase(StringUtils.hasText(roleListRequest.getKeyword()), RolePO.Fields.name, roleListRequest.getKeyword())
                 , roleListRequest.toPageable());
         if (rolePages == null || rolePages.getContent().isEmpty()) {
