@@ -11,8 +11,10 @@ import org.apache.camel.model.WhenDefinition;
 import org.apache.camel.model.language.ExpressionDefinition;
 import org.apache.camel.support.builder.ExpressionBuilder;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.util.ObjectUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -45,10 +47,10 @@ public class RouteDefinitionConverter {
         }  else if (nodeDefinition instanceof ChoiceNodeDefinition choiceNodeDefinition) {
             GraphChoiceDefinition choiceDefinition = new GraphChoiceDefinition();
             choiceDefinition.setId(namespacedId);
-            Map<String, WhenDefinition> whenClause = choiceNodeDefinition.getWhenNodeDefinitions()
-                    .entrySet()
-                    .stream()
-                    .collect(Collectors.toMap(entry -> getSuccessors(entry.getKey(), choiceWhenEdges), entry -> convertWhenDefinition(flowId, entry.getValue())));
+            List<Pair<String, WhenDefinition>> whenClause = new ArrayList<>();
+            choiceNodeDefinition.getWhenNodeDefinitions().forEach((key, value) -> {
+                whenClause.add(Pair.of(getSuccessors(key, choiceWhenEdges), convertWhenDefinition(flowId, value)));
+            });
             choiceDefinition.setWhenClause(whenClause);
             choiceDefinition.setOtherwiseNodeId(getSuccessors(choiceNodeDefinition.getOtherwiseNodeId(), choiceWhenEdges));
             return choiceDefinition;

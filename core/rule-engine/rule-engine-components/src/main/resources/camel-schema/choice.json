@@ -29,7 +29,7 @@
       "javaType": "java.util.Map",
       "autowired": false,
       "secret": false,
-      "description": "The Choice Config",
+      "description": "When using code mode, need to return Boolean value",
       "uiComponent": "conditionsInput"
     }
   }
