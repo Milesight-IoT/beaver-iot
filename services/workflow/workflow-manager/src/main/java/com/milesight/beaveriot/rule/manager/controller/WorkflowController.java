@@ -111,10 +111,14 @@ public class WorkflowController {
         return ResponseBuilder.success(workflowService.validateWorkflow(request));
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT, OperationPermissionCode.WORKFLOW_ADD})
     @PostMapping("/flows/design")
     public ResponseBody<SaveWorkflowResponse> saveWorkflow(@RequestBody SaveWorkflowRequest request) {
-        return ResponseBuilder.success(workflowService.saveWorkflow(request));
+        boolean isCreate = request.getId() == null || request.getId().isEmpty();
+        if (isCreate) {
+            return ResponseBuilder.success(workflowService.createWorkflow(request));
+        }
+
+        return ResponseBuilder.success(workflowService.updateWorkflow(request));
     }
 
     @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT, OperationPermissionCode.WORKFLOW_ADD})
