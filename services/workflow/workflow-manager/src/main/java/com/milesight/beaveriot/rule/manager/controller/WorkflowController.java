@@ -105,7 +105,7 @@ public class WorkflowController {
         return ResponseBuilder.success(workflowService.getWorkflowDesign(flowId, version));
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT})
+    @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT, OperationPermissionCode.WORKFLOW_ADD})
     @PostMapping("/flows/design/validate")
     public ResponseBody<Boolean> validateWorkflow(@RequestBody ValidateWorkflowRequest request) {
         return ResponseBuilder.success(workflowService.validateWorkflow(request));
@@ -117,31 +117,31 @@ public class WorkflowController {
         return ResponseBuilder.success(workflowService.saveWorkflow(request));
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT})
+    @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT, OperationPermissionCode.WORKFLOW_ADD})
     @PostMapping("/flows/design/test")
     public ResponseBody<FlowTraceInfo> testWorkflow(@RequestBody TestWorkflowRequest request) {
         return ResponseBuilder.success(workflowService.testWorkflow(request));
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT})
+    @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT, OperationPermissionCode.WORKFLOW_ADD})
     @PostMapping("/flows/node/test")
     public ResponseBody<NodeTraceInfo> testWorkflow(@RequestBody TestWorkflowNodeRequest request) {
         return ResponseBuilder.success(workflowService.testWorkflowNode((request)));
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT})
+    @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT, OperationPermissionCode.WORKFLOW_ADD})
     @GetMapping("/components")
     public ResponseBody<Map<String, List<WorkflowComponentData>>> getWorkflowComponents() {
         return ResponseBuilder.success(workflowService.getWorkflowComponents());
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT})
+    @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT, OperationPermissionCode.WORKFLOW_ADD})
     @GetMapping("/components/{componentId}")
     public ResponseBody<String> getWorkflowComponent(@PathVariable("componentId") String componentId) {
         return ResponseBuilder.success(workflowService.getWorkflowComponentDetail(componentId));
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT})
+    @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT, OperationPermissionCode.WORKFLOW_ADD})
     @GetMapping("/components/languages")
     public ResponseBody<RuleLanguage> getWorkflowComponent() {
         return ResponseBuilder.success(workflowService.getSupportedScriptLanguages());
