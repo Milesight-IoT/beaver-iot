@@ -12,6 +12,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.spi.UriParam;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 
 import java.util.Map;
 import java.util.Random;
@@ -41,18 +42,20 @@ public class WebhookComponent implements ProcessorNode<Exchange> {
             Map<String, Object> inputArgumentsVariables = SpELExpressionHelper.resolveExpression(exchange, inputArguments);
             exchange.getIn().setBody(inputArgumentsVariables);
         }
-        String timestamp = System.currentTimeMillis() + "";
-        Random random = new Random();
-        int randomNumber = random.nextInt(99999999) + 10000000;
-        String nonce = randomNumber + "";
         Object bodyObject = exchange.getIn().getBody();
         String body = JsonUtils.toJSON(bodyObject);
-        String data = timestamp + nonce + body;
-        String signature = SecureUtil.hmacSha256Hex(secretKey, data);
+        if(StringUtils.hasText(secretKey)) {
+            String timestamp = System.currentTimeMillis() + "";
+            Random random = new Random();
+            int randomNumber = random.nextInt(99999999) + 10000000;
+            String nonce = randomNumber + "";
+            String data = timestamp + nonce + body;
+            String signature = SecureUtil.hmacSha256Hex(secretKey, data);
 
-        exchange.getIn().setHeader("TIMESTAMP", timestamp);
-        exchange.getIn().setHeader("NONCE", nonce);
-        exchange.getIn().setHeader("SIGNATURE", signature);
+            exchange.getIn().setHeader("TIMESTAMP", timestamp);
+            exchange.getIn().setHeader("NONCE", nonce);
+            exchange.getIn().setHeader("SIGNATURE", signature);
+        }
         exchange.getIn().setHeader(Exchange.HTTP_METHOD, "POST");
         exchange.getIn().setHeader(Exchange.CONTENT_TYPE, "application/json");
         producerTemplate.sendBodyAndHeaders(webhookUrl, body, exchange.getIn().getHeaders());
