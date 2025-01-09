@@ -4,10 +4,10 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.camel.model.ProcessorDefinition;
 import org.apache.camel.model.WhenDefinition;
+import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 @Setter
 public class GraphChoiceDefinition extends ProcessorDefinition<GraphChoiceDefinition> {
 
-    private Map<String, WhenDefinition> whenClause = new LinkedHashMap<>();
+    private List<Pair<String, WhenDefinition>> whenClause = new ArrayList<>();
     private String otherwiseNodeId;
 
     @Override
@@ -32,7 +32,8 @@ public class GraphChoiceDefinition extends ProcessorDefinition<GraphChoiceDefini
 
     @Override
     public String getLabel() {
-        return whenClause.keySet().stream()
+        return whenClause.stream()
+                .map(Pair::getLeft)
                 .collect(Collectors.joining(",", getShortName() + "[", "," + otherwiseNodeId + "]"));
     }
 

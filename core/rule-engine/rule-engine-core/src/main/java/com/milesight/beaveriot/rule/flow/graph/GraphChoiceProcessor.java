@@ -10,13 +10,13 @@ import org.apache.camel.Traceable;
 import org.apache.camel.model.WhenDefinition;
 import org.apache.camel.model.language.ExpressionDefinition;
 import org.apache.camel.spi.IdAware;
-import org.apache.camel.spi.InterceptableProcessor;
 import org.apache.camel.spi.RouteIdAware;
 import org.apache.camel.support.AsyncProcessorSupport;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import java.util.Map;
+import java.util.List;
 
 import static com.milesight.beaveriot.rule.constants.ExchangeHeaders.GRAPH_CHOICE_MATCH_ID;
 
@@ -28,12 +28,12 @@ import static com.milesight.beaveriot.rule.constants.ExchangeHeaders.GRAPH_CHOIC
 @Slf4j
 public class GraphChoiceProcessor extends AsyncProcessorSupport implements Traceable, IdAware, RouteIdAware {
 
-    private final Map<String, WhenDefinition> whenClause;
+    private final List<Pair<String, WhenDefinition>> whenClause;
     private final String otherwiseNodeId;
     private String id;
     private String routeId;
 
-    public GraphChoiceProcessor(Map<String, WhenDefinition> whenClause, String otherwiseNodeId) {
+    public GraphChoiceProcessor(List<Pair<String, WhenDefinition>> whenClause, String otherwiseNodeId) {
         this.whenClause = whenClause;
         this.otherwiseNodeId = otherwiseNodeId;
         Assert.notNull(whenClause, "whenClause must not be null");
@@ -45,7 +45,7 @@ public class GraphChoiceProcessor extends AsyncProcessorSupport implements Trace
         exchange.getIn().removeHeader(GRAPH_CHOICE_MATCH_ID);
 
         try {
-            for (Map.Entry<String, WhenDefinition> entry : whenClause.entrySet()) {
+            for (Pair<String, WhenDefinition> entry : whenClause) {
                 WhenDefinition choiceWhenClause = entry.getValue();
                 ExpressionDefinition exp = choiceWhenClause.getExpression();
                 exp.initPredicate(exchange.getContext());
