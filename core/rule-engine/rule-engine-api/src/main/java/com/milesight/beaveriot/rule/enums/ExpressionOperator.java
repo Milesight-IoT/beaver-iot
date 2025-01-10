@@ -7,6 +7,8 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
 
@@ -126,6 +128,7 @@ public enum ExpressionOperator {
                 || !(object2 instanceof Number || NumberUtils.isCreatable(object2.toString()))) {
             throw new IllegalArgumentException("Unsupported expression type, value comparison only supports numbers");
         }
-        return ObjectUtils.compare(object1.toString(), object2.toString());
+        return ObjectUtils.compare(new BigDecimal(object1.toString()), new BigDecimal(object2.toString()));
     }
+
 }
