@@ -37,7 +37,6 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -78,23 +77,23 @@ public class EntityValueService implements EntityValueServiceProvider {
     }
 
     @Override
-    public void saveValuesAndPublish(ExchangePayload exchangePayload) {
-        genericExchangeFlowExecutor.saveValuesAndPublish(exchangePayload);
+    public void saveValuesAndPublishAsync(ExchangePayload exchangePayload) {
+        genericExchangeFlowExecutor.saveValuesAndPublishAsync(exchangePayload);
     }
 
     @Override
-    public void saveValuesAndPublish(ExchangePayload exchangePayload, Consumer<EventResponse> consumer) {
-        genericExchangeFlowExecutor.saveValuesAndPublish(exchangePayload, consumer);
+    public EventResponse saveValuesAndPublishSync(ExchangePayload exchangePayload) {
+        return genericExchangeFlowExecutor.saveValuesAndPublishSync(exchangePayload);
     }
 
     @Override
-    public void saveValuesAndPublish(ExchangePayload exchangePayload, String eventType) {
-        genericExchangeFlowExecutor.saveValuesAndPublish(exchangePayload, eventType);
+    public void saveValuesAndPublishAsync(ExchangePayload exchangePayload, String eventType) {
+        genericExchangeFlowExecutor.saveValuesAndPublishAsync(exchangePayload, eventType);
     }
 
     @Override
-    public void saveValuesAndPublish(ExchangePayload exchangePayload, String eventType, Consumer<EventResponse> consumer) {
-        genericExchangeFlowExecutor.saveValuesAndPublish(exchangePayload, eventType, consumer);
+    public EventResponse saveValuesAndPublishSync(ExchangePayload exchangePayload, String eventType) {
+        return genericExchangeFlowExecutor.saveValuesAndPublishSync(exchangePayload, eventType);
     }
 
     @Override

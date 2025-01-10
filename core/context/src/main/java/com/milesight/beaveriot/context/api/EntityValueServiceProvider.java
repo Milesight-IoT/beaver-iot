@@ -7,20 +7,19 @@ import lombok.NonNull;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * @author leon
  */
 public interface EntityValueServiceProvider {
 
-    void saveValuesAndPublish(ExchangePayload exchangePayload);
+    EventResponse saveValuesAndPublishSync(ExchangePayload exchangePayload);
 
-    void saveValuesAndPublish(ExchangePayload exchangePayload, Consumer<EventResponse> consumer);
+    void saveValuesAndPublishAsync(ExchangePayload exchangePayload);
 
-    void saveValuesAndPublish(ExchangePayload exchangePayload, String eventType);
+    EventResponse saveValuesAndPublishSync(ExchangePayload exchangePayload, String eventType);
 
-    void saveValuesAndPublish(ExchangePayload exchangePayload, String eventType, Consumer<EventResponse> consumer);
+    void saveValuesAndPublishAsync(ExchangePayload exchangePayload, String eventType);
 
     void saveValues(Map<String, Object> values, long timestamp);
 

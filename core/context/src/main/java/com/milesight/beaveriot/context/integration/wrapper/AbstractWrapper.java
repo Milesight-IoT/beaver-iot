@@ -63,28 +63,26 @@ public abstract class AbstractWrapper {
             this.exchangePayload = exchangePayload;
         }
 
-        public void publish(String eventType) {
+        public void publishAsync(String eventType) {
 
             Assert.notNull(exchangePayload, "ExchangePayload is null, please save value first");
 
             doPublish(exchangePayload, eventType);
         }
 
-        public void publish() {
-            publish("");
+        public void publishAsync() {
+            publishAsync("");
         }
 
-        public void publish(String eventType, Consumer<EventResponse> consumer) {
+        public EventResponse publishSync(String eventType) {
 
             Assert.notNull(exchangePayload, "ExchangePayload is null, please save value first");
 
-            EventResponse eventResponse = doHandle(exchangePayload, eventType);
-
-            consumer.accept(eventResponse);
+            return doHandle(exchangePayload, eventType);
         }
 
-        public void publish(Consumer<EventResponse> consumer) {
-            publish("", consumer);
+        public EventResponse publishSync() {
+            return publishSync("");
         }
 
         protected void doPublish(ExchangePayload exchangePayload, String eventType) {

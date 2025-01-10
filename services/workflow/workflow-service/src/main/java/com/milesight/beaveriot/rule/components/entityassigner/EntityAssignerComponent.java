@@ -42,7 +42,7 @@ public class EntityAssignerComponent implements ProcessorNode<Exchange> {
         if (!ObjectUtils.isEmpty(propertyEntities)) {
             ExchangePayload propertyPayload = ExchangePayload.create(propertyEntities);
             ExchangeContextHelper.initializeEventSource(propertyPayload, exchange);
-            entityValueServiceProvider.saveValuesAndPublish(propertyPayload);
+            entityValueServiceProvider.saveValuesAndPublishAsync(propertyPayload);
 
             exchange.getIn().setBody(propertyPayload);
         }

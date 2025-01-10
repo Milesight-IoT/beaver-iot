@@ -702,9 +702,7 @@ public class EntityService implements EntityServiceProvider {
             throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
         }
         ExchangePayload payload = new ExchangePayload(exchange);
-        entityValueServiceProvider.saveValuesAndPublish(payload, (c)->{
-            log.debug("save entity value success: {}", c);
-        });
+        entityValueServiceProvider.saveValuesAndPublishSync(payload);
     }
 
     public EventResponse serviceCall(ServiceCallRequest serviceCallRequest) {
@@ -734,7 +732,7 @@ public class EntityService implements EntityServiceProvider {
         ExchangePayload payload = new ExchangePayload(exchange);
 
         EventResponse eventResponse = EventResponse.empty();
-        entityValueServiceProvider.saveValuesAndPublish(payload, (c)-> eventResponse.add(c));
+        entityValueServiceProvider.saveValuesAndPublishSync(payload);
         return eventResponse;
     }
 

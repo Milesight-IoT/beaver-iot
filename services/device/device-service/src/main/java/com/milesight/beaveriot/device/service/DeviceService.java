@@ -110,7 +110,7 @@ public class DeviceService implements IDeviceFacade {
 
         // Must return a device
         try {
-            entityValueServiceProvider.saveValuesAndPublish(payload, (c)->{});
+            entityValueServiceProvider.saveValuesAndPublishSync(payload);
         } catch (Exception e) {
             throw ServiceException
                     .with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "add device failed")
@@ -230,7 +230,7 @@ public class DeviceService implements IDeviceFacade {
         }).filter(Objects::nonNull).forEach((ExchangePayload payload) -> {
             // call service for deleting
             try {
-                entityValueServiceProvider.saveValuesAndPublish(payload, (c)->{});
+                entityValueServiceProvider.saveValuesAndPublishSync(payload);
             } catch (Exception e) {
                 throw ServiceException
                         .with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "delete device failed")
