@@ -136,7 +136,7 @@ public class RuleEngineTracer extends DefaultTracer {
         }
 
         FlowTraceInfo flowTraceResponse = (FlowTraceInfo) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
-        if (shouldTraceByEvent() && flowTraceResponse != null && !flowTraceResponse.isEmpty()) {
+        if (shouldTraceAfterRoute(exchange, flowTraceResponse)) {
             if (exchange.getException() != null) {
                 flowTraceResponse.setStatus(ExecutionStatus.ERROR);
             }
@@ -150,9 +150,21 @@ public class RuleEngineTracer extends DefaultTracer {
         }
     }
 
-    private boolean shouldTraceByEvent() {
-        return ruleProperties.getTraceOutputMode() == RuleProperties.TraceOutputMode.ALL ||
-                ruleProperties.getTraceOutputMode() == RuleProperties.TraceOutputMode.EVENT;
+    private boolean shouldTraceAfterRoute(Exchange exchange, FlowTraceInfo flowTraceResponse) {
+        if (ruleProperties.getTraceOutputMode() == RuleProperties.TraceOutputMode.LOGGING) {
+            return false;
+        }
+        if (flowTraceResponse == null || flowTraceResponse.isEmpty()) {
+            return false;
+        }
+
+        Boolean hasCollected = exchange.getProperty(ExchangeHeaders.TRACE_HAS_COLLECTED, Boolean.class);
+        if (hasCollected == null || !hasCollected) {
+            exchange.setProperty(ExchangeHeaders.TRACE_HAS_COLLECTED, true);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     private boolean shouldTraceByLogging() {

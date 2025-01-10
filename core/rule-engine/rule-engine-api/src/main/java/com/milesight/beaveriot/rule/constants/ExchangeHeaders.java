@@ -11,6 +11,11 @@ public interface ExchangeHeaders {
     String TRACE_FOR_TEST = "CamelTraceForTest";
 
     /**
+     * Logs have been collected，do not collect again
+     */
+    String TRACE_HAS_COLLECTED = "CamelTraceHasCollected";
+
+    /**
      * Save tracking result information
      */
     String TRACE_RESPONSE = "CamelTraceResponse";
