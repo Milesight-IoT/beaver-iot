@@ -42,13 +42,13 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
     @Override
     public boolean process(final Exchange exchange, final AsyncCallback callback) {
 
-        callback.done(true);
-
         Set<String> successors = graphStructure.successors(beginNodeId);
 
         GraphTaskExecutor graphTaskExecutor = GraphTaskExecutor.create(beginNodeId, successors, graphStructure, processors, camelContext);
 
         graphTaskExecutor.execute(exchange, callback);
+
+        callback.done(true);
 
         return true;
     }

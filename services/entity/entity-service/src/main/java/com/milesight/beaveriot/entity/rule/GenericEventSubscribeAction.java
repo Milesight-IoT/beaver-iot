@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.EXCHANGE_EVENT_SOURCE;
+import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.EXCHANGE_EVENT_TYPE;
 
 /**
  * @author leon
@@ -28,7 +28,7 @@ public class GenericEventSubscribeAction implements ProcessorNode<ExchangePayloa
 
         log.debug("GenericEventSubscribeAction processor {}", exchange.toString());
 
-        String eventType = (String) exchange.getContext(EXCHANGE_EVENT_SOURCE);
+        String eventType = (String) exchange.getContext(EXCHANGE_EVENT_TYPE);
 
         eventBus.publish(ExchangeEvent.of(eventType, exchange));
     }

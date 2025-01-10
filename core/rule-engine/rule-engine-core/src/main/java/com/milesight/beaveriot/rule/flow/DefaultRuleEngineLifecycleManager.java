@@ -180,8 +180,8 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
             deployFlow(ruleFlowConfig, ruleNodeDefinitionInterceptor);
             return supplier.get();
         } catch (Exception ex) {
-            log.error("Execute route withRollback exception, Design content is : {}", ruleFlowConfig, ex);
-            throw new RuleEngineException("Execute route withRollback exception", ex);
+            log.error("Test execution route failed, design json is : {}", ruleFlowConfig, ex);
+            throw new RuleEngineException("Test execution route failed", ex);
         } finally {
             removeFlow(ruleFlowConfig.getFlowId());
         }

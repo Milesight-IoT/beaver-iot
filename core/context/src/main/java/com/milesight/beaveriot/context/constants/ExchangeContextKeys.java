@@ -31,11 +31,6 @@ public class ExchangeContextKeys {
     public static final String EXCHANGE_EVENT_TYPE = "_exchangeEventType";
 
     /**
-     * the key of the exchange event source, such as USER, INTEGRATION, WORKFLOW
-     */
-    public static final String EXCHANGE_EVENT_SOURCE = "_exchangeEventSource";
-
-    /**
      * the key of the exchange source flow id
      */
     public static final String SOURCE_FLOW_ID = ExchangeHeaders.EXCHANGE_FLOW_ID;

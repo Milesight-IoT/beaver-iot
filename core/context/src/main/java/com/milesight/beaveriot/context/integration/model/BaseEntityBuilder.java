@@ -75,6 +75,7 @@ public class BaseEntityBuilder<T extends BaseEntityBuilder<T>> {
     public T service(String name) {
         this.name = name;
         this.type = EntityType.SERVICE;
+        this.accessMod = AccessMod.W;
         if (!StringUtils.hasLength(identifier)) {
             this.identifier = name;
         }
@@ -84,6 +85,7 @@ public class BaseEntityBuilder<T extends BaseEntityBuilder<T>> {
     public T event(String name) {
         this.name = name;
         this.type = EntityType.EVENT;
+        this.accessMod = AccessMod.W;
         if (!StringUtils.hasLength(identifier)) {
             this.identifier = name;
         }

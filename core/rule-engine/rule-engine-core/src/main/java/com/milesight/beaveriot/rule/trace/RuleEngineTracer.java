@@ -71,7 +71,7 @@ public class RuleEngineTracer extends DefaultTracer {
                 nodeTraceResponse.setInput(getExchangeBody(exchange));
                 traceContext.getTraceInfos().add(nodeTraceResponse);
             } catch (Exception ex) {
-                log.error("traceBeforeNode error", ex);
+                log.error("Before trace node log exceptions:", ex);
             }
         }
     }
@@ -107,7 +107,7 @@ public class RuleEngineTracer extends DefaultTracer {
                     }
                 }
             } catch (Exception ex) {
-                log.error("traceBeforeNode error", ex);
+                log.error("After trace node log exceptions:", ex);
             }
         }
     }
@@ -124,7 +124,7 @@ public class RuleEngineTracer extends DefaultTracer {
                 return JsonHelper.toJSON(body);
             }
         } catch (Exception ex) {
-            log.error("Convert exchange body failed", ex);
+            log.error("Convert exchange body failed on tracing", ex);
             return "Convert exchange body failed:" + ex.getMessage();
         }
     }
@@ -136,12 +136,12 @@ public class RuleEngineTracer extends DefaultTracer {
         }
 
         FlowTraceInfo flowTraceResponse = (FlowTraceInfo) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
-        if (shouldTraceByEvent() && flowTraceResponse != null && !flowTraceResponse.isEmpty()) {
+        if (shouldTraceAfterRoute(exchange, flowTraceResponse)) {
             if (exchange.getException() != null) {
                 flowTraceResponse.setStatus(ExecutionStatus.ERROR);
             }
             flowTraceResponse.setTimeCost(System.currentTimeMillis() - flowTraceResponse.getStartTime());
-            log.debug("traceAfterRoute: {}", flowTraceResponse);
+            log.debug("After trace route log exceptions:: {}", flowTraceResponse);
             // if trace for test, do not publish event
             Boolean traceForTest = exchange.getProperty(ExchangeHeaders.TRACE_FOR_TEST, false, boolean.class);
              if (Boolean.FALSE.equals(traceForTest)) {
@@ -150,9 +150,21 @@ public class RuleEngineTracer extends DefaultTracer {
         }
     }
 
-    private boolean shouldTraceByEvent() {
-        return ruleProperties.getTraceOutputMode() == RuleProperties.TraceOutputMode.ALL ||
-                ruleProperties.getTraceOutputMode() == RuleProperties.TraceOutputMode.EVENT;
+    private boolean shouldTraceAfterRoute(Exchange exchange, FlowTraceInfo flowTraceResponse) {
+        if (ruleProperties.getTraceOutputMode() == RuleProperties.TraceOutputMode.LOGGING) {
+            return false;
+        }
+        if (flowTraceResponse == null || flowTraceResponse.isEmpty()) {
+            return false;
+        }
+
+        Boolean hasCollected = exchange.getProperty(ExchangeHeaders.TRACE_HAS_COLLECTED, Boolean.class);
+        if (hasCollected == null || !hasCollected) {
+            exchange.setProperty(ExchangeHeaders.TRACE_HAS_COLLECTED, true);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     private boolean shouldTraceByLogging() {
