@@ -7,8 +7,8 @@ import org.springframework.util.ObjectUtils;
  */
 public enum DataTypeEnums {
 
-    INT,
-    FLOAT,
+    LONG,
+    DOUBLE,
     STRING,
     BOOLEAN,
     OTHER;
@@ -19,8 +19,8 @@ public enum DataTypeEnums {
         }
 
         switch (this) {
-            case INT:
-            case FLOAT:
+            case LONG:
+            case DOUBLE:
                 if (!(value instanceof Number)) {
                     throw new IllegalArgumentException("The payload " + key + " value type is invalid, value is " + value);
                 }
