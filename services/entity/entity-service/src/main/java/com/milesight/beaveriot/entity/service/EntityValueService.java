@@ -7,6 +7,7 @@ import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
+import com.milesight.beaveriot.context.integration.GenericExchangeFlowExecutor;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.proxy.MapExchangePayloadProxy;
@@ -24,6 +25,7 @@ import com.milesight.beaveriot.entity.po.EntityPO;
 import com.milesight.beaveriot.entity.repository.EntityHistoryRepository;
 import com.milesight.beaveriot.entity.repository.EntityLatestRepository;
 import com.milesight.beaveriot.entity.repository.EntityRepository;
+import com.milesight.beaveriot.eventbus.api.EventResponse;
 import jakarta.persistence.EntityManager;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -34,15 +36,8 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.OptionalDouble;
+import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -62,6 +57,8 @@ public class EntityValueService implements EntityValueServiceProvider {
     private EntityLatestRepository entityLatestRepository;
     @Autowired
     private EntityManager entityManager;
+    @Autowired
+    private GenericExchangeFlowExecutor genericExchangeFlowExecutor;
 
     private final Comparator<byte[]> byteArrayComparator = (a, b) -> {
         if (a == b) return 0;
@@ -78,6 +75,26 @@ public class EntityValueService implements EntityValueServiceProvider {
     @Override
     public void saveValues(Map<String, Object> values) {
         saveValues(values, System.currentTimeMillis());
+    }
+
+    @Override
+    public void saveValuesAndPublish(ExchangePayload exchangePayload) {
+        genericExchangeFlowExecutor.saveValuesAndPublish(exchangePayload);
+    }
+
+    @Override
+    public void saveValuesAndPublish(ExchangePayload exchangePayload, Consumer<EventResponse> consumer) {
+        genericExchangeFlowExecutor.saveValuesAndPublish(exchangePayload, consumer);
+    }
+
+    @Override
+    public void saveValuesAndPublish(ExchangePayload exchangePayload, String eventType) {
+        genericExchangeFlowExecutor.saveValuesAndPublish(exchangePayload, eventType);
+    }
+
+    @Override
+    public void saveValuesAndPublish(ExchangePayload exchangePayload, String eventType, Consumer<EventResponse> consumer) {
+        genericExchangeFlowExecutor.saveValuesAndPublish(exchangePayload, eventType, consumer);
     }
 
     @Override

@@ -4,7 +4,6 @@ package com.milesight.beaveriot.sample.subscriber;
 import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
 import com.milesight.beaveriot.eventbus.annotations.EventSubscribe;
 import com.milesight.beaveriot.eventbus.api.Event;
-import com.milesight.beaveriot.eventbus.enums.EventSource;
 import com.milesight.beaveriot.sample.entity.DemoDeviceEntities;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -15,7 +14,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class DemoAnnotationDeviceEntitySubscribe {
-    @EventSubscribe(payloadKeyExpression ="demo-anno-integration.device.*.temperature", eventSource = EventSource.USER)
+    @EventSubscribe(payloadKeyExpression ="demo-anno-integration.device.*.temperature", eventType = {ExchangeEvent.EventType.REPORT_EVENT})
     public void subscribeTemperature(Event<DemoDeviceEntities> event) {
         DemoDeviceEntities payload = event.getPayload();
         Double temperature = payload.getTemperature();
@@ -29,7 +28,7 @@ public class DemoAnnotationDeviceEntitySubscribe {
         log.info("DemoAnnotationDeviceEntitySubscribe subscribeDeviceProperties:{}, status:{} ",event, changeStatus);
     }
 
-    @EventSubscribe(payloadKeyExpression ="demo-anno-integration.integration.connect", eventSource = EventSource.USER)
+    @EventSubscribe(payloadKeyExpression ="demo-anno-integration.integration.connect", eventType = {ExchangeEvent.EventType.REPORT_EVENT})
     public void subscribeMsc(ExchangeEvent event) {
         log.info("DemoAnnotationDeviceEntitySubscribe subscribeMsc:{}",event);
     }

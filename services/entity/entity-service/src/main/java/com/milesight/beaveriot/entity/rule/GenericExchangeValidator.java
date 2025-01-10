@@ -41,7 +41,7 @@ public class GenericExchangeValidator implements PredicateNode<ExchangePayload> 
             return false;
         }
 
-        Map<String, Entity> entityMap = entityServiceProvider.findByKeys(allPayloads.keySet().toArray(String[]::new));
+        Map<String, Entity> entityMap = exchange.getExchangeEntities();
 
         Boolean ignoreInvalidKey = exchange.getContext(ExchangeContextKeys.EXCHANGE_IGNORE_INVALID_KEY, false);
 

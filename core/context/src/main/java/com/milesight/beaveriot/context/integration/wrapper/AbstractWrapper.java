@@ -3,18 +3,17 @@ package com.milesight.beaveriot.context.integration.wrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.milesight.beaveriot.base.annotations.SFunction;
 import com.milesight.beaveriot.base.utils.JsonUtils;
-import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
-import com.milesight.beaveriot.context.constants.ExchangeContextKeys;
-import com.milesight.beaveriot.context.integration.entity.annotation.AnnotationEntityCache;
-import com.milesight.beaveriot.context.integration.model.ExchangePayload;
-import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
 import com.milesight.beaveriot.base.utils.lambada.LambdaMeta;
 import com.milesight.beaveriot.base.utils.lambada.LambdaUtils;
+import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
+import com.milesight.beaveriot.context.integration.entity.annotation.AnnotationEntityCache;
+import com.milesight.beaveriot.context.integration.enums.EntityType;
+import com.milesight.beaveriot.context.integration.model.ExchangePayload;
+import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
 import com.milesight.beaveriot.context.support.SpringContext;
 import com.milesight.beaveriot.context.util.ExchangeContextHelper;
 import com.milesight.beaveriot.eventbus.EventBus;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
-import com.milesight.beaveriot.eventbus.enums.EventSource;
 import org.springframework.data.util.ReflectionUtils;
 import org.springframework.util.Assert;
 
@@ -64,41 +63,56 @@ public abstract class AbstractWrapper {
             this.exchangePayload = exchangePayload;
         }
 
-        public void publish(EventSource eventSource) {
+        public void publish(String eventType) {
 
             Assert.notNull(exchangePayload, "ExchangePayload is null, please save value first");
 
-            doPublish(exchangePayload, eventSource);
+            doPublish(exchangePayload, eventType);
         }
 
         public void publish() {
-            publish(retrieveEventSource());
+            publish("");
         }
 
-        private EventSource retrieveEventSource() {
-            ExchangeContextHelper.initializeEventSource(exchangePayload);
-            return (EventSource) exchangePayload.get(ExchangeContextKeys.EXCHANGE_EVENT_SOURCE);
-        }
-
-        public void publish(EventSource eventSource, Consumer<EventResponse> consumer) {
+        public void publish(String eventType, Consumer<EventResponse> consumer) {
 
             Assert.notNull(exchangePayload, "ExchangePayload is null, please save value first");
 
-            EventResponse eventResponse = doHandle(exchangePayload, eventSource);
+            EventResponse eventResponse = doHandle(exchangePayload, eventType);
 
             consumer.accept(eventResponse);
         }
 
         public void publish(Consumer<EventResponse> consumer) {
-            publish(retrieveEventSource(), consumer);
+            publish("", consumer);
         }
 
-        protected void doPublish(ExchangePayload exchangePayload, EventSource eventSource) {
-            SpringContext.getBean(EventBus.class).publish(ExchangeEvent.of(eventSource, exchangePayload));
+        protected void doPublish(ExchangePayload exchangePayload, String eventType) {
+            EventBus eventBus = SpringContext.getBean(EventBus.class);
+            Map<EntityType, ExchangePayload> splitExchangePayloads = exchangePayload.splitExchangePayloads();
+            splitExchangePayloads.forEach((entityType, payload) -> {
+                String obtainEventType = ExchangeEvent.EventType.of(entityType, eventType);
+                ExchangeContextHelper.initializeEventSource(payload);
+                ExchangeContextHelper.initializeEventType(payload, obtainEventType);
+                eventBus.publish(ExchangeEvent.of(obtainEventType, payload));
+            });
+
         }
 
-        protected EventResponse doHandle(ExchangePayload exchangePayload, EventSource eventSource) {
-            return SpringContext.getBean(EventBus.class).handle(ExchangeEvent.of(eventSource, exchangePayload));
+        protected EventResponse doHandle(ExchangePayload exchangePayload, String eventType) {
+            EventBus eventBus = SpringContext.getBean(EventBus.class);
+            Map<EntityType, ExchangePayload> splitExchangePayloads = exchangePayload.splitExchangePayloads();
+            EventResponse eventResponse = EventResponse.empty();
+            splitExchangePayloads.forEach((entityType, payload) -> {
+                String obtainEventType = ExchangeEvent.EventType.of(entityType, eventType);
+                ExchangeContextHelper.initializeEventSource(payload);
+                ExchangeContextHelper.initializeEventType(payload, obtainEventType);
+                EventResponse response = eventBus.handle(ExchangeEvent.of(obtainEventType, payload));
+                if (response != null) {
+                    eventResponse.putAll(response);
+                }
+            });
+            return eventResponse;
         }
     }
 

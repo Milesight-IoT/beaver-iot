@@ -1,12 +1,11 @@
 package com.milesight.beaveriot.context.integration.model.event;
 
 
+import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.eventbus.api.Event;
-import com.milesight.beaveriot.eventbus.enums.EventSource;
 import com.milesight.beaveriot.eventbus.api.IdentityKey;
-
-import static com.milesight.beaveriot.context.integration.model.event.ExchangeEvent.EventType.TRANSMIT;
+import org.springframework.util.StringUtils;
 
 /**
  * @author leon
@@ -14,18 +13,13 @@ import static com.milesight.beaveriot.context.integration.model.event.ExchangeEv
 public class ExchangeEvent implements Event<ExchangePayload> {
 
     private ExchangePayload exchangePayload;
-    /**
-     * event type, Currently only Transmit
-     */
-    private String eventType = TRANSMIT;
-
-    private EventSource eventSource;
+    private String eventType;
 
     public ExchangeEvent() {
     }
 
-    public ExchangeEvent(EventSource eventSource, ExchangePayload exchangePayload) {
-        this.eventSource = eventSource;
+    public ExchangeEvent(String eventType, ExchangePayload exchangePayload) {
+        this.eventType = eventType;
         this.exchangePayload = exchangePayload;
     }
 
@@ -57,28 +51,33 @@ public class ExchangeEvent implements Event<ExchangePayload> {
         return exchangePayload;
     }
 
-    @Override
-    public EventSource getEventSource() {
-        return eventSource;
-    }
-
-    @Override
-    public void setEventSource(EventSource eventSource) {
-        this.eventSource = eventSource;
-    }
-
-    public static ExchangeEvent of(EventSource eventSource, ExchangePayload exchangePayload) {
-        return new ExchangeEvent(eventSource, exchangePayload);
-    }
-
-    public static ExchangeEvent of(ExchangePayload exchangePayload) {
-        return new ExchangeEvent(EventSource.INTEGRATION, exchangePayload);
+    public static ExchangeEvent of(String eventType, ExchangePayload exchangePayload) {
+        return new ExchangeEvent(eventType, exchangePayload);
     }
 
     public static class EventType {
         private EventType() {
         }
 
-        public static final String TRANSMIT = "Transmit";
+        public static final String CALL_SERVICE = "CALL_SERVICE";
+        public static final String REPORT_EVENT = "REPORT_EVENT";
+        public static final String UPDATE_PROPERTY = "UPDATE_PROPERTY";
+
+        public static String of(EntityType entityType, String assignEventType) {
+            if (StringUtils.hasText(assignEventType)) {
+                return assignEventType;
+            }
+
+            switch (entityType) {
+                case SERVICE:
+                    return CALL_SERVICE;
+                case EVENT:
+                    return REPORT_EVENT;
+                case PROPERTY:
+                    return UPDATE_PROPERTY;
+                default:
+                    throw new IllegalArgumentException("Unsupported entity type: " + entityType);
+            }
+        }
     }
 }

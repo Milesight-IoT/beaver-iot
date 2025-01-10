@@ -3,15 +3,12 @@ package com.milesight.beaveriot.context.integration.wrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.milesight.beaveriot.base.annotations.SFunction;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
-import com.milesight.beaveriot.eventbus.api.EventResponse;
-import org.springframework.util.Assert;
 
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -77,6 +74,4 @@ public class AnnotatedTemplateEntityWrapper<T> extends AbstractWrapper {
         return findValuesByKeys(keys);
     }
 
-//    public Map<String, JsonNode> getChildValues(SFunction<T,?> parentKeyFun) {
-//    }
 }
