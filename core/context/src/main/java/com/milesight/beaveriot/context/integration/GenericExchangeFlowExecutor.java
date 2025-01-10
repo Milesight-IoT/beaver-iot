@@ -1,7 +1,6 @@
 package com.milesight.beaveriot.context.integration;
 
 import com.milesight.beaveriot.context.integration.enums.EntityType;
-import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
 import com.milesight.beaveriot.context.util.ExchangeContextHelper;
@@ -11,17 +10,8 @@ import com.milesight.beaveriot.rule.constants.RuleNodeNames;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.Nullable;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
-import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.EXCHANGE_EVENT_TYPE;
-import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.EXCHANGE_SYNC_CALL;
 
 /**
  * @author leon
@@ -35,10 +25,10 @@ public class GenericExchangeFlowExecutor {
         this.ruleEngineExecutor = ruleEngineExecutor;
     }
 
-    public void saveValuesAndPublish(ExchangePayload exchangePayload, String eventType, Consumer<EventResponse> consumer) {
+    public EventResponse saveValuesAndPublishSync(ExchangePayload exchangePayload, String eventType) {
         if (ObjectUtils.isEmpty(exchangePayload)) {
             log.error("ExchangePayload is empty when saveValuesAndPublish");
-            return;
+            return EventResponse.empty();
         }
 
         Map<EntityType, ExchangePayload> splitExchangePayloads = exchangePayload.splitExchangePayloads();
@@ -54,19 +44,18 @@ public class GenericExchangeFlowExecutor {
                 }
             }
         });
-
-        consumer.accept(eventResponse);
+        return eventResponse;
     }
 
-    public void saveValuesAndPublish(ExchangePayload exchangePayload, Consumer<EventResponse> consumer) {
-        saveValuesAndPublish(exchangePayload, "", consumer);
+    public EventResponse saveValuesAndPublishSync(ExchangePayload exchangePayload) {
+        return saveValuesAndPublishSync(exchangePayload, "");
     }
 
-    public void saveValuesAndPublish(ExchangePayload exchangePayload) {
-        saveValuesAndPublish(exchangePayload, "");
+    public void saveValuesAndPublishAsync(ExchangePayload exchangePayload) {
+        saveValuesAndPublishAsync(exchangePayload, "");
     }
 
-    public void saveValuesAndPublish(ExchangePayload exchangePayload, String eventType) {
+    public void saveValuesAndPublishAsync(ExchangePayload exchangePayload, String eventType) {
         if (ObjectUtils.isEmpty(exchangePayload)) {
             log.error("ExchangePayload is empty when saveValuesAndPublish");
             return;

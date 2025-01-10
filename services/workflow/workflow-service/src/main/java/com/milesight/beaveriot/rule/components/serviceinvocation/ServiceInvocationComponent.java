@@ -42,7 +42,7 @@ public class ServiceInvocationComponent implements ProcessorNode<Exchange> {
 
             ExchangeContextHelper.initializeEventSource(payload, exchange);
 
-            entityValueServiceProvider.saveValuesAndPublish(payload);
+            entityValueServiceProvider.saveValuesAndPublishSync(payload);
         }
     }
 

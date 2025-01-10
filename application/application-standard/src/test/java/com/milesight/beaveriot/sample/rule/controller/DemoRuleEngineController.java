@@ -6,7 +6,6 @@ import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.wrapper.AnnotatedEntityWrapper;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
-import com.milesight.beaveriot.eventbus.api.EventResponse;
 import com.milesight.beaveriot.rule.RuleEngineComponentManager;
 import com.milesight.beaveriot.rule.RuleEngineExecutor;
 import com.milesight.beaveriot.rule.RuleEngineLifecycleManager;
@@ -59,7 +58,7 @@ public class DemoRuleEngineController {
     public Object propertyUpdate(@RequestBody ExchangePayload exchangePayload) {
         SecurityUserContext.SecurityUser securityUser = SecurityUserContext.SecurityUser.builder().payload(Map.of(USER_ID, "11111")).build();
         SecurityUserContext.setSecurityUser(securityUser);
-        entityValueServiceProvider.saveValuesAndPublish(exchangePayload, (e)->{});
+        entityValueServiceProvider.saveValuesAndPublishSync(exchangePayload);
         return ResponseBuilder.success("eventResponse");
     }
 
@@ -72,7 +71,7 @@ public class DemoRuleEngineController {
         wrapper.saveValues(Map.of(DemoIntegrationEntities.DemoGroupSettingEntities::getLength,100,
                             DemoIntegrationEntities.DemoGroupSettingEntities::getAccessKey, "200",
                             DemoIntegrationEntities.DemoGroupSettingEntities::getSecretKey, "300"))
-                .publish((s)->{} );
+                .publishAsync();
 
         return ResponseBuilder.success("eventResponse");
     }
