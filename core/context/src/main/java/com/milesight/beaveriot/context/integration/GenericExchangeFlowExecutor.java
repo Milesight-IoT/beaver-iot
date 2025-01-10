@@ -1,23 +1,33 @@
 package com.milesight.beaveriot.context.integration;
 
-import com.milesight.beaveriot.context.api.ExchangeFlowExecutor;
+import com.milesight.beaveriot.context.integration.enums.EntityType;
+import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
 import com.milesight.beaveriot.context.util.ExchangeContextHelper;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
-import com.milesight.beaveriot.eventbus.enums.EventSource;
 import com.milesight.beaveriot.rule.RuleEngineExecutor;
 import com.milesight.beaveriot.rule.constants.RuleNodeNames;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.Nullable;
+import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
-import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
+import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.EXCHANGE_EVENT_TYPE;
+import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.EXCHANGE_SYNC_CALL;
 
 /**
  * @author leon
  */
 @Slf4j
-public class GenericExchangeFlowExecutor implements ExchangeFlowExecutor {
+public class GenericExchangeFlowExecutor {
 
     private RuleEngineExecutor ruleEngineExecutor;
 
@@ -25,40 +35,53 @@ public class GenericExchangeFlowExecutor implements ExchangeFlowExecutor {
         this.ruleEngineExecutor = ruleEngineExecutor;
     }
 
-    @Override
-    public EventResponse syncExchange(ExchangePayload exchangePayload, EventSource eventSource) {
-        initializeEventContext(eventSource, exchangePayload, true);
-        Object response = ruleEngineExecutor.executeWithResponse(RuleNodeNames.innerExchangeFlow, exchangePayload);
-        if (response != null && !(response instanceof EventResponse)) {
-            log.warn("syncExchangeDown response is not EventResponse, response:{}", response);
-            return EventResponse.empty();
-        } else {
-            return (EventResponse) response;
+    public void saveValuesAndPublish(ExchangePayload exchangePayload, String eventType, Consumer<EventResponse> consumer) {
+        if (ObjectUtils.isEmpty(exchangePayload)) {
+            log.error("ExchangePayload is empty when saveValuesAndPublish");
+            return;
         }
+
+        Map<EntityType, ExchangePayload> splitExchangePayloads = exchangePayload.splitExchangePayloads();
+        EventResponse eventResponse = EventResponse.empty();
+        splitExchangePayloads.forEach((entityType, payload) -> {
+            initializeEventContext(eventType, entityType, payload, true);
+            Object response = ruleEngineExecutor.executeWithResponse(RuleNodeNames.innerExchangeFlow, payload);
+            if (response != null) {
+                if (!(response instanceof EventResponse returnEvent)) {
+                    log.warn("syncExchangeDown response is not EventResponse, response:{}", response);
+                } else {
+                    eventResponse.putAll(returnEvent);
+                }
+            }
+        });
+
+        consumer.accept(eventResponse);
     }
 
-    @Override
-    public void asyncExchange(ExchangePayload exchangePayload, EventSource eventSource) {
-        initializeEventContext(eventSource, exchangePayload, false);
-        ruleEngineExecutor.execute(RuleNodeNames.innerExchangeFlow, exchangePayload);
+    public void saveValuesAndPublish(ExchangePayload exchangePayload, Consumer<EventResponse> consumer) {
+        saveValuesAndPublish(exchangePayload, "", consumer);
     }
 
-    @Override
-    public void asyncExchange(ExchangePayload exchangePayload) {
-        asyncExchange(exchangePayload, null);
+    public void saveValuesAndPublish(ExchangePayload exchangePayload) {
+        saveValuesAndPublish(exchangePayload, "");
     }
 
-    @Override
-    public EventResponse syncExchange(ExchangePayload exchangePayload) {
-        return syncExchange(exchangePayload, null);
-    }
-
-    protected void initializeEventContext(@Nullable EventSource eventSource, ExchangePayload payload, boolean syncCall) {
-        payload.putContext(EXCHANGE_SYNC_CALL, syncCall);
-        payload.putContext(EXCHANGE_EVENT_TYPE, ExchangeEvent.EventType.TRANSMIT);
-        if (eventSource != null) {
-            payload.putContext(EXCHANGE_EVENT_SOURCE, eventSource);
+    public void saveValuesAndPublish(ExchangePayload exchangePayload, String eventType) {
+        if (ObjectUtils.isEmpty(exchangePayload)) {
+            log.error("ExchangePayload is empty when saveValuesAndPublish");
+            return;
         }
+
+        Map<EntityType, ExchangePayload> splitExchangePayloads = exchangePayload.splitExchangePayloads();
+        splitExchangePayloads.forEach((entityType, payload) -> {
+            initializeEventContext(eventType, entityType, payload, false);
+            ruleEngineExecutor.execute(RuleNodeNames.innerExchangeFlow, payload);
+        });
+    }
+
+    protected void initializeEventContext(@Nullable String eventType, EntityType entityType, ExchangePayload payload, boolean syncCall) {
+        ExchangeContextHelper.initializeCallMod(payload, syncCall);
+        ExchangeContextHelper.initializeEventType(payload, ExchangeEvent.EventType.of(entityType, eventType));
         ExchangeContextHelper.initializeEventSource(payload);
     }
 

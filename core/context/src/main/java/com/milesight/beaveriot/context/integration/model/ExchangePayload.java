@@ -11,10 +11,7 @@ import lombok.NonNull;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -100,6 +97,18 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
             entityMap = entityServiceProvider.findByKeys(keySet().toArray(String[]::new));
         }
         return entityMap;
+    }
+
+    public Map<EntityType, ExchangePayload> splitExchangePayloads() {
+        Map<EntityType, List<String>> splitExchangePayloads = new HashMap<>();
+        getExchangeEntities().forEach((key, entity) -> {
+            List<String> entities = splitExchangePayloads.computeIfAbsent(entity.getType(), k -> new ArrayList<>());
+            entities.add(entity.getKey());
+        });
+
+        return splitExchangePayloads.entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> ExchangePayload.createFrom(this, entry.getValue())));
     }
 
     @Override

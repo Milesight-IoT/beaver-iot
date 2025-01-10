@@ -1,15 +1,20 @@
 package com.milesight.beaveriot.context.util;
 
 import com.milesight.beaveriot.context.constants.ExchangeContextKeys;
+import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
+import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
-import com.milesight.beaveriot.eventbus.enums.EventSource;
 import org.apache.camel.Exchange;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
 import java.io.Serializable;
 import java.util.Map;
+
+import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.EXCHANGE_EVENT_TYPE;
+import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.EXCHANGE_SYNC_CALL;
 
 /**
  * @author leon
@@ -17,6 +22,14 @@ import java.util.Map;
 public class ExchangeContextHelper {
 
     private ExchangeContextHelper() {
+    }
+
+    public static void initializeCallMod(ExchangePayload exchangePayload, boolean syncCall) {
+        exchangePayload.putContext(EXCHANGE_SYNC_CALL, syncCall);
+    }
+
+    public static void initializeEventType(ExchangePayload exchangePayload, String eventType) {
+        exchangePayload.putContext(EXCHANGE_EVENT_TYPE, eventType);
     }
 
     public static void initializeEventSource(ExchangePayload exchangePayload) {
@@ -38,16 +51,6 @@ public class ExchangeContextHelper {
         putContextIfNecessary(exchangePayload, ExchangeContextKeys.SOURCE_TENANT_ID, tenantId);
         putContextIfNecessary(exchangePayload, ExchangeContextKeys.SOURCE_FLOW_ID, flowId);
 
-        // set event source
-        if (!exchangePayload.containsKey(ExchangeContextKeys.EXCHANGE_EVENT_SOURCE)) {
-            if (userId != null) {
-                exchangePayload.putContext(ExchangeContextKeys.EXCHANGE_EVENT_SOURCE, EventSource.USER);
-            } else if (flowId != null) {
-                exchangePayload.putContext(ExchangeContextKeys.EXCHANGE_EVENT_SOURCE, EventSource.WORKFLOW);
-            } else {
-                exchangePayload.putContext(ExchangeContextKeys.EXCHANGE_EVENT_SOURCE, EventSource.INTEGRATION);
-            }
-        }
     }
 
     private static void putContextIfNecessary(ExchangePayload exchangePayload, String key, Serializable value) {
@@ -58,5 +61,4 @@ public class ExchangeContextHelper {
             exchangePayload.putContext(key, value);
         }
     }
-
 }

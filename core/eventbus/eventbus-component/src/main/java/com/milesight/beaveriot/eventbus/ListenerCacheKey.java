@@ -2,11 +2,9 @@ package com.milesight.beaveriot.eventbus;
 
 import com.milesight.beaveriot.base.constants.StringConstant;
 import com.milesight.beaveriot.base.utils.KeyPatternMatcher;
-import com.milesight.beaveriot.eventbus.enums.EventSource;
 import lombok.Data;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -19,14 +17,11 @@ public class ListenerCacheKey {
 
     private String payloadKey;
 
-    private String eventType;
+    private String[] eventTypes;
 
-    private EventSource[] eventSources;
-
-    public ListenerCacheKey(String payloadKey, String eventType, EventSource[] eventSource) {
+    public ListenerCacheKey(String payloadKey, String[] eventType) {
         this.payloadKey = payloadKey;
-        this.eventType = eventType;
-        this.eventSources = eventSource;
+        this.eventTypes = eventType;
     }
 
     public String[] matchMultiKeys(String payloadMultiKeys) {
@@ -34,17 +29,10 @@ public class ListenerCacheKey {
     }
 
     public boolean matchEventType(String payloadEventType) {
-        if (!StringUtils.hasText(eventType)) {
+        if (ObjectUtils.isEmpty(eventTypes)) {
             return true;
         }
-        return eventType.equals(payloadEventType);
-    }
-
-    public boolean matchEventSource(EventSource eventSource) {
-        if (ObjectUtils.isEmpty(eventSources)) {
-            return true;
-        }
-        return ArrayUtils.contains(eventSources, eventSource);
+        return ArrayUtils.contains(eventTypes, payloadEventType);
     }
 
     @Override
@@ -56,12 +44,12 @@ public class ListenerCacheKey {
             return false;
         }
         ListenerCacheKey that = (ListenerCacheKey) o;
-        return Objects.equals(payloadKey, that.payloadKey) && Objects.equals(eventType, that.eventType);
+        return Objects.equals(payloadKey, that.payloadKey) && Objects.equals(eventTypes, that.eventTypes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(payloadKey, eventType);
+        return Objects.hash(payloadKey, eventTypes);
     }
 
 }

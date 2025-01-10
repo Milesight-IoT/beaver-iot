@@ -43,17 +43,17 @@ public class EventListenerConsumer extends DefaultConsumer {
 
         UniqueListenerCacheKey uniqueListenerCacheKey = generateListenerCacheKey(entities);
 
-        eventBus.registerSubscribe(ExchangeEvent.class, uniqueListenerCacheKey, List.of(new RuleEngineEventInvoker(uniqueListenerCacheKey)));
+        eventBus.registerDynamicSubscribe(ExchangeEvent.class, uniqueListenerCacheKey, new RuleEngineEventInvoker(uniqueListenerCacheKey));
     }
 
     private UniqueListenerCacheKey generateListenerCacheKey(List<String> entities) {
         String expressions = entities.stream().collect(Collectors.joining(","));
-        return new UniqueListenerCacheKey(endpoint.getEventListenerName(), expressions, ExchangeEvent.EventType.TRANSMIT, null);
+        return new UniqueListenerCacheKey(endpoint.getEventListenerName(), expressions, null);
     }
 
     @Override
     protected void doStop() throws Exception {
-        eventBus.deregisterSubscribe(ExchangeEvent.class, generateListenerCacheKey(endpoint.getEntities()));
+        eventBus.deregisterDynamicSubscribe(ExchangeEvent.class, generateListenerCacheKey(endpoint.getEntities()));
         super.doStop();
     }
 
@@ -72,7 +72,7 @@ public class EventListenerConsumer extends DefaultConsumer {
             Exchange exchange = endpoint.createExchange();
 
             exchange.getIn().setHeader(EventListenerConstants.HEADER_EVENTBUS_PAYLOAD_KEY, uniqueListenerCacheKey.getPayloadKey());
-            exchange.getIn().setHeader(EventListenerConstants.HEADER_EVENTBUS_TYPE, uniqueListenerCacheKey.getEventType());
+            exchange.getIn().setHeader(EventListenerConstants.HEADER_EVENTBUS_TYPE, uniqueListenerCacheKey.getEventTypes());
 
             ExchangeEvent exchangeEvent = (ExchangeEvent) event;
 

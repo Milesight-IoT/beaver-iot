@@ -4,7 +4,6 @@ package com.milesight.beaveriot.context.integration.model.event;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.eventbus.api.Event;
 import com.milesight.beaveriot.eventbus.api.IdentityKey;
-import com.milesight.beaveriot.eventbus.enums.EventSource;
 
 /**
  * @author leon
@@ -13,24 +12,12 @@ public class EntityEvent implements Event<Entity> {
 
     private Entity entity;
     private String eventType;
-    private EventSource eventSource = EventSource.INTEGRATION;
-
     public EntityEvent() {
     }
 
     public EntityEvent(String eventType, Entity entity) {
         this.eventType = eventType;
         this.entity = entity;
-    }
-
-    @Override
-    public EventSource getEventSource() {
-        return eventSource;
-    }
-
-    @Override
-    public void setEventSource(EventSource eventSource) {
-        this.eventSource = eventSource;
     }
 
     @Override

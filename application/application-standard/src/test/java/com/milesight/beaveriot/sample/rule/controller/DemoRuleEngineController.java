@@ -2,8 +2,9 @@ package com.milesight.beaveriot.sample.rule.controller;
 
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
-import com.milesight.beaveriot.context.api.ExchangeFlowExecutor;
+import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
+import com.milesight.beaveriot.context.integration.wrapper.AnnotatedEntityWrapper;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
 import com.milesight.beaveriot.rule.RuleEngineComponentManager;
@@ -14,8 +15,8 @@ import com.milesight.beaveriot.rule.model.flow.config.RuleNodeConfig;
 import com.milesight.beaveriot.rule.model.trace.FlowTraceInfo;
 import com.milesight.beaveriot.rule.model.trace.NodeTraceInfo;
 import com.milesight.beaveriot.rule.support.JsonHelper;
+import com.milesight.beaveriot.sample.entity.DemoIntegrationEntities;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.camel.CamelContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +37,7 @@ public class DemoRuleEngineController {
     @Autowired
     private RuleEngineLifecycleManager ruleEngineLifecycleManager;
     @Autowired
-    ExchangeFlowExecutor exchangeFlowExecutor;
+    EntityValueServiceProvider entityValueServiceProvider;
     @Autowired
     private RuleEngineComponentManager ruleEngineComponentManager;
     @Autowired
@@ -58,9 +59,24 @@ public class DemoRuleEngineController {
     public Object propertyUpdate(@RequestBody ExchangePayload exchangePayload) {
         SecurityUserContext.SecurityUser securityUser = SecurityUserContext.SecurityUser.builder().payload(Map.of(USER_ID, "11111")).build();
         SecurityUserContext.setSecurityUser(securityUser);
-        EventResponse eventResponse = exchangeFlowExecutor.syncExchange(exchangePayload);
-        return ResponseBuilder.success(eventResponse);
+        entityValueServiceProvider.saveValuesAndPublish(exchangePayload, (e)->{});
+        return ResponseBuilder.success("eventResponse");
     }
+
+    @PostMapping("/public/test-exchange-wrapper")
+    public Object propertyUpdateWrapper(@RequestBody ExchangePayload exchangePayload) {
+        SecurityUserContext.SecurityUser securityUser = SecurityUserContext.SecurityUser.builder().payload(Map.of(USER_ID, "11111")).build();
+        SecurityUserContext.setSecurityUser(securityUser);
+
+        AnnotatedEntityWrapper<DemoIntegrationEntities.DemoGroupSettingEntities> wrapper = new AnnotatedEntityWrapper<>();
+        wrapper.saveValues(Map.of(DemoIntegrationEntities.DemoGroupSettingEntities::getLength,100,
+                            DemoIntegrationEntities.DemoGroupSettingEntities::getAccessKey, "200",
+                            DemoIntegrationEntities.DemoGroupSettingEntities::getSecretKey, "300"))
+                .publish((s)->{} );
+
+        return ResponseBuilder.success("eventResponse");
+    }
+
 
     @PostMapping("/public/test-track-flow/{config}")
     public ResponseBody<FlowTraceInfo> testTrackFlow(@PathVariable("config") String config, @RequestBody ExchangePayload exchangePayload) throws IOException {

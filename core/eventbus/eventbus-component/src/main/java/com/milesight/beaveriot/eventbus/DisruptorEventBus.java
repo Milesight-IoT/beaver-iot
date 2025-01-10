@@ -8,7 +8,6 @@ import com.milesight.beaveriot.eventbus.api.Event;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
 import com.milesight.beaveriot.eventbus.api.IdentityKey;
 import com.milesight.beaveriot.eventbus.configuration.DisruptorOptions;
-import com.milesight.beaveriot.eventbus.enums.EventSource;
 import com.milesight.beaveriot.eventbus.invoke.EventInvoker;
 import com.milesight.beaveriot.eventbus.invoke.EventSubscribeInvoker;
 import com.milesight.beaveriot.eventbus.invoke.ListenerParameterResolver;
@@ -28,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 
 /**
@@ -36,14 +36,15 @@ import java.util.function.Consumer;
 @Slf4j
 public class DisruptorEventBus<T extends Event<? extends IdentityKey>> implements EventBus<T>, ApplicationContextAware {
 
-    private final Map<Class<T>, Map<ListenerCacheKey,List<EventInvoker<T>>>> asyncSubscribeCache = new ConcurrentHashMap<>();
+    private final Map<Class<T>, Map<ListenerCacheKey, List<EventInvoker<T>>>> annotationSubscribeCache = new ConcurrentHashMap<>();
+    private final Map<Class<T>, Map<UniqueListenerCacheKey, EventInvoker<T>>> dynamicSubscribeCache = new ConcurrentHashMap<>();
     private final Map<Class<?>, Disruptor<Event<?>>> disruptorCache = new ConcurrentHashMap<>();
     private DisruptorOptions disruptorOptions;
     private ListenerParameterResolver parameterResolver;
     private ApplicationContext applicationContext;
 
     public DisruptorEventBus(DisruptorOptions disruptorOptions, ListenerParameterResolver parameterResolver) {
-        this.disruptorOptions  = disruptorOptions;
+        this.disruptorOptions = disruptorOptions;
         this.parameterResolver = parameterResolver;
     }
 
@@ -52,15 +53,15 @@ public class DisruptorEventBus<T extends Event<? extends IdentityKey>> implement
 
         Disruptor<Event<?>> disruptor = disruptorCache.get(message.getClass());
 
-        if(disruptor == null){
-            log.debug("disruptor is null, please subscribe first, event: {}" , message.getClass());
+        if (disruptor == null) {
+            log.debug("disruptor is null, please subscribe first, event: {}", message.getClass());
             return;
         }
 
         disruptor.getRingBuffer().publishEvent((event, sequence) -> {
-            if(message instanceof Copyable copyable){
+            if (message instanceof Copyable copyable) {
                 copyable.copy(message, event);
-            }else{
+            } else {
                 IdentityKey payload = message.getPayload();
                 event.setPayload(payload);
                 event.setEventType(message.getEventType());
@@ -69,7 +70,7 @@ public class DisruptorEventBus<T extends Event<? extends IdentityKey>> implement
     }
 
     @Override
-    public void subscribe(Class<T> target, Executor executor, Consumer<T>... listener){
+    public void subscribe(Class<T> target, Executor executor, Consumer<T>... listener) {
 
         disruptorCache.computeIfAbsent(target, k -> {
 
@@ -90,20 +91,25 @@ public class DisruptorEventBus<T extends Event<? extends IdentityKey>> implement
 
         EventResponse eventResponse = new EventResponse();
 
-        Map<ListenerCacheKey, List<EventInvoker<T>>> listenerCacheKeyListMap = asyncSubscribeCache.get(event.getClass());
+        Map<ListenerCacheKey, List<EventInvoker<T>>> listenerCacheKeyListMap = annotationSubscribeCache.get(event.getClass());
 
-        if(listenerCacheKeyListMap == null){
+        if (listenerCacheKeyListMap == null) {
             log.warn("no subscribe handler for event: {}", event.getEventType());
             return null;
         }
 
         List<Throwable> causes = new ArrayList<>();
 
+        //invoke annotation subscribe
         for (Map.Entry<ListenerCacheKey, List<EventInvoker<T>>> listenerCacheKeyListEntry : listenerCacheKeyListMap.entrySet()) {
-            createSyncConsumer(listenerCacheKeyListEntry.getKey(), listenerCacheKeyListEntry.getValue(),eventResponse, causes).accept(event);
+            createSyncConsumer(listenerCacheKeyListEntry.getKey(), listenerCacheKeyListEntry.getValue(), eventResponse, causes).accept(event);
+        }
+        //invoke dynamic subscribe
+        if (dynamicSubscribeCache.containsKey(event.getClass())) {
+            createDynamicAsyncConsumer().accept(event);
         }
 
-        if(!CollectionUtils.isEmpty(causes)){
+        if (!CollectionUtils.isEmpty(causes)) {
             throw new EventBusExecutionException("EventSubscribe method invoke error", causes);
         }
 
@@ -123,37 +129,41 @@ public class DisruptorEventBus<T extends Event<? extends IdentityKey>> implement
         subscribe(target, executor, listener);
     }
 
-    public void registerSubscribe(Class<? extends Event<?>> eventClass, UniqueListenerCacheKey listenerCacheKey, List<EventInvoker<T>> eventInvokers){
-        asyncSubscribeCache.get(eventClass).put(listenerCacheKey, eventInvokers);
-    }
-    public void deregisterSubscribe(Class<? extends Event<?>> eventClass, UniqueListenerCacheKey listenerCacheKey){
-        asyncSubscribeCache.get(eventClass).remove(listenerCacheKey);
+    public void registerDynamicSubscribe(Class<T> eventClass, UniqueListenerCacheKey listenerCacheKey, EventInvoker<T> eventInvoker) {
+        dynamicSubscribeCache.computeIfAbsent(eventClass, k -> new ConcurrentHashMap<>()).put(listenerCacheKey, eventInvoker);
     }
 
-
-    public void registerSubscribe(EventSubscribe eventSubscribe, Object bean, Method executeMethod){
-
-        registerSubscribe(eventSubscribe.payloadKeyExpression(), eventSubscribe.eventType(), eventSubscribe.eventSource(), bean, executeMethod);
+    public void deregisterDynamicSubscribe(Class<T> eventClass, UniqueListenerCacheKey listenerCacheKey) {
+        if (dynamicSubscribeCache.containsKey(eventClass)) {
+            dynamicSubscribeCache.get(eventClass).remove(listenerCacheKey);
+        }
     }
 
-    public void registerSubscribe(String keyExpression, String eventType, EventSource[] eventSources, Object bean, Method executeMethod){
+
+    public void registerAnnotationSubscribe(EventSubscribe eventSubscribe, Object bean, Method executeMethod) {
+
+        registerAnnotationSubscribe(eventSubscribe.payloadKeyExpression(), eventSubscribe.eventType(), bean, executeMethod);
+    }
+
+    public void registerAnnotationSubscribe(String keyExpression, String[] eventType, Object bean, Method executeMethod) {
 
         Class<?> parameterTypes = parameterResolver.resolveParameterTypes(executeMethod);
 
         Class<T> eventClass = parameterResolver.resolveActualEventType(executeMethod);
 
-        ListenerCacheKey listenerCacheKey = new ListenerCacheKey(keyExpression, eventType, eventSources);
+        ListenerCacheKey listenerCacheKey = new ListenerCacheKey(keyExpression, eventType);
 
-        log.debug("registerAsyncSubscribe: {}, subscriber expression: {}" , executeMethod, listenerCacheKey);
+        log.debug("registerAsyncSubscribe: {}, subscriber expression: {}", executeMethod, listenerCacheKey);
 
-        asyncSubscribeCache.computeIfAbsent(eventClass, k -> new ConcurrentHashMap<>());
+        annotationSubscribeCache.computeIfAbsent(eventClass, k -> new ConcurrentHashMap<>());
 
-        asyncSubscribeCache.get(eventClass).computeIfAbsent(listenerCacheKey, k -> new ArrayList<>()).add(new EventSubscribeInvoker<>(bean, executeMethod, parameterTypes, parameterResolver));
+        annotationSubscribeCache.get(eventClass).computeIfAbsent(listenerCacheKey, k -> new ArrayList<>()).add(new EventSubscribeInvoker<>(bean, executeMethod, parameterTypes, parameterResolver));
     }
 
-    public void fireAsyncSubscribe(){
-        asyncSubscribeCache.forEach((k, v) -> {
-            List<Consumer<T>> allConsumers = v.entrySet().stream().map(entry -> createAsyncConsumer(entry.getKey(), entry.getValue())).toList();
+    public void fireAsyncSubscribe() {
+        annotationSubscribeCache.forEach((k, v) -> {
+            List<Consumer<T>> allConsumers = v.entrySet().stream().map(entry -> createAnnotationAsyncConsumer(entry.getKey(), entry.getValue())).collect(Collectors.toList());
+            allConsumers.add(createDynamicAsyncConsumer());
             subscribe(k, allConsumers.toArray(new Consumer[0]));
         });
     }
@@ -161,36 +171,57 @@ public class DisruptorEventBus<T extends Event<? extends IdentityKey>> implement
     private Consumer<T> createSyncConsumer(ListenerCacheKey cacheKey, List<EventInvoker<T>> invokers, @Nullable EventResponse eventResponses, List<Throwable> causes) {
         return event -> {
             String[] matchMultiKeys = filterMatchMultiKeys(event, cacheKey);
-            if(ObjectUtils.isEmpty(matchMultiKeys)){
+            if (ObjectUtils.isEmpty(matchMultiKeys)) {
                 return;
             }
 
             invokers.forEach(invoker -> {
                 try {
                     Object invoke = invoker.invoke(event, matchMultiKeys);
-                    if(eventResponses != null && invoke instanceof EventResponse eventResponse){
+                    if (eventResponses != null && invoke instanceof EventResponse eventResponse) {
                         eventResponses.putAll(eventResponse);
                     }
                 } catch (Throwable e) {
                     Throwable throwable = e.getCause() != null ? e.getCause() : e;
                     causes.add(throwable);
-                    log.error("EventSubscribe method invoke error, method: {}" ,invoker, e);
+                    log.error("EventSubscribe method invoke error, method: {}", invoker, e);
                 }
             });
         };
     }
 
-    private Consumer<T> createAsyncConsumer(ListenerCacheKey cacheKey, List<EventInvoker<T>> invokers) {
+    private Consumer<T> createDynamicAsyncConsumer() {
+        return event -> {
+            Map<UniqueListenerCacheKey, EventInvoker<T>> subscribeCache = dynamicSubscribeCache.get(event.getClass());
+            if (ObjectUtils.isEmpty(subscribeCache)) {
+                return;
+            }
+
+            for (Map.Entry<UniqueListenerCacheKey, EventInvoker<T>> cacheSubscribeEntry : subscribeCache.entrySet()) {
+                String[] matchMultiKeys = filterMatchMultiKeys(event, cacheSubscribeEntry.getKey());
+                if (ObjectUtils.isEmpty(matchMultiKeys)) {
+                    continue;
+                }
+                try {
+                    cacheSubscribeEntry.getValue().invoke(event, matchMultiKeys);
+                } catch (Exception e) {
+                    log.error("Dynamic EventSubscribe invoke error, method: {}", e);
+                }
+            }
+        };
+    }
+
+    private Consumer<T> createAnnotationAsyncConsumer(ListenerCacheKey cacheKey, List<EventInvoker<T>> invokers) {
         return event -> {
             String[] matchMultiKeys = filterMatchMultiKeys(event, cacheKey);
-            if(ObjectUtils.isEmpty(matchMultiKeys)){
+            if (ObjectUtils.isEmpty(matchMultiKeys)) {
                 return;
             }
             invokers.forEach(invoker -> {
                 try {
                     invoker.invoke(event, matchMultiKeys);
                 } catch (Exception e) {
-                    log.error("EventSubscribe method invoke error, method: {}" ,invoker, e);
+                    log.error("EventSubscribe method invoke error, method: {}", invoker, e);
                 }
             });
         };
@@ -198,9 +229,6 @@ public class DisruptorEventBus<T extends Event<? extends IdentityKey>> implement
 
     private String[] filterMatchMultiKeys(T event, ListenerCacheKey cacheKey) {
         if (!cacheKey.matchEventType(event.getEventType())) {
-            return new String[0];
-        }
-        if (!cacheKey.matchEventSource(event.getEventSource())) {
             return new String[0];
         }
         return cacheKey.matchMultiKeys(event.getPayloadKey());
@@ -215,7 +243,7 @@ public class DisruptorEventBus<T extends Event<? extends IdentityKey>> implement
         try {
             return clazz.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
-            throw new EventBusExecutionException("Class load exception",e);
+            throw new EventBusExecutionException("Class load exception", e);
         }
     }
 }

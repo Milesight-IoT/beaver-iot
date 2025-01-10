@@ -4,7 +4,7 @@ import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
-import com.milesight.beaveriot.context.api.ExchangeFlowExecutor;
+import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
 import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.context.integration.model.Device;
@@ -61,9 +61,6 @@ public class DeviceService implements IDeviceFacade {
     @Autowired
     IntegrationServiceProvider integrationServiceProvider;
 
-    @Autowired
-    ExchangeFlowExecutor exchangeFlowExecutor;
-
     @Lazy
     @Autowired
     DeviceConverter deviceConverter;
@@ -77,6 +74,9 @@ public class DeviceService implements IDeviceFacade {
 
     @Autowired
     EventBus eventBus;
+
+    @Autowired
+    EntityValueServiceProvider entityValueServiceProvider;
 
     @IntegrationPermission
     public Integration getIntegration(String integrationIdentifier) {
@@ -110,7 +110,7 @@ public class DeviceService implements IDeviceFacade {
 
         // Must return a device
         try {
-            exchangeFlowExecutor.syncExchange(payload);
+            entityValueServiceProvider.saveValuesAndPublish(payload, (c)->{});
         } catch (Exception e) {
             throw ServiceException
                     .with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "add device failed")
@@ -238,7 +238,7 @@ public class DeviceService implements IDeviceFacade {
         }).filter(Objects::nonNull).forEach((ExchangePayload payload) -> {
             // call service for deleting
             try {
-                exchangeFlowExecutor.syncExchange(payload);
+                entityValueServiceProvider.saveValuesAndPublish(payload, (c)->{});
             } catch (Exception e) {
                 throw ServiceException
                         .with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "delete device failed")

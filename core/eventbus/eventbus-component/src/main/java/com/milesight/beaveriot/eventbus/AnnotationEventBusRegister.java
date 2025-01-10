@@ -77,7 +77,7 @@ public class AnnotationEventBusRegister implements ApplicationContextAware, Smar
             Class<?> returnType = executeMethod.getReturnType();
 
             Assert.isTrue(returnType == void.class || returnType == EventResponse.class, "EventSubscribe method return type must be void or EventResponse:" + executeMethod.toGenericString());
-            eventBus.registerSubscribe(eventSubscribe, bean, executeMethod);
+            eventBus.registerAnnotationSubscribe(eventSubscribe, bean, executeMethod);
         }
     }
 

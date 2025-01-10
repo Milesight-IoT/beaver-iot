@@ -7,7 +7,7 @@ import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
-import com.milesight.beaveriot.context.api.ExchangeFlowExecutor;
+import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
@@ -84,9 +84,6 @@ public class EntityService implements EntityServiceProvider {
     private DeviceServiceProvider deviceServiceProvider;
 
     @Autowired
-    private ExchangeFlowExecutor exchangeFlowExecutor;
-
-    @Autowired
     private IUserFacade userFacade;
 
     @Autowired
@@ -100,6 +97,8 @@ public class EntityService implements EntityServiceProvider {
 
     @Autowired
     private EntityLatestRepository entityLatestRepository;
+    @Autowired
+    private EntityValueServiceProvider entityValueServiceProvider;
 
     private static Entity convertPOToEntity(EntityPO entityPO, Map<String, DeviceNameDTO> deviceIdToDetails) {
         String integrationId = null;
@@ -743,7 +742,9 @@ public class EntityService implements EntityServiceProvider {
             throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
         }
         ExchangePayload payload = new ExchangePayload(exchange);
-        exchangeFlowExecutor.syncExchange(payload);
+        entityValueServiceProvider.saveValuesAndPublish(payload, (c)->{
+            log.debug("save entity value success: {}", c);
+        });
     }
 
     public EventResponse serviceCall(ServiceCallRequest serviceCallRequest) {
@@ -771,7 +772,10 @@ public class EntityService implements EntityServiceProvider {
             throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
         }
         ExchangePayload payload = new ExchangePayload(exchange);
-        return exchangeFlowExecutor.syncExchange(payload);
+
+        EventResponse eventResponse = EventResponse.empty();
+        entityValueServiceProvider.saveValuesAndPublish(payload, (c)-> eventResponse.add(c));
+        return eventResponse;
     }
 
     /**
