@@ -124,7 +124,7 @@ public enum ExpressionOperator {
     private static int doCompare(@Nonnull Object object1, @Nonnull Object object2) {
         if (!(object1 instanceof Number || NumberUtils.isCreatable(object1.toString()))
                 || !(object2 instanceof Number || NumberUtils.isCreatable(object2.toString()))) {
-            throw new IllegalArgumentException("Unsupported expression type, greaterThan only supports numbers ");
+            throw new IllegalArgumentException("Unsupported expression type, value comparison only supports numbers");
         }
         return ObjectUtils.compare(object1.toString(), object2.toString());
     }
