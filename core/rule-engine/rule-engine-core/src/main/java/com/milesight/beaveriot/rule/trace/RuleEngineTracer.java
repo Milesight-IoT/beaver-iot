@@ -71,7 +71,7 @@ public class RuleEngineTracer extends DefaultTracer {
                 nodeTraceResponse.setInput(getExchangeBody(exchange));
                 traceContext.getTraceInfos().add(nodeTraceResponse);
             } catch (Exception ex) {
-                log.error("traceBeforeNode error", ex);
+                log.error("Before trace node log exceptions:", ex);
             }
         }
     }
@@ -107,7 +107,7 @@ public class RuleEngineTracer extends DefaultTracer {
                     }
                 }
             } catch (Exception ex) {
-                log.error("traceBeforeNode error", ex);
+                log.error("After trace node log exceptions:", ex);
             }
         }
     }
@@ -124,7 +124,7 @@ public class RuleEngineTracer extends DefaultTracer {
                 return JsonHelper.toJSON(body);
             }
         } catch (Exception ex) {
-            log.error("Convert exchange body failed", ex);
+            log.error("Convert exchange body failed on tracing", ex);
             return "Convert exchange body failed:" + ex.getMessage();
         }
     }
@@ -141,7 +141,7 @@ public class RuleEngineTracer extends DefaultTracer {
                 flowTraceResponse.setStatus(ExecutionStatus.ERROR);
             }
             flowTraceResponse.setTimeCost(System.currentTimeMillis() - flowTraceResponse.getStartTime());
-            log.debug("traceAfterRoute: {}", flowTraceResponse);
+            log.debug("After trace route log exceptions:: {}", flowTraceResponse);
             // if trace for test, do not publish event
             Boolean traceForTest = exchange.getProperty(ExchangeHeaders.TRACE_FOR_TEST, false, boolean.class);
              if (Boolean.FALSE.equals(traceForTest)) {

@@ -36,7 +36,7 @@ public class GraphChoiceProcessor extends AsyncProcessorSupport implements Trace
     public GraphChoiceProcessor(List<Pair<String, WhenDefinition>> whenClause, String otherwiseNodeId) {
         this.whenClause = whenClause;
         this.otherwiseNodeId = otherwiseNodeId;
-        Assert.notNull(whenClause, "whenClause must not be null");
+        Assert.notNull(whenClause, "Choice Node whenClause must not be null");
     }
 
     @Override
@@ -55,21 +55,21 @@ public class GraphChoiceProcessor extends AsyncProcessorSupport implements Trace
 
                 boolean matches = predicate.matches(exchange);
                 if (matches) {
-                    log.debug("doSwitch selected: {}", choiceWhenClause.getLabel());
+                    log.debug("Choice node match whenClause branch: {}", choiceWhenClause.getLabel());
                     matchedId = entry.getKey();
                     break;
                 }
             }
 
             if (!StringUtils.hasText(matchedId)) {
-                log.debug("doSwitch selected: otherwise");
+                log.debug("Choice node match otherwise branch : {}", otherwiseNodeId);
                 matchedId = otherwiseNodeId;
             }
 
             if (StringUtils.hasText(matchedId)) {
                 exchange.getIn().setHeader(GRAPH_CHOICE_MATCH_ID, matchedId);
             } else {
-                log.debug("doSwitch no when or otherwise selected");
+                log.debug("Choice node no branches matched");
             }
         } catch (Exception ex) {
             exchange.setException(ex);
