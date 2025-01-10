@@ -4,6 +4,7 @@ import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
+import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
@@ -40,7 +41,7 @@ public class GenericDirectExchangePredicate implements PredicateNode<Exchange> {
 
         Entity entity = validateAndRetrieveCustomParentEntity(body.getExchangeEntities());
 
-        if (entity == null) {
+        if (entity == null || entity.getType() != EntityType.SERVICE) {
            return false;
         }
 
