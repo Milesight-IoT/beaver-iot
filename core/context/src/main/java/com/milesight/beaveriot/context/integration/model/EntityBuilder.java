@@ -75,6 +75,7 @@ public class EntityBuilder extends BaseEntityBuilder<EntityBuilder> {
         public ChildEntityBuilder(EntityBuilder entityBuilder) {
             this.entityBuilder = entityBuilder;
             this.parentIdentifier = entityBuilder.identifier;
+            this.visible = entityBuilder.visible;
         }
 
         public EntityBuilder end() {
