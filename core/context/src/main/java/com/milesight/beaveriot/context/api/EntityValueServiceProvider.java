@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
 import lombok.NonNull;
+import org.apache.camel.Exchange;
 
 import java.util.List;
 import java.util.Map;
@@ -21,9 +22,9 @@ public interface EntityValueServiceProvider {
 
     void saveValuesAndPublishAsync(ExchangePayload exchangePayload, String eventType);
 
-    void saveValues(Map<String, Object> values, long timestamp);
+    void saveValues(ExchangePayload exchangePayload, long timestamp);
 
-    void saveValues(Map<String, Object> values);
+    void saveValues(ExchangePayload exchangePayload);
 
     void saveHistoryRecord(Map<String, Object> recordValues, long timestamp);
 
