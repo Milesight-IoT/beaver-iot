@@ -28,6 +28,6 @@ ALTER TABLE t_entity
 
 --changeset loong:entity_v1.1.0_20250115_101000
 ALTER TABLE t_entity_history
-    MODIFY COLUMN value_double double;
+    ALTER COLUMN value_double set data type double;
 ALTER TABLE t_entity_latest
-    MODIFY COLUMN value_double double;
+    ALTER COLUMN value_double set data type double;
