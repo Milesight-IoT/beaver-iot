@@ -1,6 +1,5 @@
 package com.milesight.beaveriot.context.integration.enums;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.JsonUtils;
@@ -82,17 +81,4 @@ public enum EntityValueType {
         return clazz.isAnnotationPresent(Entities.class);
     }
 
-    public static void main(String[] args) {
-        String json = "{\"name\":\"leon\",\"age\":18.1}";
-        JsonNode jsonNode = JsonUtils.fromJSON(json);
-        JsonNode age = jsonNode.get("age");
-
-        Object o = EntityValueType.of(Double.class).convertValue(age);
-        System.out.println(EntityValueType.of(String.class));
-        System.out.println(EntityValueType.of(Integer.class));
-        System.out.println(EntityValueType.of(Float.class));
-        System.out.println(EntityValueType.of(Boolean.class));
-        System.out.println(EntityValueType.of(byte[].class));
-        System.out.println(EntityValueType.of(Object.class));
-    }
 }
