@@ -1,7 +1,5 @@
 package com.milesight.beaveriot.rule.manager.service;
 
-import com.milesight.beaveriot.base.enums.ErrorCode;
-import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.rule.RuleEngineExecutor;
@@ -17,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -55,43 +54,14 @@ public class WorkflowTriggerByEntityNode implements ProcessorNode<Exchange> {
         if (exchangeData instanceof Map) {
             Map<String, Object> nextExchange = ((Map<String, Object>) exchangeData).entrySet().stream().collect(Collectors.toMap(
                     (Entry<String, Object> entry) -> keyToEntity.get(entry.getKey()).getIdentifier(),
-                    (Entry<String, Object> entry) -> tryConvertValue(entry.getValue(), keyToEntity.get(entry.getKey()).getValueType())
+                    (Entry<String, Object> entry) -> Optional.ofNullable(keyToEntity.get(entry.getKey()).getValueType())
+                            .orElse(EntityValueType.OBJECT)
+                            .convertValue(entry.getValue())
             ));
 
             ruleEngineExecutor.execute("direct:" + workflowPO.getId(), nextExchange);
         } else {
             log.error("Wrong exchange data type, should be a map!");
-        }
-    }
-
-    private Object tryConvertValue(Object value, EntityValueType type) {
-        if (type == null) {
-            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "Cannot get trigger param value type.").build();
-        }
-
-        switch (type) {
-            case STRING:
-                return String.valueOf(value.toString());
-            case LONG:
-                if (value instanceof Number number) {
-                    return number.longValue();
-                } else {
-                    return Long.parseLong(value.toString());
-                }
-            case DOUBLE:
-                if (value instanceof Number number) {
-                    return number.doubleValue();
-                } else {
-                    return Double.parseDouble(value.toString());
-                }
-            case BOOLEAN:
-                if (value instanceof Boolean) {
-                    return value;
-                } else {
-                    return Boolean.parseBoolean(value.toString());
-                }
-            default:
-                throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "Unsupported trigger param value type: " + type).build();
         }
     }
 }
