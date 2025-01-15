@@ -155,7 +155,7 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
 
     public static <T extends ExchangePayload> ExchangePayload createFrom(T payload, List<String> assignKeys) {
         if (ObjectUtils.isEmpty(payload) || ObjectUtils.isEmpty(assignKeys)) {
-            return ExchangePayload.create(payload.getAllPayloads(), payload.getContext());
+            return ExchangePayload.create(payload.getAllPayloads(), copyContext(payload));
         }
 
         Map<String, Object> filteredPayload = new LinkedHashMap<>();
@@ -164,7 +164,15 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
                 filteredPayload.put(key, value);
             }
         });
-        return ExchangePayload.create(filteredPayload, payload.getContext());
+        return ExchangePayload.create(filteredPayload, copyContext(payload));
+    }
+
+    private static <T extends ExchangePayload> Map<String, Object> copyContext(T payload) {
+        Map<String, Object> newContext = new HashMap<>();
+        if (!ObjectUtils.isEmpty(payload.getContext())) {
+            newContext.putAll(payload.getContext());
+        }
+        return newContext;
     }
 
     public static <T extends ExchangePayload> T createProxy(Class<T> parameterType) {

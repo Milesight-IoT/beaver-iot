@@ -305,6 +305,7 @@ public class WorkflowService {
     }
 
     @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_ADD})
+    @Transactional(rollbackFor = Exception.class)
     public SaveWorkflowResponse createWorkflow(SaveWorkflowRequest request) {
         assertWorkflowPrepared();
         WorkflowPO workflowPO = new WorkflowPO();
@@ -339,6 +340,7 @@ public class WorkflowService {
     }
 
     @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT})
+    @Transactional(rollbackFor = Exception.class)
     public SaveWorkflowResponse updateWorkflow(SaveWorkflowRequest request) {
         assertWorkflowPrepared();
         WorkflowPO workflowPO = getById(Long.valueOf(request.getId()));

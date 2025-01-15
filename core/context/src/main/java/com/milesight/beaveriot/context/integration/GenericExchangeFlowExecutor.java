@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.context.integration;
 
 import com.milesight.beaveriot.context.integration.enums.EntityType;
+import com.milesight.beaveriot.context.integration.enums.EntityValueType;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
 import com.milesight.beaveriot.context.util.ExchangeContextHelper;
@@ -35,7 +36,7 @@ public class GenericExchangeFlowExecutor {
         EventResponse eventResponse = EventResponse.empty();
         splitExchangePayloads.forEach((entityType, payload) -> {
             initializeEventContext(eventType, entityType, payload, true);
-            Object response = ruleEngineExecutor.executeWithResponse(RuleNodeNames.innerExchangeFlow, payload);
+            Object response = ruleEngineExecutor.executeWithResponse(RuleNodeNames.innerExchangeFlow, EntityValueType.convertValue(payload));
             if (response != null) {
                 if (!(response instanceof EventResponse returnEvent)) {
                     log.warn("syncExchangeDown response is not EventResponse, response:{}", response);
@@ -64,7 +65,7 @@ public class GenericExchangeFlowExecutor {
         Map<EntityType, ExchangePayload> splitExchangePayloads = exchangePayload.splitExchangePayloads();
         splitExchangePayloads.forEach((entityType, payload) -> {
             initializeEventContext(eventType, entityType, payload, false);
-            ruleEngineExecutor.execute(RuleNodeNames.innerExchangeFlow, payload);
+            ruleEngineExecutor.execute(RuleNodeNames.innerExchangeFlow, EntityValueType.convertValue(payload));
         });
     }
 

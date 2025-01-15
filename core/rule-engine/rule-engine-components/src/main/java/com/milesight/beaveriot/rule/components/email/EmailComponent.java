@@ -56,8 +56,7 @@ public class EmailComponent implements ProcessorNode<Exchange> {
             return;
         }
         if (emailConfig == null) {
-            log.warn("Email config is null.");
-            return;
+            throw new IllegalArgumentException("Email config is null.");
         }
         synchronized (lock) {
             if (emailChannel != null) {
@@ -67,7 +66,7 @@ public class EmailComponent implements ProcessorNode<Exchange> {
                     && emailConfig.getSmtpConfig() != null) {
                 emailChannel = new SmtpChannel(emailConfig.getSmtpConfig());
             } else {
-                log.warn("Email provider is not supported or config is null: {}", emailConfig.getProvider());
+                throw new IllegalArgumentException("Email provider is not supported or config is null: " + emailConfig.getProvider());
             }
         }
     }

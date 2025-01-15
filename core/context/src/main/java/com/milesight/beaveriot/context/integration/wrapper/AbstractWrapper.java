@@ -8,6 +8,7 @@ import com.milesight.beaveriot.base.utils.lambada.LambdaUtils;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.integration.entity.annotation.AnnotationEntityCache;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
+import com.milesight.beaveriot.context.integration.enums.EntityValueType;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
 import com.milesight.beaveriot.context.support.SpringContext;
@@ -92,7 +93,7 @@ public abstract class AbstractWrapper {
                 String obtainEventType = ExchangeEvent.EventType.of(entityType, eventType);
                 ExchangeContextHelper.initializeEventSource(payload);
                 ExchangeContextHelper.initializeEventType(payload, obtainEventType);
-                eventBus.publish(ExchangeEvent.of(obtainEventType, payload));
+                eventBus.publish(ExchangeEvent.of(obtainEventType, EntityValueType.convertValue(exchangePayload)));
             });
 
         }
@@ -105,7 +106,7 @@ public abstract class AbstractWrapper {
                 String obtainEventType = ExchangeEvent.EventType.of(entityType, eventType);
                 ExchangeContextHelper.initializeEventSource(payload);
                 ExchangeContextHelper.initializeEventType(payload, obtainEventType);
-                EventResponse response = eventBus.handle(ExchangeEvent.of(obtainEventType, payload));
+                EventResponse response = eventBus.handle(ExchangeEvent.of(obtainEventType, EntityValueType.convertValue(exchangePayload)));
                 if (response != null) {
                     eventResponse.putAll(response);
                 }

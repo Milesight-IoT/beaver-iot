@@ -8,6 +8,7 @@ import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.integration.GenericExchangeFlowExecutor;
+import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.proxy.MapExchangePayloadProxy;
@@ -32,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
@@ -72,11 +74,6 @@ public class EntityValueService implements EntityValueServiceProvider {
     };
 
     @Override
-    public void saveValues(Map<String, Object> values) {
-        saveValues(values, System.currentTimeMillis());
-    }
-
-    @Override
     public void saveValuesAndPublishAsync(ExchangePayload exchangePayload) {
         genericExchangeFlowExecutor.saveValuesAndPublishAsync(exchangePayload);
     }
@@ -97,7 +94,37 @@ public class EntityValueService implements EntityValueServiceProvider {
     }
 
     @Override
-    public void saveValues(Map<String, Object> values, long timestamp) {
+    public void saveValues(ExchangePayload exchange, long timestamp) {
+        // Save event entities， only save history
+        Map<String, Object> eventEntities = exchange.getPayloadsByEntityType(EntityType.EVENT);
+        if (!ObjectUtils.isEmpty(eventEntities)) {
+            saveHistoryRecord(eventEntities, timestamp);
+        }
+
+        // Save property entities
+        Map<String, Object> propertyEntities = exchange.getPayloadsByEntityType(EntityType.PROPERTY);
+        if (!ObjectUtils.isEmpty(propertyEntities)) {
+            saveLatestValues(propertyEntities);
+            saveHistoryRecord(propertyEntities, timestamp);
+        }
+
+        // Save service entities， only save history
+        Map<String, Object> serviceEntities = exchange.getPayloadsByEntityType(EntityType.SERVICE);
+        if (!ObjectUtils.isEmpty(serviceEntities)) {
+            saveHistoryRecord(serviceEntities, timestamp);
+        }
+    }
+
+    @Override
+    public void saveValues(ExchangePayload exchangePayload) {
+        saveValues(exchangePayload, exchangePayload.getTimestamp());
+    }
+
+    protected void saveLatestValues(Map<String, Object> values) {
+        saveLatestValues(values, System.currentTimeMillis());
+    }
+
+    protected void saveLatestValues(Map<String, Object> values, long timestamp) {
         if (values == null || values.isEmpty()) {
             return;
         }
@@ -135,34 +162,7 @@ public class EntityValueService implements EntityValueServiceProvider {
             EntityLatestPO entityLatestPO = new EntityLatestPO();
             entityLatestPO.setId(entityLatestId);
             entityLatestPO.setEntityId(entityId);
-            if (payload != null) {
-                switch (entityValueType) {
-                    case OBJECT:
-                        // do nothing
-                        break;
-                    case BOOLEAN:
-                        entityLatestPO.setValueBoolean(JsonUtils.cast(payload, Boolean.class));
-                        break;
-                    case LONG:
-                        entityLatestPO.setValueLong(JsonUtils.cast(payload, Long.class));
-                        break;
-                    case STRING:
-                        entityLatestPO.setValueString(JsonUtils.cast(payload, String.class));
-                        break;
-                    case DOUBLE:
-                        entityLatestPO.setValueDouble(JsonUtils.cast(payload, BigDecimal.class));
-                        break;
-                    case BINARY:
-                        if (payload instanceof byte[] bytes) {
-                            entityLatestPO.setValueBinary(bytes);
-                        } else {
-                            entityLatestPO.setValueBinary(Base64.getDecoder().decode(String.valueOf(payload)));
-                        }
-                        break;
-                    default:
-                        throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
-                }
-            }
+            entityLatestPO.setValue(entityValueType, payload);
             entityLatestPO.setTimestamp(timestamp);
             entityLatestPOList.add(entityLatestPO);
         });
@@ -224,34 +224,7 @@ public class EntityValueService implements EntityValueServiceProvider {
             }
             entityHistoryPO.setId(historyId);
             entityHistoryPO.setEntityId(entityId);
-            if (payload != null) {
-                switch (entityValueType) {
-                    case OBJECT:
-                        // do nothing
-                        break;
-                    case BOOLEAN:
-                        entityHistoryPO.setValueBoolean(JsonUtils.cast(payload, Boolean.class));
-                        break;
-                    case LONG:
-                        entityHistoryPO.setValueLong(JsonUtils.cast(payload, Long.class));
-                        break;
-                    case STRING:
-                        entityHistoryPO.setValueString(JsonUtils.cast(payload, String.class));
-                        break;
-                    case DOUBLE:
-                        entityHistoryPO.setValueDouble(JsonUtils.cast(payload, BigDecimal.class));
-                        break;
-                    case BINARY:
-                        if (payload instanceof byte[] bytes) {
-                            entityHistoryPO.setValueBinary(bytes);
-                        } else {
-                            entityHistoryPO.setValueBinary(Base64.getDecoder().decode(String.valueOf(payload)));
-                        }
-                        break;
-                    default:
-                        throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
-                }
-            }
+            entityHistoryPO.setValue(entityValueType, payload);
             entityHistoryPO.setTimestamp(timestamp);
             entityHistoryPO.setUpdatedBy(operatorId);
             entityHistoryPOList.add(entityHistoryPO);
@@ -362,7 +335,7 @@ public class EntityValueService implements EntityValueServiceProvider {
                 response.setValue(entityHistoryPO.getValueLong().toString());
                 response.setValueType(EntityValueType.LONG);
             } else if (entityHistoryPO.getValueDouble() != null) {
-                response.setValue(entityHistoryPO.getValueDouble().doubleValue());
+                response.setValue(entityHistoryPO.getValueDouble());
                 response.setValueType(EntityValueType.DOUBLE);
             } else if (entityHistoryPO.getValueString() != null) {
                 response.setValue(entityHistoryPO.getValueString());
@@ -396,7 +369,7 @@ public class EntityValueService implements EntityValueServiceProvider {
                     entityAggregateResponse.setValue(lastEntityHistoryPO.getValueLong().toString());
                     entityAggregateResponse.setValueType(EntityValueType.LONG);
                 } else if (lastEntityHistoryPO.getValueDouble() != null) {
-                    entityAggregateResponse.setValue(lastEntityHistoryPO.getValueDouble().doubleValue());
+                    entityAggregateResponse.setValue(lastEntityHistoryPO.getValueDouble());
                     entityAggregateResponse.setValueType(EntityValueType.DOUBLE);
                 } else if (lastEntityHistoryPO.getValueString() != null) {
                     entityAggregateResponse.setValue(lastEntityHistoryPO.getValueString());
@@ -417,7 +390,7 @@ public class EntityValueService implements EntityValueServiceProvider {
                     entityAggregateResponse.setValueType(EntityValueType.LONG);
                 } else if (oneEntityHistoryPO.getValueDouble() != null) {
                     EntityHistoryPO minEntityHistoryPO = entityHistoryPOList.stream().min(Comparator.comparing(EntityHistoryPO::getValueDouble)).get();
-                    entityAggregateResponse.setValue(minEntityHistoryPO.getValueDouble().doubleValue());
+                    entityAggregateResponse.setValue(minEntityHistoryPO.getValueDouble());
                     entityAggregateResponse.setValueType(EntityValueType.DOUBLE);
                 } else if (oneEntityHistoryPO.getValueString() != null) {
                     EntityHistoryPO minEntityHistoryPO = entityHistoryPOList.stream().min(Comparator.comparing(EntityHistoryPO::getValueString)).get();
@@ -437,7 +410,7 @@ public class EntityValueService implements EntityValueServiceProvider {
                     entityAggregateResponse.setValue(entityHistoryPOList.stream().max(Comparator.comparing(EntityHistoryPO::getValueLong)).get().getValueLong().toString());
                     entityAggregateResponse.setValueType(EntityValueType.LONG);
                 } else if (oneEntityHistoryPO.getValueDouble() != null) {
-                    entityAggregateResponse.setValue(entityHistoryPOList.stream().max(Comparator.comparing(EntityHistoryPO::getValueDouble)).get().getValueDouble().doubleValue());
+                    entityAggregateResponse.setValue(entityHistoryPOList.stream().max(Comparator.comparing(EntityHistoryPO::getValueDouble)).get().getValueDouble());
                     entityAggregateResponse.setValueType(EntityValueType.DOUBLE);
                 } else if (oneEntityHistoryPO.getValueString() != null) {
                     entityAggregateResponse.setValue(entityHistoryPOList.stream().max(Comparator.comparing(EntityHistoryPO::getValueString)).get().getValueString());
@@ -462,7 +435,7 @@ public class EntityValueService implements EntityValueServiceProvider {
                     }
                     entityAggregateResponse.setValueType(EntityValueType.LONG);
                 } else if (oneEntityHistoryPO.getValueDouble() != null) {
-                    BigDecimal sum = entityHistoryPOList.stream().map(EntityHistoryPO::getValueDouble).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal sum = entityHistoryPOList.stream().map(t->BigDecimal.valueOf(t.getValueDouble())).reduce(BigDecimal.ZERO, BigDecimal::add);
                     BigDecimal count = new BigDecimal(entityHistoryPOList.size());
                     BigDecimal avg = sum.divide(count, 8, RoundingMode.HALF_EVEN);
                     entityAggregateResponse.setValue(avg.doubleValue());
@@ -484,7 +457,7 @@ public class EntityValueService implements EntityValueServiceProvider {
                     entityAggregateResponse.setValue(sumAsString);
                     entityAggregateResponse.setValueType(EntityValueType.LONG);
                 } else if (oneEntityHistoryPO.getValueDouble() != null) {
-                    entityAggregateResponse.setValue(entityHistoryPOList.stream().map(EntityHistoryPO::getValueDouble).reduce(BigDecimal.ZERO, BigDecimal::add).doubleValue());
+                    entityAggregateResponse.setValue(entityHistoryPOList.stream().map(t->BigDecimal.valueOf(t.getValueDouble())).reduce(BigDecimal.ZERO, BigDecimal::add).doubleValue());
                     entityAggregateResponse.setValueType(EntityValueType.DOUBLE);
                 } else if (oneEntityHistoryPO.getValueString() != null) {
                     throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
@@ -512,7 +485,7 @@ public class EntityValueService implements EntityValueServiceProvider {
                 )));
                 entityHistoryPOGroup.forEach((key, value) -> countResult.add(new EntityAggregateResponse.CountResult(key, EntityValueType.LONG, value)));
             } else if (oneEntityHistoryPO.getValueDouble() != null) {
-                Map<Double, Integer> entityHistoryPOGroup = entityHistoryPOList.stream().collect(Collectors.groupingBy(t -> t.getValueDouble().doubleValue(), Collectors.collectingAndThen(
+                Map<Double, Integer> entityHistoryPOGroup = entityHistoryPOList.stream().collect(Collectors.groupingBy(EntityHistoryPO::getValueDouble, Collectors.collectingAndThen(
                         Collectors.counting(),
                         Long::intValue
                 )));
@@ -548,7 +521,7 @@ public class EntityValueService implements EntityValueServiceProvider {
             entityLatestResponse.setValue(entityLatestPO.getValueLong().toString());
             entityLatestResponse.setValueType(EntityValueType.LONG);
         } else if (entityLatestPO.getValueDouble() != null) {
-            entityLatestResponse.setValue(entityLatestPO.getValueDouble().doubleValue());
+            entityLatestResponse.setValue(entityLatestPO.getValueDouble());
             entityLatestResponse.setValueType(EntityValueType.DOUBLE);
         } else if (entityLatestPO.getValueString() != null) {
             entityLatestResponse.setValue(entityLatestPO.getValueString());

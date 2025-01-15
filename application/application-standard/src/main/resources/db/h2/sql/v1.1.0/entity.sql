@@ -27,3 +27,9 @@ WHERE visible IS NULL;
 --changeset Maglitch65:entity_v1.1.0_20241129_133002
 ALTER TABLE t_entity
     ALTER COLUMN visible SET NOT NULL;
+
+--changeset loong:entity_v1.1.0_20250115_101000
+ALTER TABLE t_entity_history
+    MODIFY COLUMN value_double double;
+ALTER TABLE t_entity_latest
+    MODIFY COLUMN value_double double;
