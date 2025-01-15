@@ -8,6 +8,7 @@ import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.integration.GenericExchangeFlowExecutor;
+import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.proxy.MapExchangePayloadProxy;
@@ -32,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
@@ -72,11 +74,6 @@ public class EntityValueService implements EntityValueServiceProvider {
     };
 
     @Override
-    public void saveValues(Map<String, Object> values) {
-        saveValues(values, System.currentTimeMillis());
-    }
-
-    @Override
     public void saveValuesAndPublishAsync(ExchangePayload exchangePayload) {
         genericExchangeFlowExecutor.saveValuesAndPublishAsync(exchangePayload);
     }
@@ -97,7 +94,37 @@ public class EntityValueService implements EntityValueServiceProvider {
     }
 
     @Override
-    public void saveValues(Map<String, Object> values, long timestamp) {
+    public void saveValues(ExchangePayload exchange, long timestamp) {
+        // Save event entities， only save history
+        Map<String, Object> eventEntities = exchange.getPayloadsByEntityType(EntityType.EVENT);
+        if (!ObjectUtils.isEmpty(eventEntities)) {
+            saveHistoryRecord(eventEntities, timestamp);
+        }
+
+        // Save property entities
+        Map<String, Object> propertyEntities = exchange.getPayloadsByEntityType(EntityType.PROPERTY);
+        if (!ObjectUtils.isEmpty(propertyEntities)) {
+            saveLatestValues(propertyEntities);
+            saveHistoryRecord(propertyEntities, timestamp);
+        }
+
+        // Save service entities， only save history
+        Map<String, Object> serviceEntities = exchange.getPayloadsByEntityType(EntityType.SERVICE);
+        if (!ObjectUtils.isEmpty(serviceEntities)) {
+            saveHistoryRecord(serviceEntities, timestamp);
+        }
+    }
+
+    @Override
+    public void saveValues(ExchangePayload exchangePayload) {
+        saveValues(exchangePayload, exchangePayload.getTimestamp());
+    }
+
+    protected void saveLatestValues(Map<String, Object> values) {
+        saveLatestValues(values, System.currentTimeMillis());
+    }
+
+    protected void saveLatestValues(Map<String, Object> values, long timestamp) {
         if (values == null || values.isEmpty()) {
             return;
         }
