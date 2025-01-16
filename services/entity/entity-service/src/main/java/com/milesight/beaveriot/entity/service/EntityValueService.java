@@ -325,7 +325,7 @@ public class EntityValueService implements EntityValueServiceProvider {
         }
 
         if (entityHistoryQuery.getSort().getOrders().isEmpty()) {
-            entityHistoryQuery.sort(new Sorts().desc(EntityHistoryPO.Fields.createdAt));
+            entityHistoryQuery.sort(new Sorts().desc(EntityHistoryPO.Fields.timestamp));
         }
 
         Page<EntityHistoryPO> entityHistoryPage = entityHistoryRepository.findAllWithDataPermission(f -> f.in(EntityHistoryPO.Fields.entityId, entityIds.toArray())

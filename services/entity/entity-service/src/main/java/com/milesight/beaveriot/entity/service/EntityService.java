@@ -591,7 +591,7 @@ public class EntityService implements EntityServiceProvider {
 
         entityPOList = entityPOList.stream().distinct().toList();
         if (entityQuery.getSort().getOrders().isEmpty()) {
-            entityQuery.sort(new Sorts().desc(EntityPO.Fields.createdAt));
+            entityQuery.sort(new Sorts().desc(EntityPO.Fields.id));
         }
 
         Page<EntityPO> entityPOPage = PageConverter.convertToPage(entityPOList, entityQuery.toPageable());
