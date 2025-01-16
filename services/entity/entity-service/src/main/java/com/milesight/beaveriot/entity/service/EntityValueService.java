@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
@@ -38,7 +39,14 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.OptionalDouble;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -314,6 +322,10 @@ public class EntityValueService implements EntityValueServiceProvider {
                 .collect(Collectors.toList());
         if (entityHistoryQuery.getEntityId() != null) {
             entityIds.add(entityHistoryQuery.getEntityId());
+        }
+
+        if (entityHistoryQuery.getSort().getOrders().isEmpty()) {
+            entityHistoryQuery.sort(new Sorts().desc(EntityHistoryPO.Fields.createdAt));
         }
 
         Page<EntityHistoryPO> entityHistoryPage = entityHistoryRepository.findAllWithDataPermission(f -> f.in(EntityHistoryPO.Fields.entityId, entityIds.toArray())
