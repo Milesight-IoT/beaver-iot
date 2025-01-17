@@ -34,7 +34,7 @@ public interface EntityServiceProvider {
 
     Entity findByKey(String entityKey);
 
-    Map<String, Entity> findByKeys(String... entityKeys);
+    Map<String, Entity> findByKeys(List<String> entityKeys);
 
     Entity findById(Long entityId);
 

@@ -485,16 +485,16 @@ public class EntityService implements EntityServiceProvider {
 
     @Override
     public Entity findByKey(String entityKey) {
-        Map<String, Entity> entityMap = findByKeys(entityKey);
+        Map<String, Entity> entityMap = findByKeys(List.of(entityKey));
         return entityMap.get(entityKey);
     }
 
     @Override
-    public Map<String, Entity> findByKeys(String... entityKeys) {
-        if (entityKeys == null || entityKeys.length == 0) {
+    public Map<String, Entity> findByKeys(List<String> entityKeys) {
+        if (entityKeys == null || entityKeys.isEmpty()) {
             return new HashMap<>();
         }
-        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, entityKeys));
+        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, entityKeys.toArray()));
         if (entityPOList == null || entityPOList.isEmpty()) {
             return new HashMap<>();
         }
