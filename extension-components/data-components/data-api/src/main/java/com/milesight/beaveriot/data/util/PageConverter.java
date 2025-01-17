@@ -27,7 +27,7 @@ public class PageConverter {
             sortList = sortList(sortList, pageable.getSort());
         }
         int offset = (int) pageable.getOffset();
-        int start = offset >= sortList.size() ? offset : 0;
+        int start = offset >= sortList.size() ? 0 : offset;
         int end = Math.min((start + pageable.getPageSize()), sortList.size());
 
         List<T> subList = sortList.subList(start, end);
