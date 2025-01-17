@@ -24,17 +24,9 @@ public interface EntityServiceProvider {
 
     void deleteByTargetId(String targetId);
 
-    long countAllEntitiesByIntegrationId(String integrationId);
-
-    Map<String, Long> countAllEntitiesByIntegrationIds(List<String> integrationIds);
-
-    long countIntegrationEntitiesByIntegrationId(String integrationId);
-
-    Map<String, Long> countIntegrationEntitiesByIntegrationIds(List<String> integrationIds);
-
     Entity findByKey(String entityKey);
 
-    Map<String, Entity> findByKeys(String... entityKeys);
+    Map<String, Entity> findByKeys(List<String> entityKeys);
 
     Entity findById(Long entityId);
 

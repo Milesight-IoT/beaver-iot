@@ -226,7 +226,7 @@ public class UserService {
 
     public Page<UserInfoResponse> getUsers(UserListRequest userListRequest) {
         if (userListRequest.getSort().getOrders().isEmpty()) {
-            userListRequest.sort(new Sorts().desc(UserPO.Fields.createdAt));
+            userListRequest.sort(new Sorts().desc(UserPO.Fields.id));
         }
         String keyword = userListRequest.getKeyword();
         Page<UserPO> userPages = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.nickname, keyword)

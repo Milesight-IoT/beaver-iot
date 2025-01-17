@@ -3,7 +3,6 @@ package com.milesight.beaveriot.integration.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
-import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
@@ -11,6 +10,8 @@ import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.Integration;
 import com.milesight.beaveriot.context.support.SpringContext;
+import com.milesight.beaveriot.device.facade.IDeviceFacade;
+import com.milesight.beaveriot.entity.facade.IEntityFacade;
 import com.milesight.beaveriot.integration.model.request.SearchIntegrationRequest;
 import com.milesight.beaveriot.integration.model.response.IntegrationDetailData;
 import com.milesight.beaveriot.integration.model.response.IntegrationEntityData;
@@ -27,17 +28,17 @@ import java.util.Objects;
 
 @Service
 public class IntegrationService {
+
     @Autowired
     IntegrationServiceProvider integrationServiceProvider;
-
-    @Autowired
-    DeviceServiceProvider deviceServiceProvider;
-
     @Autowired
     EntityServiceProvider entityServiceProvider;
-
     @Autowired
     EntityValueServiceProvider entityValueServiceProvider;
+    @Autowired
+    IDeviceFacade deviceFacade;
+    @Autowired
+    IEntityFacade entityFacade;
 
     private SearchIntegrationResponseData integrationToSearchResponseData(Integration integration) {
         SearchIntegrationResponseData data = new SearchIntegrationResponseData();
@@ -69,8 +70,8 @@ public class IntegrationService {
         }
 
         List<String> integrationIds = integrations.stream().map(Integration::getId).toList();
-        Map<String, Long> integrationDeviceCount = deviceServiceProvider.countByIntegrationIds(integrationIds);
-        Map<String, Long> integrationEntityCount = entityServiceProvider.countAllEntitiesByIntegrationIds(integrationIds);
+        Map<String, Long> integrationDeviceCount = deviceFacade.countByIntegrationIds(integrationIds);
+        Map<String, Long> integrationEntityCount = entityFacade.countAllEntitiesByIntegrationIds(integrationIds);
         return integrations
                 .stream()
                 .filter(integration -> {
@@ -113,8 +114,8 @@ public class IntegrationService {
 
         IntegrationDetailData data = new IntegrationDetailData();
         BeanUtils.copyProperties(integrationToSearchResponseData(integration), data);
-        data.setDeviceCount(deviceServiceProvider.countByIntegrationId(integrationId));
-        data.setEntityCount(entityServiceProvider.countAllEntitiesByIntegrationId(integrationId));
+        data.setDeviceCount(deviceFacade.countByIntegrationId(integrationId));
+        data.setEntityCount(entityFacade.countAllEntitiesByIntegrationId(integrationId));
         data.setDeleteDeviceServiceKey(integration.getEntityKeyDeleteDevice());
         List<Entity> entities = entityServiceProvider.findByTargetId(AttachTargetType.INTEGRATION, integrationId);
         if (entities.isEmpty()) {

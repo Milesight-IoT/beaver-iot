@@ -8,12 +8,9 @@ import com.milesight.beaveriot.rule.constants.RuleNodeNames;
 import com.milesight.beaveriot.rule.exception.RuleEngineException;
 import com.milesight.beaveriot.rule.flow.graph.DefaultRuleNodeDefinitionInterceptor;
 import com.milesight.beaveriot.rule.flow.graph.GraphRouteDefinitionGenerator;
-import com.milesight.beaveriot.rule.flow.yaml.RuleFlowYamlBuilder;
-import com.milesight.beaveriot.rule.flow.yaml.RuleNodeInterceptor;
 import com.milesight.beaveriot.rule.model.flow.config.RuleFlowConfig;
 import com.milesight.beaveriot.rule.model.flow.config.RuleNodeConfig;
 import com.milesight.beaveriot.rule.model.flow.route.FromNodeDefinition;
-import com.milesight.beaveriot.rule.model.flow.route.ToNodeDefinition;
 import com.milesight.beaveriot.rule.model.trace.FlowTraceInfo;
 import com.milesight.beaveriot.rule.model.trace.NodeTraceInfo;
 import com.milesight.beaveriot.rule.support.RuleFlowIdGenerator;
@@ -32,7 +29,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -51,18 +47,6 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
         loader.build();
         this.camelContext = (DefaultCamelContext) context;
         this.ruleEngineExecutor = ruleEngineExecutor;
-    }
-
-    @Override
-    public String generateRouteFlow(RuleFlowConfig ruleFlowConfig) {
-        return generateRouteFlow(ruleFlowConfig, null);
-    }
-
-    private String generateRouteFlow(RuleFlowConfig ruleFlowConfig, RuleNodeInterceptor ruleNodeInterceptor) {
-        return RuleFlowYamlBuilder.builder(ComponentDefinitionCache::load, ruleNodeInterceptor)
-                .withRuleFlowConfig(ruleFlowConfig)
-                .build()
-                .dumpYaml();
     }
 
     @SneakyThrows

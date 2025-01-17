@@ -40,6 +40,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -156,7 +157,7 @@ public class DeviceService implements IDeviceFacade {
     public Page<DeviceResponseData> searchDevice(SearchDeviceRequest searchDeviceRequest) {
         // convert to `DeviceResponseData`
         if (searchDeviceRequest.getSort().getOrders().isEmpty()) {
-            searchDeviceRequest.sort(new Sorts().desc(DevicePO.Fields.createdAt));
+            searchDeviceRequest.sort(new Sorts().desc(DevicePO.Fields.id));
         }
 
         Page<DeviceResponseData> responseDataList;
@@ -343,6 +344,19 @@ public class DeviceService implements IDeviceFacade {
         Optional<DevicePO> devicePO = deviceRepository.findOne(f -> f.eq(DevicePO.Fields.key, deviceKey));
         return devicePO.map(po -> convertDevicePOList(List.of(po)).get(0)).orElse(null);
 
+    }
+
+    @Override
+    public Map<String, Long> countByIntegrationIds(List<String> integrationIds) {
+        List<Object[]> res = deviceRepository.countByIntegrations(integrationIds);
+        Map<String, Long> result = new HashMap<>();
+        res.forEach((Object[] o) -> result.put((String) o[0], (Long) o[1]));
+        return result;
+    }
+
+    @Override
+    public Long countByIntegrationId(String integrationId) {
+        return deviceRepository.count(f -> f.eq(DevicePO.Fields.integration, integrationId));
     }
 
     public void deleteDevice(Device device) {

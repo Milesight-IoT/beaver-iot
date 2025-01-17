@@ -161,6 +161,8 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- default integrations -->
+
         <dependency>
             <groupId>com.milesight.beaveriot</groupId>
             <artifactId>msc-integration</artifactId>

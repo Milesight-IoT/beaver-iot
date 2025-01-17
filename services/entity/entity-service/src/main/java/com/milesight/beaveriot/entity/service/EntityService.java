@@ -5,7 +5,6 @@ import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
-import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
@@ -13,7 +12,6 @@ import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
-import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.EntityBuilder;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
@@ -78,10 +76,6 @@ public class EntityService implements EntityServiceProvider {
     @Lazy
     @Autowired
     private IntegrationServiceProvider integrationServiceProvider;
-
-    @Lazy
-    @Autowired
-    private DeviceServiceProvider deviceServiceProvider;
 
     @Autowired
     private IUserFacade userFacade;
@@ -407,94 +401,17 @@ public class EntityService implements EntityServiceProvider {
     }
 
     @Override
-    public long countAllEntitiesByIntegrationId(String integrationId) {
-        if (!StringUtils.hasText(integrationId)) {
-            return 0L;
-        }
-        long allEntityCount = 0L;
-        long integrationEntityCount = countIntegrationEntitiesByIntegrationId(integrationId);
-        allEntityCount += integrationEntityCount;
-        List<Device> integrationDevices = deviceServiceProvider.findAll(integrationId);
-        if (integrationDevices != null && !integrationDevices.isEmpty()) {
-            List<String> deviceIds = integrationDevices.stream().map(t -> String.valueOf(t.getId())).toList();
-            List<EntityPO> deviceEntityPOList = entityRepository.findAll(filter -> filter.eq(EntityPO.Fields.attachTarget, AttachTargetType.DEVICE).in(EntityPO.Fields.attachTargetId, deviceIds.toArray()));
-            if (deviceEntityPOList != null && !deviceEntityPOList.isEmpty()) {
-                allEntityCount += deviceEntityPOList.size();
-            }
-        }
-        return allEntityCount;
-    }
-
-    @Override
-    public Map<String, Long> countAllEntitiesByIntegrationIds(List<String> integrationIds) {
-        if (integrationIds == null || integrationIds.isEmpty()) {
-            return new HashMap<>();
-        }
-        Map<String, Long> allEntityCountMap = new HashMap<>();
-        allEntityCountMap.putAll(countIntegrationEntitiesByIntegrationIds(integrationIds));
-        List<DeviceNameDTO> integrationDevices = deviceFacade.getDeviceNameByIntegrations(integrationIds);
-        if (integrationDevices != null && !integrationDevices.isEmpty()) {
-            Map<String, List<DeviceNameDTO>> integrationDeviceMap = integrationDevices.stream().filter(t -> t.getIntegrationConfig() != null).collect(Collectors.groupingBy(t -> t.getIntegrationConfig().getId()));
-            List<String> deviceIds = integrationDevices.stream().map(DeviceNameDTO::getId).map(String::valueOf).toList();
-            List<EntityPO> deviceEntityPOList = entityRepository.findAll(filter -> filter.eq(EntityPO.Fields.attachTarget, AttachTargetType.DEVICE).in(EntityPO.Fields.attachTargetId, deviceIds.toArray()));
-            if (deviceEntityPOList != null && !deviceEntityPOList.isEmpty()) {
-                Map<String, Long> deviceEntityCountMap = deviceEntityPOList.stream().collect(Collectors.groupingBy(EntityPO::getAttachTargetId, Collectors.counting()));
-                integrationDeviceMap.forEach((integrationId, deviceList) -> {
-                    if (deviceList == null || deviceList.isEmpty()) {
-                        return;
-                    }
-                    List<String> deviceIdList = deviceList.stream().map(DeviceNameDTO::getId).map(String::valueOf).toList();
-                    Long integrationDeviceCount = 0L;
-                    for (String deviceId : deviceIdList) {
-                        Long deviceCount = deviceEntityCountMap.get(deviceId);
-                        if (deviceCount != null) {
-                            integrationDeviceCount += deviceCount;
-                        }
-                    }
-                    Long entityCount = allEntityCountMap.get(integrationId) == null ? 0L : allEntityCountMap.get(integrationId);
-                    allEntityCountMap.put(integrationId, entityCount + integrationDeviceCount);
-                });
-            }
-        }
-        return allEntityCountMap;
-    }
-
-    @Override
-    public long countIntegrationEntitiesByIntegrationId(String integrationId) {
-        if (!StringUtils.hasText(integrationId)) {
-            return 0L;
-        }
-        List<EntityPO> integrationEntityPOList = entityRepository.findAll(filter -> filter.eq(EntityPO.Fields.attachTarget, AttachTargetType.INTEGRATION).eq(EntityPO.Fields.attachTargetId, integrationId));
-        if (integrationEntityPOList == null || integrationEntityPOList.isEmpty()) {
-            return 0L;
-        }
-        return integrationEntityPOList.size();
-    }
-
-    @Override
-    public Map<String, Long> countIntegrationEntitiesByIntegrationIds(List<String> integrationIds) {
-        if (integrationIds == null || integrationIds.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        List<EntityPO> integrationEntityPOList = entityRepository.findAll(filter -> filter.eq(EntityPO.Fields.attachTarget, AttachTargetType.INTEGRATION).in(EntityPO.Fields.attachTargetId, integrationIds.toArray()));
-        if (integrationEntityPOList == null || integrationEntityPOList.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        return integrationEntityPOList.stream().collect(Collectors.groupingBy(EntityPO::getAttachTargetId, Collectors.counting()));
-    }
-
-    @Override
     public Entity findByKey(String entityKey) {
-        Map<String, Entity> entityMap = findByKeys(entityKey);
+        Map<String, Entity> entityMap = findByKeys(List.of(entityKey));
         return entityMap.get(entityKey);
     }
 
     @Override
-    public Map<String, Entity> findByKeys(String... entityKeys) {
-        if (entityKeys == null || entityKeys.length == 0) {
+    public Map<String, Entity> findByKeys(List<String> entityKeys) {
+        if (entityKeys == null || entityKeys.isEmpty()) {
             return new HashMap<>();
         }
-        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, entityKeys));
+        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, entityKeys.toArray()));
         if (entityPOList == null || entityPOList.isEmpty()) {
             return new HashMap<>();
         }
@@ -591,7 +508,7 @@ public class EntityService implements EntityServiceProvider {
 
         entityPOList = entityPOList.stream().distinct().toList();
         if (entityQuery.getSort().getOrders().isEmpty()) {
-            entityQuery.sort(new Sorts().desc(EntityPO.Fields.createdAt));
+            entityQuery.sort(new Sorts().desc(EntityPO.Fields.id));
         }
 
         Page<EntityPO> entityPOPage = PageConverter.convertToPage(entityPOList, entityQuery.toPageable());
