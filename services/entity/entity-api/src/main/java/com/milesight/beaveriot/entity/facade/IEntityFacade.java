@@ -3,6 +3,7 @@ package com.milesight.beaveriot.entity.facade;
 import com.milesight.beaveriot.entity.dto.EntityDTO;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author loong
@@ -15,5 +16,13 @@ public interface IEntityFacade {
     List<EntityDTO> getTargetEntities(List<String> targetIds);
 
     void deleteCustomizedEntitiesByIds(List<Long> entityIds);
+
+    long countAllEntitiesByIntegrationId(String integrationId);
+
+    Map<String, Long> countAllEntitiesByIntegrationIds(List<String> integrationIds);
+
+    long countIntegrationEntitiesByIntegrationId(String integrationId);
+
+    Map<String, Long> countIntegrationEntitiesByIntegrationIds(List<String> integrationIds);
 
 }

@@ -9,8 +9,10 @@ import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Integration;
 import com.milesight.beaveriot.dashboard.dto.DashboardDTO;
 import com.milesight.beaveriot.dashboard.facade.IDashboardFacade;
+import com.milesight.beaveriot.data.util.PageConverter;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
+import com.milesight.beaveriot.entity.facade.IEntityFacade;
 import com.milesight.beaveriot.user.constants.UserConstants;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.model.request.CreateRoleRequest;
@@ -52,7 +54,6 @@ import com.milesight.beaveriot.user.repository.RoleRepository;
 import com.milesight.beaveriot.user.repository.RoleResourceRepository;
 import com.milesight.beaveriot.user.repository.UserRepository;
 import com.milesight.beaveriot.user.repository.UserRoleRepository;
-import com.milesight.beaveriot.data.util.PageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -92,6 +93,8 @@ public class RoleService {
     IDashboardFacade dashboardFacade;
     @Autowired
     IDeviceFacade deviceFacade;
+    @Autowired
+    IEntityFacade entityFacade;
     @Autowired
     IntegrationServiceProvider integrationServiceProvider;
     @Autowired
@@ -276,7 +279,7 @@ public class RoleService {
         Map<String, Integration> integrationMap = integrations.stream().collect(Collectors.toMap(Integration::getId, Function.identity()));
         List<DeviceNameDTO> deviceNameDTOList = deviceFacade.getDeviceNameByIntegrations(integrationIds);
         Map<String, List<DeviceNameDTO>> deviceIntegrationMap = deviceNameDTOList.stream().filter(t -> t.getIntegrationConfig() != null).collect(Collectors.groupingBy(t -> t.getIntegrationConfig().getId()));
-        Map<String, Long> entityCountMap = entityServiceProvider.countAllEntitiesByIntegrationIds(integrationIds);
+        Map<String, Long> entityCountMap = entityFacade.countAllEntitiesByIntegrationIds(integrationIds);
         return roleResourcePOS.map(roleResourcePO -> {
             RoleIntegrationResponse roleIntegrationResponse = new RoleIntegrationResponse();
             roleIntegrationResponse.setIntegrationId(roleResourcePO.getResourceId());
