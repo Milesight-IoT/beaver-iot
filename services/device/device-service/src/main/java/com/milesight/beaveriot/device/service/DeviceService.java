@@ -156,7 +156,7 @@ public class DeviceService implements IDeviceFacade {
     public Page<DeviceResponseData> searchDevice(SearchDeviceRequest searchDeviceRequest) {
         // convert to `DeviceResponseData`
         if (searchDeviceRequest.getSort().getOrders().isEmpty()) {
-            searchDeviceRequest.sort(new Sorts().desc(DevicePO.Fields.createdAt));
+            searchDeviceRequest.sort(new Sorts().desc(DevicePO.Fields.id));
         }
 
         Page<DeviceResponseData> responseDataList;

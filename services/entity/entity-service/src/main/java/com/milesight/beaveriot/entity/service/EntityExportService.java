@@ -86,7 +86,7 @@ public class EntityExportService {
             query.setEndTimestamp(endTime);
             query.setPageNumber(i + 1);
             query.setPageSize(PAGE_SIZE);
-            query.sort(new Sorts().asc(EntityHistoryPO.Fields.createdAt));
+            query.sort(new Sorts().asc(EntityHistoryPO.Fields.id));
             return entityValueService.historySearch(query)
                     .stream()
                     .map(historyResponse -> {

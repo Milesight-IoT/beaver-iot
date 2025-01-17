@@ -152,7 +152,7 @@ public class RoleService {
 
     public Page<RoleResponse> getRoles(RoleListRequest roleListRequest) {
         if (roleListRequest.getSort().getOrders().isEmpty()) {
-            roleListRequest.sort(new Sorts().desc(RolePO.Fields.createdAt));
+            roleListRequest.sort(new Sorts().desc(RolePO.Fields.id));
         }
         Page<RolePO> rolePages = roleRepository.findAll(filterable -> filterable.likeIgnoreCase(StringUtils.hasText(roleListRequest.getKeyword()), RolePO.Fields.name, roleListRequest.getKeyword())
                 , roleListRequest.toPageable());
