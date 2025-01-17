@@ -11,9 +11,6 @@ import org.apache.camel.Exchange;
  */
 public interface RuleEngineLifecycleManager {
 
-    @Deprecated
-    String generateRouteFlow(RuleFlowConfig ruleFlowConfig);
-
     void deployFlow(RuleFlowConfig ruleFlowConfig);
 
     void deployFlow(String flowId, String flowRouteYaml);
