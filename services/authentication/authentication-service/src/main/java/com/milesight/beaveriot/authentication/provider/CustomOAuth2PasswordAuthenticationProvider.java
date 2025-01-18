@@ -8,9 +8,6 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClaimAccessor;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
@@ -40,8 +37,7 @@ import java.util.Map;
 public class CustomOAuth2PasswordAuthenticationProvider implements AuthenticationProvider {
 
     private final IUserFacade userFacade;
-    private final UserDetailsService userDetailService;
-    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationProvider authenticationProvider;
 
     private final CustomOAuth2AuthorizationService authorizationService;
     private final OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator;
@@ -49,13 +45,11 @@ public class CustomOAuth2PasswordAuthenticationProvider implements Authenticatio
     public CustomOAuth2PasswordAuthenticationProvider(CustomOAuth2AuthorizationService authorizationService,
                                                       OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator,
                                                       IUserFacade userFacade,
-                                                      UserDetailsService userDetailService,
-                                                      PasswordEncoder passwordEncoder) {
+                                                      AuthenticationProvider authenticationProvider) {
         this.authorizationService = authorizationService;
         this.tokenGenerator = tokenGenerator;
         this.userFacade = userFacade;
-        this.userDetailService = userDetailService;
-        this.passwordEncoder = passwordEncoder;
+        this.authenticationProvider = authenticationProvider;
     }
 
     @Override
@@ -87,26 +81,10 @@ public class CustomOAuth2PasswordAuthenticationProvider implements Authenticatio
                 .build();
         SecurityUserContext.setSecurityUser(securityUser);
 
-        UserDetails userDetails = userDetailService.loadUserByUsername(username);
-        if (userDetails == null) {
-            OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,
-                    "username not found.", null);
-            throw new OAuth2AuthenticationException(error);
-        }
-        if (!passwordEncoder.matches(password, userDetails.getPassword())) {
-            OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,
-                    "password not match.", null);
-            throw new OAuth2AuthenticationException(error);
-        }
         UserDTO userDTO = userFacade.getEnableUserByEmail(username);
         if (userDTO == null) {
             OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,
                     "username not found.", null);
-            throw new OAuth2AuthenticationException(error);
-        }
-        if (!passwordEncoder.matches(password, userDTO.getEncodePassword())) {
-            OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,
-                    "password not match.", null);
             throw new OAuth2AuthenticationException(error);
         }
         if (!tenantId.equals(Long.parseLong(userDTO.getTenantId()))) {
@@ -115,7 +93,8 @@ public class CustomOAuth2PasswordAuthenticationProvider implements Authenticatio
             throw new OAuth2AuthenticationException(error);
         }
 
-        Authentication principal = new UsernamePasswordAuthenticationToken(username, userDetails.getPassword(), userDetails.getAuthorities());
+        UsernamePasswordAuthenticationToken authRequest = new UsernamePasswordAuthenticationToken(username, password);
+        Authentication principal = authenticationProvider.authenticate(authRequest);
 
         OAuth2Authorization authorization = OAuth2Authorization.withRegisteredClient(registeredClient)
                 .principalName(principal.getName())

@@ -142,11 +142,11 @@ public class RoleService {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("role is not exist").build();
         }
         if (UserConstants.SUPER_ADMIN_ROLE_NAME.equals(rolePO.getName())) {
-            throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("super admin disable delete").build();
+            throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("super admin not allowed to delete").build();
         }
         List<UserRolePO> userRolePOs = userRoleRepository.findAll(filterable -> filterable.eq(UserRolePO.Fields.roleId, roleId));
         if (!userRolePOs.isEmpty()) {
-            throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("role has user").build();
+            throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("role has been bound user").build();
         }
         roleRepository.deleteById(roleId);
         userRoleRepository.deleteByRoleId(roleId);
