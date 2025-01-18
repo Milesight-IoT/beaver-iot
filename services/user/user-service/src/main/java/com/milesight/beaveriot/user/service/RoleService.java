@@ -441,7 +441,8 @@ public class RoleService {
     }
 
     public Page<UserUndistributedResponse> getUndistributedUsers(Long roleId, UserUndistributedRequest userUndistributedRequest) {
-        List<UserPO> userPOS = userRepository.findAll(filterable -> filterable.likeIgnoreCase(StringUtils.hasText(userUndistributedRequest.getKeyword()), UserPO.Fields.nickname, userUndistributedRequest.getKeyword()), userUndistributedRequest.getSort().toSort());
+        List<UserPO> userPOS = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(userUndistributedRequest.getKeyword()), UserPO.Fields.nickname, userUndistributedRequest.getKeyword())
+                .likeIgnoreCase(StringUtils.hasText(userUndistributedRequest.getKeyword()), UserPO.Fields.email, userUndistributedRequest.getKeyword())), userUndistributedRequest.getSort().toSort());
         if (userPOS == null || userPOS.isEmpty()) {
             return Page.empty();
         }
