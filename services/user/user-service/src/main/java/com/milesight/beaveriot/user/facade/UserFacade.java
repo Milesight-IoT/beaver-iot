@@ -22,6 +22,7 @@ import com.milesight.beaveriot.user.repository.MenuRepository;
 import com.milesight.beaveriot.user.repository.RoleMenuRepository;
 import com.milesight.beaveriot.user.repository.RoleRepository;
 import com.milesight.beaveriot.user.repository.RoleResourceRepository;
+import com.milesight.beaveriot.user.repository.UserRepository;
 import com.milesight.beaveriot.user.repository.UserRoleRepository;
 import com.milesight.beaveriot.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +52,8 @@ public class UserFacade implements IUserFacade {
     MenuRepository menuRepository;
     @Autowired
     RoleResourceRepository roleResourceRepository;
+    @Autowired
+    UserRepository userRepository;
 
     @Override
     public TenantDTO analyzeTenantId(Long tenantId) {
@@ -165,6 +168,13 @@ public class UserFacade implements IUserFacade {
             });
         });
         roleResourceRepository.saveAll(roleResourcePOS);
+    }
+
+    @Override
+    public List<UserDTO> getUserLike(String keyword) {
+        List<UserPO> userPOS = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(keyword),UserPO.Fields.nickname, keyword)
+                .likeIgnoreCase(StringUtils.hasText(keyword),UserPO.Fields.email, keyword)));
+        return UserConverter.INSTANCE.convertDTOList(userPOS);
     }
 
 }

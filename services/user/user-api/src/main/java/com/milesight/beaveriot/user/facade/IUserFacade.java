@@ -31,4 +31,6 @@ public interface IUserFacade {
 
     void associateResource(Long userId, ResourceType resourceType, List<Long> resourceIds);
 
+    List<UserDTO> getUserLike(String keyword);
+
 }

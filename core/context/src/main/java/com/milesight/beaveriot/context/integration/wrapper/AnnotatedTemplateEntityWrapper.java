@@ -1,6 +1,5 @@
 package com.milesight.beaveriot.context.integration.wrapper;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.milesight.beaveriot.base.annotations.SFunction;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 
@@ -65,11 +64,11 @@ public class AnnotatedTemplateEntityWrapper<T> extends AbstractWrapper {
         return new ExchangeEventPublisher(exchangePayload);
     }
 
-    public <S> Optional<S> getValue(SFunction<T, ?> keyFun, Class<S> clazz) {
-        return findValueByKey(parserEntityKey(keyFun), clazz);
+    public Optional<Object> getValue(SFunction<T, ?> keyFun) {
+        return findValueByKey(parserEntityKey(keyFun));
     }
 
-    public Map<String, JsonNode> getValues(SFunction<T, ?>... parentKeyFun) {
+    public Map<String, Object> getValues(SFunction<T, ?>... parentKeyFun) {
         List<String> keys = Arrays.stream(parentKeyFun).map(this::parserEntityKey).toList();
         return findValuesByKeys(keys);
     }

@@ -3,6 +3,7 @@ package com.milesight.beaveriot.data.util;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
@@ -27,7 +28,11 @@ public class PageConverter {
             sortList = sortList(sortList, pageable.getSort());
         }
         int offset = (int) pageable.getOffset();
-        int start = offset >= sortList.size() ? offset : 0;
+        int start = offset;
+        if (offset >= sortList.size()) {
+            start = 0;
+            pageable = PageRequest.of(0, pageable.getPageSize(), pageable.getSort());
+        }
         int end = Math.min((start + pageable.getPageSize()), sortList.size());
 
         List<T> subList = sortList.subList(start, end);

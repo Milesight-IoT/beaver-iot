@@ -1,10 +1,8 @@
 package com.milesight.beaveriot.context.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
 import lombok.NonNull;
-import org.apache.camel.Exchange;
 
 import java.util.List;
 import java.util.Map;
@@ -30,9 +28,9 @@ public interface EntityValueServiceProvider {
 
     void saveHistoryRecord(Map<String, Object> recordValues);
 
-    JsonNode findValueByKey(String key);
+    Object findValueByKey(String key);
 
-    Map<String, JsonNode> findValuesByKeys(List<String> keys);
+    Map<String, Object> findValuesByKeys(List<String> keys);
 
     @NonNull <T extends ExchangePayload> T findValuesByKey(String key, Class<T> entitiesClazz);
 

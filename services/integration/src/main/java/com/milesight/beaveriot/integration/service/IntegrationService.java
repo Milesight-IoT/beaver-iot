@@ -1,6 +1,5 @@
 package com.milesight.beaveriot.integration.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
@@ -122,7 +121,7 @@ public class IntegrationService {
             return data;
         }
 
-        final Map<String, JsonNode> entityValues = entityValueServiceProvider.findValuesByKeys(entities.stream().map(Entity::getKey).toList());
+        final Map<String, Object> entityValues = entityValueServiceProvider.findValuesByKeys(entities.stream().map(Entity::getKey).toList());
 
         data.setIntegrationEntities(entities
                 .stream().flatMap((Entity pEntity) -> {

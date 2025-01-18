@@ -420,7 +420,7 @@ public class EntityService implements EntityServiceProvider {
         List<EntityPO> parentAndChildren = Stream.concat(entityPOList.stream(), childrenEntityPOList.stream()).toList();
         try {
             List<Entity> entities = convertPOListToEntities(parentAndChildren);
-            return mapKeysToEntities(entities, List.of(entityKeys), Entity::getKey)
+            return mapKeysToEntities(entities, entityKeys, Entity::getKey)
                     .stream()
                     .collect(Collectors.toMap(Entity::getKey, Function.identity()));
         } catch (Exception e) {
