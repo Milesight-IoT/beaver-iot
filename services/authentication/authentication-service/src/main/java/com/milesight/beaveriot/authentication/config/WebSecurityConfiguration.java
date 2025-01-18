@@ -1,9 +1,10 @@
 package com.milesight.beaveriot.authentication.config;
 
+import com.milesight.beaveriot.authentication.converter.CustomAuthenticationManagerResolver;
 import com.milesight.beaveriot.authentication.exception.CustomAuthenticationHandler;
 import com.milesight.beaveriot.authentication.exception.CustomOAuth2AccessDeniedHandler;
 import com.milesight.beaveriot.authentication.exception.CustomOAuth2ExceptionEntryPoint;
-import com.milesight.beaveriot.authentication.filter.AuthenticationFilter;
+import com.milesight.beaveriot.authentication.filter.SecurityUserContextCleanupFilter;
 import com.milesight.beaveriot.authentication.handler.CustomOAuth2AccessTokenResponseHandler;
 import com.milesight.beaveriot.authentication.provider.CustomJdbcOAuth2AuthorizationService;
 import com.milesight.beaveriot.authentication.provider.CustomOAuth2AuthorizationService;
@@ -80,8 +81,6 @@ public class WebSecurityConfiguration {
     @Autowired
     private JdbcTemplate jdbcTemplate;
     @Autowired
-    AuthenticationFilter authenticationFilter;
-    @Autowired
     OAuth2Properties oAuth2Properties;
     @Autowired
     IUserFacade userFacade;
@@ -97,44 +96,44 @@ public class WebSecurityConfiguration {
                                         new OAuth2ClientCredentialsAuthenticationConverter(),
                                         new CustomOAuth2PasswordAuthenticationConverter()))
                                 )
-                                .authenticationProvider(new CustomOAuth2PasswordAuthenticationProvider(authorizationService(), tokenGenerator(), userFacade, userDetailsService, passwordEncoder()))
+                                .authenticationProvider(new CustomOAuth2PasswordAuthenticationProvider(authorizationService(), tokenGenerator(), userFacade, authenticationProvider()))
                                 .errorResponseHandler(new CustomAuthenticationHandler())
                                 .accessTokenResponseHandler(new CustomOAuth2AccessTokenResponseHandler())
                 )
                 .clientAuthentication(clientAuthentication -> clientAuthentication.errorResponseHandler(new CustomAuthenticationHandler()))
                 .oidc(Customizer.withDefaults());
+        http.exceptionHandling(
+                exception -> exception.authenticationEntryPoint(new CustomOAuth2ExceptionEntryPoint())
+                        .accessDeniedHandler(new CustomOAuth2AccessDeniedHandler())
+        );
         return http.build();
     }
 
     @Bean
     @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        http.securityMatcher((request) -> !OAuth2EndpointUtils.getWhiteListMatcher(oAuth2Properties.getIgnoreUrls()).matches(request))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(oAuth2Properties.getIgnoreUrls()).permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(
                         AbstractHttpConfigurer::disable
                 )
                 .logout(
                         AbstractHttpConfigurer::disable
                 )
-                .exceptionHandling(
-                        exception -> exception.authenticationEntryPoint(new CustomOAuth2ExceptionEntryPoint())
-                                .accessDeniedHandler(new CustomOAuth2AccessDeniedHandler())
-                )
                 .csrf(
                         AbstractHttpConfigurer::disable
                 )
-                .authenticationProvider(authenticationProvider())
                 .oauth2ResourceServer(oauth2ResourceServer ->
-                        oauth2ResourceServer.jwt(jwt -> jwt.decoder(jwtDecoder()))
+                        oauth2ResourceServer
+                                .authenticationManagerResolver(new CustomAuthenticationManagerResolver(authorizationService(), jwtDecoder()))
                                 .authenticationEntryPoint(new CustomOAuth2ExceptionEntryPoint())
                                 .accessDeniedHandler(new CustomOAuth2AccessDeniedHandler())
                 )
-                .securityMatcher((request) -> !OAuth2EndpointUtils.getWhiteListMatcher(oAuth2Properties.getIgnoreUrls()).matches(request));
+                .addFilterAfter(new SecurityUserContextCleanupFilter(), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
