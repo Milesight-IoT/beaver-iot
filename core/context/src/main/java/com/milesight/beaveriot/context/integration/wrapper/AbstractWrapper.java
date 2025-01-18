@@ -1,8 +1,6 @@
 package com.milesight.beaveriot.context.integration.wrapper;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.milesight.beaveriot.base.annotations.SFunction;
-import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.lambada.LambdaMeta;
 import com.milesight.beaveriot.base.utils.lambada.LambdaUtils;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
@@ -44,15 +42,15 @@ public abstract class AbstractWrapper {
         SpringContext.getBean(EntityValueServiceProvider.class).saveValues(exchangePayload, timestamp);
     }
 
-    protected <T> Optional<T> findValueByKey(String key, Class<T> clazz) {
-        JsonNode jsonNodeValue = SpringContext.getBean(EntityValueServiceProvider.class).findValueByKey(key);
-        if (jsonNodeValue == null) {
+    protected Optional<Object> findValueByKey(String key) {
+        Object v = SpringContext.getBean(EntityValueServiceProvider.class).findValueByKey(key);
+        if (v == null) {
             return Optional.empty();
         }
-        return Optional.of(JsonUtils.cast(jsonNodeValue, clazz));
+        return Optional.of(v);
     }
 
-    protected Map<String, JsonNode> findValuesByKeys(List<String> keys) {
+    protected Map<String, Object> findValuesByKeys(List<String> keys) {
         return SpringContext.getBean(EntityValueServiceProvider.class).findValuesByKeys(keys);
     }
 

@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
  */
 public class EntityWrapper extends AbstractWrapper {
 
-    private Entity entity;
+    private final Entity entity;
 
     private ExchangePayload exchangePayload;
 
@@ -61,8 +61,8 @@ public class EntityWrapper extends AbstractWrapper {
         return doSaveValues(convertedValues, timestamp);
     }
 
-    public <S> Optional<S> getValue(Class<S> clazz) {
-        return findValueByKey(entity.getKey(), clazz);
+    public Optional<Object> getValue() {
+        return findValueByKey(entity.getKey());
     }
 
 }

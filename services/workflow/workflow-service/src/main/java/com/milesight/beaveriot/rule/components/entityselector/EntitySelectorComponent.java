@@ -1,7 +1,5 @@
 package com.milesight.beaveriot.rule.components.entityselector;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.rule.annotations.OutputArguments;
@@ -37,9 +35,9 @@ public class EntitySelectorComponent implements ProcessorNode<Exchange> {
 
     @Override
     public void processor(Exchange exchange) {
-        List<String> entitiesVariables = (List<String>) SpELExpressionHelper.resolveExpression(exchange, entities);
-        Map<String, JsonNode> entityValues = entityValueServiceProvider.findValuesByKeys(entitiesVariables);
-        Map<String, Object> entityValuesMap = entityValues.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> JsonUtils.cast(entry.getValue(), Object.class)));
+        List<String> entitiesVariables = SpELExpressionHelper.resolveExpression(exchange, entities);
+        Map<String, Object> entityValues = entityValueServiceProvider.findValuesByKeys(entitiesVariables);
+        Map<String, Object> entityValuesMap = entityValues.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         ExchangePayload exchangePayload = ExchangePayload.create(entityValuesMap);
         exchange.getIn().setBody(exchangePayload);
     }
