@@ -13,6 +13,9 @@ import lombok.RequiredArgsConstructor;
 public enum UserErrorCode implements ErrorCodeSpec {
 
     USER_REGISTER_EMAIL_EXIST,
+    ROLE_DOES_NOT_EXIT,
+    NAME_REPEATED,
+    ROLE_STILL_HAS_USER,
     ;
 
     private final String errorCode;

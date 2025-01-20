@@ -15,6 +15,7 @@ import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.entity.facade.IEntityFacade;
 import com.milesight.beaveriot.user.constants.UserConstants;
 import com.milesight.beaveriot.user.enums.ResourceType;
+import com.milesight.beaveriot.user.enums.UserErrorCode;
 import com.milesight.beaveriot.user.model.request.CreateRoleRequest;
 import com.milesight.beaveriot.user.model.request.DashboardUndistributedRequest;
 import com.milesight.beaveriot.user.model.request.DeviceUndistributedRequest;
@@ -107,7 +108,7 @@ public class RoleService {
         }
         RolePO rolePO = roleRepository.findOne(filterable -> filterable.eq(RolePO.Fields.name, name)).orElse(null);
         if (rolePO != null) {
-            throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("name is exist").build();
+            throw ServiceException.with(UserErrorCode.NAME_REPEATED).detailMessage("name is exist").build();
         }
         rolePO = new RolePO();
         rolePO.setId(SnowflakeUtil.nextId());
@@ -127,7 +128,7 @@ public class RoleService {
         }
         RolePO otherRolePO = roleRepository.findOne(filterable -> filterable.eq(RolePO.Fields.name, name)).orElse(null);
         if (otherRolePO != null && !Objects.equals(otherRolePO.getId(), roleId)) {
-            throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("name is exist").build();
+            throw ServiceException.with(UserErrorCode.NAME_REPEATED).detailMessage("name is exist").build();
         }
         RolePO rolePO = roleRepository.findUniqueOne(filterable -> filterable.eq(RolePO.Fields.id, roleId));
         rolePO.setName(name);
@@ -139,14 +140,14 @@ public class RoleService {
     public void deleteRole(Long roleId) {
         RolePO rolePO = roleRepository.findUniqueOne(filterable -> filterable.eq(RolePO.Fields.id, roleId));
         if (rolePO == null) {
-            throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("role is not exist").build();
+            throw ServiceException.with(UserErrorCode.ROLE_DOES_NOT_EXIT).detailMessage("role is not exist").build();
         }
         if (UserConstants.SUPER_ADMIN_ROLE_NAME.equals(rolePO.getName())) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("super admin not allowed to delete").build();
         }
         List<UserRolePO> userRolePOs = userRoleRepository.findAll(filterable -> filterable.eq(UserRolePO.Fields.roleId, roleId));
         if (!userRolePOs.isEmpty()) {
-            throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("role has been bound user").build();
+            throw ServiceException.with(UserErrorCode.ROLE_STILL_HAS_USER).detailMessage("role has been bound user").build();
         }
         roleRepository.deleteById(roleId);
         userRoleRepository.deleteByRoleId(roleId);

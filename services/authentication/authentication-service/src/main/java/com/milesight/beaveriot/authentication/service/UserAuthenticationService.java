@@ -58,7 +58,7 @@ public class UserAuthenticationService {
 
     public Jwt readAccessToken(String accessToken) {
         OAuth2Authorization authorization = authorizationService.findByToken(accessToken, OAuth2TokenType.ACCESS_TOKEN);
-        if (authorization == null) {
+        if (authorization == null || authorization.getAccessToken() == null || authorization.getAccessToken().isExpired()) {
             OAuth2EndpointUtils.throwError(OAuth2ErrorCodes.INVALID_REQUEST, "Invalid access token", null);
         }
         return jwtDecoder.decode(accessToken);
