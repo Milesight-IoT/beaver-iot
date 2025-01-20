@@ -449,7 +449,7 @@ public class UserService {
 
     public Long analyzeSuperAdminRoleId() {
         String roleName = UserConstants.SUPER_ADMIN_ROLE_NAME;
-        RolePO rolePO = roleRepository.findOne(filter -> filter.eq(RolePO.Fields.name, roleName)).orElseThrow(() -> ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("role not exist").build());
+        RolePO rolePO = roleRepository.findOne(filter -> filter.eq(RolePO.Fields.name, roleName)).orElseThrow(() -> ServiceException.with(UserErrorCode.ROLE_DOES_NOT_EXIT).detailMessage("role is not exist").build());
         return rolePO.getId();
     }
 
