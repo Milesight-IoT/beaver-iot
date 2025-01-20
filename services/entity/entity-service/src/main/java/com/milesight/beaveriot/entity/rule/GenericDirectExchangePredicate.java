@@ -71,7 +71,7 @@ public class GenericDirectExchangePredicate implements PredicateNode<Exchange> {
         return customEntities.stream()
                 .filter(entity -> !StringUtils.hasText(entity.getParentKey()))
                 .findFirst()
-                .orElse(findParentEntity(customEntities.get(0)));
+                .orElseGet(()->findParentEntity(customEntities.get(0)));
     }
 
     private Entity findParentEntity(Entity entity) {
