@@ -30,6 +30,7 @@ public class CustomizedPythonExpression extends PythonExpression {
 
     @Override
     public <T> T evaluate(Exchange exchange, Class<T> type) {
+
         try (PythonInterpreter compiler = new PythonInterpreter()) {
             compiler.set("exchange", exchange);
             compiler.set("context", exchange.getContext());
