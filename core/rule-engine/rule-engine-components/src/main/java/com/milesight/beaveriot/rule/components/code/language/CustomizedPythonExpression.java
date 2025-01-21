@@ -14,6 +14,7 @@ import org.springframework.util.ObjectUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * @author leon
@@ -30,6 +31,14 @@ public class CustomizedPythonExpression extends PythonExpression {
 
     @Override
     public <T> T evaluate(Exchange exchange, Class<T> type) {
+        Properties props = new Properties();
+//        props.put("python.home", "path to the Lib folder");
+        props.put("python.console.encoding", "UTF-8");
+        props.put("python.security.respectJavaAccessibility", "false");
+        props.put("python.import.site", "false");
+        Properties preprops = System.getProperties();
+        PythonInterpreter.initialize(preprops, props, new String[0]);
+
         try (PythonInterpreter compiler = new PythonInterpreter()) {
             compiler.set("exchange", exchange);
             compiler.set("context", exchange.getContext());
