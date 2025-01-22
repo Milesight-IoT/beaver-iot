@@ -130,7 +130,10 @@ public class RoleService {
         if (otherRolePO != null && !Objects.equals(otherRolePO.getId(), roleId)) {
             throw ServiceException.with(UserErrorCode.NAME_REPEATED).detailMessage("name is exist").build();
         }
-        RolePO rolePO = roleRepository.findUniqueOne(filterable -> filterable.eq(RolePO.Fields.id, roleId));
+        RolePO rolePO = roleRepository.findOne(filterable -> filterable.eq(RolePO.Fields.id, roleId)).orElse(null);
+        if (rolePO == null) {
+            throw ServiceException.with(UserErrorCode.ROLE_DOES_NOT_EXIT).detailMessage("role is not exist").build();
+        }
         rolePO.setName(name);
         rolePO.setDescription(updateRoleRequest.getDescription());
         roleRepository.save(rolePO);
@@ -138,7 +141,7 @@ public class RoleService {
 
     @Transactional(rollbackFor = Exception.class)
     public void deleteRole(Long roleId) {
-        RolePO rolePO = roleRepository.findUniqueOne(filterable -> filterable.eq(RolePO.Fields.id, roleId));
+        RolePO rolePO = roleRepository.findOne(filterable -> filterable.eq(RolePO.Fields.id, roleId)).orElse(null);
         if (rolePO == null) {
             throw ServiceException.with(UserErrorCode.ROLE_DOES_NOT_EXIT).detailMessage("role is not exist").build();
         }
