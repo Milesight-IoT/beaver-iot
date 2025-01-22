@@ -26,7 +26,7 @@ public enum ExpressionOperator {
     IS_NOT_EMPTY("is not empty", "T(com.milesight.beaveriot.rule.enums.ExpressionOperator).isNotEmpty({0})"),
     GT("greater than", "T(com.milesight.beaveriot.rule.enums.ExpressionOperator).greaterThan({0},{1})"),
     GE("greater equals", "T(com.milesight.beaveriot.rule.enums.ExpressionOperator).greaterEquals({0},{1})"),
-    LT("less then", "T(com.milesight.beaveriot.rule.enums.ExpressionOperator).lessThen({0},{1})"),
+    LT("less than", "T(com.milesight.beaveriot.rule.enums.ExpressionOperator).lessThan({0},{1})"),
     LE("less equals", "T(com.milesight.beaveriot.rule.enums.ExpressionOperator).lessEquals({0},{1})");
     private String label;
     private String expression;
