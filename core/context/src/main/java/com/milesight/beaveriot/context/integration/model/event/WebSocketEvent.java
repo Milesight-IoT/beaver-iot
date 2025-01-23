@@ -27,6 +27,7 @@ public class WebSocketEvent implements Serializable {
         }
 
         public static final String EXCHANGE = "Exchange";
+        public static final String HEARTBEAT = "Heartbeat";
     }
 
 }

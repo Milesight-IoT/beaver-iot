@@ -64,7 +64,14 @@ public class DashboardWebsocketHandler extends AbstractWebSocketHandler {
     @Override
     public void handleTextMessage(ChannelHandlerContext ctx, TextWebSocketFrame msg) throws Exception {
         WebSocketEvent webSocketEvent = JsonUtils.fromJSON(msg.text(), WebSocketEvent.class);
-        if (webSocketEvent == null || !WebSocketEvent.EventType.EXCHANGE.equals(webSocketEvent.getEventType())) {
+        if (webSocketEvent == null) {
+            return;
+        }
+        if (WebSocketEvent.EventType.HEARTBEAT.equalsIgnoreCase(webSocketEvent.getEventType())) {
+            ctx.channel().writeAndFlush(msg);
+            return;
+        }
+        if (!WebSocketEvent.EventType.EXCHANGE.equalsIgnoreCase(webSocketEvent.getEventType())) {
             return;
         }
         DashboardExchangePayload payload = JsonUtils.fromJSON(JsonUtils.toJSON(webSocketEvent.getPayload()), DashboardExchangePayload.class);
