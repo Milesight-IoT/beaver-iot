@@ -3,6 +3,7 @@ package com.milesight.beaveriot.rule.components.timer;
 import lombok.*;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 
 @Data
@@ -17,12 +18,17 @@ public class SimpleTimerSettings {
 
     private Long executionEpochSecond;
 
+    private TimeUnit intervalTimeUnit;
+
+    private Long intervalTime;
+
     private List<SimpleTimerRuleSettings> rules;
 
     private Long expirationEpochSecond;
 
     public enum TimerType {
         ONCE,
+        INTERVAL,
         SCHEDULE
     }
 

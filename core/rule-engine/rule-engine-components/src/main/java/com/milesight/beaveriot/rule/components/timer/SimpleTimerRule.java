@@ -19,6 +19,8 @@ public class SimpleTimerRule {
 
     private List<Long> externalExecutionEpochSeconds;
 
+    private List<Long> intervalSeconds;
+
     private Long expirationEpochSecond;
 
     public Long nextExecutionEpochSecond() {
@@ -29,11 +31,17 @@ public class SimpleTimerRule {
         if (expirationEpochSecond == null) {
             expirationEpochSecond = Long.MAX_VALUE;
         }
-        var nowEpochSecond = now.toEpochSecond();
+        val nowEpochSecond = now.toEpochSecond();
         var nextExecutionEpochSeconds = new TreeSet<Long>();
         if (externalExecutionEpochSeconds != null && !externalExecutionEpochSeconds.isEmpty()) {
             externalExecutionEpochSeconds.stream()
                     .filter(t -> t > nowEpochSecond && t < expirationEpochSecond)
+                    .forEach(nextExecutionEpochSeconds::add);
+        }
+        if (intervalSeconds != null && !intervalSeconds.isEmpty()) {
+            intervalSeconds.stream()
+                    .map(t -> nowEpochSecond + t)
+                    .filter(t -> t < expirationEpochSecond)
                     .forEach(nextExecutionEpochSeconds::add);
         }
         if (executionTimes != null && !executionTimes.isEmpty()) {
