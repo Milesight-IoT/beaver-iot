@@ -27,8 +27,9 @@ public class DemoAnnotationIntegrationEntitySubscribe {
     }
 
     @EventSubscribe(payloadKeyExpression="demo-anno-integration.integration.connect.entitySync")
-    public void onEntitySync(Event<DemoIntegrationEntities> event) {
+    public EventResponse onEntitySync(Event<DemoIntegrationEntities> event) {
         log.debug("DemoAnnotationIntegrationEntitySubscribe onEntitySync:{}",event);
+        return EventResponse.of("syncEntitySize",event.getPayload().getAllPayloads().size());
     }
 
 
