@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.permission.service;
 
+import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.entity.dto.EntityDTO;
@@ -37,6 +38,7 @@ public class EntityPermissionService {
         entityPermissionDTO.setEntityIds(new ArrayList<>());
         if (!userResourceDTO.isHasAllResource()) {
             List<String> targetIds = new ArrayList<>();
+            targetIds.add(IntegrationConstants.SYSTEM_INTEGRATION_ID);
             List<String> resourceEntityIds = new ArrayList<>();
             Map<ResourceType, List<String>> resource = userResourceDTO.getResource();
             if (resource != null && !resource.isEmpty()) {
