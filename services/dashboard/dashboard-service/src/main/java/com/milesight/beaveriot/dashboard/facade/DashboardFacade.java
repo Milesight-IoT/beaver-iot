@@ -36,7 +36,7 @@ public class DashboardFacade implements IDashboardFacade {
     @Override
     public List<DashboardDTO> getDashboardsLike(String keyword, Sort sort) {
         List<String> searchUserIds = new ArrayList<>();
-        if (!StringUtils.hasText(keyword)) {
+        if (StringUtils.hasText(keyword)) {
             List<UserDTO> userDTOS = userFacade.getUserLike(keyword);
             if (userDTOS != null && !userDTOS.isEmpty()) {
                 searchUserIds = userDTOS.stream().map(UserDTO::getUserId).toList();
