@@ -58,8 +58,8 @@ public class WorkflowTriggerByEntityNode implements ProcessorNode<Exchange> {
                             .orElse(EntityValueType.OBJECT)
                             .convertValue(entry.getValue())
             ));
-
-            ruleEngineExecutor.execute("direct:" + workflowPO.getId(), nextExchange);
+            exchange.getIn().setBody(nextExchange);
+            ruleEngineExecutor.executeWithResponse("direct:" + workflowPO.getId(), exchange);
         } else {
             log.error("Wrong exchange data type, should be a map!");
         }
