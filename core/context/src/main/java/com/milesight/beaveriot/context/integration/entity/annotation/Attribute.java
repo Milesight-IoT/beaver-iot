@@ -29,4 +29,7 @@ public @interface Attribute {
     String format() default "";
 
     Class<? extends Enum>[] enumClass() default {};
+
+    boolean required() default true;
+
 }
