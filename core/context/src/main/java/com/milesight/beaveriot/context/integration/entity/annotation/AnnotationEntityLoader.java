@@ -113,7 +113,7 @@ public class AnnotationEntityLoader implements EntityLoader {
         }
         Attribute attribute = attributes[0];
         Class<? extends Enum> enumClass = ObjectUtils.isEmpty(attribute.enumClass()) ? null : attribute.enumClass()[0];
-        return new AttributeBuilder().unit(attribute.unit()).max(attribute.max()).min(attribute.min()).fractionDigits(attribute.fractionDigits()).maxLength(attribute.maxLength()).minLength(attribute.minLength()).format(attribute.format()).enums(enumClass).build();
+        return new AttributeBuilder().unit(attribute.unit()).max(attribute.max()).min(attribute.min()).fractionDigits(attribute.fractionDigits()).maxLength(attribute.maxLength()).minLength(attribute.minLength()).format(attribute.format()).enums(enumClass).required(attribute.required()).build();
     }
 
     private Map<String, Object> resolveKeyValue(KeyValue[] keyValues) {

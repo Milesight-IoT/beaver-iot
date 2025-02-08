@@ -18,9 +18,9 @@ import lombok.EqualsAndHashCode;
 public class DemoIntegrationEntities extends ExchangePayload {
 
     // Service Samples
-    @Entity(type = EntityType.SERVICE, name = "mscEntitySync", identifier = "mscEntitySync", attributes = @Attribute(unit = "m", max = 1, min = 0, enumClass = DeviceStatus.class))
+    @Entity(type = EntityType.SERVICE, attributes = @Attribute(unit = "m", max = 1, min = 0, enumClass = DeviceStatus.class, required = false))
     private String entitySync;
-    @Entity(type = EntityType.SERVICE)
+    @Entity(type = EntityType.SERVICE, attributes = @Attribute(required = false))
     private String deviceSync;
     @Entity(type = EntityType.SERVICE)
     private Boolean boolService;

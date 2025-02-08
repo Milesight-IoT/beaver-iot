@@ -20,6 +20,7 @@ public class AttributeBuilder {
     public static final String ATTRIBUTE_ENUM = "enum";
     public static final String ATTRIBUTE_FORMAT = "format";
     public static final String ATTRIBUTE_FRACTION_DIGITS = "fraction_digits";
+    public static final String ATTRIBUTE_REQUIRED = "required";
 
     private Map<String, Object> attributes = new HashMap<>();
 
@@ -92,6 +93,11 @@ public class AttributeBuilder {
             return this;
         }
         attributes.put(ATTRIBUTE_ENUM, enums);
+        return this;
+    }
+
+    public AttributeBuilder required(boolean required) {
+        attributes.put(ATTRIBUTE_REQUIRED, required);
         return this;
     }
 

@@ -6,14 +6,13 @@ import com.milesight.beaveriot.rule.annotations.RuleNode;
 import com.milesight.beaveriot.rule.annotations.UriParamExtension;
 import com.milesight.beaveriot.rule.api.ProcessorNode;
 import com.milesight.beaveriot.rule.constants.RuleNodeType;
-import com.milesight.beaveriot.rule.enums.DataTypeEnums;
+import com.milesight.beaveriot.rule.model.OutputVariablesSettings;
 import com.milesight.beaveriot.rule.model.flow.ExpressionNode;
 import com.milesight.beaveriot.rule.support.JsonHelper;
 import com.milesight.beaveriot.rule.support.SpELExpressionHelper;
 import lombok.Data;
 import org.apache.camel.Exchange;
 import org.apache.camel.spi.UriParam;
-import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -37,7 +36,7 @@ public class ScriptCodeComponent implements ProcessorNode<Exchange> {
     @UriParamExtension(uiComponent = "paramDefineInput")
     @OutputArguments(displayName = "Output Variables")
     @UriParam(prefix = "bean", name = "payload", displayName = "Output Variables")
-    private List<ScriptCodeOutputSettings> payload;
+    private List<OutputVariablesSettings> payload;
 
     @Override
     public void processor(Exchange exchange) {
@@ -46,7 +45,7 @@ public class ScriptCodeComponent implements ProcessorNode<Exchange> {
 
         Object result = ExpressionEvaluator.evaluate(expression, exchange, inputVariables, Object.class);
 
-        validatePayload(result);
+        OutputVariablesSettings.validate(result, payload);
 
         exchange.getIn().setBody(result);
 
@@ -54,21 +53,7 @@ public class ScriptCodeComponent implements ProcessorNode<Exchange> {
 
     public void setPayload(String payloadStr) {
         if (StringUtils.hasText(payloadStr)) {
-            payload = JsonHelper.fromJSON(payloadStr, new TypeReference<List<ScriptCodeOutputSettings>>() {});
-        }
-    }
-
-    private void validatePayload(Object result) {
-        if (ObjectUtils.isEmpty(payload) || !(result instanceof Map resultMap) ) {
-            return;
-        }
-
-        for (ScriptCodeOutputSettings config : payload) {
-            String paramName = config.getName();
-            DataTypeEnums paramType = config.getType();
-            if (resultMap.containsKey(paramName) ) {
-                paramType.validate(paramName, resultMap.get(paramName));
-            }
+            payload = JsonHelper.fromJSON(payloadStr, new TypeReference<List<OutputVariablesSettings>>() {});
         }
     }
 
