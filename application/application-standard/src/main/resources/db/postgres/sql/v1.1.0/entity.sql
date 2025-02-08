@@ -31,3 +31,9 @@ ALTER TABLE t_entity_history
     ALTER COLUMN value_double set data type double precision;
 ALTER TABLE t_entity_latest
     ALTER COLUMN value_double set data type double precision;
+
+--changeset Simon:entity_v1.1.0_20250208_140100
+ALTER TABLE t_entity_history
+    ALTER COLUMN value_string TYPE VARCHAR(10485760);
+ALTER TABLE t_entity_latest
+    ALTER COLUMN value_string TYPE VARCHAR(10485760);

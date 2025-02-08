@@ -33,7 +33,7 @@ public class EntityHistoryPO {
     private Long valueLong;
     private Double valueDouble;
     private Boolean valueBoolean;
-    @Column(length = 1024)
+    @Column(length = 10485760) // 10 MB
     private String valueString;
     private byte[] valueBinary;
     private Long timestamp;

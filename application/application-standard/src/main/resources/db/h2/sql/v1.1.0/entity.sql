@@ -33,3 +33,9 @@ ALTER TABLE t_entity_history
     ALTER COLUMN value_double double;
 ALTER TABLE t_entity_latest
     ALTER COLUMN value_double double;
+
+--changeset Simon:entity_v1.1.0_20250208_140100
+ALTER TABLE t_entity_history
+    ALTER COLUMN value_string VARCHAR(10485760);
+ALTER TABLE t_entity_latest
+    ALTER COLUMN value_string VARCHAR(10485760);
