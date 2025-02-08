@@ -686,11 +686,8 @@ public class EntityService implements EntityServiceProvider {
             log.info("no service found");
             throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
         }
-        ExchangePayload payload = new ExchangePayload(exchange);
 
-        EventResponse eventResponse = EventResponse.empty();
-        entityValueServiceProvider.saveValuesAndPublishSync(payload);
-        return eventResponse;
+        return entityValueServiceProvider.saveValuesAndPublishSync(new ExchangePayload(exchange));
     }
 
     /**

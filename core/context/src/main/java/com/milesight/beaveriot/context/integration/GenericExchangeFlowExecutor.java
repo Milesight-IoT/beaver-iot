@@ -38,8 +38,8 @@ public class GenericExchangeFlowExecutor {
             initializeEventContext(eventType, entityType, payload, true);
             Object response = ruleEngineExecutor.executeWithResponse(RuleNodeNames.innerExchangeFlow, EntityValueType.convertValue(payload));
             if (response != null) {
-                if (!(response instanceof EventResponse returnEvent)) {
-                    log.warn("syncExchangeDown response is not EventResponse, response:{}", response);
+                if (!(response instanceof Map returnEvent)) {
+                    log.warn("Synchronous call result response is not a Map, response:{}", response);
                 } else {
                     eventResponse.putAll(returnEvent);
                 }
