@@ -144,13 +144,18 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
     }
 
     protected static ExchangePayload create(Map<String, Object> values, Map<String, Object> context) {
+        return create(values, context, System.currentTimeMillis());
+    }
+
+    protected static ExchangePayload create(Map<String, Object> values, Map<String, Object> context, long timestamp) {
         ExchangePayload exchangePayload = new ExchangePayload(values);
         exchangePayload.setContext(context);
+        exchangePayload.setTimestamp(timestamp);
         return exchangePayload;
     }
 
     public static <T extends ExchangePayload> ExchangePayload createFrom(T payload) {
-        return create(payload.getAllPayloads(), payload.getContext());
+        return create(payload.getAllPayloads(), payload.getContext(), payload.getTimestamp());
     }
 
     public static <T extends ExchangePayload> ExchangePayload createFrom(T payload, List<String> assignKeys) {
@@ -164,7 +169,7 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
                 filteredPayload.put(key, value);
             }
         });
-        return ExchangePayload.create(filteredPayload, copyContext(payload));
+        return ExchangePayload.create(filteredPayload, copyContext(payload), payload.getTimestamp());
     }
 
     private static <T extends ExchangePayload> Map<String, Object> copyContext(T payload) {
