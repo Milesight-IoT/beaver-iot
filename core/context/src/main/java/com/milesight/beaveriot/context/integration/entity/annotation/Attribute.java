@@ -30,6 +30,10 @@ public @interface Attribute {
 
     Class<? extends Enum>[] enumClass() default {};
 
-    boolean required() default true;
+    /**
+     * Whether it is optional, default is false
+     * @return
+     */
+    boolean optional() default false;
 
 }
