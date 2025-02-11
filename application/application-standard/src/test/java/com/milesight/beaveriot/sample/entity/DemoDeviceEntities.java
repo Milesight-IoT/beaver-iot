@@ -24,7 +24,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @DeviceTemplateEntities(name="demoDevice")
 public class DemoDeviceEntities extends ExchangePayload {
-    @Entity(name = "temperature", identifier = "temperature", accessMod = AccessMod.RW, type = EntityType.PROPERTY)
+    @Entity(name = "temperature", identifier = "temperature", accessMod = AccessMod.RW, type = EntityType.PROPERTY, description = "abc")
     public Double temperature;
 
     @Entity

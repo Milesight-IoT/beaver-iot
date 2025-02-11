@@ -36,8 +36,8 @@ public class Entity implements IdentityKey {
     private Map<String, Object> attributes;
     private String parentIdentifier;
     private List<Entity> children;
-
     private Boolean visible;
+    private String description;
 
     protected Entity() {
     }

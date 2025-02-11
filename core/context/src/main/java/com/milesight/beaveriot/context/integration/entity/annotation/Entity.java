@@ -27,4 +27,6 @@ public @interface Entity {
 
     boolean visible() default true;
 
+    String description() default "";
+
 }
