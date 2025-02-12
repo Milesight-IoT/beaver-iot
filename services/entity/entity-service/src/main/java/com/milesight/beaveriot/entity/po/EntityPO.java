@@ -81,4 +81,7 @@ public class EntityPO {
     @LastModifiedDate
     private Long updatedAt;
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
 }

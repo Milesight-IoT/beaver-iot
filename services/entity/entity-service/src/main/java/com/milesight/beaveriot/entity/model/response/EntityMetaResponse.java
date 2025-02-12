@@ -34,4 +34,6 @@ public class EntityMetaResponse {
 
     private Long updatedAt;
 
+    private String description;
+
 }

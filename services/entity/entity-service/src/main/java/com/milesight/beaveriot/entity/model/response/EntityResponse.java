@@ -40,4 +40,6 @@ public class EntityResponse {
 
     private Long entityUpdatedAt;
 
+    private String entityDescription;
+
 }
