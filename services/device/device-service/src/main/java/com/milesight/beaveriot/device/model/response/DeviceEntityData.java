@@ -16,4 +16,5 @@ public class DeviceEntityData {
     private EntityType type;
     private Map<String, Object> valueAttribute;
     private EntityValueType valueType;
+    private String description;
 }

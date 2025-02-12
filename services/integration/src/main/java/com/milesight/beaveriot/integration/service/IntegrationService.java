@@ -144,6 +144,7 @@ public class IntegrationService {
                             .value(entityValues.get(entity.getKey()))
                             .parent(entity.getParentKey())
                             .accessMod(entity.getAccessMod())
+                            .description(entity.getDescription())
                             .build());
                 }).toList());
         return data;
