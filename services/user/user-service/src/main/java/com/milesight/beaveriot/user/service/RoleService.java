@@ -2,6 +2,7 @@ package com.milesight.beaveriot.user.service;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.page.GenericQueryPageRequest;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
@@ -17,20 +18,11 @@ import com.milesight.beaveriot.user.constants.UserConstants;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.enums.UserErrorCode;
 import com.milesight.beaveriot.user.model.request.CreateRoleRequest;
-import com.milesight.beaveriot.user.model.request.DashboardUndistributedRequest;
-import com.milesight.beaveriot.user.model.request.DeviceUndistributedRequest;
-import com.milesight.beaveriot.user.model.request.IntegrationUndistributedRequest;
-import com.milesight.beaveriot.user.model.request.RoleDashboardRequest;
-import com.milesight.beaveriot.user.model.request.RoleDeviceRequest;
-import com.milesight.beaveriot.user.model.request.RoleIntegrationRequest;
-import com.milesight.beaveriot.user.model.request.RoleListRequest;
 import com.milesight.beaveriot.user.model.request.RoleMenuRequest;
 import com.milesight.beaveriot.user.model.request.RoleResourceListRequest;
 import com.milesight.beaveriot.user.model.request.RoleResourceRequest;
 import com.milesight.beaveriot.user.model.request.UpdateRoleRequest;
-import com.milesight.beaveriot.user.model.request.UserRolePageRequest;
 import com.milesight.beaveriot.user.model.request.UserRoleRequest;
-import com.milesight.beaveriot.user.model.request.UserUndistributedRequest;
 import com.milesight.beaveriot.user.model.response.CreateRoleResponse;
 import com.milesight.beaveriot.user.model.response.DashboardUndistributedResponse;
 import com.milesight.beaveriot.user.model.response.DeviceUndistributedResponse;
@@ -157,7 +149,7 @@ public class RoleService {
         roleResourceRepository.deleteByRoleId(roleId);
     }
 
-    public Page<RoleResponse> getRoles(RoleListRequest roleListRequest) {
+    public Page<RoleResponse> getRoles(GenericQueryPageRequest roleListRequest) {
         if (roleListRequest.getSort().getOrders().isEmpty()) {
             roleListRequest.sort(new Sorts().desc(RolePO.Fields.id));
         }
@@ -188,7 +180,7 @@ public class RoleService {
         });
     }
 
-    public Page<UserRoleResponse> getUsersByRoleId(Long roleId, UserRolePageRequest userRolePageRequest) {
+    public Page<UserRoleResponse> getUsersByRoleId(Long roleId, GenericQueryPageRequest userRolePageRequest) {
         List<Long> searchUserIds = new ArrayList<>();
         if (StringUtils.hasText(userRolePageRequest.getKeyword())) {
             List<UserPO> userSearchPOs = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(userRolePageRequest.getKeyword()), UserPO.Fields.email, userRolePageRequest.getKeyword())
@@ -260,7 +252,7 @@ public class RoleService {
         });
     }
 
-    public Page<RoleIntegrationResponse> getIntegrationsByRoleId(Long roleId, RoleIntegrationRequest roleIntegrationRequest) {
+    public Page<RoleIntegrationResponse> getIntegrationsByRoleId(Long roleId, GenericQueryPageRequest roleIntegrationRequest) {
         List<String> searchIntegrationIds = new ArrayList<>();
         if (StringUtils.hasText(roleIntegrationRequest.getKeyword())) {
             List<Integration> integrations = integrationServiceProvider.findIntegrations(f -> f.getName().toLowerCase().contains(roleIntegrationRequest.getKeyword().toLowerCase()));
@@ -294,7 +286,7 @@ public class RoleService {
         });
     }
 
-    public Page<RoleDeviceResponse> getDevicesByRoleId(Long roleId, RoleDeviceRequest roleDeviceRequest) {
+    public Page<RoleDeviceResponse> getDevicesByRoleId(Long roleId, GenericQueryPageRequest roleDeviceRequest) {
         List<String> searchIntegrationIds = new ArrayList<>();
         List<Long> searchDeviceIds = new ArrayList<>();
         boolean isKeywordSearch = false;
@@ -375,7 +367,7 @@ public class RoleService {
         return PageConverter.convertToPage(roleDeviceResponseList, roleDeviceRequest.toPageable());
     }
 
-    public Page<RoleDashboardResponse> getDashboardsByRoleId(Long roleId, RoleDashboardRequest roleDashboardRequest) {
+    public Page<RoleDashboardResponse> getDashboardsByRoleId(Long roleId, GenericQueryPageRequest roleDashboardRequest) {
         List<Long> searchDashboardIds = new ArrayList<>();
         if (StringUtils.hasText(roleDashboardRequest.getKeyword())) {
             List<DashboardDTO> dashboardPOS = dashboardFacade.getDashboardsLike(roleDashboardRequest.getKeyword(), Sort.unsorted());
@@ -416,7 +408,7 @@ public class RoleService {
         });
     }
 
-    public Page<DashboardUndistributedResponse> getUndistributedDashboards(Long roleId, DashboardUndistributedRequest dashboardUndistributedRequest) {
+    public Page<DashboardUndistributedResponse> getUndistributedDashboards(Long roleId, GenericQueryPageRequest dashboardUndistributedRequest) {
         List<DashboardDTO> dashboardDTOList = dashboardFacade.getDashboardsLike(dashboardUndistributedRequest.getKeyword(), dashboardUndistributedRequest.getSort().toSort());
         if (dashboardDTOList == null || dashboardDTOList.isEmpty()) {
             return Page.empty();
@@ -444,7 +436,7 @@ public class RoleService {
         return PageConverter.convertToPage(dashboardUndistributedResponseList, dashboardUndistributedRequest.toPageable());
     }
 
-    public Page<UserUndistributedResponse> getUndistributedUsers(Long roleId, UserUndistributedRequest userUndistributedRequest) {
+    public Page<UserUndistributedResponse> getUndistributedUsers(Long roleId, GenericQueryPageRequest userUndistributedRequest) {
         if (userUndistributedRequest.getSort().getOrders().isEmpty()) {
             userUndistributedRequest.sort(new Sorts().desc(UserPO.Fields.id));
         }
@@ -465,7 +457,7 @@ public class RoleService {
         return PageConverter.convertToPage(userUndistributedResponseList, userUndistributedRequest.toPageable());
     }
 
-    public Page<IntegrationUndistributedResponse> getUndistributedIntegrations(Long roleId, IntegrationUndistributedRequest integrationUndistributedRequest) {
+    public Page<IntegrationUndistributedResponse> getUndistributedIntegrations(Long roleId, GenericQueryPageRequest integrationUndistributedRequest) {
         List<Integration> integrations = new ArrayList<>();
         if (StringUtils.hasText(integrationUndistributedRequest.getKeyword())) {
             integrations.addAll(integrationServiceProvider.findIntegrations(f -> f.getName().toLowerCase().contains(integrationUndistributedRequest.getKeyword().toLowerCase()) && f.isVisible()));
@@ -487,7 +479,7 @@ public class RoleService {
         return PageConverter.convertToPage(integrationUndistributedResponseList, integrationUndistributedRequest.toPageable());
     }
 
-    public Page<DeviceUndistributedResponse> getUndistributedDevices(Long roleId, DeviceUndistributedRequest deviceUndistributedRequest) {
+    public Page<DeviceUndistributedResponse> getUndistributedDevices(Long roleId, GenericQueryPageRequest deviceUndistributedRequest) {
         List<Integration> integrations = integrationServiceProvider.findVisibleIntegrations().stream().toList();
         List<String> integrationIds = integrations.stream().map(Integration::getId).toList();
         List<DeviceNameDTO> deviceNameDTOList = deviceFacade.getDeviceNameByIntegrations(integrationIds);

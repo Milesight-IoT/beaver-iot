@@ -2,6 +2,7 @@ package com.milesight.beaveriot.user.controller;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.page.GenericQueryPageRequest;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
@@ -10,7 +11,6 @@ import com.milesight.beaveriot.user.model.request.ChangePasswordRequest;
 import com.milesight.beaveriot.user.model.request.CreateUserRequest;
 import com.milesight.beaveriot.user.model.request.UpdatePasswordRequest;
 import com.milesight.beaveriot.user.model.request.UpdateUserRequest;
-import com.milesight.beaveriot.user.model.request.UserListRequest;
 import com.milesight.beaveriot.user.model.request.UserPermissionRequest;
 import com.milesight.beaveriot.user.model.request.UserRegisterRequest;
 import com.milesight.beaveriot.user.model.response.UserInfoResponse;
@@ -75,7 +75,7 @@ public class UserController {
     }
 
     @PostMapping("/members/search")
-    public ResponseBody<Page<UserInfoResponse>> getUsers(@RequestBody UserListRequest userListRequest) {
+    public ResponseBody<Page<UserInfoResponse>> getUsers(@RequestBody GenericQueryPageRequest userListRequest) {
         Page<UserInfoResponse> userInfoResponses = userService.getUsers(userListRequest);
         return ResponseBuilder.success(userInfoResponses);
     }

@@ -2,6 +2,7 @@ package com.milesight.beaveriot.user.service;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.page.GenericQueryPageRequest;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.aspect.SecurityUserContext;
@@ -17,7 +18,6 @@ import com.milesight.beaveriot.user.model.request.ChangePasswordRequest;
 import com.milesight.beaveriot.user.model.request.CreateUserRequest;
 import com.milesight.beaveriot.user.model.request.UpdatePasswordRequest;
 import com.milesight.beaveriot.user.model.request.UpdateUserRequest;
-import com.milesight.beaveriot.user.model.request.UserListRequest;
 import com.milesight.beaveriot.user.model.request.UserPermissionRequest;
 import com.milesight.beaveriot.user.model.request.UserRegisterRequest;
 import com.milesight.beaveriot.user.model.response.MenuResponse;
@@ -224,7 +224,7 @@ public class UserService {
         return menuChResponses;
     }
 
-    public Page<UserInfoResponse> getUsers(UserListRequest userListRequest) {
+    public Page<UserInfoResponse> getUsers(GenericQueryPageRequest userListRequest) {
         if (userListRequest.getSort().getOrders().isEmpty()) {
             userListRequest.sort(new Sorts().desc(UserPO.Fields.id));
         }
