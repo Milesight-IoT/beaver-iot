@@ -25,6 +25,7 @@ public class BaseEntityBuilder<T extends BaseEntityBuilder<T>> {
     protected String parentIdentifier;
 
     protected Boolean visible = true;
+    protected String description;
 
     public T identifier(String identifier) {
         IdentifierValidator.validate(identifier);
@@ -92,6 +93,11 @@ public class BaseEntityBuilder<T extends BaseEntityBuilder<T>> {
         return (T) this;
     }
 
+    public T description(String description) {
+        this.description = description;
+        return (T) this;
+    }
+
     protected Entity newInstance() {
         Entity entity = new Entity();
         entity.setId(id);
@@ -103,6 +109,7 @@ public class BaseEntityBuilder<T extends BaseEntityBuilder<T>> {
         entity.setAttributes(attributes);
         entity.setParentIdentifier(parentIdentifier);
         entity.setVisible(visible);
+        entity.setDescription(description);
         return entity;
     }
 

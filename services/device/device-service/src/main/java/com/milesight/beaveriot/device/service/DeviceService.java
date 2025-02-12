@@ -279,6 +279,7 @@ public class DeviceService implements IDeviceFacade {
                             .name(entity.getName())
                             .valueType(entity.getValueType())
                             .valueAttribute(entity.getAttributes())
+                            .description(entity.getDescription())
                             .build());
                 }).toList());
         return deviceDetailResponse;

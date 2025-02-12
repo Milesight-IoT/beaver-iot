@@ -20,4 +20,5 @@ public class IntegrationEntityData {
     private AccessMod accessMod;
     private String parent;
     private Object value;
+    private String description;
 }

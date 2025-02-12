@@ -39,3 +39,7 @@ ALTER TABLE t_entity_history
     ALTER COLUMN value_string VARCHAR(10485760);
 ALTER TABLE t_entity_latest
     ALTER COLUMN value_string VARCHAR(10485760);
+
+-- changeset loong:entity_v1.1.0_20250211_112200
+ALTER table t_entity
+    add column description TEXT;

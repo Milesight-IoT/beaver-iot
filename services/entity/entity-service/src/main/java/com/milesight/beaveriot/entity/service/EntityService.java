@@ -150,6 +150,7 @@ public class EntityService implements EntityServiceProvider {
         response.setCustomized(isCustomizedEntity(entityPO.getAttachTargetId()));
         response.setCreatedAt(entityPO.getCreatedAt());
         response.setUpdatedAt(entityPO.getUpdatedAt());
+        response.setDescription(entityPO.getDescription());
         return response;
     }
 
@@ -188,6 +189,7 @@ public class EntityService implements EntityServiceProvider {
             entityPO.setValueAttribute(entity.getAttributes());
             entityPO.setValueType(entity.getValueType());
             entityPO.setVisible(entity.getVisible());
+            entityPO.setDescription(entity.getDescription());
             return entityPO;
         } catch (Exception e) {
             log.error("save entity error:{}", e.getMessage(), e);
@@ -550,6 +552,7 @@ public class EntityService implements EntityServiceProvider {
         response.setEntityIsCustomized(isCustomizedEntity(entityPO.getAttachTargetId()));
         response.setEntityCreatedAt(entityPO.getCreatedAt());
         response.setEntityUpdatedAt(entityPO.getUpdatedAt());
+        response.setEntityDescription(entityPO.getDescription());
         return response;
     }
 
