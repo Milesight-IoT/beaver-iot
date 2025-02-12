@@ -1,14 +1,15 @@
 package com.milesight.beaveriot.user.model.request;
 
-import com.milesight.beaveriot.base.page.GenericPageRequest;
+import com.milesight.beaveriot.base.page.GenericQueryPageRequest;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * @author loong
  * @date 2024/12/3 9:51
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class IntegrationUndistributedRequest extends GenericPageRequest {
+public class IntegrationUndistributedRequest extends GenericQueryPageRequest {
 
-    private String keyword;
 }
