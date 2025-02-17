@@ -5,14 +5,8 @@ import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.GenericQueryPageRequest;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
-import com.milesight.beaveriot.context.security.SecurityUserContext;
-import com.milesight.beaveriot.user.model.request.BatchDeleteUserRequest;
-import com.milesight.beaveriot.user.model.request.ChangePasswordRequest;
-import com.milesight.beaveriot.user.model.request.CreateUserRequest;
-import com.milesight.beaveriot.user.model.request.UpdatePasswordRequest;
-import com.milesight.beaveriot.user.model.request.UpdateUserRequest;
-import com.milesight.beaveriot.user.model.request.UserPermissionRequest;
-import com.milesight.beaveriot.user.model.request.UserRegisterRequest;
+import com.milesight.beaveriot.context.security.TenantContext;
+import com.milesight.beaveriot.user.model.request.*;
 import com.milesight.beaveriot.user.model.response.UserInfoResponse;
 import com.milesight.beaveriot.user.model.response.UserMenuResponse;
 import com.milesight.beaveriot.user.model.response.UserPermissionResponse;
@@ -22,14 +16,7 @@ import com.milesight.beaveriot.user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -46,7 +33,7 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseBody<Void> register(HttpServletRequest request, @RequestBody UserRegisterRequest userRegisterRequest) {
-        Long tenantId = request.getHeader(SecurityUserContext.TENANT_ID) != null ? Long.valueOf(request.getHeader(SecurityUserContext.TENANT_ID)) : null;
+        Long tenantId = getTenantFromHeader(request);
         TenantPO tenantPO = userService.analyzeTenantId(tenantId);
         if (tenantPO == null) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("tenantId is not exist").build();
@@ -56,9 +43,13 @@ public class UserController {
         return ResponseBuilder.success();
     }
 
+    private Long getTenantFromHeader(HttpServletRequest request) {
+        return request.getHeader(TenantContext.HEADER_TENANT_ID) != null ? Long.valueOf(request.getHeader(TenantContext.HEADER_TENANT_ID)) : null;
+    }
+
     @GetMapping("/status")
     public ResponseBody<UserStatusResponse> status(HttpServletRequest request) {
-        Long tenantId = request.getHeader(SecurityUserContext.TENANT_ID) != null ? Long.valueOf(request.getHeader(SecurityUserContext.TENANT_ID)) : null;
+        Long tenantId = getTenantFromHeader(request);
         TenantPO tenantPO = userService.analyzeTenantId(tenantId);
         if (tenantPO == null) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("tenantId is not exist").build();

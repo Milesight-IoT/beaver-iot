@@ -2,6 +2,7 @@ package com.milesight.beaveriot.authentication.converter;
 
 import com.milesight.beaveriot.authentication.provider.CustomOAuth2AuthorizationService;
 import com.milesight.beaveriot.authentication.util.OAuth2EndpointUtils;
+import com.milesight.beaveriot.context.security.SecurityUser;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -15,6 +16,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 
 import java.util.Collection;
+import java.util.Map;
 
 /**
  * @author loong
@@ -40,10 +42,8 @@ public class CustomJwtAuthenticationConverter implements Converter<Jwt, Abstract
 
         Collection<GrantedAuthority> authorities = grantedAuthoritiesConverter.convert(jwt);
 
-        SecurityUserContext.SecurityUser securityUser = SecurityUserContext.SecurityUser.builder()
-                .header(jwt.getHeaders())
-                .payload(jwt.getClaims())
-                .build();
+        Map<String, Object> claims = jwt.getClaims();
+        SecurityUser securityUser = SecurityUser.create(claims);
         SecurityUserContext.setSecurityUser(securityUser);
 
         String principalClaimValue = jwt.getClaimAsString(this.principalClaimName);

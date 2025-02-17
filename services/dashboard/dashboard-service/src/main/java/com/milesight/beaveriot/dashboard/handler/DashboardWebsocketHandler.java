@@ -4,6 +4,7 @@ import com.milesight.beaveriot.authentication.facade.IAuthenticationFacade;
 import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.context.integration.model.event.WebSocketEvent;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.dashboard.context.DashboardWebSocketContext;
 import com.milesight.beaveriot.dashboard.model.DashboardExchangePayload;
 import com.milesight.beaveriot.websocket.AbstractWebSocketHandler;
@@ -55,7 +56,7 @@ public class DashboardWebsocketHandler extends AbstractWebSocketHandler {
             sendHttpResponse(ctx, request, HttpResponseStatus.FORBIDDEN);
             return;
         }
-        String tenantId = user.get(SecurityUserContext.TENANT_ID).toString();
+        String tenantId = user.get(TenantContext.TENANT_ID).toString();
         String userId = user.get(SecurityUserContext.USER_ID).toString();
         String key = tenantId + WebSocketContext.KEY_JOIN_SYMBOL + userId;
         WebSocketContext.addChannel(key, ctx);

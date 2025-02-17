@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.authentication.provider;
 
+import com.milesight.beaveriot.context.security.SecurityUser;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.user.dto.TenantDTO;
 import com.milesight.beaveriot.user.dto.UserDTO;
@@ -70,15 +71,8 @@ public class CustomOAuth2PasswordAuthenticationProvider implements Authenticatio
                     "subDomain not found.", null);
             throw new OAuth2AuthenticationException(error);
         }
-
         tenantId = tenantDTO.getTenantId();
-
-        Map<String, Object> payload = Map.of(
-                SecurityUserContext.TENANT_ID, tenantId
-        );
-        SecurityUserContext.SecurityUser securityUser = SecurityUserContext.SecurityUser.builder()
-                .payload(payload)
-                .build();
+        SecurityUser securityUser = SecurityUser.builder().tenantId(tenantId).build();
         SecurityUserContext.setSecurityUser(securityUser);
 
         UserDTO userDTO = userFacade.getEnableUserByEmail(username);

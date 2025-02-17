@@ -5,6 +5,7 @@ import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.context.security.TenantContext;
 import org.apache.camel.Exchange;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
@@ -45,7 +46,7 @@ public class ExchangeContextHelper {
 
         // set source user id, tenant id, flow id in order
         Long userId = (Long) context.getOrDefault(ExchangeContextKeys.SOURCE_USER_ID, SecurityUserContext.getUserId());
-        Long tenantId = (Long) context.getOrDefault(ExchangeContextKeys.SOURCE_TENANT_ID, SecurityUserContext.getTenantId());
+        Long tenantId = (Long) context.getOrDefault(ExchangeContextKeys.SOURCE_TENANT_ID, TenantContext.getTenantId());
         Serializable flowId = (Serializable) context.get(ExchangeContextKeys.SOURCE_FLOW_ID);
         putContextIfNecessary(exchangePayload, ExchangeContextKeys.SOURCE_USER_ID, userId);
         putContextIfNecessary(exchangePayload, ExchangeContextKeys.SOURCE_TENANT_ID, tenantId);

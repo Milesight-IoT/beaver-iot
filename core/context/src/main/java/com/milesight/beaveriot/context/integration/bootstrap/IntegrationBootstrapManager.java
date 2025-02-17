@@ -119,18 +119,20 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
         });
     }
 
-    public void onEnabled(String integrationName) {
+    public void onEnabled(String tenantId, String integrationName) {
         Integration integrationConfig = integrationContext.getIntegration(integrationName);
         Assert.notNull(integrationConfig, "Integration config not found");
+        Assert.notNull(tenantId, "TenantId can not be null");
         integrationConfig.setEnabled(false);
-        integrationContext.getIntegrationBootstrap(integrationName).onEnabled(integrationConfig);
+        integrationContext.getIntegrationBootstrap(integrationName).onEnabled(tenantId, integrationConfig);
     }
 
-    public void onDisabled(String integrationName) {
+    public void onDisabled(String tenantId, String integrationName) {
         Integration integrationConfig = integrationContext.getIntegration(integrationName);
         Assert.notNull(integrationConfig, "Integration config not found");
+        Assert.notNull(tenantId, "TenantId can not be null");
         integrationConfig.setEnabled(true);
-        integrationContext.getIntegrationBootstrap(integrationName).onDisabled(integrationConfig);
+        integrationContext.getIntegrationBootstrap(integrationName).onDisabled(tenantId, integrationConfig);
     }
 
     private StandardEnvironment createIntegrationEnvironment(PropertySource<?> integrationPropertySource) {
