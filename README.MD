@@ -1,35 +1,39 @@
-![BeaverIotLogo](beaver-iot.png)
+<p align="center">
+  <img alt="Beaver Iot Logo" width="400" src="beaver-iot.svg" />
+</p>
+<hr>
 
 [![Discord](https://img.shields.io/discord/1270281746687983626.svg?label=Discord&logo=discord&colorB=7289da)](https://discord.gg/vNFxbwfErm)
+[![Maven Central](https://img.shields.io/maven-central/v/com.milesight.beaveriot/beaver-iot.svg)](https://central.sonatype.com/search?q=beaver-iot&smo=true)
 
-## What is Beaver IoT?
+# What is Beaver IoT?
 
-Beaver IoT is an open-source platform designed for rapid and intuitive IoT application development. It supports the entire process from device connectivity to data processing, analysis, and visualization. Besides, Beaver IoT supports IoT developers to quickly build a variety of integrations based on project encapsulation capabilities, which is an ideal choice for IoT prototyping and scalable solutions. Released under the MIT Open Source license and available free of charge, Beaver IoT fosters innovation and community collaboration in the IoT space.
+Beaver IoT is an open-source platform designed for rapid and intuitive IoT application development. It supports the entire process from device connectivity to data processing, analysis, and visualization. Besides, Beaver IoT supports IoT developers to quickly build a variety of integrations based on project encapsulation capabilities, which is an ideal choice for IoT prototyping and scalable solutions. Beaver IoT fosters innovation and community collaboration in the IoT space.
 
-## Features
+# Features
 
-- Manage devices and collect real-time data
-
+- Monitor devices and collect real-time data
 - Intuitive dashboards and rich widgets for data visualization
-
 - Integrations with third-party platforms, devices and services
-
-- Flexible open-source project for integrations and webpage schemes customization
-
 - Multiple, scalable deployment options using docker
+- Connecting devices across platforms through workflows
+- User and role permissions functionality
 
-## Build with Maven
+# Start
+
+This repository is the backend core of Beaver IoT and does not include integrations.
+
+To start a Beaver IoT Application quickly, please refer to [Beaver IoT Documentation](https://www.milesight.com/beaver-iot/).
+
+Relative projects:
+* [Beaver IoT Integrations](https://github.com/Milesight-IoT/beaver-iot-integrations)
+* [Beaver IoT Frontend](https://github.com/Milesight-IoT/beaver-iot-web)
+* [Beaver IoT Docker](https://github.com/Milesight-IoT/beaver-iot-docker)
+
+# Build with Maven
 
 * Java Version 17 SDK
 ```
 mvn install -Dmaven.test.skip=true
 ```
 
-## Build your Beaver-IoT
-
-This repository is the backend core of Beaver-IoT and does not include integrations. If you need to:
-
-* Run with integrations, please see [Beaver-IoT Integrations](https://github.com/Milesight-IoT/beaver-iot-integrations).
-* Run the [frontend project](https://github.com/Milesight-IoT/beaver-iot-web).
-
-For more information, refer to the [Beaver IoT Documentation](https://www.milesight.com/beaver-iot/).
