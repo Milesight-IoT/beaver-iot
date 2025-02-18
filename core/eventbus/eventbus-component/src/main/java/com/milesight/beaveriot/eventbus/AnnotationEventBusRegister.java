@@ -24,9 +24,9 @@ import java.util.Map;
 public class AnnotationEventBusRegister implements ApplicationContextAware, SmartInitializingSingleton, DisposableBean {
     private ApplicationContext applicationContext;
 
-    private DisruptorEventBus<? extends Event<? extends IdentityKey>> eventBus;
+    private EventBusDispatcher<? extends Event<? extends IdentityKey>> eventBus;
 
-    public AnnotationEventBusRegister(DisruptorEventBus<? extends Event<? extends IdentityKey>> eventBus) {
+    public AnnotationEventBusRegister(EventBusDispatcher<? extends Event<? extends IdentityKey>> eventBus) {
         this.eventBus = eventBus;
     }
 
@@ -49,9 +49,6 @@ public class AnnotationEventBusRegister implements ApplicationContextAware, Smar
 
             registerEventSubscribe(bean, beanDefinitionName);
         }
-
-        // fire subscriber at last
-        eventBus.fireAsyncSubscribe();
     }
 
     @Override

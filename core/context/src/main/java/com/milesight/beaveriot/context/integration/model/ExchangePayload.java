@@ -8,6 +8,7 @@ import com.milesight.beaveriot.context.integration.proxy.ExchangePayloadProxy;
 import com.milesight.beaveriot.context.support.SpringContext;
 import com.milesight.beaveriot.eventbus.api.IdentityKey;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 /**
  * @author leon
  */
+@Slf4j
 public class ExchangePayload extends HashMap<String, Object> implements ExchangePayloadAccessor, EventContextAccessor, IdentityKey {
 
     private transient Map<String, Object> context = new HashMap<>();
@@ -105,6 +107,10 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
             List<String> entities = splitExchangePayloads.computeIfAbsent(entity.getType(), k -> new ArrayList<>());
             entities.add(entity.getKey());
         });
+
+        if(ObjectUtils.isEmpty(splitExchangePayloads)){
+            log.warn("No entity found in exchange payload when splitExchangePayloads:{}", this);
+        }
 
         return splitExchangePayloads.entrySet()
                 .stream()

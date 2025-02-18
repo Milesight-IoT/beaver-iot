@@ -84,7 +84,7 @@ public enum ExpressionOperator {
         return ObjectUtils.isEmpty(value);
     }
 
-    public static boolean notEqual(Object object1, Object object2) {
+    public static boolean notEquals(Object object1, Object object2) {
         return !equals(object1, object2);
     }
 
