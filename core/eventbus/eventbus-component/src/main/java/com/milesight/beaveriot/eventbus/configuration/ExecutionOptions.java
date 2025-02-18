@@ -13,14 +13,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@ConfigurationProperties(prefix = "eventbus.disruptor")
-public class DisruptorOptions {
+@ConfigurationProperties(prefix = "eventbus.execution")
+public class ExecutionOptions {
 
     private boolean enabled = true;
-    /**
-     * The size of the ring buffer, must be power of 2.
-     */
-    private int ringBufferSize = 4096;
 
     private int corePoolSize = 16;
 
@@ -30,8 +26,8 @@ public class DisruptorOptions {
 
     private String eventBusTaskExecutor = "eventBusTaskExecutor";
 
-    public static DisruptorOptions defaultOptions() {
-        return new DisruptorOptions();
+    public static ExecutionOptions defaultOptions() {
+        return new ExecutionOptions();
     }
 
 }

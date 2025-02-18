@@ -1,12 +1,10 @@
 package com.milesight.beaveriot.eventbus.configuration;
 
-import com.lmax.disruptor.dsl.Disruptor;
 import com.milesight.beaveriot.eventbus.AnnotationEventBusRegister;
-import com.milesight.beaveriot.eventbus.DisruptorEventBus;
+import com.milesight.beaveriot.eventbus.EventBusDispatcher;
 import com.milesight.beaveriot.eventbus.api.Event;
 import com.milesight.beaveriot.eventbus.api.IdentityKey;
 import com.milesight.beaveriot.eventbus.invoke.ListenerParameterResolver;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -19,21 +17,20 @@ import java.util.concurrent.ThreadPoolExecutor;
 /**
  * @author leon
  */
-@ConditionalOnClass(Disruptor.class)
 @Configuration
-@EnableConfigurationProperties(DisruptorOptions.class)
+@EnableConfigurationProperties(ExecutionOptions.class)
 public class EventBusAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public AnnotationEventBusRegister annotationEventBusRegister(DisruptorEventBus<? extends Event<? extends IdentityKey>> eventBus){
+    public AnnotationEventBusRegister annotationEventBusRegister(EventBusDispatcher<? extends Event<? extends IdentityKey>> eventBus){
         return new AnnotationEventBusRegister(eventBus);
     }
 
     @Bean
     @ConditionalOnMissingBean
-    public <T extends Event<? extends IdentityKey>> DisruptorEventBus<T> eventBus(DisruptorOptions disruptorOptions, ListenerParameterResolver listenerParameterResolver){
-        return new DisruptorEventBus<>(disruptorOptions, listenerParameterResolver);
+    public <T extends Event<? extends IdentityKey>> EventBusDispatcher<T> eventBus(ExecutionOptions executionOptions, ListenerParameterResolver listenerParameterResolver){
+        return new EventBusDispatcher<>(executionOptions, listenerParameterResolver);
     }
 
     @Bean
@@ -43,7 +40,7 @@ public class EventBusAutoConfiguration {
     }
 
     @Bean
-    public Executor eventBusTaskExecutor(DisruptorOptions disruptorOptions) {
+    public Executor eventBusTaskExecutor(ExecutionOptions disruptorOptions) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(disruptorOptions.getCorePoolSize());
         executor.setMaxPoolSize(disruptorOptions.getMaxPoolSize());

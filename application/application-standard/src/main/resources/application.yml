@@ -34,10 +34,10 @@ spring:
         webAllowOthers: true
 
 #eventbus:
-#  disruptor:
+#  execution:
 #    core-pool-size: 16
 #    max-pool-size: 50
-#    ring-buffer-size: 4096
+#    queue-capacity: 1000
 camel:
   springboot:
     routes-include-pattern: classpath:routes/*.yaml
