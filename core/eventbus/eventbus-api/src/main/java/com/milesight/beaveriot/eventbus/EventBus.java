@@ -14,10 +14,6 @@ public interface EventBus<T extends Event<? extends IdentityKey>> {
 
     void publish(T message);
 
-    void subscribe(Class<T> target, Consumer<T>... listeners);
-
-    void subscribe(Class<T> target, Executor executor, Consumer<T>... listeners);
-
     EventResponse handle(T message);
 
     default void shutdown(){

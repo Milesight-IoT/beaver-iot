@@ -3,7 +3,7 @@ package com.milesight.beaveriot.rule.components.eventlistener;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
 import com.milesight.beaveriot.entity.rule.GenericExchangeValidator;
-import com.milesight.beaveriot.eventbus.DisruptorEventBus;
+import com.milesight.beaveriot.eventbus.EventBusDispatcher;
 import com.milesight.beaveriot.eventbus.UniqueListenerCacheKey;
 import com.milesight.beaveriot.eventbus.api.Event;
 import com.milesight.beaveriot.eventbus.api.IdentityKey;
@@ -23,9 +23,9 @@ public class EventListenerConsumer extends DefaultConsumer {
 
     private final EventListenerEndpoint endpoint;
     private final GenericExchangeValidator genericExchangeValidator;
-    private final DisruptorEventBus eventBus;
+    private final EventBusDispatcher eventBus;
 
-    public EventListenerConsumer(EventListenerEndpoint endpoint, Processor processor, GenericExchangeValidator genericExchangeValidator, DisruptorEventBus eventBus) {
+    public EventListenerConsumer(EventListenerEndpoint endpoint, Processor processor, GenericExchangeValidator genericExchangeValidator, EventBusDispatcher eventBus) {
         super(endpoint, processor);
         this.endpoint = endpoint;
         this.genericExchangeValidator = genericExchangeValidator;
@@ -89,6 +89,13 @@ public class EventListenerConsumer extends DefaultConsumer {
                 getExceptionHandler().handleException("Error processing event", exchange, e);
             }
             return exchange.getIn().getBody();
+        }
+
+        @Override
+        public String toString() {
+            return "RuleEngineEventInvoker{" +
+                    "uniqueListenerCacheKey=" + uniqueListenerCacheKey.getId() +
+                    '}';
         }
     }
 

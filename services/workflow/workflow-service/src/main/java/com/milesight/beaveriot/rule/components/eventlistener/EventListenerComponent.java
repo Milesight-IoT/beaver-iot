@@ -1,8 +1,7 @@
 package com.milesight.beaveriot.rule.components.eventlistener;
 
-import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.entity.rule.GenericExchangeValidator;
-import com.milesight.beaveriot.eventbus.DisruptorEventBus;
+import com.milesight.beaveriot.eventbus.EventBusDispatcher;
 import com.milesight.beaveriot.rule.constants.RuleNodeNames;
 import org.apache.camel.BeanInject;
 import org.apache.camel.Endpoint;
@@ -17,7 +16,7 @@ public class EventListenerComponent extends DefaultComponent {
     @BeanInject(RuleNodeNames.innerExchangeValidator)
     private GenericExchangeValidator genericExchangeValidator;
     @BeanInject
-    private DisruptorEventBus eventBus;
+    private EventBusDispatcher eventBus;
     public Map<String, Object> getParameters() {
         return parameters;
     }
@@ -30,7 +29,7 @@ public class EventListenerComponent extends DefaultComponent {
         return endpoint;
     }
 
-    public DisruptorEventBus getEventBus() {
+    public EventBusDispatcher getEventBus() {
         return eventBus;
     }
 
