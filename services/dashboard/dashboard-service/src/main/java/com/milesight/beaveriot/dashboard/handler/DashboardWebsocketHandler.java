@@ -59,6 +59,7 @@ public class DashboardWebsocketHandler extends AbstractWebSocketHandler {
         String userId = user.get(SecurityUserContext.USER_ID).toString();
         String key = tenantId + WebSocketContext.KEY_JOIN_SYMBOL + userId;
         WebSocketContext.addChannel(key, ctx);
+        log.debug("connect:key:{}, channelId:{}", key, ctx.channel().id());
     }
 
     @Override
@@ -68,7 +69,8 @@ public class DashboardWebsocketHandler extends AbstractWebSocketHandler {
             return;
         }
         if (WebSocketEvent.EventType.HEARTBEAT.equalsIgnoreCase(webSocketEvent.getEventType())) {
-            ctx.channel().writeAndFlush(msg);
+            TextWebSocketFrame retainedMsg = msg.retain();
+            ctx.channel().writeAndFlush(retainedMsg);
             return;
         }
         if (!WebSocketEvent.EventType.EXCHANGE.equalsIgnoreCase(webSocketEvent.getEventType())) {
@@ -85,12 +87,14 @@ public class DashboardWebsocketHandler extends AbstractWebSocketHandler {
 
     @Override
     public void disconnect(ChannelHandlerContext ctx) throws Exception {
+        log.debug("disconnect:key:{}, channelId:{}", WebSocketContext.getKeyByValue(ctx), ctx.channel().id());
         DashboardWebSocketContext.removeEntityKeys(WebSocketContext.getKeyByValue(ctx));
         WebSocketContext.removeChannelByValue(ctx);
     }
 
     @Override
     public void exception(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        log.error("exception:key:{}, channelId:{}", WebSocketContext.getKeyByValue(ctx), ctx.channel().id(), cause);
     }
 
     private String getToken(FullHttpRequest request, Map<String, List<String>> urlParams) {
