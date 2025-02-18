@@ -70,16 +70,20 @@ public class DashboardWebsocketHandler extends AbstractWebSocketHandler {
             return;
         }
         if (WebSocketEvent.EventType.HEARTBEAT.equalsIgnoreCase(webSocketEvent.getEventType())) {
-            ctx.channel().writeAndFlush(msg);
-        }else if (WebSocketEvent.EventType.EXCHANGE.equalsIgnoreCase(webSocketEvent.getEventType())) {
-            DashboardExchangePayload payload = JsonUtils.fromJSON(JsonUtils.toJSON(webSocketEvent.getPayload()), DashboardExchangePayload.class);
-            if (payload == null) {
-                return;
-            }
-            String key = WebSocketContext.getKeyByValue(ctx);
-            log.info("key:{}, handleTextMessage:{}", key, webSocketEvent);
-            DashboardWebSocketContext.addEntityKeys(key, payload.getEntityKey());
+            TextWebSocketFrame retainedMsg = msg.retain();
+            ctx.channel().writeAndFlush(retainedMsg);
+            return;
         }
+        if (!WebSocketEvent.EventType.EXCHANGE.equalsIgnoreCase(webSocketEvent.getEventType())) {
+            return;
+        }
+        DashboardExchangePayload payload = JsonUtils.fromJSON(JsonUtils.toJSON(webSocketEvent.getPayload()), DashboardExchangePayload.class);
+        if (payload == null) {
+            return;
+        }
+        String key = WebSocketContext.getKeyByValue(ctx);
+        log.info("key:{}, handleTextMessage:{}", key, webSocketEvent);
+        DashboardWebSocketContext.addEntityKeys(key, payload.getEntityKey());
     }
 
     @Override
