@@ -41,6 +41,11 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <optional>true</optional>
+        </dependency>
 
         <dependency>
             <groupId>com.milesight.beaveriot</groupId>
@@ -57,7 +62,11 @@
             <artifactId>rule-engine-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>authentication-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.milesight.beaveriot</groupId>
             <artifactId>eventbus-api</artifactId>
