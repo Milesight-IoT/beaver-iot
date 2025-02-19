@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>rule-engine-core</artifactId>
-    <name>rule-engine-component</name>
+    <name>rule-engine-core</name>
     <description>An open-source platform designed for rapid and intuitive IoT application development.</description>
     <url>https://github.com/milesight-iot/beaver-iot</url>
     <scm>
