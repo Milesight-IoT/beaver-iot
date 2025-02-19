@@ -52,6 +52,7 @@
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <lombok-mapstruct.version>0.2.0</lombok-mapstruct.version>
         <jsqlparser.version>4.4</jsqlparser.version>
+        <jython-standalone-version>2.7.4</jython-standalone-version>
 
         <deploy.skip>false</deploy.skip>
     </properties>
@@ -120,6 +121,11 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
+                <groupId>org.python</groupId>
+                <artifactId>jython-standalone</artifactId>
+                <version>${jython-standalone-version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.camel</groupId>
                 <artifactId>camel-parent</artifactId>
                 <version>${camel.version}</version>
@@ -164,6 +170,7 @@
                 <artifactId>jsqlparser</artifactId>
                 <version>${jsqlparser.version}</version>
             </dependency>
+
             <!-- mapstruct -->
             <dependency>
                 <groupId>org.mapstruct</groupId>

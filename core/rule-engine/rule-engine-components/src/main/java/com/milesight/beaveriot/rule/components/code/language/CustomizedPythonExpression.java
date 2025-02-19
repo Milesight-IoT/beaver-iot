@@ -3,6 +3,7 @@ package com.milesight.beaveriot.rule.components.code.language;
 import com.milesight.beaveriot.rule.components.code.ExpressionEvaluator;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExpressionIllegalSyntaxException;
+import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.language.python.PythonExpression;
 import org.python.core.PyBoolean;
 import org.python.core.PyObject;
@@ -56,7 +57,7 @@ public class CustomizedPythonExpression extends PythonExpression {
                 return (T) convertValue(out);
             }
         } catch (Exception e) {
-            throw new ExpressionIllegalSyntaxException(expressionString, e);
+            throw new RuntimeCamelException(e.getMessage(), e);
         }
         return null;
     }
