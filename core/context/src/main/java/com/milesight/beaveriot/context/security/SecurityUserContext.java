@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.context.security;
 
+import com.alibaba.ttl.TransmittableThreadLocal;
 import org.springframework.util.ObjectUtils;
 
 /**
@@ -11,7 +12,7 @@ public class SecurityUserContext {
     public static final String NICK_NAME = "nickname";
     public static final String EMAIL = "email";
     public static final String CREATE_AT = "createdAt";
-    private static final ThreadLocal<SecurityUser> securityUserThreadLocal = new ThreadLocal<>();
+    private static final TransmittableThreadLocal<SecurityUser> securityUserThreadLocal = new TransmittableThreadLocal<>();
 
     public static SecurityUser getSecurityUser() {
         return securityUserThreadLocal.get();

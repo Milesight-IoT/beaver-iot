@@ -38,6 +38,7 @@
     <modules>
         <module>data-components</module>
         <module>notifications</module>
+        <module>cluster</module>
     </modules>
 
     <properties>

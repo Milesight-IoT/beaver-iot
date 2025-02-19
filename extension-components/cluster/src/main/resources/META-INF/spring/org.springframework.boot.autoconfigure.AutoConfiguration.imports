@@ -1,0 +1,2 @@
+com.milesight.beaveriot.redisson.autoconfigure.CustomRedissonAutoConfiguration
+com.milesight.beaveriot.shedlock.autoconfigure.CustomShedlockAutoConfiguration

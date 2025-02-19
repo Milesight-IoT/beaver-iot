@@ -37,7 +37,7 @@ public class ExchangeContextKeys {
     /**
      * the key of the exchange source user id
      */
-    public static final String SOURCE_USER_ID = "_sourceUserId";
+    public static final String SOURCE_USER = "_sourceUser";
     /**
      * the key of exchange source tenant id
      */

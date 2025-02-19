@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 
 
 /**
@@ -48,7 +49,7 @@ public class EventBusDispatcher<T extends Event<? extends IdentityKey>> implemen
 
         List<InvocationHolder> invocationHolders = createInvocationHolders(event);
 
-        ThreadPoolTaskExecutor executor = getEventBusExecutor();
+        Executor executor = getEventBusExecutor();
 
         log.debug("Ready to publish EventBus events, hit Invocation size：{}", invocationHolders.size());
 
@@ -62,12 +63,12 @@ public class EventBusDispatcher<T extends Event<? extends IdentityKey>> implemen
         }));
     }
 
-    private ThreadPoolTaskExecutor getEventBusExecutor() {
+    private Executor getEventBusExecutor() {
         String eventBusTaskExecutor = executionOptions.getEventBusTaskExecutor();
         if (ObjectUtils.isEmpty(eventBusTaskExecutor) || !applicationContext.containsBean(eventBusTaskExecutor)) {
             throw new EventBusExecutionException("EventBusTaskExecutor not found");
         }
-        return (ThreadPoolTaskExecutor) applicationContext.getBean(eventBusTaskExecutor);
+        return (Executor) applicationContext.getBean(eventBusTaskExecutor);
     }
 
     @Override

@@ -27,7 +27,30 @@ spring:
     console:
       enabled: ${SPRING_H2_CONSOLE_ENABLED:true}
       path: /public/h2-console
-
+  redis:
+    ssl: ${REDIS_SSL:false}
+    host: ${REDIS_HOST:}
+    password: ${REDIS_PASSWORD:}
+    port: ${REDIS_PORT:6379}
+    database: ${REDIS_DB:0}
+    redisson:
+      config: |
+        singleServerConfig:
+          address: "${spring.redis.host}"
+          password: "${spring.redis.password}"
+          clientName: null
+          database: ${REDIS_DB:0}
+          idleConnectionTimeout: 10000
+          connectTimeout: 10000
+          timeout: 10000
+          retryAttempts: 3
+          connectionMinimumIdleSize: 10
+          pingConnectionInterval: 10000
+        threads: 32
+        nettyThreads: 64
+        codec:
+          class: "org.redisson.codec.JsonJacksonCodec"
+        transportMode: "NIO"
 camel:
   springboot:
     routes-include-pattern: classpath:routes/*.yaml
