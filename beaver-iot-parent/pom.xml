@@ -123,6 +123,11 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
+                <groupId>org.python</groupId>
+                <artifactId>jython-standalone</artifactId>
+                <version>${jython-standalone-version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.camel</groupId>
                 <artifactId>camel-parent</artifactId>
                 <version>${camel.version}</version>
@@ -167,6 +172,7 @@
                 <artifactId>jsqlparser</artifactId>
                 <version>${jsqlparser.version}</version>
             </dependency>
+
             <!-- mapstruct -->
             <dependency>
                 <groupId>org.mapstruct</groupId>
