@@ -1,5 +1,7 @@
 package com.milesight.beaveriot.rule.manager.service;
 
+import com.milesight.beaveriot.base.enums.ErrorCode;
+import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.rule.RuleEngineExecutor;
@@ -49,10 +51,18 @@ public class WorkflowTriggerByEntityNode implements ProcessorNode<Exchange> {
             return;
         }
 
+        if (!serviceEntity.getValueType().equals(EntityValueType.OBJECT)) {
+            throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), "Value type of service entity for workflow must be a OBJECT!").build();
+        }
+
         Map<String, Entity> keyToEntity = serviceEntity.getChildren().stream().collect(Collectors.toMap(Entity::getKey, (childEntity -> childEntity)));
         Object exchangeData = exchange.getIn().getBody();
         if (exchangeData instanceof Map) {
-            Map<String, Object> nextExchange = ((Map<String, Object>) exchangeData).entrySet().stream().collect(Collectors.toMap(
+            Map<String, Object> nextExchange = ((Map<String, Object>) exchangeData)
+                    .entrySet()
+                    .stream()
+                    .filter(stringObjectEntry -> !stringObjectEntry.getKey().equals(serviceEntity.getKey()))
+                    .collect(Collectors.toMap(
                     (Entry<String, Object> entry) -> keyToEntity.get(entry.getKey()).getIdentifier(),
                     (Entry<String, Object> entry) -> Optional.ofNullable(keyToEntity.get(entry.getKey()).getValueType())
                             .orElse(EntityValueType.OBJECT)
