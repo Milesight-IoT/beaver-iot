@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 @Inherited
 public @interface IntegrationScheduled {
 
-    String scheduler() default "";
+    String name();
     String cron() default "";
     String cronEntity() default "";
     long fixedDelay() default -1;

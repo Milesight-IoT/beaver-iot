@@ -17,6 +17,8 @@ public interface IUserFacade {
 
     TenantDTO analyzeTenantId(Long tenantId);
 
+    List<TenantDTO> getAllTenants();
+
     UserDTO getEnableUserByEmail(String email);
 
     UserResourceDTO getResource(Long userId, List<ResourceType> resourceTypes);

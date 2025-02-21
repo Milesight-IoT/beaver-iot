@@ -6,6 +6,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
+import java.util.List;
+
 /**
  * @author loong
  * @date 2024/12/5 10:53
@@ -19,4 +21,6 @@ public interface TenantConverter {
     @Mapping(source = "name", target = "tenantName")
     @Mapping(source = "domain", target = "tenantDomain")
     TenantDTO convertDTO(TenantPO tenantPO);
+
+    List<TenantDTO> convertDTOList(List<TenantPO> tenantPOList);
 }
