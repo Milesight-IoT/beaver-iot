@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * @author loong
@@ -37,8 +36,7 @@ public class EntitySelectorComponent implements ProcessorNode<Exchange> {
     public void processor(Exchange exchange) {
         List<String> entitiesVariables = SpELExpressionHelper.resolveExpression(exchange, entities);
         Map<String, Object> entityValues = entityValueServiceProvider.findValuesByKeys(entitiesVariables);
-        Map<String, Object> entityValuesMap = entityValues.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        ExchangePayload exchangePayload = ExchangePayload.create(entityValuesMap);
+        ExchangePayload exchangePayload = ExchangePayload.create(entityValues);
         exchange.getIn().setBody(exchangePayload);
     }
 }

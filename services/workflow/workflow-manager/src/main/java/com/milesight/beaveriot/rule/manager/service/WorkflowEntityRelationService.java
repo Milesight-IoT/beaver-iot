@@ -89,6 +89,7 @@ public class WorkflowEntityRelationService {
                     .service(workflowPO.getName())
                     .valueType(EntityValueType.OBJECT)
                     .children(childEntities)
+                    .description(workflowPO.getRemark())
                     .build();
             entityServiceProvider.save(serviceEntity);
 
@@ -99,6 +100,7 @@ public class WorkflowEntityRelationService {
         } else {
             serviceEntity.setName(workflowPO.getName());
             serviceEntity.setChildren(childEntities);
+            serviceEntity.setDescription(workflowPO.getRemark());
             entityServiceProvider.save(serviceEntity);
         }
 
