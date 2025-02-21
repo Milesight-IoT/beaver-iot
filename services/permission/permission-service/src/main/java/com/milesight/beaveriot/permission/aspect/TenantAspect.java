@@ -65,7 +65,7 @@ public class TenantAspect {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("tenant column name is not exist").build();
         }
         //TODO Ensure the presence of tenantId in the context
-        Long tenantId = SecurityUserContext.getTenantId() == null ? UserConstants.DEFAULT_TENANT_ID : SecurityUserContext.getTenantId();
+        String tenantId = SecurityUserContext.getTenantId() == null ? UserConstants.DEFAULT_TENANT_ID : SecurityUserContext.getTenantId();
         if(tenantId == null){
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("tenantId is not exist").build();
         }

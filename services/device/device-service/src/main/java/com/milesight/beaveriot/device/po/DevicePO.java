@@ -24,7 +24,7 @@ public class DevicePO {
     private Long id;
 
     @Column(insertable = false, updatable = false)
-    private Long tenantId;
+    private String tenantId;
 
     private Long userId;
 

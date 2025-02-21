@@ -15,7 +15,7 @@ import java.util.List;
  */
 public interface IUserFacade {
 
-    TenantDTO analyzeTenantId(Long tenantId);
+    TenantDTO analyzeTenantId(String tenantId);
 
     UserDTO getEnableUserByEmail(String email);
 
