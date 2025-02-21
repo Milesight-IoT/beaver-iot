@@ -130,3 +130,34 @@ insert into "t_menu" (id, parent_id, code, name, type, created_at, updated_at)
 VALUES (7000, null, 'entity', 'entity', 'MENU', 1732005490000, 1732005490000);
 
 update "t_menu" set parent_id=7000 where id in(3000,4000);
+
+
+-- changeset loong:user_v1.1.0_2025022111_162400
+ALTER TABLE t_tenant
+ALTER COLUMN id TYPE VARCHAR(255);
+
+ALTER TABLE t_user
+ALTER COLUMN tenant_id TYPE VARCHAR(255);
+
+ALTER table t_role
+ALTER COLUMN tenant_id TYPE VARCHAR(255);
+
+ALTER table t_user_role
+ALTER COLUMN tenant_id TYPE VARCHAR(255);
+
+ALTER table t_role_resource
+ALTER COLUMN tenant_id TYPE VARCHAR(255);
+
+ALTER table t_menu
+ALTER COLUMN tenant_id TYPE VARCHAR(255);
+
+ALTER table t_role_menu
+ALTER COLUMN tenant_id TYPE VARCHAR(255);
+
+update `t_tenant` set id='default' where tenant_id='1';
+update `t_user` set tenant_id='default' where tenant_id='1';
+update `t_role` set tenant_id='default' where tenant_id='1';
+update `t_user_role` set tenant_id='default' where tenant_id='1';
+update `t_role_resource` set tenant_id='default' where tenant_id='1';
+update `t_menu` set tenant_id='default' where tenant_id='1';
+update `t_role_menu` set tenant_id='default' where tenant_id='1';

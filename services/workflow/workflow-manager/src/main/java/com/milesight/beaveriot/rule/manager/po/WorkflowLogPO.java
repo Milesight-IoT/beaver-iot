@@ -33,7 +33,7 @@ public class WorkflowLogPO {
     private String status;
 
     @Column(name = "tenant_id")
-    private Long tenantId;
+    private String tenantId;
 
     @Column(name = "user_id")
     private Long userId;

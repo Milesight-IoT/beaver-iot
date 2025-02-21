@@ -59,7 +59,7 @@ public class UserFacade implements IUserFacade {
     TenantRepository tenantRepository;
 
     @Override
-    public TenantDTO analyzeTenantId(Long tenantId) {
+    public TenantDTO analyzeTenantId(String tenantId) {
         TenantPO tenantPO = userService.analyzeTenantId(tenantId);
         return TenantConverter.INSTANCE.convertDTO(tenantPO);
     }

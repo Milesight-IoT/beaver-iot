@@ -61,7 +61,7 @@ public class CustomOAuth2PasswordAuthenticationProvider implements Authenticatio
                 getAuthenticatedClientElseThrowInvalidClient(passwordAuthentication);
         RegisteredClient registeredClient = clientPrincipal.getRegisteredClient();
 
-        Long tenantId = passwordAuthentication.getTenantId();
+        String tenantId = passwordAuthentication.getTenantId();
         String username = passwordAuthentication.getUsername();
         String password = passwordAuthentication.getPassword();
 
@@ -81,7 +81,7 @@ public class CustomOAuth2PasswordAuthenticationProvider implements Authenticatio
                     "username not found.", null);
             throw new OAuth2AuthenticationException(error);
         }
-        if (!tenantId.equals(Long.parseLong(userDTO.getTenantId()))) {
+        if (!tenantId.equals(userDTO.getTenantId())) {
             OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,
                     "tenantId not match.", null);
             throw new OAuth2AuthenticationException(error);

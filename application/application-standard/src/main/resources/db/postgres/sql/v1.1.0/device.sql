@@ -4,3 +4,9 @@
 alter table "t_device"
     add column tenant_id bigint not null default 1, add column user_id bigint;
 CREATE INDEX idx_device_tenant_id ON "t_device" (tenant_id);
+
+-- changeset loong:device_v1.1.0_2025022111_162400
+alter table t_device
+alter column tenant_id type varchar(255);
+
+update t_device set tenant_id = 'default' where tenant_id = '1';

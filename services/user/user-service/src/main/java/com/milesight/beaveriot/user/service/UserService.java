@@ -85,7 +85,7 @@ public class UserService {
 
     @SecurityUserContext(tenantId = "#tenantId")
     @Transactional(rollbackFor = Exception.class)
-    public void register(Long tenantId, UserRegisterRequest userRegisterRequest) {
+    public void register(String tenantId, UserRegisterRequest userRegisterRequest) {
         String email = userRegisterRequest.getEmail();
         String nickname = userRegisterRequest.getNickname();
         String password = userRegisterRequest.getPassword();
@@ -115,7 +115,7 @@ public class UserService {
     }
 
     @SecurityUserContext(tenantId = "#tenantId")
-    public UserStatusResponse status(Long tenantId) {
+    public UserStatusResponse status(String tenantId) {
         List<UserPO> users = userRepository.findAll();
         boolean isInit = users != null && !users.isEmpty();
         UserStatusResponse userStatusResponse = new UserStatusResponse();
@@ -441,9 +441,9 @@ public class UserService {
         return userPermissionResponse;
     }
 
-    public TenantPO analyzeTenantId(Long tenantId) {
+    public TenantPO analyzeTenantId(String tenantId) {
         //FIXME
-        Long finalTenantId = UserConstants.DEFAULT_TENANT_ID;
+        String finalTenantId = UserConstants.DEFAULT_TENANT_ID;
 
         return tenantRepository.findOne(filter -> filter.eq(TenantPO.Fields.id, finalTenantId)).orElse(null);
     }

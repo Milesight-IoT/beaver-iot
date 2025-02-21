@@ -33,7 +33,7 @@ public class WorkflowPO {
     private Boolean enabled;
 
     @Column(name = "tenant_id", insertable = false, updatable = false)
-    private Long tenantId;
+    private String tenantId;
 
     @Column(name = "updated_user")
     private Long updatedUser;

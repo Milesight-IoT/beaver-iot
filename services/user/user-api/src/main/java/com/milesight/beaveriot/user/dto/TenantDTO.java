@@ -9,7 +9,7 @@ import lombok.Data;
 @Data
 public class TenantDTO {
 
-    private Long tenantId;
+    private String tenantId;
 
     private String tenantName;
 

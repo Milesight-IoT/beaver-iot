@@ -31,7 +31,7 @@ public class DashboardWidgetPO {
     private Long id;
     private Long dashboardId;
     @Column(insertable = false, updatable = false)
-    private Long tenantId;
+    private String tenantId;
     private Long userId;
     @Convert(converter = MapJsonConverter.class)
     @Column(columnDefinition = "TEXT")

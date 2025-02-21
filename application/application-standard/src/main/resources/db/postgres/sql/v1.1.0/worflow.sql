@@ -62,3 +62,13 @@ CREATE TABLE "t_flow_entity_relation"
 
 CREATE INDEX idx_flow_entity_relation_entity_id ON "t_flow_entity_relation" (entity_id);
 CREATE INDEX idx_flow_entity_relation_flow_id ON "t_flow_entity_relation" (flow_id);
+
+-- changeset loong:workflow_v1.1.0_2025022111_162400
+ALTER TABLE t_flow
+ALTER COLUMN tenant_id TYPE VARCHAR(255);
+
+ALTER table t_flow_log
+ALTER COLUMN tenant_id TYPE VARCHAR(255);
+
+update t_flow set tenant_id = 'default' where tenant_id = '1';
+update t_flow_log set tenant_id = 'default' where tenant_id = '1';

@@ -26,7 +26,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 public class TenantPO {
 
     @Id
-    private Long id;
+    private String id;
     private String name;
     private String domain;
     private String timeZone;
