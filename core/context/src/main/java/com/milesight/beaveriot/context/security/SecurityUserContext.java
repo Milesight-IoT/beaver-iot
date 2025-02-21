@@ -45,7 +45,7 @@ public class SecurityUserContext {
         return Long.parseLong(securityUser.getPayload().get(USER_ID).toString());
     }
 
-    public static Long getTenantId() {
+    public static String getTenantId() {
         SecurityUser securityUser = getSecurityUser();
         if (securityUser == null) {
             return null;
@@ -53,7 +53,7 @@ public class SecurityUserContext {
         if (securityUser.getPayload().get(TENANT_ID) == null) {
             return null;
         }
-        return Long.parseLong(securityUser.getPayload().get(TENANT_ID).toString());
+        return securityUser.getPayload().get(TENANT_ID).toString();
     }
 
 }

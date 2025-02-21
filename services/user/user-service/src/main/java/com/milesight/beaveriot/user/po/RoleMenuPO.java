@@ -27,7 +27,7 @@ public class RoleMenuPO {
     private Long roleId;
     private Long menuId;
     @Column(insertable = false, updatable = false)
-    private Long tenantId;
+    private String tenantId;
     @CreatedDate
     private Long createdAt;
 

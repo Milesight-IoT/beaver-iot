@@ -28,7 +28,7 @@ public class MenuPO {
     @Id
     private Long id;
     @Column(insertable = false, updatable = false)
-    private Long tenantId;
+    private String tenantId;
     private Long parentId;
     private String name;
     private String code;

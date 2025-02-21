@@ -61,7 +61,7 @@ public class DataAspectContext {
     @Builder
     @Getter
     public static class TenantContext {
-        private Long tenantId;
+        private String tenantId;
         private String tenantColumnName;
     }
 

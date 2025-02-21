@@ -94,7 +94,7 @@ public class DataAspectStatementInspector implements StatementInspector {
         if (tableName == null || alias == null){
             return;
         }
-        Long tenantId = null;
+        String tenantId = null;
         String columnName = null;
         if (DataAspectContext.isTenantEnabled(tableName)) {
             DataAspectContext.TenantContext tenantContext = DataAspectContext.getTenantContext(tableName);
@@ -122,7 +122,7 @@ public class DataAspectStatementInspector implements StatementInspector {
         String tableName = table.getName();
         String alias = table.getAlias() != null ? table.getAlias().getName() : tableName;
 
-        Long tenantId = null;
+        String tenantId = null;
         String columnName = null;
         if (DataAspectContext.isTenantEnabled(tableName)) {
             DataAspectContext.TenantContext tenantContext = DataAspectContext.getTenantContext(tableName);
@@ -150,7 +150,7 @@ public class DataAspectStatementInspector implements StatementInspector {
         String tableName = table.getName();
         String alias = table.getAlias() != null ? table.getAlias().getName() : tableName;
 
-        Long tenantId = null;
+        String tenantId = null;
         String columnName = null;
         if (DataAspectContext.isTenantEnabled(tableName)) {
             DataAspectContext.TenantContext tenantContext = DataAspectContext.getTenantContext(tableName);
@@ -178,7 +178,7 @@ public class DataAspectStatementInspector implements StatementInspector {
         String tableName = insertStatement.getTable().getName();
         ItemsList itemsList = insertStatement.getItemsList();
 
-        Long tenantId = null;
+        String tenantId = null;
         String columnName;
         if (DataAspectContext.isTenantEnabled(tableName)) {
             DataAspectContext.TenantContext tenantContext = DataAspectContext.getTenantContext(tableName);

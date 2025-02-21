@@ -46,7 +46,7 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseBody<Void> register(HttpServletRequest request, @RequestBody UserRegisterRequest userRegisterRequest) {
-        Long tenantId = request.getHeader(SecurityUserContext.TENANT_ID) != null ? Long.valueOf(request.getHeader(SecurityUserContext.TENANT_ID)) : null;
+        String tenantId = request.getHeader(SecurityUserContext.TENANT_ID) != null ? request.getHeader(SecurityUserContext.TENANT_ID) : null;
         TenantPO tenantPO = userService.analyzeTenantId(tenantId);
         if (tenantPO == null) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("tenantId is not exist").build();
@@ -58,7 +58,7 @@ public class UserController {
 
     @GetMapping("/status")
     public ResponseBody<UserStatusResponse> status(HttpServletRequest request) {
-        Long tenantId = request.getHeader(SecurityUserContext.TENANT_ID) != null ? Long.valueOf(request.getHeader(SecurityUserContext.TENANT_ID)) : null;
+        String tenantId = request.getHeader(SecurityUserContext.TENANT_ID) != null ? request.getHeader(SecurityUserContext.TENANT_ID) : null;
         TenantPO tenantPO = userService.analyzeTenantId(tenantId);
         if (tenantPO == null) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("tenantId is not exist").build();

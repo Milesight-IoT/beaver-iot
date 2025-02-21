@@ -43,3 +43,18 @@ ALTER TABLE t_entity_latest
 -- changeset loong:entity_v1.1.0_20250211_112200
 ALTER table t_entity
     add column description TEXT;
+
+
+-- changeset loong:entity_v1.1.0_2025022111_162400
+alter table t_entity
+alter column tenant_id type varchar(255);
+
+alter table t_entity_history
+alter column tenant_id type varchar(255);
+
+alter table t_entity_latest
+alter column tenant_id type varchar(255);
+
+update t_entity set tenant_id = 'default' where tenant_id = '1';
+update t_entity_history set tenant_id = 'default' where tenant_id = '1';
+update t_entity_latest set tenant_id = 'default' where tenant_id = '1';

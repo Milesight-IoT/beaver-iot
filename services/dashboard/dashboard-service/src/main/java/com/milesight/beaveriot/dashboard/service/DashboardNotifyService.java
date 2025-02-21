@@ -31,7 +31,7 @@ public class DashboardNotifyService {
     private void doDashboardNotify(ExchangePayload exchangePayload) {
         try {
             //TODO Ensure the presence of tenantId in the context
-            Long tenantId = UserConstants.DEFAULT_TENANT_ID;
+            String tenantId = UserConstants.DEFAULT_TENANT_ID;
             List<String> entityKeys = exchangePayload.keySet().stream().toList();
             List<String> keys = DashboardWebSocketContext.getKeysByValues(entityKeys);
             if (keys == null || keys.isEmpty()) {
@@ -40,7 +40,7 @@ public class DashboardNotifyService {
             List<String> sendKeys = new ArrayList<>();
             keys.forEach(key -> {
                 String key_tenantId = key.split(WebSocketContext.KEY_JOIN_SYMBOL)[0];
-                if (key_tenantId.equals(tenantId.toString())) {
+                if (key_tenantId.equals(tenantId)) {
                     sendKeys.add(key);
                 }
             });

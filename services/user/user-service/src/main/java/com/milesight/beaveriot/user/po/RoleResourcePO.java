@@ -28,7 +28,7 @@ public class RoleResourcePO {
     @Id
     private Long id;
     @Column(insertable = false, updatable = false)
-    private Long tenantId;
+    private String tenantId;
     private Long roleId;
     @Column(length = 255)
     private String resourceId;
