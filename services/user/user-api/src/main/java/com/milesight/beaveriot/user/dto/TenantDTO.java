@@ -14,4 +14,6 @@ public class TenantDTO {
     private String tenantName;
 
     private String tenantDomain;
+
+    private String timeZone;
 }

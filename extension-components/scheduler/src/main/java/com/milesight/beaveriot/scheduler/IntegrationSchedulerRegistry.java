@@ -103,8 +103,7 @@ public class IntegrationSchedulerRegistry {
             };
 
             if (cron != null && !cron.isEmpty()) {
-                //TODO
-                String zone = "";
+                String zone = tenant.getTimeZone();
                 TimeZone timeZone = zone.isEmpty() ? TimeZone.getDefault() : TimeZone.getTimeZone(zone);
                 ScheduledFuture<?> future = scheduler.schedule(taskWrapper, new CronTrigger(cron, timeZone));
                 taskFutures.put(taskFutureKey, future);
