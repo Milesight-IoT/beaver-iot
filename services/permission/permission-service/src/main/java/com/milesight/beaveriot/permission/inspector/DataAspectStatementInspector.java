@@ -3,6 +3,7 @@ package com.milesight.beaveriot.permission.inspector;
 import com.milesight.beaveriot.permission.context.DataAspectContext;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.expression.operators.relational.InExpression;
@@ -107,7 +108,7 @@ public class DataAspectStatementInspector implements StatementInspector {
             return;
         }
         Column column = new Column(alias + "." + columnName);
-        Expression tenantExpression = new EqualsTo(column, new LongValue(tenantId));
+        Expression tenantExpression = new EqualsTo(column, new StringValue(tenantId));
 
         if (plainSelect.getWhere() == null) {
             plainSelect.setWhere(tenantExpression);
@@ -135,7 +136,7 @@ public class DataAspectStatementInspector implements StatementInspector {
             return;
         }
         Column column = new Column(alias + "." + columnName);
-        Expression tenantExpression = new EqualsTo(column, new LongValue(tenantId));
+        Expression tenantExpression = new EqualsTo(column, new StringValue(tenantId));
 
         if (updateStatement.getWhere() == null) {
             updateStatement.setWhere(tenantExpression);
@@ -163,7 +164,7 @@ public class DataAspectStatementInspector implements StatementInspector {
             return;
         }
         Column column = new Column(alias + "." + columnName);
-        Expression tenantExpression = new EqualsTo(column, new LongValue(tenantId));
+        Expression tenantExpression = new EqualsTo(column, new StringValue(tenantId));
 
         if (deleteStatement.getWhere() == null) {
             deleteStatement.setWhere(tenantExpression);
@@ -208,12 +209,12 @@ public class DataAspectStatementInspector implements StatementInspector {
             if (tenantIdPresent) {
 //                for (int i = 0; i < columns.size(); i++) {
 //                    if (columns.get(i).getColumnName().equalsIgnoreCase(columnName)) {
-//                        expressions.set(i, new LongValue(tenantId));
+//                        expressions.set(i, new StringValue(tenantId));
 //                        break;
 //                    }
 //                }
             } else {
-                expressions.add(new LongValue(tenantId));
+                expressions.add(new StringValue(tenantId));
             }
 
             // Ensure the columns and expressions lists are of the same size
@@ -230,12 +231,12 @@ public class DataAspectStatementInspector implements StatementInspector {
                 if (tenantIdPresent) {
 //                    for (int i = 0; i < columns.size(); i++) {
 //                        if (columns.get(i).getColumnName().equalsIgnoreCase(columnName)) {
-//                            expressions.set(i, new LongValue(tenantId));
+//                            expressions.set(i, new StringValue(tenantId));
 //                            break;
 //                        }
 //                    }
                 } else {
-                    expressions.add(new LongValue(tenantId));
+                    expressions.add(new StringValue(tenantId));
                 }
 
                 // Ensure the columns and expressions lists are of the same size for each row
