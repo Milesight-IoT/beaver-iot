@@ -154,10 +154,10 @@ ALTER COLUMN tenant_id TYPE VARCHAR(255);
 ALTER table t_role_menu
 ALTER COLUMN tenant_id TYPE VARCHAR(255);
 
-update `t_tenant` set id='default' where tenant_id='1';
-update `t_user` set tenant_id='default' where tenant_id='1';
-update `t_role` set tenant_id='default' where tenant_id='1';
-update `t_user_role` set tenant_id='default' where tenant_id='1';
-update `t_role_resource` set tenant_id='default' where tenant_id='1';
-update `t_menu` set tenant_id='default' where tenant_id='1';
-update `t_role_menu` set tenant_id='default' where tenant_id='1';
+update "t_tenant" set id='default' where id='1';
+update "t_user" set tenant_id='default' where tenant_id='1';
+update "t_role" set tenant_id='default' where tenant_id='1';
+update "t_user_role" set tenant_id='default' where tenant_id='1';
+update "t_role_resource" set tenant_id='default' where tenant_id='1';
+update "t_menu" set tenant_id='default' where tenant_id='1';
+update "t_role_menu" set tenant_id='default' where tenant_id='1';

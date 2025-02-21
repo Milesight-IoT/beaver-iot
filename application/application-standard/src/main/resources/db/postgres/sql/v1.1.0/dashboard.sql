@@ -13,7 +13,7 @@ CREATE INDEX idx_dashboard_widget_user_id ON "t_dashboard_widget" (user_id);
 
 alter table "t_dashboard_widget_template"
     add column tenant_id bigint not null default 1;
-CREATE INDEX idx_dashboard_widget_template_tenant_id ON "t_dashboard_widget_template" (tenant_id);;
+CREATE INDEX idx_dashboard_widget_template_tenant_id ON "t_dashboard_widget_template" (tenant_id);
 
 -- changeset loong:dashboard_v1.1.0_2025022111_162400
 alter table t_dashboard
