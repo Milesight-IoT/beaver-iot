@@ -138,6 +138,7 @@ public class RuleEngineTracer extends DefaultTracer {
         FlowTraceInfo flowTraceResponse = (FlowTraceInfo) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
         if (shouldTraceAfterRoute(exchange, flowTraceResponse)) {
             if (exchange.getException() != null) {
+                log.error("Execution workflow exception, flow ID: {}",flowTraceResponse.getFlowId(), exchange.getException());
                 flowTraceResponse.setStatus(ExecutionStatus.ERROR);
             }
             flowTraceResponse.setTimeCost(System.currentTimeMillis() - flowTraceResponse.getStartTime());
