@@ -242,6 +242,7 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
                                     caughtException = copyExchange.getException();
                                 }
                                 copyPropertiesResult(exchange, copyExchange);
+                                callback.done(true);
                             }
                         }
 
