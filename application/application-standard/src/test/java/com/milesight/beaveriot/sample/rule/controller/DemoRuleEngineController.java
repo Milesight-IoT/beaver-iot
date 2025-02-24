@@ -19,13 +19,15 @@ import com.milesight.beaveriot.sample.entity.DemoIntegrationEntities;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Map;
-
-import static com.milesight.beaveriot.context.security.SecurityUserContext.USER_ID;
 
 /**
  * @author leon
@@ -57,7 +59,7 @@ public class DemoRuleEngineController {
 
     @PostMapping("/public/test-exchange")
     public Object propertyUpdate(@RequestBody ExchangePayload exchangePayload) {
-        SecurityUser securityUser = SecurityUser.builder().userId(11111111L).tenantId(1L).build();
+        SecurityUser securityUser = SecurityUser.builder().userId(11111111L).tenantId("default").build();
         SecurityUserContext.setSecurityUser(securityUser);
         entityValueServiceProvider.saveValuesAndPublishSync(exchangePayload);
         return ResponseBuilder.success("eventResponse");

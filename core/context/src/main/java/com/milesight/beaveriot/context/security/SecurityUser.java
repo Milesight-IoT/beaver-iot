@@ -25,7 +25,7 @@ public class SecurityUser extends TenantId{
     public static SecurityUser create(Map<String, Object> jwtClaims) {
         Assert.notNull(jwtClaims, "jwtClaims must not be null");
         return SecurityUser.builder()
-                .tenantId(getClaimAsLong(jwtClaims, TenantContext.TENANT_ID))
+                .tenantId(getClaimAsString(jwtClaims, TenantContext.TENANT_ID))
                 .userId(getClaimAsLong(jwtClaims, SecurityUserContext.USER_ID))
                 .nickname(getClaimAsString(jwtClaims, SecurityUserContext.NICK_NAME))
                 .email(getClaimAsString(jwtClaims, SecurityUserContext.EMAIL))

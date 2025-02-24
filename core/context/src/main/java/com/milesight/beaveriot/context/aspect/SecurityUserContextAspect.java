@@ -34,7 +34,7 @@ public class SecurityUserContextAspect {
         if (securityUserContext != null) {
             String tenantId = AnnotationSpelExpressionUtil.getSpelKeyValue(joinPoint, securityUserContext.tenantId());
             String userId = AnnotationSpelExpressionUtil.getSpelKeyValue(joinPoint, securityUserContext.userId());
-            SecurityUser securityUser = SecurityUser.builder().tenantId(parseLongSafely(tenantId)).userId(parseLongSafely(userId)).build();
+            SecurityUser securityUser = SecurityUser.builder().tenantId(tenantId).userId(parseLongSafely(userId)).build();
             com.milesight.beaveriot.context.security.SecurityUserContext.setSecurityUser(securityUser);
         }
     }

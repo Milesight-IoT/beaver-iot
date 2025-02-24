@@ -2,7 +2,6 @@ package com.milesight.beaveriot.permission.aspect;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
-import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.permission.context.DataAspectContext;
 import com.milesight.beaveriot.permission.util.TypeUtil;
@@ -66,7 +65,7 @@ public class TenantAspect {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("tenant column name is not exist").build();
         }
         //TODO Ensure the presence of tenantId in the context
-        Long tenantId = TenantContext.containsTenant() ? TenantContext.getTenantId() : UserConstants.DEFAULT_TENANT_ID;
+        String tenantId = TenantContext.containsTenant() ? TenantContext.getTenantId() : UserConstants.DEFAULT_TENANT_ID;
         if(tenantId == null){
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("tenantId is not exist").build();
         }

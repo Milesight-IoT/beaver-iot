@@ -39,11 +39,11 @@ public class HttpRequestFilter implements Filter {
                 throw ServiceException.with(ErrorCode.AUTHENTICATION_FAILED).detailMessage("token is invalid").build();
             }
             String tenantId = user.get(TenantContext.TENANT_ID).toString();
-            TenantContext.setTenantId(Long.parseLong(tenantId));
+            TenantContext.setTenantId(tenantId);
         }else {
             String tenantId = httpRequest.getParameter("tenantId");
             if (tenantId != null && !tenantId.isEmpty()) {
-                TenantContext.setTenantId(Long.parseLong(tenantId));
+                TenantContext.setTenantId(tenantId);
             }
         }
         chain.doFilter(request, response);

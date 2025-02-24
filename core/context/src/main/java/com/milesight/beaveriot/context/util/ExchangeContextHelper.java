@@ -44,7 +44,7 @@ public class ExchangeContextHelper {
 
         // set source user id, tenant id, flow id in order
         SecurityUser securityUser = (SecurityUser) context.getOrDefault(ExchangeContextKeys.SOURCE_USER, SecurityUserContext.getSecurityUser());
-        Long tenantId = (Long) context.getOrDefault(ExchangeContextKeys.SOURCE_TENANT_ID, TenantContext.getTenantId());
+        String tenantId = (String) context.getOrDefault(ExchangeContextKeys.SOURCE_TENANT_ID, TenantContext.getTenantId());
         Serializable flowId = (Serializable) context.get(ExchangeContextKeys.SOURCE_FLOW_ID);
         putContextIfNecessary(exchangePayload, ExchangeContextKeys.SOURCE_USER, securityUser);
         putContextIfNecessary(exchangePayload, ExchangeContextKeys.SOURCE_TENANT_ID, tenantId);

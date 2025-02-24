@@ -21,7 +21,7 @@ public class TenantContext {
     public static boolean containsTenant() {
         return tenantThreadLocal.get() != null && !ObjectUtils.isEmpty(tenantThreadLocal.get().getTenantId());
     }
-    public static Long getTenantId() {
+    public static String getTenantId() {
         TenantId tenantId = tenantThreadLocal.get();
         if (tenantId == null || ObjectUtils.isEmpty(tenantId.getTenantId())) {
             throw new IllegalArgumentException("TenantContext is not set");
@@ -29,7 +29,7 @@ public class TenantContext {
         return  tenantId.getTenantId();
     }
 
-    public static Optional<Long> tryGetTenantId() {
+    public static Optional<String> tryGetTenantId() {
         TenantId tenantId = tenantThreadLocal.get();
         if (tenantId == null || ObjectUtils.isEmpty(tenantId.getTenantId())) {
             return Optional.empty();
@@ -37,7 +37,7 @@ public class TenantContext {
         return Optional.of(tenantId.getTenantId());
     }
 
-    public static void setTenantId(Long tenantId) {
+    public static void setTenantId(String tenantId) {
         tenantThreadLocal.set(new TenantId(tenantId));
     }
 

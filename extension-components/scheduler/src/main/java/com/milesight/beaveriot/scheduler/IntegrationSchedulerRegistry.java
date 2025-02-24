@@ -81,7 +81,7 @@ public class IntegrationSchedulerRegistry {
         tasks.putIfAbsent(schedulerName, task);
 
         for (TenantDTO tenant : tenants) {
-            Long tenantId = tenant.getTenantId();
+            String tenantId = tenant.getTenantId();
             String taskFutureKey = schedulerName + "_" + tenantId;
 
             cancelTask(taskFutureKey);

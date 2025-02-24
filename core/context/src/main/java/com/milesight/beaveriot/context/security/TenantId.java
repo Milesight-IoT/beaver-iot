@@ -12,9 +12,9 @@ import java.io.Serializable;
 @Getter
 public class TenantId implements Serializable {
 
-    private final Long tenantId;
+    private final String tenantId;
 
-    public TenantId(Long tenantId) {
+    public TenantId(String tenantId) {
         this.tenantId = tenantId;
     }
 
