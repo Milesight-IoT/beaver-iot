@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.rule.model.trace;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.milesight.beaveriot.rule.enums.ExecutionStatus;
 import lombok.Data;
 import org.springframework.util.StringUtils;
@@ -34,6 +35,10 @@ public class NodeTraceInfo {
 
     public void causeException(Exception ex) {
         this.status = ExecutionStatus.ERROR;
-        this.errorMessage = StringUtils.hasText(ex.getMessage()) ? ex.getMessage() : ex.toString();
+        this.errorMessage = (ex.getCause() != null) ? getExchangeMessage(ex.getCause()) : getExchangeMessage(ex);
+    }
+
+    private String getExchangeMessage(Throwable ex) {
+        return StringUtils.hasText(ex.getMessage()) ? ex.getMessage() : ex.toString();
     }
 }

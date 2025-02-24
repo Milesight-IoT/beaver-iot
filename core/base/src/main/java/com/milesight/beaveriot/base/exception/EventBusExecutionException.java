@@ -32,6 +32,11 @@ public class EventBusExecutionException extends BaseException {
         this.causes.addAll(causes);
     }
 
+    @Override
+    public String getMessage() {
+        return causes.stream().map(Throwable::getMessage).reduce((a, b) -> a + ", " + b).orElse(super.getMessage());
+    }
+
     public List<Throwable> getCauses() {
         return causes;
     }
