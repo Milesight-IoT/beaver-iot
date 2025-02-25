@@ -4,6 +4,7 @@ import lombok.*;
 import lombok.extern.slf4j.*;
 
 import java.time.ZonedDateTime;
+import java.util.Map;
 import java.util.Optional;
 
 
@@ -47,8 +48,7 @@ public class SimpleTimerTask {
         log.info("run task: {}", id);
         try {
             var exchange = consumer.getEndpoint().createExchange();
-            exchange.setProperty("executionEpochSecond", executionEpochSecond);
-            exchange.setProperty("timezone", rule.getTimezone());
+            exchange.getIn().setBody(Map.of("executionEpochSecond", executionEpochSecond, "timezone", rule.getTimezone()));
             consumer.getProcessor().process(exchange);
         } catch (Exception e) {
             log.error("run task failed: {}", id, e);
