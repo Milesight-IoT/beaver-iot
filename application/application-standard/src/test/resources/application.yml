@@ -111,11 +111,33 @@ oauth2:
     - "/user/status"
     - "/public/**"
 
-moquette:
-  port: 1883
-  host: 0.0.0.0
-  allow_anonymous: true
-  persistence_enabled: false
+mqtt:
+  broker:
+    host: 192.168.0.120
+    mqtt_port: 1883
+    mqtts_port: 8883
+    ws_path: /mqtt
+    ws_port: 8083
+    wss_port: 8084
+    listener:
+      parallelism: 1
+    moquette:
+      port: ${mqtt.broker.mqtt_port:1883}
+      host: 0.0.0.0
+      allow_anonymous: false
+      persistence_enabled: false
+      websocket_port: ${mqtt.broker.ws_port:8083}
+      websocket_path: ${mqtt.broker.ws_path:/mqtt}
+      netty:
+        mqtt:
+          message_size: 1048576
+    emqx:
+      internal_mqtt_endpoint: tcp://${mqtt.broker.host:localhost}:1883
+      internal_mqtt_username: admin
+      internal_mqtt_password: admin
+      rest_api_endpoint: http://${mqtt.broker.host:localhost}:18083
+      rest_api_username: "admin"
+      rest_api_password: "3CA92E5F-30AB-41F5-B3E6-8D7E213BE97E"
 
 logging:
   level:

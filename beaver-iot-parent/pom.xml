@@ -315,6 +315,12 @@
                 <groupId>com.github.moquette-io.moquette</groupId>
                 <artifactId>moquette-broker</artifactId>
                 <version>${moquette.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-reload4j</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -44,6 +44,8 @@
         <module>entity</module>
         <module>workflow</module>
         <module>permission</module>
+        <module>credentials</module>
+        <module>mqtt</module>
     </modules>
 
     <properties>
