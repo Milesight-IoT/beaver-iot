@@ -1,2 +1,3 @@
-com.milesight.beaveriot.redisson.autoconfigure.CustomRedissonAutoConfiguration
-com.milesight.beaveriot.shedlock.autoconfigure.CustomShedlockAutoConfiguration
+com.milesight.beaveriot.redisson.autoconfigure.CustomizeRedissonAutoConfiguration
+com.milesight.beaveriot.shedlock.autoconfigure.CustomizeShedlockAutoConfiguration
+com.milesight.beaveriot.cache.autoconfigure.CustomizeCacheAutoConfiguration
