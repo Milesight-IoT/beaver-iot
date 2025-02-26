@@ -19,7 +19,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableJpaRepositories(repositoryBaseClass = BaseJpaRepositoryImpl.class )
 @SpringBootApplication(exclude = {RedissonAutoConfigurationV2.class})
 @EnableAspectJAutoProxy(proxyTargetClass = true, exposeProxy = true)
-@EnableSchedulerLock(defaultLockAtMostFor = "1d")
+@EnableSchedulerLock(defaultLockAtMostFor = "30s")
 @EnableCaching
 public class StandardApplication {
 
