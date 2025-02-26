@@ -149,6 +149,9 @@ public class UserFacade implements IUserFacade {
 
     @Override
     public void deleteResource(ResourceType resourceType, List<Long> resourceIds) {
+        if (resourceIds == null || resourceIds.isEmpty()){
+            return;
+        }
         List<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filterable -> filterable.in(RoleResourcePO.Fields.resourceId, resourceIds.toArray()).eq(RoleResourcePO.Fields.resourceType, resourceType));
         if (roleResourcePOS != null && !roleResourcePOS.isEmpty()) {
             roleResourceRepository.deleteAll(roleResourcePOS);
