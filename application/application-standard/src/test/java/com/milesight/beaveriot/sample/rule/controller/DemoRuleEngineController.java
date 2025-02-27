@@ -5,6 +5,7 @@ import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.wrapper.AnnotatedEntityWrapper;
+import com.milesight.beaveriot.context.security.SecurityUser;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.rule.RuleEngineComponentManager;
 import com.milesight.beaveriot.rule.RuleEngineExecutor;
@@ -18,13 +19,15 @@ import com.milesight.beaveriot.sample.entity.DemoIntegrationEntities;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Map;
-
-import static com.milesight.beaveriot.context.security.SecurityUserContext.USER_ID;
 
 /**
  * @author leon
@@ -56,7 +59,7 @@ public class DemoRuleEngineController {
 
     @PostMapping("/public/test-exchange")
     public Object propertyUpdate(@RequestBody ExchangePayload exchangePayload) {
-        SecurityUserContext.SecurityUser securityUser = SecurityUserContext.SecurityUser.builder().payload(Map.of(USER_ID, "11111")).build();
+        SecurityUser securityUser = SecurityUser.builder().userId(11111111L).tenantId("default").build();
         SecurityUserContext.setSecurityUser(securityUser);
         entityValueServiceProvider.saveValuesAndPublishSync(exchangePayload);
         return ResponseBuilder.success("eventResponse");
@@ -64,7 +67,7 @@ public class DemoRuleEngineController {
 
     @PostMapping("/public/test-exchange-wrapper")
     public Object propertyUpdateWrapper(@RequestBody ExchangePayload exchangePayload) {
-        SecurityUserContext.SecurityUser securityUser = SecurityUserContext.SecurityUser.builder().payload(Map.of(USER_ID, "11111")).build();
+        SecurityUser securityUser = SecurityUser.builder().userId(11111111L).build();
         SecurityUserContext.setSecurityUser(securityUser);
 
         AnnotatedEntityWrapper<DemoIntegrationEntities.DemoGroupSettingEntities> wrapper = new AnnotatedEntityWrapper<>();

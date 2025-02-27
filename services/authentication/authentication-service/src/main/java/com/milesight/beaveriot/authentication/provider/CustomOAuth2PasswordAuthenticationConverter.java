@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.authentication.provider;
 
 import com.milesight.beaveriot.authentication.util.OAuth2EndpointUtils;
-import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.context.security.TenantContext;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,7 +26,7 @@ public class CustomOAuth2PasswordAuthenticationConverter implements Authenticati
         if (!AuthorizationGrantType.PASSWORD.getValue().equals(grantType)) {
             return null;
         }
-        String tenantId = request.getHeader(SecurityUserContext.TENANT_ID) != null ? request.getHeader(SecurityUserContext.TENANT_ID) : null;
+        String tenantId = request.getHeader(TenantContext.TENANT_ID) != null ? request.getHeader(TenantContext.TENANT_ID) : null;
         Authentication clientPrincipal = SecurityContextHolder.getContext().getAuthentication();
         MultiValueMap<String, String> parameters = OAuth2EndpointUtils.getParameters(request);
         String username = parameters.getFirst(OAuth2ParameterNames.USERNAME);

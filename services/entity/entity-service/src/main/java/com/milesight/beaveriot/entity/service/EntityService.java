@@ -18,6 +18,7 @@ import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.Integration;
 import com.milesight.beaveriot.context.integration.model.event.EntityEvent;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.data.util.PageConverter;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
@@ -804,7 +805,7 @@ public class EntityService implements EntityServiceProvider {
         entityPO.setKey(key);
         entityPO.setParent(parentKey);
         entityPO.setVisible(entityCreateRequest.getVisible() == null || entityCreateRequest.getVisible());
-        entityPO.setTenantId(SecurityUserContext.getTenantId());
+        entityPO.setTenantId(TenantContext.getTenantId());
         entityPO.setUserId(SecurityUserContext.getUserId());
         entityPO.setAttachTarget(AttachTargetType.INTEGRATION);
         entityPO.setAttachTargetId(IntegrationConstants.SYSTEM_INTEGRATION_ID);

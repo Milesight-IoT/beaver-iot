@@ -1,0 +1,2 @@
+org.springframework.context.ApplicationContextInitializer=\
+net.javacrumbs.shedlock.spring.aop.ScopedLockApplicationContextInitializer

@@ -1,14 +1,13 @@
 package com.milesight.beaveriot.context.util;
 
 import com.milesight.beaveriot.context.constants.ExchangeContextKeys;
-import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
-import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
+import com.milesight.beaveriot.context.security.SecurityUser;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.context.security.TenantContext;
 import org.apache.camel.Exchange;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.StringUtils;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -44,10 +43,10 @@ public class ExchangeContextHelper {
         Assert.notNull(context, "headers must not be null");
 
         // set source user id, tenant id, flow id in order
-        Long userId = (Long) context.getOrDefault(ExchangeContextKeys.SOURCE_USER_ID, SecurityUserContext.getUserId());
-        String tenantId = (String) context.getOrDefault(ExchangeContextKeys.SOURCE_TENANT_ID, SecurityUserContext.getTenantId());
+        SecurityUser securityUser = (SecurityUser) context.getOrDefault(ExchangeContextKeys.SOURCE_USER, SecurityUserContext.getSecurityUser());
+        String tenantId = (String) context.getOrDefault(ExchangeContextKeys.SOURCE_TENANT_ID, TenantContext.getTenantId());
         Serializable flowId = (Serializable) context.get(ExchangeContextKeys.SOURCE_FLOW_ID);
-        putContextIfNecessary(exchangePayload, ExchangeContextKeys.SOURCE_USER_ID, userId);
+        putContextIfNecessary(exchangePayload, ExchangeContextKeys.SOURCE_USER, securityUser);
         putContextIfNecessary(exchangePayload, ExchangeContextKeys.SOURCE_TENANT_ID, tenantId);
         putContextIfNecessary(exchangePayload, ExchangeContextKeys.SOURCE_FLOW_ID, flowId);
 

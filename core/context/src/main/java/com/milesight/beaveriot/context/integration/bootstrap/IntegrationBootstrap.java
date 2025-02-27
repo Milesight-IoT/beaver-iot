@@ -15,10 +15,10 @@ public interface IntegrationBootstrap extends RuleEngineRouteConfigurer {
 
     void onDestroy(Integration integrationConfig);
 
-    default void onEnabled(Integration integrationConfig) {
+    default void onEnabled(String tenantId, Integration integrationConfig) {
     }
 
-    default void onDisabled(Integration integrationConfig) {
+    default void onDisabled(String tenantId, Integration integrationConfig) {
     }
 
     @Override

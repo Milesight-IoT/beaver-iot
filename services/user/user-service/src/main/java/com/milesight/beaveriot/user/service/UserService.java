@@ -6,6 +6,7 @@ import com.milesight.beaveriot.base.page.GenericQueryPageRequest;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.aspect.SecurityUserContext;
+import com.milesight.beaveriot.context.security.SecurityUser;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.user.constants.UserConstants;
@@ -123,16 +124,16 @@ public class UserService {
     }
 
     public UserInfoResponse getUserInfo() {
-        com.milesight.beaveriot.context.security.SecurityUserContext.SecurityUser securityUser = com.milesight.beaveriot.context.security.SecurityUserContext.getSecurityUser();
+        SecurityUser securityUser = com.milesight.beaveriot.context.security.SecurityUserContext.getSecurityUser();
         UserInfoResponse userInfoResponse = new UserInfoResponse();
         if (securityUser == null){
             return userInfoResponse;
         }
-        Long userId = com.milesight.beaveriot.context.security.SecurityUserContext.getUserId();
-        userInfoResponse.setUserId(userId == null ? null : userId.toString());
-        userInfoResponse.setNickname(securityUser.getPayload().get("nickname").toString());
-        userInfoResponse.setEmail(securityUser.getPayload().get("email").toString());
-        userInfoResponse.setCreatedAt(securityUser.getPayload().get("createdAt").toString());
+        Long userId = securityUser.getUserId();
+        userInfoResponse.setUserId(userId.toString());
+        userInfoResponse.setNickname(securityUser.getNickname());
+        userInfoResponse.setEmail(securityUser.getEmail());
+        userInfoResponse.setCreatedAt(securityUser.getCreatedAt());
 
         List<MenuPO> menuPOS = menuRepository.findAll();
         if (menuPOS != null && !menuPOS.isEmpty()) {

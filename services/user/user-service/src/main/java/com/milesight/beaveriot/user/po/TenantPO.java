@@ -29,6 +29,7 @@ public class TenantPO {
     private String id;
     private String name;
     private String domain;
+    private String timeZone;
     @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "VARCHAR", length = 32)
     private TenantStatus status;

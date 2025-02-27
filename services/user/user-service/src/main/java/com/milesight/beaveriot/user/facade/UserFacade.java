@@ -22,6 +22,7 @@ import com.milesight.beaveriot.user.repository.MenuRepository;
 import com.milesight.beaveriot.user.repository.RoleMenuRepository;
 import com.milesight.beaveriot.user.repository.RoleRepository;
 import com.milesight.beaveriot.user.repository.RoleResourceRepository;
+import com.milesight.beaveriot.user.repository.TenantRepository;
 import com.milesight.beaveriot.user.repository.UserRepository;
 import com.milesight.beaveriot.user.repository.UserRoleRepository;
 import com.milesight.beaveriot.user.service.UserService;
@@ -54,11 +55,19 @@ public class UserFacade implements IUserFacade {
     RoleResourceRepository roleResourceRepository;
     @Autowired
     UserRepository userRepository;
+    @Autowired
+    TenantRepository tenantRepository;
 
     @Override
     public TenantDTO analyzeTenantId(String tenantId) {
         TenantPO tenantPO = userService.analyzeTenantId(tenantId);
         return TenantConverter.INSTANCE.convertDTO(tenantPO);
+    }
+
+    @Override
+    public List<TenantDTO> getAllTenants() {
+        List<TenantPO> tenantPOList = tenantRepository.findAll();
+        return TenantConverter.INSTANCE.convertDTOList(tenantPOList);
     }
 
     @Override

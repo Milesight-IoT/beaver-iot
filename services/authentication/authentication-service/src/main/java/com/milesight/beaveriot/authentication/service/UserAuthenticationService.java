@@ -3,6 +3,7 @@ package com.milesight.beaveriot.authentication.service;
 import com.milesight.beaveriot.authentication.config.OAuth2Properties;
 import com.milesight.beaveriot.authentication.provider.CustomOAuth2AuthorizationService;
 import com.milesight.beaveriot.authentication.util.OAuth2EndpointUtils;
+import com.milesight.beaveriot.context.security.SecurityUser;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,10 +43,7 @@ public class UserAuthenticationService {
                 String token = authorizationValue.substring(7);
                 try {
                     Jwt jwt = readAccessToken(token);
-                    SecurityUserContext.SecurityUser securityUser = SecurityUserContext.SecurityUser.builder()
-                            .header(jwt.getHeaders())
-                            .payload(jwt.getClaims())
-                            .build();
+                    SecurityUser securityUser = SecurityUser.create(jwt.getClaims());
                     SecurityUserContext.setSecurityUser(securityUser);
                 } catch (Exception e) {
                     if(isAuthorization) {
