@@ -24,6 +24,9 @@ import org.springframework.util.StringUtils;
 @Slf4j
 public class RuleEngineTracer extends DefaultTracer {
 
+    private static final long TRACER_BODY_MAX_LENGTH = 100000;
+    private static final String TRACER_BODY_EXCEED_MAX_WARNING = "Tracer body exceed maximum length " + TRACER_BODY_MAX_LENGTH;
+
     private ApplicationEventPublisher applicationEventPublisher;
     private RuleProperties ruleProperties;
 
@@ -118,11 +121,8 @@ public class RuleEngineTracer extends DefaultTracer {
             return null;
         }
         try {
-            if (body instanceof Exchange exchangeBody) {
-                return JsonHelper.toJSON(exchangeBody.getIn().getBody());
-            } else {
-                return JsonHelper.toJSON(body);
-            }
+            String bodyStr = (body instanceof Exchange exchangeBody) ? JsonHelper.toJSON(exchangeBody.getIn().getBody()) : JsonHelper.toJSON(body);
+            return !ObjectUtils.isEmpty(bodyStr) && bodyStr.length() > TRACER_BODY_MAX_LENGTH ? TRACER_BODY_EXCEED_MAX_WARNING : bodyStr;
         } catch (Exception ex) {
             log.error("Convert exchange body failed on tracing", ex);
             return "Convert exchange body failed:" + ex.getMessage();
