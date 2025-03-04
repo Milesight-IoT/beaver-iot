@@ -70,19 +70,29 @@ public class IntegrationSchedulerRegistry {
                 String cronEntityValue = "";
                 long fixedDelayEntityValue = -1;
                 String timeUnitEntityValue = "";
-                if (!cronEntity.isEmpty()) {
-                    if (entityKeys.contains(cronEntity)) {
-                        cronEntityValue = entityValueProvider.findValueByKey(cronEntity).toString();
-                    }
+
+                List<String> tenantEntityKeys = new ArrayList<>();
+                if (!cronEntity.isEmpty() && entityKeys.contains(cronEntity)) {
+                    tenantEntityKeys.add(cronEntity);
                 }
-                if (!fixedDelayEntity.isEmpty()) {
-                    if (entityKeys.contains(fixedDelayEntity)) {
-                        fixedDelayEntityValue = Long.parseLong(entityValueProvider.findValueByKey(fixedDelayEntity).toString());
-                    }
+                if (!fixedDelayEntity.isEmpty() && entityKeys.contains(fixedDelayEntity)) {
+                    tenantEntityKeys.add(fixedDelayEntity);
                 }
-                if (!timeUnitEntity.isEmpty()) {
-                    if (entityKeys.contains(timeUnitEntity)) {
-                        timeUnitEntityValue = entityValueProvider.findValueByKey(timeUnitEntity).toString();
+                if (!timeUnitEntity.isEmpty() && entityKeys.contains(timeUnitEntity)) {
+                    tenantEntityKeys.add(timeUnitEntity);
+                }
+                if (!tenantEntityKeys.isEmpty()) {
+                    Map<String, Object> tenantEntityValues = entityValueProvider.findValuesByKeys(tenantEntityKeys);
+                    if (tenantEntityValues != null && !tenantEntityValues.isEmpty()) {
+                        if (!cronEntity.isEmpty() && entityKeys.contains(cronEntity) && tenantEntityValues.containsKey(cronEntity)) {
+                            cronEntityValue = tenantEntityValues.get(cronEntity).toString();
+                        }
+                        if (!fixedDelayEntity.isEmpty() && entityKeys.contains(fixedDelayEntity) && tenantEntityValues.containsKey(fixedDelayEntity)) {
+                            fixedDelayEntityValue = Long.parseLong(tenantEntityValues.get(fixedDelayEntity).toString());
+                        }
+                        if (!timeUnitEntity.isEmpty() && entityKeys.contains(timeUnitEntity) && tenantEntityValues.containsKey(timeUnitEntity)) {
+                            timeUnitEntityValue = tenantEntityValues.get(timeUnitEntity).toString();
+                        }
                     }
                 }
                 if (!cronEntityValue.isEmpty() || fixedDelayEntityValue != -1 || !timeUnitEntityValue.isEmpty()) {
@@ -135,14 +145,29 @@ public class IntegrationSchedulerRegistry {
                 String cronEntityValue = "";
                 long fixedDelayEntityValue = -1;
                 String timeUnitEntityValue = "";
+                List<String> entityKeys = new ArrayList<>();
                 if (!cronEntity.isEmpty()) {
-                    cronEntityValue = entityValueProvider.findValueByKey(cronEntity).toString();
+                    entityKeys.add(cronEntity);
                 }
                 if (!fixedDelayEntity.isEmpty()) {
-                    fixedDelayEntityValue = Long.parseLong(entityValueProvider.findValueByKey(fixedDelayEntity).toString());
+                    entityKeys.add(fixedDelayEntity);
                 }
                 if (!timeUnitEntity.isEmpty()) {
-                    timeUnitEntityValue = entityValueProvider.findValueByKey(timeUnitEntity).toString();
+                    entityKeys.add(timeUnitEntity);
+                }
+                if (!entityKeys.isEmpty()) {
+                    Map<String, Object> entityValues = entityValueProvider.findValuesByKeys(entityKeys);
+                    if (entityValues != null && !entityValues.isEmpty()) {
+                        if(!cronEntity.isEmpty() && entityValues.containsKey(cronEntity)) {
+                            cronEntityValue = entityValues.get(cronEntity).toString();
+                        }
+                        if(!fixedDelayEntity.isEmpty() && entityValues.containsKey(fixedDelayEntity)) {
+                            fixedDelayEntityValue = Long.parseLong(entityValues.get(fixedDelayEntity).toString());
+                        }
+                        if(!timeUnitEntity.isEmpty() && entityValues.containsKey(timeUnitEntity)) {
+                            timeUnitEntityValue = entityValues.get(timeUnitEntity).toString();
+                        }
+                    }
                 }
                 String cron = integrationScheduled.cron();
                 if (!cronEntityValue.isEmpty()) {
