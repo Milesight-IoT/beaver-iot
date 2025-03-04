@@ -58,3 +58,11 @@ alter column tenant_id varchar(255);
 update t_entity set tenant_id = 'default' where tenant_id = '1';
 update t_entity_history set tenant_id = 'default' where tenant_id = '1';
 update t_entity_latest set tenant_id = 'default' where tenant_id = '1';
+
+-- changeset loong:entity_v1.1.0_20250304_100000
+EXECUTE IMMEDIATE 'ALTER TABLE t_entity_history DROP CONSTRAINT ' ||
+                  (SELECT CONSTRAINT_NAME
+                   FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+                   WHERE TABLE_NAME = 'T_ENTITY_HISTORY' AND CONSTRAINT_TYPE = 'UNIQUE'
+    LIMIT 1);
+
