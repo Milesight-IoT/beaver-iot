@@ -1,17 +1,16 @@
 package com.milesight.beaveriot.rule.flow.graph;
 
+import com.milesight.beaveriot.rule.RuleNodeDefinitionInterceptor;
 import com.milesight.beaveriot.rule.model.flow.ExpressionNode;
 import com.milesight.beaveriot.rule.model.flow.route.*;
 import com.milesight.beaveriot.rule.support.RuleFlowIdGenerator;
 import org.apache.camel.Expression;
-import org.apache.camel.model.FromDefinition;
-import org.apache.camel.model.ProcessorDefinition;
-import org.apache.camel.model.ToDefinition;
-import org.apache.camel.model.WhenDefinition;
+import org.apache.camel.model.*;
 import org.apache.camel.model.language.ExpressionDefinition;
 import org.apache.camel.support.builder.ExpressionBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 import java.util.ArrayList;
@@ -24,6 +23,8 @@ import java.util.stream.Collectors;
  * @author leon
  */
 public class RouteDefinitionConverter {
+
+    private static RuleNodeDefinitionInterceptor ruleNodeDefinitionInterceptor = new DefaultRuleNodeDefinitionInterceptor();
 
     private RouteDefinitionConverter() {
     }
@@ -38,6 +39,10 @@ public class RouteDefinitionConverter {
 
     public static ProcessorDefinition<?> convertProcessorDefinition(String flowId, AbstractNodeDefinition nodeDefinition, Map<String, List<String>> choiceWhenEdges) {
         String namespacedId = RuleFlowIdGenerator.generateNamespacedId(flowId, nodeDefinition.getId());
+        ProcessorDefinition processDefinition = ruleNodeDefinitionInterceptor.postProcessNodeDefinition(flowId, nodeDefinition);
+        if (processDefinition != null) {
+            return processDefinition;
+        }
         if (nodeDefinition instanceof ToNodeDefinition toNodeDefinition) {
             ToDefinition toDefinition = new ToDefinition();
             toDefinition.setUri(generateUri(toNodeDefinition.getUri(), toNodeDefinition.getParameters()));
@@ -80,7 +85,7 @@ public class RouteDefinitionConverter {
         if (!ObjectUtils.isEmpty(parameters)) {
             return uri + "?" + parameters.entrySet().stream()
                     .filter(entry -> entry.getValue() != null)
-                    .map(entry -> entry.getKey() + "=RAW(" + entry.getValue() +")")
+                    .map(entry -> entry.getKey() + "=RAW(" + entry.getValue() + ")")
                     .collect(Collectors.joining("&"));
         } else {
             return uri;
