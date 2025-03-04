@@ -181,6 +181,15 @@ public class EntityValueService implements EntityValueServiceProvider {
 
     @Override
     public void saveHistoryRecord(Map<String, Object> recordValues, long timestamp) {
+        doSaveHistoryRecord(recordValues, timestamp, false);
+    }
+
+    @Override
+    public void mergeHistoryRecord(Map<String, Object> recordValues, long timestamp) {
+        doSaveHistoryRecord(recordValues, timestamp, true);
+    }
+
+    private void doSaveHistoryRecord(Map<String, Object> recordValues, long timestamp, boolean isMerge) {
         if (recordValues == null || recordValues.isEmpty()) {
             return;
         }
@@ -190,21 +199,23 @@ public class EntityValueService implements EntityValueServiceProvider {
             return;
         }
         Map<String, EntityPO> entityKeyMap = entityPOList.stream().collect(Collectors.toMap(EntityPO::getKey, Function.identity()));
-        List<EntityHistoryUnionQuery> entityHistoryUnionQueryList = recordValues.keySet().stream().map(o -> {
-            EntityPO entityPO = entityKeyMap.get(o);
-            if (entityPO == null) {
-                return null;
-            }
-            Long entityId = entityPO.getId();
-            EntityHistoryUnionQuery entityHistoryUnionQuery = new EntityHistoryUnionQuery();
-            entityHistoryUnionQuery.setEntityId(entityId);
-            entityHistoryUnionQuery.setTimestamp(timestamp);
-            return entityHistoryUnionQuery;
-        }).filter(Objects::nonNull).toList();
-        List<EntityHistoryPO> existEntityHistoryPOList = entityHistoryRepository.findByUnionUnique(entityManager, entityHistoryUnionQueryList);
         Map<String, EntityHistoryPO> existUnionIdMap = new HashMap<>();
-        if (existEntityHistoryPOList != null && !existEntityHistoryPOList.isEmpty()) {
-            existUnionIdMap.putAll(existEntityHistoryPOList.stream().collect(Collectors.toMap(entityHistoryPO -> entityHistoryPO.getEntityId() + ":" + entityHistoryPO.getTimestamp(), Function.identity())));
+        if(isMerge) {
+            List<EntityHistoryUnionQuery> entityHistoryUnionQueryList = recordValues.keySet().stream().map(o -> {
+                EntityPO entityPO = entityKeyMap.get(o);
+                if (entityPO == null) {
+                    return null;
+                }
+                Long entityId = entityPO.getId();
+                EntityHistoryUnionQuery entityHistoryUnionQuery = new EntityHistoryUnionQuery();
+                entityHistoryUnionQuery.setEntityId(entityId);
+                entityHistoryUnionQuery.setTimestamp(timestamp);
+                return entityHistoryUnionQuery;
+            }).filter(Objects::nonNull).toList();
+            List<EntityHistoryPO> existEntityHistoryPOList = entityHistoryRepository.findByUnionUnique(entityManager, entityHistoryUnionQueryList);
+            if (existEntityHistoryPOList != null && !existEntityHistoryPOList.isEmpty()) {
+                existUnionIdMap.putAll(existEntityHistoryPOList.stream().collect(Collectors.toMap(entityHistoryPO -> entityHistoryPO.getEntityId() + ":" + entityHistoryPO.getTimestamp(), Function.identity())));
+            }
         }
         List<EntityHistoryPO> entityHistoryPOList = new ArrayList<>();
         recordValues.forEach((entityKey, payload) -> {
@@ -235,6 +246,21 @@ public class EntityValueService implements EntityValueServiceProvider {
             entityHistoryPOList.add(entityHistoryPO);
         });
         entityHistoryRepository.saveAll(entityHistoryPOList);
+    }
+
+    @Override
+    public boolean existHistoryRecord(String key, long timestamp) {
+        List<EntityHistoryUnionQuery> entityHistoryUnionQueryList = new ArrayList<>();
+
+        EntityPO entityPO = entityRepository.findOne(filter -> filter.eq(EntityPO.Fields.key, key)).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).detailMessage("entity not found").build());
+        Long entityId = entityPO.getId();
+        EntityHistoryUnionQuery entityHistoryUnionQuery = new EntityHistoryUnionQuery();
+        entityHistoryUnionQuery.setEntityId(entityId);
+        entityHistoryUnionQuery.setTimestamp(timestamp);
+        entityHistoryUnionQueryList.add(entityHistoryUnionQuery);
+
+        List<EntityHistoryPO> existEntityHistoryPOList = entityHistoryRepository.findByUnionUnique(entityManager, entityHistoryUnionQueryList);
+        return existEntityHistoryPOList != null && !existEntityHistoryPOList.isEmpty();
     }
 
     @Override
