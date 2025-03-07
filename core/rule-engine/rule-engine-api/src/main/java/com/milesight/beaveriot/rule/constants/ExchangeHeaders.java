@@ -34,4 +34,13 @@ public interface ExchangeHeaders {
 
     String EXCHANGE_LATEST_TRACE_ID = "CamelExchangeLatestNodeId";
 
+    String EXCHANGE_DONE_ADVICE_FLAG = "CamelExchangeDoneAdviceFlag";
+
+    /**
+     * property key for Exchange execution times in the route, Passing in global routing
+     */
+    String EXCHANGE_EXECUTION_REPEAT_COUNT = "CamelExchangeExecutionRepeatCount";
+
+    String EXCHANGE_ROOT_FLOW_ID = "CamelExchangeRootFlowId";
+
 }

@@ -9,6 +9,7 @@ import com.milesight.beaveriot.rule.annotations.OutputArguments;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
 import com.milesight.beaveriot.rule.annotations.UriParamExtension;
 import com.milesight.beaveriot.rule.api.ProcessorNode;
+import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
 import com.milesight.beaveriot.rule.constants.RuleNodeType;
 import com.milesight.beaveriot.rule.model.OutputVariablesSettings;
 import com.milesight.beaveriot.rule.support.JsonHelper;
@@ -17,6 +18,7 @@ import lombok.Data;
 import org.apache.camel.Exchange;
 import org.apache.camel.spi.UriParam;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -48,8 +50,10 @@ public class ServiceInvocationComponent implements ProcessorNode<Exchange> {
             Map<String, Object> serviceParams = JsonHelper.fromJSON(JsonHelper.toJSON(serviceInvocationSetting.get("serviceParams")), Map.class);
             Map<String, Object> exchangePayloadVariables = SpELExpressionHelper.resolveExpression(exchange, serviceParams);
             ExchangePayload exchangePayload = ExchangePayload.create(exchangePayloadVariables);
-
-            ExchangeContextHelper.initializeEventSource(exchangePayload, exchange);
+            if (ObjectUtils.isEmpty(exchange.getProperty(ExchangeHeaders.EXCHANGE_ROOT_FLOW_ID))) {
+                exchange.setProperty(ExchangeHeaders.EXCHANGE_ROOT_FLOW_ID, exchange.getFromRouteId());
+            }
+            ExchangeContextHelper.initializeExchangeContext(exchangePayload, exchange);
 
             EventResponse eventResponse = entityValueServiceProvider.saveValuesAndPublishSync(exchangePayload);
 

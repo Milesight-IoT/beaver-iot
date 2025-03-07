@@ -29,6 +29,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
@@ -100,6 +101,16 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
     public boolean removeFlow(String flowId) {
         try {
             camelContext.stopRoute(flowId);
+            return camelContext.removeRoute(flowId);
+        } catch (Exception e) {
+            throw new RuleEngineException("Remove Flow Exception:", e);
+        }
+    }
+
+    @Override
+    public boolean removeFlowImmediately(String flowId) {
+        try {
+            camelContext.stopRoute(flowId, 0, TimeUnit.SECONDS);
             return camelContext.removeRoute(flowId);
         } catch (Exception e) {
             throw new RuleEngineException("Remove Flow Exception:", e);

@@ -1,9 +1,11 @@
 package com.milesight.beaveriot.rule.manager.service;
 
+import com.google.common.collect.Maps;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
 import com.milesight.beaveriot.context.integration.model.Entity;
+import com.milesight.beaveriot.context.util.ExchangeContextHelper;
 import com.milesight.beaveriot.rule.RuleEngineExecutor;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
 import com.milesight.beaveriot.rule.api.ProcessorNode;
@@ -12,6 +14,7 @@ import com.milesight.beaveriot.rule.constants.RuleNodeNames;
 import com.milesight.beaveriot.rule.manager.po.WorkflowPO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -68,7 +71,8 @@ public class WorkflowTriggerByEntityNode implements ProcessorNode<Exchange> {
                             .orElse(EntityValueType.OBJECT)
                             .convertValue(entry.getValue())
             ));
-            Object result = ruleEngineExecutor.executeWithResponse("direct:" + workflowPO.getId(), nextExchange);
+            Map<String, Object> transmitCamelProperties = ExchangeContextHelper.getTransmitCamelContext(exchange.getProperties());
+            Object result = ruleEngineExecutor.executeWithResponse("direct:" + workflowPO.getId(), nextExchange, transmitCamelProperties);
             exchange.getIn().setBody(result);
         } else {
             log.error("Wrong exchange data type, should be a map!");

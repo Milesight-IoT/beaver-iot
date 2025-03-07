@@ -16,6 +16,7 @@ public class RuleFlowIdGenerator {
     public static final String INNER_NODE_ID_TEMPLATE = INNER_FLOW_ID_PREFIX + "{0}.{1}";
     public static final String FLOW_ID_PREFIX = "flow.";
     public static final String FLOW_NODE_ID_TEMPLATE = FLOW_ID_PREFIX + "{0}.{1}";
+    public static final String TRACER_FLOW_ID_PREFIX = "tracer";
 
     private RuleFlowIdGenerator() {
     }
@@ -33,7 +34,7 @@ public class RuleFlowIdGenerator {
 
     public static String generateRandomId() {
         UUID uuid = UUID.randomUUID();
-        return uuid.toString().replace("-", "");
+        return TRACER_FLOW_ID_PREFIX + uuid.toString().replace("-", "");
     }
 
     public static String generateNamespacedParallelId(String flowId, int order) {

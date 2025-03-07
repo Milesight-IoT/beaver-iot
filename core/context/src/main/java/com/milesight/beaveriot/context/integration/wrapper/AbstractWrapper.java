@@ -20,7 +20,6 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 /**
  * @author leon
@@ -89,7 +88,7 @@ public abstract class AbstractWrapper {
             Map<EntityType, ExchangePayload> splitExchangePayloads = exchangePayload.splitExchangePayloads();
             splitExchangePayloads.forEach((entityType, payload) -> {
                 String obtainEventType = ExchangeEvent.EventType.of(entityType, eventType);
-                ExchangeContextHelper.initializeEventSource(payload);
+                ExchangeContextHelper.initializeExchangeContext(payload);
                 ExchangeContextHelper.initializeEventType(payload, obtainEventType);
                 eventBus.publish(ExchangeEvent.of(obtainEventType, EntityValueType.convertValue(exchangePayload)));
             });
@@ -102,7 +101,7 @@ public abstract class AbstractWrapper {
             EventResponse eventResponse = EventResponse.empty();
             splitExchangePayloads.forEach((entityType, payload) -> {
                 String obtainEventType = ExchangeEvent.EventType.of(entityType, eventType);
-                ExchangeContextHelper.initializeEventSource(payload);
+                ExchangeContextHelper.initializeExchangeContext(payload);
                 ExchangeContextHelper.initializeEventType(payload, obtainEventType);
                 EventResponse response = eventBus.handle(ExchangeEvent.of(obtainEventType, EntityValueType.convertValue(exchangePayload)));
                 if (response != null) {

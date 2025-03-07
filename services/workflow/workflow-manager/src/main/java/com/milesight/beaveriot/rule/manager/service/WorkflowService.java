@@ -192,6 +192,7 @@ public class WorkflowService {
 
     private void deployFlow(WorkflowPO wp) {
         RuleFlowConfig ruleFlowConfig = parseRuleFlowConfig(wp.getId().toString(), wp.getDesignData());
+        ruleFlowConfig.setName(wp.getName());
         if (ruleFlowConfig == null) {
             removeFlow(wp);
             return;

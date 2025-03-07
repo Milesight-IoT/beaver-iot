@@ -1,11 +1,10 @@
 package com.milesight.beaveriot.rule.flow;
 
 import com.milesight.beaveriot.rule.RuleEngineExecutor;
-import org.apache.camel.CamelContext;
-import org.apache.camel.Exchange;
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.ProducerTemplate;
+import org.apache.camel.*;
+import org.springframework.util.ObjectUtils;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -30,13 +29,34 @@ public class CamelRuleEngineExecutor implements RuleEngineExecutor {
     }
 
     @Override
+    public void execute(String endpointUri, Object payload, Map<String, Object> properties) {
+        producerTemplate.send(endpointUri, createProcessor(payload, properties));
+    }
+    @Override
     public Object executeWithResponse(String endPointUri, Object payload) {
         return producerTemplate.sendBody(endPointUri, ExchangePattern.InOut, payload);
     }
 
     @Override
+    public Object executeWithResponse(String endPointUri, Object payload, Map<String, Object> properties) {
+        return producerTemplate.send(endPointUri, ExchangePattern.InOut, createProcessor(payload, properties));
+    }
+
+    @Override
     public Exchange executeWithResponse(String endPointUri, Exchange exchange) {
         return producerTemplate.send(endPointUri, exchange);
+    }
+
+    private Processor createProcessor(Object payload, Map<String,Object> properties) {
+        return exchange -> {
+            if (!ObjectUtils.isEmpty(properties)) {
+                properties.entrySet().forEach(entry -> {
+                    exchange.setProperty(entry.getKey(), entry.getValue());
+                });
+            }
+            Message in = exchange.getIn();
+            in.setBody(payload);
+        };
     }
 
     @Override
