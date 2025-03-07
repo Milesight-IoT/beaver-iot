@@ -63,6 +63,12 @@ management:
       exposure:
         include: "health,metrics,prometheus,info"
         exclude: shutdown,beans
+  metrics:
+    enable:
+      logback: false
+      spring.data: false
+      spring.security: false
+      disk: false
 #eventbus:
 #  execution:
 #    core-pool-size: 16

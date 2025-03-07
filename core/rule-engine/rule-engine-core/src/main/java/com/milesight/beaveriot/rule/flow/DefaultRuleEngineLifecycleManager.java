@@ -110,7 +110,6 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
     @Override
     public boolean removeFlowImmediately(String flowId) {
         try {
-            camelContext.stopRoute(flowId, 0, TimeUnit.SECONDS);
             return camelContext.removeRoute(flowId);
         } catch (Exception e) {
             throw new RuleEngineException("Remove Flow Exception:", e);

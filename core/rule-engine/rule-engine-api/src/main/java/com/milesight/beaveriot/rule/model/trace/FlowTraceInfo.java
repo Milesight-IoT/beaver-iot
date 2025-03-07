@@ -21,6 +21,8 @@ public class FlowTraceInfo {
 
     private long timeCost;
 
+    private String message;
+
     private List<NodeTraceInfo> traceInfos = new ArrayList<>();
 
     public boolean isEmpty() {

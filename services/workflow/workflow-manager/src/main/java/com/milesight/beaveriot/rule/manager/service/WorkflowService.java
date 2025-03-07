@@ -205,6 +205,16 @@ public class WorkflowService {
         ruleEngineLifecycleManager.removeFlow(wp.getId().toString());
     }
 
+    public void enableFlowImmediately(Long flowId) {
+        WorkflowPO wp = getById(flowId);
+        if (!wp.getEnabled()) {
+            return;
+        }
+        ruleEngineLifecycleManager.removeFlowImmediately(wp.getId().toString());
+        wp.setEnabled(false);
+        workflowRepository.save(wp);
+    }
+
     public void updateStatus(Long flowId, boolean status) {
         assertWorkflowPrepared();
 

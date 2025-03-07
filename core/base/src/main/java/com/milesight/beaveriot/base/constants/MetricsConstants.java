@@ -24,6 +24,7 @@ public class MetricsConstants {
      */
     public static final String ROUTE_NAME_TAG = "routeName";
 
-    public static final String ROUTE_ID_TAG = "routeId";
+    public static final String ROUTE_ROUTE_ID = "routeId";
+
     public static final String ROUTE_ROOT_ROUTE_ID = "rootRouteId";
 }
