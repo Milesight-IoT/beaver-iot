@@ -117,6 +117,8 @@ public final class MetricsStatistics {
             Metrics.gauge(MetricsConstants.METRICS_EXCHANGE_EXECUTION_REPEAT_MAX,tags.stream().toList(),
                     executionRepeatMaxCounts,  map -> map.getOrDefault(rootFlowId, 0));
             if (repeatCount.get() >= camelMetricsConfiguration.getThresholdConfig().getExchangeRepeatMax()) {
+                exchangesTotal.increment();
+                exchangesFailed.increment();
                 applicationEventPublisher.publishEvent(MetricsEvent.of(MetricsConstants.METRICS_EXCHANGE_EXECUTION_REPEAT_MAX, Double.valueOf(repeatCount.get()), TagUtils.toMap(tags)));
             }
         }
