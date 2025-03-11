@@ -15,7 +15,7 @@ Beaver IoT is an open-source platform designed for rapid and intuitive IoT appli
 - Monitor devices and collect real-time data
 - Intuitive dashboards and rich widgets for data visualization
 - Integrations with third-party platforms, devices and services
-- Multiple, scalable deployment options using docker
+- [Multiple, scalable deployment using docker](https://www.milesight.com/beaver-iot/docs/user-guides/installation)
 - Connecting devices across platforms through workflows
 - User and role permissions functionality
 
