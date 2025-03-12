@@ -36,7 +36,7 @@ public class GenericExchangeFlowExecutor {
         EventResponse eventResponse = EventResponse.empty();
         splitExchangePayloads.forEach((entityType, payload) -> {
             initializeEventContext(eventType, entityType, payload, true);
-            Object response = ruleEngineExecutor.executeWithResponse(RuleNodeNames.innerExchangeFlow, EntityValueType.convertValue(payload));
+            Object response = ruleEngineExecutor.executeWithResponse(RuleNodeNames.innerExchangeFlow, EntityValueType.convertValue(payload), ExchangeContextHelper.getTransmitCamelContext(payload.getContext()));
             if (response != null) {
                 if (!(response instanceof Map returnEvent)) {
                     log.warn("Synchronous call result response is not a Map, response:{}", response);
@@ -72,7 +72,7 @@ public class GenericExchangeFlowExecutor {
     protected void initializeEventContext(@Nullable String eventType, EntityType entityType, ExchangePayload payload, boolean syncCall) {
         ExchangeContextHelper.initializeCallMod(payload, syncCall);
         ExchangeContextHelper.initializeEventType(payload, ExchangeEvent.EventType.of(entityType, eventType));
-        ExchangeContextHelper.initializeEventSource(payload);
+        ExchangeContextHelper.initializeExchangeContext(payload);
     }
 
 }

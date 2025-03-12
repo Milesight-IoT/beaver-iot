@@ -5,11 +5,13 @@ import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.security.SecurityUser;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.context.security.TenantContext;
+import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
 import org.apache.camel.Exchange;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 
 import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.EXCHANGE_EVENT_TYPE;
@@ -31,15 +33,15 @@ public class ExchangeContextHelper {
         exchangePayload.putContext(EXCHANGE_EVENT_TYPE, eventType);
     }
 
-    public static void initializeEventSource(ExchangePayload exchangePayload) {
-        initializeEventSource(exchangePayload, Map.of());
+    public static void initializeExchangeContext(ExchangePayload exchangePayload) {
+        initializeExchangeContext(exchangePayload, Map.of());
     }
 
-    public static void initializeEventSource(ExchangePayload exchangePayload, Exchange exchange) {
-        initializeEventSource(exchangePayload, exchange.getProperties());
+    public static void initializeExchangeContext(ExchangePayload exchangePayload, Exchange exchange) {
+        initializeExchangeContext(exchangePayload, exchange.getProperties());
     }
 
-    public static void initializeEventSource(ExchangePayload exchangePayload, Map<String,Object> context) {
+    public static void initializeExchangeContext(ExchangePayload exchangePayload, Map<String,Object> context) {
         Assert.notNull(context, "headers must not be null");
 
         // set source user id, tenant id, flow id in order
@@ -49,7 +51,25 @@ public class ExchangeContextHelper {
         putContextIfNecessary(exchangePayload, ExchangeContextKeys.SOURCE_USER, securityUser);
         putContextIfNecessary(exchangePayload, ExchangeContextKeys.SOURCE_TENANT_ID, tenantId);
         putContextIfNecessary(exchangePayload, ExchangeContextKeys.SOURCE_FLOW_ID, flowId);
+        Serializable rootFlowId = (Serializable) context.getOrDefault(ExchangeHeaders.EXCHANGE_ROOT_FLOW_ID, flowId);
+        putContextIfNecessary(exchangePayload, ExchangeHeaders.EXCHANGE_ROOT_FLOW_ID, rootFlowId);
+        putContextIfNecessary(exchangePayload, ExchangeHeaders.EXCHANGE_EXECUTION_REPEAT_COUNT, (Serializable) context.get(ExchangeHeaders.EXCHANGE_EXECUTION_REPEAT_COUNT));
+    }
 
+    public static Map<String, Object> getTransmitCamelContext(Map<String,Object> context) {
+        if (ObjectUtils.isEmpty(context)) {
+            return context;
+        }
+        Map<String,Object> transmitCamelContext = new HashMap<>();
+        context.entrySet().forEach(entry -> {
+            if (entry.getKey().equals(ExchangeHeaders.EXCHANGE_EXECUTION_REPEAT_COUNT) ||
+                entry.getKey().equals(ExchangeHeaders.EXCHANGE_ROOT_FLOW_ID)){
+                if (!ObjectUtils.isEmpty(entry.getValue())) {
+                    transmitCamelContext.put(entry.getKey(), entry.getValue());
+                }
+            }
+        });
+        return transmitCamelContext;
     }
 
     private static void putContextIfNecessary(ExchangePayload exchangePayload, String key, Serializable value) {

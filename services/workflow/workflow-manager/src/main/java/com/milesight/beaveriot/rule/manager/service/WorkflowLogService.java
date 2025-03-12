@@ -57,6 +57,7 @@ public class WorkflowLogService {
                         .timeCost(workflowLogPO.getTimeCost())
                         .status(workflowLogPO.getStatus())
                         .version(workflowLogPO.getVersion())
+                        .message(workflowLogPO.getMessage())
                         .build()
                 );
     }
@@ -81,6 +82,7 @@ public class WorkflowLogService {
                 .timeCost(wl.getTimeCost())
                 .startTime(wl.getStartTime())
                 .version(wl.getVersion())
+                .message(wl.getMessage())
                 .traceInfo(JsonHelper.fromJSON(wld.getData(), new TypeReference<List<NodeTraceInfo>>() {}))
                 .build();
     }
@@ -116,6 +118,7 @@ public class WorkflowLogService {
         workflowLogPO.setTimeCost((int) event.getTimeCost());
         workflowLogPO.setTenantId(workflowPO.getTenantId());
         workflowLogPO.setUserId(workflowPO.getUserId());
+        workflowLogPO.setMessage(event.getMessage());
         // BUG: Versions may be inconsistent
         workflowLogPO.setVersion(workflowPO.getVersion());
 

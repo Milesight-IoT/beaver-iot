@@ -32,6 +32,9 @@ public class WorkflowLogPO {
     @Column(name = "status", length = 31)
     private String status;
 
+    @Column(name = "message", length = 1000)
+    private String message;
+
     @Column(name = "tenant_id")
     private String tenantId;
 

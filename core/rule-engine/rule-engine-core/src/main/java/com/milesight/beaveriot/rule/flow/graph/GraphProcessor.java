@@ -2,6 +2,7 @@ package com.milesight.beaveriot.rule.flow.graph;
 
 import com.google.common.graph.MutableGraph;
 import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
+import com.milesight.beaveriot.rule.exception.RuleEngineException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.*;
@@ -10,7 +11,6 @@ import org.apache.camel.spi.AsyncProcessorAwaitManager;
 import org.apache.camel.spi.IdAware;
 import org.apache.camel.spi.InterceptableProcessor;
 import org.apache.camel.spi.RouteIdAware;
-import org.apache.camel.support.AsyncProcessorConverterHelper;
 import org.apache.camel.support.AsyncProcessorSupport;
 import org.apache.camel.support.PluginHelper;
 import org.apache.camel.support.service.ServiceHelper;
@@ -138,9 +138,7 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
                 }
 
                 Processor processor = processors.get(successor);
-                AsyncProcessor asyncProcessor = AsyncProcessorConverterHelper.convert(processor);
-
-                asyncProcessor.process(exchange, asyncCallback);
+                processor.process(exchange);
 
                 Set<String> successors = calculateOutputs(successor, exchange, processor);
                 if (CollectionUtils.isEmpty(successors)) {
@@ -158,7 +156,7 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
 
             } catch (Exception e) {
                 catchExceptionIfNecessary(exchange, e);
-                throw e;
+                throw new RuleEngineException(e);
             }
             return true;
         }

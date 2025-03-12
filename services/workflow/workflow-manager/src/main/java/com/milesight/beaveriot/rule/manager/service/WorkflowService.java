@@ -192,6 +192,7 @@ public class WorkflowService {
 
     private void deployFlow(WorkflowPO wp) {
         RuleFlowConfig ruleFlowConfig = parseRuleFlowConfig(wp.getId().toString(), wp.getDesignData());
+        ruleFlowConfig.setName(wp.getName());
         if (ruleFlowConfig == null) {
             removeFlow(wp);
             return;
@@ -202,6 +203,16 @@ public class WorkflowService {
 
     private void removeFlow(WorkflowPO wp) {
         ruleEngineLifecycleManager.removeFlow(wp.getId().toString());
+    }
+
+    public void disableFlowImmediately(Long flowId) {
+        WorkflowPO wp = getById(flowId);
+        if (!wp.getEnabled()) {
+            return;
+        }
+        ruleEngineLifecycleManager.removeFlowImmediately(wp.getId().toString());
+        wp.setEnabled(false);
+        workflowRepository.save(wp);
     }
 
     public void updateStatus(Long flowId, boolean status) {
