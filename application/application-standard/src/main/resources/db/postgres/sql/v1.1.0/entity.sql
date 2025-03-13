@@ -56,3 +56,7 @@ alter column tenant_id type varchar(255);
 update t_entity set tenant_id = 'default' where tenant_id = '1';
 update t_entity_history set tenant_id = 'default' where tenant_id = '1';
 update t_entity_latest set tenant_id = 'default' where tenant_id = '1';
+
+-- changeset loong:entity_v1.1.0_20250304_100000
+alter table t_entity_history
+    drop constraint uk_entity_history;
