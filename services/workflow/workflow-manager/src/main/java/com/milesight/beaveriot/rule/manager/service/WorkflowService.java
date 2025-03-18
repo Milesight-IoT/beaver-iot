@@ -9,11 +9,13 @@ import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.event.EntityEvent;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.eventbus.annotations.EventSubscribe;
 import com.milesight.beaveriot.permission.aspect.OperationPermission;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.rule.RuleEngineComponentManager;
 import com.milesight.beaveriot.rule.RuleEngineLifecycleManager;
+import com.milesight.beaveriot.rule.manager.support.WorkflowTenantCache;
 import com.milesight.beaveriot.rule.manager.model.request.*;
 import com.milesight.beaveriot.rule.manager.model.response.*;
 import com.milesight.beaveriot.rule.manager.po.WorkflowHistoryPO;
@@ -34,6 +36,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
@@ -168,6 +171,7 @@ public class WorkflowService {
             workflowEntityRelationService.deleteEntityByFlowIds(removeSuccessIds);
             workflowRepository.deleteAll(removeSuccess);
             workflowHistoryRepository.deleteByFlowIdIn(removeSuccessIds);
+            removeSuccessIds.stream().map(Object::toString).forEach(WorkflowTenantCache.INSTANCE::remove);
         }
 
         if (!removeFailure.isEmpty()) {
@@ -197,12 +201,14 @@ public class WorkflowService {
             removeFlow(wp);
             return;
         }
-
         ruleEngineLifecycleManager.deployFlow(ruleFlowConfig);
+        String tenantId = ObjectUtils.isEmpty(wp.getTenantId()) ? TenantContext.getTenantId() : wp.getTenantId();
+        WorkflowTenantCache.INSTANCE.put(wp.getId().toString(), tenantId);
     }
 
     private void removeFlow(WorkflowPO wp) {
         ruleEngineLifecycleManager.removeFlow(wp.getId().toString());
+        WorkflowTenantCache.INSTANCE.remove(wp.getId().toString());
     }
 
     public void disableFlowImmediately(Long flowId) {

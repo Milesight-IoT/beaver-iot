@@ -63,7 +63,9 @@ public class ExchangeContextHelper {
         Map<String,Object> transmitCamelContext = new HashMap<>();
         context.entrySet().forEach(entry -> {
             if (entry.getKey().equals(ExchangeHeaders.EXCHANGE_EXECUTION_REPEAT_COUNT) ||
-                entry.getKey().equals(ExchangeHeaders.EXCHANGE_ROOT_FLOW_ID)){
+                entry.getKey().equals(ExchangeHeaders.EXCHANGE_ROOT_FLOW_ID) ||
+                entry.getKey().equals(ExchangeContextKeys.SOURCE_TENANT_ID) ||
+                entry.getKey().equals(ExchangeContextKeys.SOURCE_USER) ){
                 if (!ObjectUtils.isEmpty(entry.getValue())) {
                     transmitCamelContext.put(entry.getKey(), entry.getValue());
                 }
