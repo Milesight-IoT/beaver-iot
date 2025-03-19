@@ -79,7 +79,7 @@ public class WorkflowService {
         Page<WorkflowPO> workflowPOPage;
         do {
             workflowPOPage = workflowRepository
-                    .findAll(f -> f.eq(WorkflowPO.Fields.enabled, true).isNotNull(WorkflowPO.Fields.designData), pageRequest.toPageable());
+                    .findAllIgnoreTenant(f -> f.eq(WorkflowPO.Fields.enabled, true).isNotNull(WorkflowPO.Fields.designData), pageRequest.toPageable());
             workflowPOPage.forEach(workflowPO -> {
                 try {
                     this.deployFlow(workflowPO);
