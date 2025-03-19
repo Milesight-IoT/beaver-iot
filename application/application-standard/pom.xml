@@ -167,6 +167,12 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>metrics</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- default integrations -->
 
         <dependency>

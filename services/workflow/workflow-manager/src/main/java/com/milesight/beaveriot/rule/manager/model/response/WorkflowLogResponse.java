@@ -16,4 +16,6 @@ public class WorkflowLogResponse {
     private String status;
 
     private Integer version;
+
+    private String message;
 }

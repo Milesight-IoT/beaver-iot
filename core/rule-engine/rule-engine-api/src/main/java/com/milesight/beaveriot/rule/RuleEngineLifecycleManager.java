@@ -21,6 +21,8 @@ public interface RuleEngineLifecycleManager {
 
     boolean removeFlow(String flowId);
 
+    boolean removeFlowImmediately(String flowId);
+
     boolean validateFlow(RuleFlowConfig ruleFlowConfig);
 
     FlowTraceInfo trackFlow(RuleFlowConfig ruleFlowConfig, Exchange exchange);
