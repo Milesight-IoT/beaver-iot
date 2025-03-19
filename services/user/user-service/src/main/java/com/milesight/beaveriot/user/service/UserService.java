@@ -50,6 +50,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -442,10 +443,10 @@ public class UserService {
     }
 
     public TenantPO analyzeTenantId(String tenantId) {
-        //FIXME
-        String finalTenantId = UserConstants.DEFAULT_TENANT_ID;
-
-        return tenantRepository.findOne(filter -> filter.eq(TenantPO.Fields.id, finalTenantId)).orElse(null);
+        if(!StringUtils.hasText(tenantId)) {
+            throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("tenantId is not exist").build();
+        }
+        return tenantRepository.findOne(filter -> filter.eq(TenantPO.Fields.id, tenantId)).orElse(null);
     }
 
     public Long analyzeSuperAdminRoleId() {
