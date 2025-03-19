@@ -28,6 +28,10 @@ public interface EntityValueServiceProvider {
 
     void saveHistoryRecord(Map<String, Object> recordValues);
 
+    void mergeHistoryRecord(Map<String, Object> recordValues, long timestamp);
+
+    boolean existHistoryRecord(String key, long timestamp);
+
     Object findValueByKey(String key);
 
     Map<String, Object> findValuesByKeys(List<String> keys);
