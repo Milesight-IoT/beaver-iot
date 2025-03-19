@@ -33,6 +33,7 @@ public interface WorkflowRepository extends BaseJpaRepository<WorkflowPO, Long> 
         return findByIdIn(ids);
     }
 
+    @Tenant(enable = false)
     default Page<WorkflowPO> findAllIgnoreTenant(Consumer<Filterable> filterable, Pageable pageable) {
         return findAll(filterable, pageable);
     }
