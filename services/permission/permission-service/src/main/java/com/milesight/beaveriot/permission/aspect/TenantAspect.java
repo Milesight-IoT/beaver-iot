@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.util.StringUtils;
 
 /**
  * @author loong
@@ -64,9 +65,8 @@ public class TenantAspect {
         if (columnName.isEmpty()) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("tenant column name is not exist").build();
         }
-        //TODO Ensure the presence of tenantId in the context
-        String tenantId = TenantContext.containsTenant() ? TenantContext.getTenantId() : UserConstants.DEFAULT_TENANT_ID;
-        if(tenantId == null){
+        String tenantId = TenantContext.getTenantId();
+        if(!StringUtils.hasText(tenantId)){
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("tenantId is not exist").build();
         }
         DataAspectContext.setTenantContext(tableName, DataAspectContext.TenantContext.builder()

@@ -1,6 +1,9 @@
 package com.milesight.beaveriot.dashboard.service;
 
+import com.milesight.beaveriot.base.enums.ErrorCode;
+import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.JsonUtils;
+import com.milesight.beaveriot.context.constants.ExchangeContextKeys;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
 import com.milesight.beaveriot.context.integration.model.event.WebSocketEvent;
@@ -11,6 +14,7 @@ import com.milesight.beaveriot.user.constants.UserConstants;
 import com.milesight.beaveriot.websocket.WebSocketContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,8 +34,10 @@ public class DashboardNotifyService {
 
     private void doDashboardNotify(ExchangePayload exchangePayload) {
         try {
-            //TODO Ensure the presence of tenantId in the context
-            String tenantId = UserConstants.DEFAULT_TENANT_ID;
+            String tenantId = (String) exchangePayload.getContext(ExchangeContextKeys.SOURCE_TENANT_ID);
+            if (!StringUtils.hasText(tenantId)) {
+                throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("tenantId is not exist").build();
+            }
             List<String> entityKeys = exchangePayload.keySet().stream().toList();
             List<String> keys = DashboardWebSocketContext.getKeysByValues(entityKeys);
             if (keys == null || keys.isEmpty()) {
