@@ -3,6 +3,7 @@ package com.milesight.beaveriot.permission.inspector;
 import com.milesight.beaveriot.permission.context.DataAspectContext;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.Parenthesis;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
@@ -113,8 +114,9 @@ public class DataAspectStatementInspector implements StatementInspector {
         if (plainSelect.getWhere() == null) {
             plainSelect.setWhere(tenantExpression);
         } else {
+            Parenthesis originalWhere = new Parenthesis(plainSelect.getWhere());
             plainSelect.setWhere(new net.sf.jsqlparser.expression.operators.conditional.AndExpression(
-                    plainSelect.getWhere(), tenantExpression));
+                    originalWhere, tenantExpression));
         }
     }
 
@@ -141,8 +143,9 @@ public class DataAspectStatementInspector implements StatementInspector {
         if (updateStatement.getWhere() == null) {
             updateStatement.setWhere(tenantExpression);
         } else {
+            Parenthesis originalWhere = new Parenthesis(updateStatement.getWhere());
             updateStatement.setWhere(new net.sf.jsqlparser.expression.operators.conditional.AndExpression(
-                    updateStatement.getWhere(), tenantExpression));
+                    originalWhere, tenantExpression));
         }
     }
 
@@ -169,8 +172,9 @@ public class DataAspectStatementInspector implements StatementInspector {
         if (deleteStatement.getWhere() == null) {
             deleteStatement.setWhere(tenantExpression);
         } else {
+            Parenthesis originalWhere = new Parenthesis(deleteStatement.getWhere());
             deleteStatement.setWhere(new net.sf.jsqlparser.expression.operators.conditional.AndExpression(
-                    deleteStatement.getWhere(), tenantExpression));
+                    originalWhere, tenantExpression));
         }
     }
 
@@ -281,8 +285,9 @@ public class DataAspectStatementInspector implements StatementInspector {
         if (plainSelect.getWhere() == null) {
             plainSelect.setWhere(expression);
         } else {
+            Parenthesis originalWhere = new Parenthesis(plainSelect.getWhere());
             plainSelect.setWhere(new net.sf.jsqlparser.expression.operators.conditional.AndExpression(
-                    plainSelect.getWhere(), expression));
+                    originalWhere, expression));
         }
     }
 
