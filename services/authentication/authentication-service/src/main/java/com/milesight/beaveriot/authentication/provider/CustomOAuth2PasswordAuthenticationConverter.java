@@ -26,7 +26,7 @@ public class CustomOAuth2PasswordAuthenticationConverter implements Authenticati
         if (!AuthorizationGrantType.PASSWORD.getValue().equals(grantType)) {
             return null;
         }
-        String tenantId = request.getHeader(TenantContext.TENANT_ID) != null ? request.getHeader(TenantContext.TENANT_ID) : null;
+        String tenantId = request.getHeader(TenantContext.HEADER_TENANT_ID) != null ? request.getHeader(TenantContext.HEADER_TENANT_ID) : null;
         Authentication clientPrincipal = SecurityContextHolder.getContext().getAuthentication();
         MultiValueMap<String, String> parameters = OAuth2EndpointUtils.getParameters(request);
         String username = parameters.getFirst(OAuth2ParameterNames.USERNAME);
