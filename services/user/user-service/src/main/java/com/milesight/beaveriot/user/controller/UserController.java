@@ -6,6 +6,7 @@ import com.milesight.beaveriot.base.page.GenericQueryPageRequest;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.context.security.TenantContext;
+import com.milesight.beaveriot.user.constants.UserConstants;
 import com.milesight.beaveriot.user.model.request.*;
 import com.milesight.beaveriot.user.model.response.UserInfoResponse;
 import com.milesight.beaveriot.user.model.response.UserMenuResponse;
@@ -16,6 +17,7 @@ import com.milesight.beaveriot.user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -44,7 +46,12 @@ public class UserController {
     }
 
     private String getTenantFromHeader(HttpServletRequest request) {
-        return request.getHeader(TenantContext.HEADER_TENANT_ID) != null ? request.getHeader(TenantContext.HEADER_TENANT_ID) : null;
+        String tenantId = request.getHeader(TenantContext.HEADER_TENANT_ID) != null ? request.getHeader(TenantContext.HEADER_TENANT_ID) : null;
+        //FIXME
+        if (!StringUtils.hasText(tenantId)) {
+            tenantId = UserConstants.DEFAULT_TENANT_ID;
+        }
+        return tenantId;
     }
 
     @GetMapping("/status")
