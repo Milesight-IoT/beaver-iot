@@ -81,7 +81,7 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
             }
         });
 
-        integrationStorageProvider.batchSave(integrationContext.getAllIntegrations().values());
+//        integrationStorageProvider.batchSave(integrationContext.getAllIntegrations().values());
 
         integrationBootstrapList.orderedStream().forEach(integrationBootstrap -> {
             try {

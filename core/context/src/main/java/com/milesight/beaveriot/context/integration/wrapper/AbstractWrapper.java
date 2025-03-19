@@ -90,7 +90,7 @@ public abstract class AbstractWrapper {
                 String obtainEventType = ExchangeEvent.EventType.of(entityType, eventType);
                 ExchangeContextHelper.initializeExchangeContext(payload);
                 ExchangeContextHelper.initializeEventType(payload, obtainEventType);
-                eventBus.publish(ExchangeEvent.of(obtainEventType, EntityValueType.convertValue(exchangePayload)));
+                eventBus.publish(ExchangeEvent.of(obtainEventType, EntityValueType.convertValue(payload)));
             });
 
         }
@@ -103,7 +103,7 @@ public abstract class AbstractWrapper {
                 String obtainEventType = ExchangeEvent.EventType.of(entityType, eventType);
                 ExchangeContextHelper.initializeExchangeContext(payload);
                 ExchangeContextHelper.initializeEventType(payload, obtainEventType);
-                EventResponse response = eventBus.handle(ExchangeEvent.of(obtainEventType, EntityValueType.convertValue(exchangePayload)));
+                EventResponse response = eventBus.handle(ExchangeEvent.of(obtainEventType, EntityValueType.convertValue(payload)));
                 if (response != null) {
                     eventResponse.putAll(response);
                 }
