@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.milesight.beaveriot</groupId>
         <artifactId>rule-engine</artifactId>
-        <version>1.1.0</version>
+        <version>1.1.0-SNAPSHOT</version>
     </parent>
 
     <groupId>com.milesight.beaveriot</groupId>
@@ -40,7 +40,52 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.graalvm.polyglot</groupId>
+                <artifactId>python</artifactId>
+                <version>24.1.1</version>
+                <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.sdk</groupId>
+                <artifactId>graal-sdk</artifactId>
+                <version>24.1.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.polyglot</groupId>
+                <artifactId>polyglot</artifactId>
+                <version>24.1.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.truffle</groupId>
+                <artifactId>truffle-api</artifactId>
+                <version>24.1.1</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
+        <dependency>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>graal-sdk</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.graalvm.truffle</groupId>
+            <artifactId>truffle-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.graalvm.polyglot</groupId>
+            <artifactId>polyglot</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.polyglot</groupId>
+            <artifactId>python</artifactId>
+            <type>pom</type>
+        </dependency>
+
         <dependency>
             <groupId>com.milesight.beaveriot</groupId>
             <artifactId>rule-engine-api</artifactId>
