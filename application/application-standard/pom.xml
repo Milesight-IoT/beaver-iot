@@ -181,12 +181,6 @@
             <version>1.1.0-SNAPSHOT</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.milesight.beaveriot.integrations</groupId>
-            <artifactId>ollama-integration</artifactId>
-            <version>1.1.0-SNAPSHOT</version>
-        </dependency>
-
 
         <!-- unit test -->
         <!--<dependency>
