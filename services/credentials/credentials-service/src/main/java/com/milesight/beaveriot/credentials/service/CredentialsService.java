@@ -8,7 +8,6 @@ import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.CredentialsServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Credentials;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
-import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.context.util.SecretUtils;
 import com.milesight.beaveriot.credentials.api.model.CredentialsCacheInvalidationEvent;
 import com.milesight.beaveriot.credentials.api.model.CredentialsChangeEvent;
@@ -159,47 +158,50 @@ public class CredentialsService implements CredentialsServiceProvider {
         messagePubSub.publishAfterCommit(new CredentialsCacheInvalidationEvent(po, currentMillis));
     }
 
-    public CredentialsResponse getCredentials(String credentialsType) {
-        return credentialsRepository.findFirstByTenantIdAndCredentialsType(TenantContext.getTenantId(), credentialsType)
+    public CredentialsResponse getCredentialsResponse(String credentialsType) {
+        return credentialsRepository.findFirstByCredentialsTypeAndAccessKey(credentialsType, getCredentialsDefaultAccessKeyByType(credentialsType))
                 .map(this::convertPOToResponse)
                 .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND));
     }
 
-    public CredentialsResponse getCredentials(Long id) {
+    private static String getCredentialsDefaultAccessKeyByType(String credentialsType) {
+        return credentialsType.toLowerCase();
+    }
+
+    public CredentialsResponse getCredentialsResponse(Long id) {
         return credentialsRepository.findById(id)
                 .map(this::convertPOToResponse)
                 .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND));
     }
 
-    public Optional<Credentials> getCredentials(String tenantId, String credentialType) {
-        return credentialsRepository.findFirstByTenantIdAndCredentialsType(tenantId, credentialType)
+    public Optional<Credentials> getCredentials(String credentialsType) {
+        return credentialsRepository.findFirstByCredentialsTypeAndAccessKey(credentialsType, getCredentialsDefaultAccessKeyByType(credentialsType))
                 .map(this::convertPOToDTO);
     }
 
     @Transactional(rollbackFor = Throwable.class)
     @Override
-    public Credentials getOrCreateDefaultCredentials(String tenantId, String credentialType) {
-        return getOrCreateCredentials(tenantId, credentialType, credentialType.toLowerCase());
+    public Credentials getOrCreateDefaultCredentials(String credentialsType) {
+        return getOrCreateCredentials(credentialsType, getCredentialsDefaultAccessKeyByType(credentialsType));
     }
 
     @Transactional(rollbackFor = Throwable.class)
     @Override
-    public Credentials getOrCreateCredentials(String tenantId, String credentialType, String username) {
-        Assert.notNull(tenantId, "tenantId cannot be null");
-        Assert.notNull(credentialType, "credentialType cannot be null");
+    public Credentials getOrCreateCredentials(String credentialsType, String username) {
+        Assert.notNull(credentialsType, "credentialsType cannot be null");
         Assert.notNull(username, "username cannot be null");
 
-        var credentials = getCredentials(tenantId, credentialType, username).orElse(null);
+        var credentials = getCredentials(credentialsType, username).orElse(null);
         if (credentials == null) {
             synchronized (this) {
-                credentials = getCredentials(tenantId, credentialType, username).orElse(null);
+                credentials = getCredentials(credentialsType, username).orElse(null);
                 if (credentials == null) {
                     addCredentials(Credentials.builder()
-                            .credentialsType(credentialType)
+                            .credentialsType(credentialsType)
                             .accessKey(username)
                             .accessSecret(SecretUtils.randomSecret(32))
                             .build());
-                    credentials = getCredentials(tenantId, credentialType, username)
+                    credentials = getCredentials(credentialsType, username)
                             .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND, "credentials not found"));
                 }
             }
@@ -207,14 +209,14 @@ public class CredentialsService implements CredentialsServiceProvider {
         return credentials;
     }
 
-    public Optional<Credentials> getCredentials(String tenantId, Long id) {
-        return credentialsRepository.findFirstByTenantIdAndId(tenantId, id)
+    public Optional<Credentials> getCredentials(Long id) {
+        return credentialsRepository.findById(id)
                 .map(this::convertPOToDTO);
     }
 
     @Override
-    public Optional<Credentials> getCredentials(String tenantId, String credentialType, String accessKey) {
-        return credentialsRepository.findFirstByTenantIdAndCredentialsTypeAndAccessKey(tenantId, credentialType, accessKey)
+    public Optional<Credentials> getCredentials(String credentialsType, String accessKey) {
+        return credentialsRepository.findFirstByCredentialsTypeAndAccessKey(credentialsType, accessKey)
                 .map(this::convertPOToDTO);
     }
 

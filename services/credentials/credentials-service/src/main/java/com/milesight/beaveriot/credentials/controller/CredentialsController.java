@@ -35,12 +35,12 @@ public class CredentialsController {
 
     @GetMapping("/{id}")
     public ResponseBody<CredentialsResponse> getCredentials(@PathVariable("id") Long id) {
-        return ResponseBuilder.success(credentialsService.getCredentials(id));
+        return ResponseBuilder.success(credentialsService.getCredentialsResponse(id));
     }
 
     @GetMapping("/default/{credentialsType}")
     public ResponseBody<CredentialsResponse> getCredentials(@PathVariable("credentialsType") String credentialsType) {
-        return ResponseBuilder.success(credentialsService.getCredentials(credentialsType));
+        return ResponseBuilder.success(credentialsService.getCredentialsResponse(credentialsType));
     }
 
     @PostMapping

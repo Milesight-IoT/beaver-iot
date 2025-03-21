@@ -2,10 +2,10 @@ package com.milesight.beaveriot.rule.components.mqtt;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.context.integration.enums.CredentialsType;
 import com.milesight.beaveriot.context.integration.model.Credentials;
 import com.milesight.beaveriot.context.mqtt.MqttMessageListener;
 import com.milesight.beaveriot.context.mqtt.MqttTopicChannel;
-import com.milesight.beaveriot.context.security.TenantContext;
 import io.moquette.broker.subscriptions.Topic;
 import lombok.extern.slf4j.*;
 import lombok.*;
@@ -47,18 +47,17 @@ public class SimpleMqttConsumer extends DefaultConsumer {
         super.doStart();
         val component = getEndpoint().getComponent(SimpleMqttComponent.class);
 
-        val tenantId = TenantContext.getTenantId();
         Credentials credentials;
         if (getEndpoint().getCredentialsId() != null) {
             try {
                 long credentialsId = Long.parseLong(getEndpoint().getCredentialsId());
-                credentials = component.getCredentialsServiceFacade().getCredentials(tenantId, credentialsId)
+                credentials = component.getCredentialsServiceProvider().getCredentials(credentialsId)
                         .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND, "credentials not found"));
             } catch (NumberFormatException e) {
                 throw new ServiceException(ErrorCode.PARAMETER_VALIDATION_FAILED, "credentialsId should be in a numeric format");
             }
         } else {
-            credentials = component.getCredentialsServiceFacade().getCredentials(tenantId, "MQTT")
+            credentials = component.getCredentialsServiceProvider().getCredentials(CredentialsType.MQTT.name())
                     .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND, "credentials not found"));
         }
 

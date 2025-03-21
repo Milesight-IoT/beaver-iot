@@ -9,13 +9,6 @@ import java.util.Optional;
 @Tenant
 public interface CredentialsRepository extends BaseJpaRepository<CredentialsPO, Long> {
 
-    @Tenant(enable = false)
-    Optional<CredentialsPO> findFirstByTenantIdAndCredentialsTypeAndAccessKey(String tenantId, String credentialsType, String accessKey);
-
-    @Tenant(enable = false)
-    Optional<CredentialsPO> findFirstByTenantIdAndId(String tenantId, Long id);
-
-    @Tenant(enable = false)
-    Optional<CredentialsPO> findFirstByTenantIdAndCredentialsType(String tenantId, String credentialsType);
+    Optional<CredentialsPO> findFirstByCredentialsTypeAndAccessKey(String credentialsType, String accessKey);
 
 }

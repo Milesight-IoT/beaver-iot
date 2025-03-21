@@ -2,6 +2,7 @@ package com.milesight.beaveriot.mqtt.service;
 
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.CredentialsServiceProvider;
+import com.milesight.beaveriot.context.integration.enums.CredentialsType;
 import com.milesight.beaveriot.context.integration.model.Credentials;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.credentials.api.model.CredentialsChangeEvent;
@@ -26,11 +27,11 @@ public class MqttAclService implements MqttAuthProvider {
 
     public static final String DEFAULT_TOPIC_PREFIX = "beaver-iot";
 
-    public static final String CREDENTIALS_TYPE = "MQTT";
+    public static final String CREDENTIALS_TYPE = CredentialsType.MQTT.name();
 
     @Lazy
     @Autowired
-    private CredentialsServiceProvider credentialsServiceFacade;
+    private CredentialsServiceProvider credentialsServiceProvider;
 
     @Lazy
     @Autowired
@@ -108,7 +109,7 @@ public class MqttAclService implements MqttAuthProvider {
         if (tenantId == null) {
             return false;
         }
-        return credentialsServiceFacade.getCredentials(tenantId, CREDENTIALS_TYPE, username)
+        return credentialsServiceProvider.getCredentials(CREDENTIALS_TYPE, username)
                 .map(Credentials::getAccessSecret)
                 .map(password::equals)
                 .orElse(false);
@@ -124,7 +125,7 @@ public class MqttAclService implements MqttAuthProvider {
     public WebMqttCredentials getOrInitWebMqttCredentials() {
         val tenantId = TenantContext.getTenantId();
         val username = getWebUsername(tenantId);
-        var credentials = credentialsServiceFacade.getOrCreateCredentials(tenantId, CREDENTIALS_TYPE, username);
+        var credentials = credentialsServiceProvider.getOrCreateCredentials(CREDENTIALS_TYPE, username);
         return WebMqttCredentials.builder()
                 .clientId(String.format("%s#%s", username, SnowflakeUtil.nextId()))
                 .username(username)

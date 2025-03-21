@@ -12,14 +12,14 @@ public interface CredentialsServiceProvider {
 
     void batchDeleteCredentials(List<Long> ids);
 
-    Optional<Credentials> getCredentials(String tenantId, String credentialType);
+    Optional<Credentials> getCredentials(String credentialType);
 
-    Credentials getOrCreateDefaultCredentials(String tenantId, String credentialType);
+    Credentials getOrCreateDefaultCredentials(String credentialType);
 
-    Credentials getOrCreateCredentials(String tenantId, String credentialType, String username);
+    Credentials getOrCreateCredentials(String credentialType, String username);
 
-    Optional<Credentials> getCredentials(String tenantId, Long id);
+    Optional<Credentials> getCredentials(Long id);
 
-    Optional<Credentials> getCredentials(String tenantId, String credentialType, String accessKey);
+    Optional<Credentials> getCredentials(String credentialType, String accessKey);
 
 }

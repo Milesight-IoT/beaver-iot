@@ -23,7 +23,7 @@ public class SimpleMqttComponent extends DefaultComponent implements ExtendedSta
 
     @Getter
     @BeanInject
-    private CredentialsServiceProvider credentialsServiceFacade;
+    private CredentialsServiceProvider credentialsServiceProvider;
 
     public SimpleMqttComponent(CamelContext camelContext) {
         super(camelContext);
