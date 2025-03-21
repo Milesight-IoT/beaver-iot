@@ -1,8 +1,10 @@
 package com.milesight.beaveriot.pubsub;
 
+import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.pubsub.api.annotation.MessageListener;
 import com.milesight.beaveriot.pubsub.api.message.PubSubMessage;
 import lombok.extern.slf4j.*;
+import lombok.*;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.core.MethodIntrospector;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Component;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
@@ -34,6 +37,12 @@ public class MessageRouter implements BeanPostProcessor {
             log.error("dispatch message failed, message is null");
             return;
         }
+
+        val originalTenantId = TenantContext.tryGetTenantId().orElse(null);
+        if (message.getTenantId() != null) {
+            TenantContext.setTenantId(message.getTenantId());
+        }
+
         var clazz = message.getClass();
         boolean subscriptionExists = false;
         for (Subscription<PubSubMessage> subscription : SUBSCRIPTIONS) {
@@ -48,6 +57,10 @@ public class MessageRouter implements BeanPostProcessor {
         }
         if (!subscriptionExists) {
             log.warn("dispatch message failed, no subscriber found for message: {}", clazz.getName());
+        }
+
+        if (originalTenantId != null && !Objects.equals(originalTenantId, message.getTenantId())) {
+            TenantContext.setTenantId(originalTenantId);
         }
     }
 

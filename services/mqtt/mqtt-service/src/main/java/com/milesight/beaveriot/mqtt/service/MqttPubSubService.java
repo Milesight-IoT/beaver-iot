@@ -5,6 +5,7 @@ import com.milesight.beaveriot.context.mqtt.MqttMessage;
 import com.milesight.beaveriot.context.mqtt.MqttMessageListener;
 import com.milesight.beaveriot.context.mqtt.MqttQos;
 import com.milesight.beaveriot.context.mqtt.MqttTopicChannel;
+import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.mqtt.api.MqttAdminPubSubServiceProvider;
 import com.milesight.beaveriot.mqtt.broker.bridge.MqttBrokerBridge;
 import com.milesight.beaveriot.mqtt.broker.bridge.listener.MqttEventListener;
@@ -53,8 +54,16 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
 
         val usernameInTopic = topicTokens.get(1);
         val topicSubPath = String.join("", topicTokens.subList(2, topicTokens.size()));
+        val usernameTokens = usernameInTopic.split("@");
+        String tenantId = null;
+        if (usernameTokens.length == 2 && !usernameTokens[1].isEmpty()) {
+            tenantId = usernameTokens[1];
+            TenantContext.setTenantId(tenantId);
+        }
+
         val mqttMessage = new MqttMessage(event.getTopic(), topicSubPath,
                 topicChannel, usernameInTopic, topicTokens, event.getPayload());
+
         subscribers.forEach((username, topicSubscribers) -> {
             if (!usernameInTopic.equals(username)) {
                 return;
