@@ -155,13 +155,6 @@ mqtt:
       netty:
         mqtt:
           message_size: 1048576
-    emqx:
-      internal_mqtt_endpoint: mqtt://${mqtt.broker.host:localhost}:1883
-      internal_mqtt_username: admin
-      internal_mqtt_password: admin
-      rest_api_endpoint: http://${mqtt.broker.host:localhost}
-      rest_api_username: ""
-      rest_api_password: ""
 
 
 logging:
