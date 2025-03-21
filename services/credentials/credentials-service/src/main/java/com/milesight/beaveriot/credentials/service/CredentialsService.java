@@ -9,6 +9,7 @@ import com.milesight.beaveriot.context.api.CredentialsServiceProvider;
 import com.milesight.beaveriot.context.integration.enums.CredentialsType;
 import com.milesight.beaveriot.context.integration.model.Credentials;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.context.util.SecretUtils;
 import com.milesight.beaveriot.credentials.api.model.CredentialsCacheInvalidationEvent;
 import com.milesight.beaveriot.credentials.api.model.CredentialsChangeEvent;
@@ -43,7 +44,7 @@ public class CredentialsService implements CredentialsServiceProvider {
     private CredentialsRepository credentialsRepository;
 
     private static String getCredentialsDefaultAccessKeyByType(String credentialsType) {
-        return credentialsType.toLowerCase();
+        return "%s@%s".formatted(credentialsType.toLowerCase(), TenantContext.getTenantId());
     }
 
     public Page<CredentialsResponse> searchCredentials(SearchCredentialsRequest request) {
@@ -191,6 +192,7 @@ public class CredentialsService implements CredentialsServiceProvider {
         return getOrCreateCredentials(credentialsType, getCredentialsDefaultAccessKeyByType(credentialsType));
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     @Override
     public Credentials getOrCreateDefaultCredentials(CredentialsType credentialType) {
         return getOrCreateDefaultCredentials(credentialType.name());
@@ -220,6 +222,7 @@ public class CredentialsService implements CredentialsServiceProvider {
         return credentials;
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     @Override
     public Credentials getOrCreateCredentials(CredentialsType credentialType, String username) {
         return getOrCreateCredentials(credentialType.name(), username);
