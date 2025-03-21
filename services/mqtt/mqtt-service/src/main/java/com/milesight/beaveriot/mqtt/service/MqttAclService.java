@@ -95,6 +95,7 @@ public class MqttAclService implements MqttAuthProvider {
         if (tenantId == null) {
             return true;
         }
+        TenantContext.setTenantId(tenantId);
         val topicTokens = topic.split("/");
         if (topicTokens.length < 2 || !Objects.equals(topicTokens[1], username)) {
             return false;
@@ -109,6 +110,7 @@ public class MqttAclService implements MqttAuthProvider {
         if (tenantId == null) {
             return false;
         }
+        TenantContext.setTenantId(tenantId);
         return credentialsServiceProvider.getCredentials(CREDENTIALS_TYPE, username)
                 .map(Credentials::getAccessSecret)
                 .map(password::equals)
