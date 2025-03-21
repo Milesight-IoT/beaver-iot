@@ -79,7 +79,7 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
             topicSubscribers.forEach((subscriptionTopic, callbacks) ->
                     callbacks.forEach((listener, sharedSubscription) -> {
                         if (Objects.equals(!broadcast, sharedSubscription)
-                                && (subscriptionTopic.match(topic))) {
+                                && (topic.match(subscriptionTopic))) {
                                 listener.accept(mqttMessage);
                         }
                     }));
