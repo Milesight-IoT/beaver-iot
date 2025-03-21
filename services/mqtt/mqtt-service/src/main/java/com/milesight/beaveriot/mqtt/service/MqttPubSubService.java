@@ -1,5 +1,7 @@
 package com.milesight.beaveriot.mqtt.service;
 
+import com.milesight.beaveriot.context.api.CredentialsServiceProvider;
+import com.milesight.beaveriot.context.integration.enums.CredentialsType;
 import com.milesight.beaveriot.context.mqtt.MqttBrokerInfo;
 import com.milesight.beaveriot.context.mqtt.MqttMessage;
 import com.milesight.beaveriot.context.mqtt.MqttMessageListener;
@@ -27,17 +29,23 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
 
+    private static final String SINGLE_LEVEL_WILDCARD = "+";
+
     /**
      * Topic Subscribers <br>
-     * username -> topic -> callbacks
+     * username -> topic -> callback -> isSharedSubscription
      */
     private static final ConcurrentHashMap<String, ConcurrentHashMap<Topic, ConcurrentHashMap<MqttMessageListener, Boolean>>> subscribers = new ConcurrentHashMap<>();
+
     /**
      * Subscriber Index <br>
      * callback -> callbacks sets
      */
     private static final ConcurrentHashMap<MqttMessageListener, ConcurrentHashMap<Topic, Boolean>> subscriberIndex = new ConcurrentHashMap<>();
+
     private final MqttBrokerBridge mqttBrokerBridge;
+
+    private final CredentialsServiceProvider credentialsServiceProvider;
 
     private static void fireEvent(MqttMessageEvent event, boolean broadcast) {
         val topic = new Topic(event.getTopic());
@@ -52,9 +60,9 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
             return;
         }
 
-        val usernameInTopic = topicTokens.get(1);
+        val publisherUsername = topicTokens.get(1);
         val topicSubPath = String.join("", topicTokens.subList(2, topicTokens.size()));
-        val usernameTokens = usernameInTopic.split("@");
+        val usernameTokens = publisherUsername.split("@");
         String tenantId = null;
         if (usernameTokens.length == 2 && !usernameTokens[1].isEmpty()) {
             tenantId = usernameTokens[1];
@@ -62,10 +70,10 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
         }
 
         val mqttMessage = new MqttMessage(event.getTopic(), topicSubPath,
-                topicChannel, usernameInTopic, topicTokens, event.getPayload());
+                topicChannel, publisherUsername, tenantId, topicTokens, event.getPayload());
 
-        subscribers.forEach((username, topicSubscribers) -> {
-            if (!usernameInTopic.equals(username)) {
+        subscribers.forEach((subscriberUsername, topicSubscribers) -> {
+            if (!publisherUsername.equals(subscriberUsername) && !SINGLE_LEVEL_WILDCARD.equals(subscriberUsername)) {
                 return;
             }
             topicSubscribers.forEach((subscriptionTopic, callbacks) ->
@@ -147,13 +155,30 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
     }
 
     @Override
+    public void publish(String topicSubPath, byte[] payload, MqttQos qos, boolean retained) {
+        val credentials = credentialsServiceProvider.getOrCreateDefaultCredentials(CredentialsType.MQTT);
+        val username = "%s@%s".formatted(credentials.getAccessKey(), TenantContext.getTenantId());
+        publish(username, topicSubPath, payload, qos, retained);
+    }
+
+    @Override
     public void subscribe(String username, String topicSubPath, MqttMessageListener onMessage, boolean shared) {
         subscribe(MqttTopicChannel.DEFAULT, username, topicSubPath, onMessage, shared);
     }
 
     @Override
+    public void subscribe(String topicSubPath, MqttMessageListener onMessage, boolean shared) {
+        subscribe(SINGLE_LEVEL_WILDCARD, topicSubPath, onMessage, shared);
+    }
+
+    @Override
     public void subscribe(String username, String topicSubPath, MqttMessageListener onMessage) {
         subscribe(MqttTopicChannel.DEFAULT, username, topicSubPath, onMessage);
+    }
+
+    @Override
+    public void subscribe(String topicSubPath, MqttMessageListener onMessage) {
+        subscribe(SINGLE_LEVEL_WILDCARD, topicSubPath, onMessage);
     }
 
     @Override
@@ -190,6 +215,11 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
     @Override
     public void unsubscribe(String username, String topicSubPath) {
         unsubscribe(MqttTopicChannel.DEFAULT, username, topicSubPath);
+    }
+
+    @Override
+    public void unsubscribe(String topicSubPath) {
+        unsubscribe(SINGLE_LEVEL_WILDCARD, topicSubPath);
     }
 
     @Override
@@ -232,6 +262,11 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
     @Override
     public String getFullTopicName(String username, String topicSubPath) {
         return getFullTopicName(MqttTopicChannel.DEFAULT.getTopicPrefix(), username, topicSubPath);
+    }
+
+    @Override
+    public String getFullTopicName(String topicSubPath) {
+        return getFullTopicName(SINGLE_LEVEL_WILDCARD, topicSubPath);
     }
 
     public String getFullTopicName(String topicPrefix, String username, String topicSubPath) {

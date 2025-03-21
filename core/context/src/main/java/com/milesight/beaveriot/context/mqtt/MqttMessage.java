@@ -18,6 +18,8 @@ public class MqttMessage {
 
     private String username;
 
+    private String tenantId;
+
     private List<String> topicFragments;
 
     private byte[] payload;

@@ -6,6 +6,7 @@ import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.CredentialsServiceProvider;
+import com.milesight.beaveriot.context.integration.enums.CredentialsType;
 import com.milesight.beaveriot.context.integration.model.Credentials;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.context.util.SecretUtils;
@@ -40,6 +41,10 @@ public class CredentialsService implements CredentialsServiceProvider {
 
     @Autowired
     private CredentialsRepository credentialsRepository;
+
+    private static String getCredentialsDefaultAccessKeyByType(String credentialsType) {
+        return credentialsType.toLowerCase();
+    }
 
     public Page<CredentialsResponse> searchCredentials(SearchCredentialsRequest request) {
         if (request.getSort().getOrders().isEmpty()) {
@@ -164,10 +169,6 @@ public class CredentialsService implements CredentialsServiceProvider {
                 .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND));
     }
 
-    private static String getCredentialsDefaultAccessKeyByType(String credentialsType) {
-        return credentialsType.toLowerCase();
-    }
-
     public CredentialsResponse getCredentialsResponse(Long id) {
         return credentialsRepository.findById(id)
                 .map(this::convertPOToResponse)
@@ -179,10 +180,20 @@ public class CredentialsService implements CredentialsServiceProvider {
                 .map(this::convertPOToDTO);
     }
 
+    @Override
+    public Optional<Credentials> getCredentials(CredentialsType credentialType) {
+        return getCredentials(credentialType.name());
+    }
+
     @Transactional(rollbackFor = Throwable.class)
     @Override
     public Credentials getOrCreateDefaultCredentials(String credentialsType) {
         return getOrCreateCredentials(credentialsType, getCredentialsDefaultAccessKeyByType(credentialsType));
+    }
+
+    @Override
+    public Credentials getOrCreateDefaultCredentials(CredentialsType credentialType) {
+        return getOrCreateDefaultCredentials(credentialType.name());
     }
 
     @Transactional(rollbackFor = Throwable.class)
@@ -209,6 +220,11 @@ public class CredentialsService implements CredentialsServiceProvider {
         return credentials;
     }
 
+    @Override
+    public Credentials getOrCreateCredentials(CredentialsType credentialType, String username) {
+        return getOrCreateCredentials(credentialType.name(), username);
+    }
+
     public Optional<Credentials> getCredentials(Long id) {
         return credentialsRepository.findById(id)
                 .map(this::convertPOToDTO);
@@ -218,6 +234,11 @@ public class CredentialsService implements CredentialsServiceProvider {
     public Optional<Credentials> getCredentials(String credentialsType, String accessKey) {
         return credentialsRepository.findFirstByCredentialsTypeAndAccessKey(credentialsType, accessKey)
                 .map(this::convertPOToDTO);
+    }
+
+    @Override
+    public Optional<Credentials> getCredentials(CredentialsType credentialType, String accessKey) {
+        return getCredentials(credentialType.name(), accessKey);
     }
 
 }

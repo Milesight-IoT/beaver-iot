@@ -7,6 +7,7 @@ import lombok.*;
 @RequiredArgsConstructor
 public enum CredentialsType {
     MQTT,
+    SMTP,
     ;
 
     @Override

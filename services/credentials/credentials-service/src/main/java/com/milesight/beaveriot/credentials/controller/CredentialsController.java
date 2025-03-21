@@ -38,6 +38,12 @@ public class CredentialsController {
         return ResponseBuilder.success(credentialsService.getCredentialsResponse(id));
     }
 
+    /**
+     * Get default credentials
+     *
+     * @param credentialsType credentials type, e.g. MQTT, SMTP
+     * @return credentials response
+     */
     @GetMapping("/default/{credentialsType}")
     public ResponseBody<CredentialsResponse> getCredentials(@PathVariable("credentialsType") String credentialsType) {
         return ResponseBuilder.success(credentialsService.getCredentialsResponse(credentialsType));
