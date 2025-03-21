@@ -86,6 +86,8 @@ camel:
           title: "Trigger"
         - name: "eventListener"
           title: "Event Listener"
+        - name: "simpleMqtt"
+          title: "MQTT"
       control:
         - name: "choice"
           title: "IF/ELSE"
@@ -132,6 +134,35 @@ oauth2:
     - "/user/register"
     - "/user/status"
     - "/public/**"
+
+mqtt:
+  broker:
+    host: localhost
+    mqtt_port: 1883
+    mqtts_port: 8883
+    ws_path: /mqtt
+    ws_port: 8083
+    wss_port: 8084
+    listener:
+      parallelism: 1
+    moquette:
+      port: ${mqtt.broker.mqtt_port:1883}
+      host: 0.0.0.0
+      allow_anonymous: false
+      persistence_enabled: false
+      websocket_port: ${mqtt.broker.ws_port:8083}
+      websocket_path: ${mqtt.broker.ws_path:/mqtt}
+      netty:
+        mqtt:
+          message_size: 1048576
+    emqx:
+      internal_mqtt_endpoint: mqtt://${mqtt.broker.host:localhost}:1883
+      internal_mqtt_username: admin
+      internal_mqtt_password: admin
+      rest_api_endpoint: http://${mqtt.broker.host:localhost}
+      rest_api_username: ""
+      rest_api_password: ""
+
 
 logging:
   level:

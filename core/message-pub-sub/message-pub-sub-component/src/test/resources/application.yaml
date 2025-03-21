@@ -1,0 +1,20 @@
+mqtt:
+  broker:
+    host: localhost
+    mqtt_port: 1883
+    mqtts_port: 8883
+    ws_path: /mqtt
+    ws_port: 8083
+    wss_port: 8084
+    listener:
+      parallelism: 1
+    moquette:
+      port: ${mqtt.broker.mqtt_port:1883}
+      host: 0.0.0.0
+      allow_anonymous: false
+      persistence_enabled: false
+      websocket_port: ${mqtt.broker.ws_port:8083}
+      websocket_path: ${mqtt.broker.ws_path:/mqtt}
+      netty:
+        mqtt:
+          message_size: 1048576

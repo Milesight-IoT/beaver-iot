@@ -7,10 +7,10 @@
         "nodeName": "node1",
         "nodeRemark": "",
         "parameters": {
-          "period": 1000
+          "subscriptionTopic": "test/+/abc/#"
         }
       },
-      "componentName": "timer"
+      "componentName": "simpleMqtt"
     },
     {
       "id": "id_2",

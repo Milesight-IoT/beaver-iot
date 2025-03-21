@@ -16,7 +16,7 @@ import com.milesight.beaveriot.rule.model.trace.FlowTraceInfo;
 import com.milesight.beaveriot.rule.model.trace.NodeTraceInfo;
 import com.milesight.beaveriot.rule.support.JsonHelper;
 import com.milesight.beaveriot.sample.entity.DemoIntegrationEntities;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -106,7 +106,7 @@ public class DemoRuleEngineController {
     @PostMapping("/public/test-deploy/{config}")
     public String testDeploy(@PathVariable("config") String config) throws IOException {
 
-        ClassPathResource classPathResource = new ClassPathResource("config-schema/choice/"+config + ".json");
+        ClassPathResource classPathResource = new ClassPathResource("config-schema/"+config + ".json");
         String flowConfig = classPathResource.getContentAsString(Charset.defaultCharset());
 
         RuleFlowConfig ruleFlowConfig = JsonHelper.fromJSON(flowConfig, RuleFlowConfig.class);
