@@ -61,7 +61,7 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
         }
 
         val publisherUsername = topicTokens.get(1);
-        val topicSubPath = String.join("", topicTokens.subList(2, topicTokens.size()));
+        val topicSubPath = String.join("/", topicTokens.subList(2, topicTokens.size()));
         val usernameTokens = publisherUsername.split("@");
         String tenantId = null;
         if (usernameTokens.length == 2 && !usernameTokens[1].isEmpty()) {
