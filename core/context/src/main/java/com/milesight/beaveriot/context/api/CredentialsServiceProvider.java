@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.context.api;
 
 
+import com.milesight.beaveriot.context.integration.enums.CredentialsType;
 import com.milesight.beaveriot.context.integration.model.Credentials;
 
 import java.util.List;
@@ -12,14 +13,22 @@ public interface CredentialsServiceProvider {
 
     void batchDeleteCredentials(List<Long> ids);
 
-    Optional<Credentials> getCredentials(String tenantId, String credentialType);
+    Optional<Credentials> getCredentials(String credentialType);
 
-    Credentials getOrCreateDefaultCredentials(String tenantId, String credentialType);
+    Optional<Credentials> getCredentials(CredentialsType credentialType);
 
-    Credentials getOrCreateCredentials(String tenantId, String credentialType, String username);
+    Credentials getOrCreateDefaultCredentials(String credentialType);
 
-    Optional<Credentials> getCredentials(String tenantId, Long id);
+    Credentials getOrCreateDefaultCredentials(CredentialsType credentialType);
 
-    Optional<Credentials> getCredentials(String tenantId, String credentialType, String accessKey);
+    Credentials getOrCreateCredentials(String credentialType, String username);
+
+    Credentials getOrCreateCredentials(CredentialsType credentialType, String username);
+
+    Optional<Credentials> getCredentials(Long id);
+
+    Optional<Credentials> getCredentials(String credentialType, String accessKey);
+
+    Optional<Credentials> getCredentials(CredentialsType credentialType, String accessKey);
 
 }

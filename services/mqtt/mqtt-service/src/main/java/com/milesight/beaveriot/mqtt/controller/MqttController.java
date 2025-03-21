@@ -3,7 +3,6 @@ package com.milesight.beaveriot.mqtt.controller;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.context.mqtt.MqttBrokerInfo;
-import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.mqtt.model.WebMqttCredentials;
 import com.milesight.beaveriot.mqtt.service.MqttAclService;
 import com.milesight.beaveriot.mqtt.service.MqttPubSubService;
@@ -33,7 +32,6 @@ public class MqttController {
 
     @GetMapping("/web/credentials")
     public ResponseBody<WebMqttCredentials> getWebMqttCredentials() {
-        TenantContext.setTenantId("default");
         return ResponseBuilder.success(mqttAclService.getOrInitWebMqttCredentials());
     }
 

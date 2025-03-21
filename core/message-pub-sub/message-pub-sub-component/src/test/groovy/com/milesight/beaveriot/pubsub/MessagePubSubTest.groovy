@@ -51,10 +51,12 @@ class MessagePubSubTest extends Specification {
     }
 
     static class TestLocalMessage extends LocalUnicastMessage {
+        String tenantId
         String data
     }
 
     static class TestBroadcastMessage extends RemoteBroadcastMessage {
+        String tenantId
         String data
     }
 

@@ -11,6 +11,8 @@ import lombok.*;
 @AllArgsConstructor
 public class CredentialsChangeEvent extends LocalUnicastMessage {
 
+    private String tenantId;
+
     @NonNull
     private Operation operation;
 
@@ -19,6 +21,12 @@ public class CredentialsChangeEvent extends LocalUnicastMessage {
 
     @NonNull
     private Long timestamp;
+
+    public CredentialsChangeEvent(@NonNull Operation operation, @NonNull Credentials credentials, @NonNull Long timestamp) {
+        this.credentials = credentials;
+        this.operation = operation;
+        this.timestamp = timestamp;
+    }
 
     public enum Operation {
         ADD,

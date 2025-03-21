@@ -3,6 +3,7 @@ package com.milesight.beaveriot.pubsub;
 
 import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
+import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.pubsub.api.message.LocalUnicastMessage;
 import com.milesight.beaveriot.pubsub.api.message.PubSubMessage;
 import com.milesight.beaveriot.pubsub.api.message.RemoteBroadcastMessage;
@@ -50,6 +51,10 @@ public abstract class MessagePubSub {
     }
 
     protected void doPublishMessage(PubSubMessage message) {
+        if (message.getTenantId() == null) {
+            TenantContext.tryGetTenantId().ifPresent(message::setTenantId);
+        }
+
         if (message instanceof RemoteBroadcastMessage remoteBroadcastMessage) {
             var serializableMessage = new SerializableMessage(
                     message.getClass().getName(),

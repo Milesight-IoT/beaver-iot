@@ -43,7 +43,7 @@
         </dependency>
         <dependency>
             <groupId>com.milesight.beaveriot</groupId>
-            <artifactId>base</artifactId>
+            <artifactId>context</artifactId>
             <version>${project.version}</version>
         </dependency>
 
