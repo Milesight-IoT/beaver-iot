@@ -6,9 +6,13 @@ import com.milesight.beaveriot.context.integration.bootstrap.IntegrationBootstra
 import com.milesight.beaveriot.context.integration.entity.EntityLoader;
 import com.milesight.beaveriot.context.integration.entity.annotation.AnnotationEntityLoader;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.task.ThreadPoolTaskExecutorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 /**
  * @author leon
@@ -26,5 +30,12 @@ public class IntegrationAutoConfiguration {
     @ConditionalOnMissingBean
     public AnnotationEntityLoader annotationEntityLoader() {
         return new AnnotationEntityLoader();
+    }
+
+    @Bean
+    @ConditionalOnBean(ThreadPoolTaskExecutorBuilder.class)
+    @Primary
+    public ThreadPoolTaskExecutor taskExecutor(ThreadPoolTaskExecutorBuilder builder) {
+        return builder.build();
     }
 }
