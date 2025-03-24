@@ -98,7 +98,7 @@ public class WebSecurityConfiguration {
                                         new CustomOAuth2PasswordAuthenticationConverter()))
                                 )
                                 .authenticationProvider(new CustomOAuth2PasswordAuthenticationProvider(authorizationService(), tokenGenerator(), userFacade, authenticationProvider()))
-                                .authenticationProvider(new CustomOAuth2RefreshTokenAuthenticationProvider(authorizationService(), tokenGenerator(), userFacade))
+                                .authenticationProvider(new CustomOAuth2RefreshTokenAuthenticationProvider(authorizationService(), tokenGenerator(), userFacade, jwtDecoder()))
                                 .errorResponseHandler(new CustomAuthenticationHandler())
                                 .accessTokenResponseHandler(new CustomOAuth2AccessTokenResponseHandler())
                 )

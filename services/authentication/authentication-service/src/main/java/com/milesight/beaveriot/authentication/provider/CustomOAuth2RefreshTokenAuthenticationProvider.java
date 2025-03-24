@@ -2,6 +2,7 @@ package com.milesight.beaveriot.authentication.provider;
 
 import com.milesight.beaveriot.context.security.SecurityUser;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.user.dto.TenantDTO;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.apache.commons.logging.Log;
@@ -22,6 +23,7 @@ import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
@@ -58,6 +60,8 @@ public class CustomOAuth2RefreshTokenAuthenticationProvider implements Authentic
 
     private final OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator;
 
+    private final JwtDecoder jwtDecoder;
+
     /**
      * Constructs an {@code OAuth2RefreshTokenAuthenticationProvider} using the provided
      * parameters.
@@ -68,12 +72,14 @@ public class CustomOAuth2RefreshTokenAuthenticationProvider implements Authentic
      */
     public CustomOAuth2RefreshTokenAuthenticationProvider(OAuth2AuthorizationService authorizationService,
                                                           OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator,
-                                                          IUserFacade userFacade) {
+                                                          IUserFacade userFacade,
+                                                          JwtDecoder jwtDecoder) {
         Assert.notNull(authorizationService, "authorizationService cannot be null");
         Assert.notNull(tokenGenerator, "tokenGenerator cannot be null");
         this.authorizationService = authorizationService;
         this.tokenGenerator = tokenGenerator;
         this.userFacade = userFacade;
+        this.jwtDecoder = jwtDecoder;
     }
 
     @Override
@@ -86,17 +92,6 @@ public class CustomOAuth2RefreshTokenAuthenticationProvider implements Authentic
         if (this.logger.isTraceEnabled()) {
             this.logger.trace("Retrieved registered client");
         }
-        String tenantId = refreshTokenAuthentication.getTenantId();
-
-        TenantDTO tenantDTO = userFacade.analyzeTenantId(tenantId);
-        if (tenantDTO == null) {
-            OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,
-                    "tenant not found.", null);
-            throw new OAuth2AuthenticationException(error);
-        }
-        tenantId = tenantDTO.getTenantId();
-        SecurityUser securityUser = SecurityUser.builder().tenantId(tenantId).build();
-        SecurityUserContext.setSecurityUser(securityUser);
 
         OAuth2Authorization authorization = this.authorizationService
                 .findByToken(refreshTokenAuthentication.getRefreshToken(), OAuth2TokenType.REFRESH_TOKEN);
@@ -106,6 +101,25 @@ public class CustomOAuth2RefreshTokenAuthenticationProvider implements Authentic
             }
             throw new OAuth2AuthenticationException(OAuth2ErrorCodes.INVALID_GRANT);
         }
+
+        String tenantId = refreshTokenAuthentication.getTenantId();
+
+        TenantDTO tenantDTO = userFacade.analyzeTenantId(tenantId);
+        if (tenantDTO == null) {
+            OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,
+                    "tenant not found.", null);
+            throw new OAuth2AuthenticationException(error);
+        }
+        Jwt jwt = jwtDecoder.decode(authorization.getAccessToken().getToken().getTokenValue());
+        if (jwt == null || !tenantId.equals(jwt.getClaims().get(TenantContext.TENANT_ID))) {
+            OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,
+                    "tenant not found.", null);
+            throw new OAuth2AuthenticationException(error);
+        }
+
+        tenantId = tenantDTO.getTenantId();
+        SecurityUser securityUser = SecurityUser.builder().tenantId(tenantId).build();
+        SecurityUserContext.setSecurityUser(securityUser);
 
         if (this.logger.isTraceEnabled()) {
             this.logger.trace("Retrieved authorization with refresh token");
