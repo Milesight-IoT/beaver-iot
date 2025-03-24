@@ -10,6 +10,8 @@ import com.milesight.beaveriot.authentication.provider.CustomJdbcOAuth2Authoriza
 import com.milesight.beaveriot.authentication.provider.CustomOAuth2AuthorizationService;
 import com.milesight.beaveriot.authentication.provider.CustomOAuth2PasswordAuthenticationConverter;
 import com.milesight.beaveriot.authentication.provider.CustomOAuth2PasswordAuthenticationProvider;
+import com.milesight.beaveriot.authentication.provider.CustomOAuth2RefreshTokenAuthenticationConverter;
+import com.milesight.beaveriot.authentication.provider.CustomOAuth2RefreshTokenAuthenticationProvider;
 import com.milesight.beaveriot.authentication.util.OAuth2EndpointUtils;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -92,11 +94,11 @@ public class WebSecurityConfiguration {
         http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
                 .tokenEndpoint(tokenEndpoint ->
                         tokenEndpoint.accessTokenRequestConverter(new DelegatingAuthenticationConverter(Arrays.asList(
-                                        new OAuth2RefreshTokenAuthenticationConverter(),
-                                        new OAuth2ClientCredentialsAuthenticationConverter(),
+                                        new CustomOAuth2RefreshTokenAuthenticationConverter(),
                                         new CustomOAuth2PasswordAuthenticationConverter()))
                                 )
                                 .authenticationProvider(new CustomOAuth2PasswordAuthenticationProvider(authorizationService(), tokenGenerator(), userFacade, authenticationProvider()))
+                                .authenticationProvider(new CustomOAuth2RefreshTokenAuthenticationProvider(authorizationService(), tokenGenerator(), userFacade))
                                 .errorResponseHandler(new CustomAuthenticationHandler())
                                 .accessTokenResponseHandler(new CustomOAuth2AccessTokenResponseHandler())
                 )
@@ -106,6 +108,7 @@ public class WebSecurityConfiguration {
                 exception -> exception.authenticationEntryPoint(new CustomOAuth2ExceptionEntryPoint())
                         .accessDeniedHandler(new CustomOAuth2AccessDeniedHandler())
         );
+        http.addFilterAfter(new SecurityUserContextCleanupFilter(), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
@@ -132,8 +135,7 @@ public class WebSecurityConfiguration {
                                 .authenticationManagerResolver(new CustomAuthenticationManagerResolver(authorizationService(), jwtDecoder()))
                                 .authenticationEntryPoint(new CustomOAuth2ExceptionEntryPoint())
                                 .accessDeniedHandler(new CustomOAuth2AccessDeniedHandler())
-                )
-                .addFilterAfter(new SecurityUserContextCleanupFilter(), UsernamePasswordAuthenticationFilter.class);
+                );
         return http.build();
     }
 
