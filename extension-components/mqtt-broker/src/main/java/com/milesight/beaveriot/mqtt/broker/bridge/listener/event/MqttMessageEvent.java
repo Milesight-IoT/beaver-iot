@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.mqtt.broker.bridge.listener;
+package com.milesight.beaveriot.mqtt.broker.bridge.listener.event;
 
 import lombok.*;
 

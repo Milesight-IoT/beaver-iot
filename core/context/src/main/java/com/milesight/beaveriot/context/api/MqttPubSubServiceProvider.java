@@ -1,9 +1,12 @@
 package com.milesight.beaveriot.context.api;
 
 
-import com.milesight.beaveriot.context.mqtt.MqttBrokerInfo;
-import com.milesight.beaveriot.context.mqtt.MqttMessageListener;
-import com.milesight.beaveriot.context.mqtt.MqttQos;
+import com.milesight.beaveriot.context.mqtt.enums.MqttQos;
+import com.milesight.beaveriot.context.mqtt.listener.MqttConnectEventListener;
+import com.milesight.beaveriot.context.mqtt.listener.MqttDisconnectEventListener;
+import com.milesight.beaveriot.context.mqtt.listener.MqttMessageListener;
+import com.milesight.beaveriot.context.mqtt.listener.MqttPubSubServiceListener;
+import com.milesight.beaveriot.context.mqtt.model.MqttBrokerInfo;
 
 public interface MqttPubSubServiceProvider {
 
@@ -46,7 +49,7 @@ public interface MqttPubSubServiceProvider {
     /**
      * Remove given listener.
      */
-    void unsubscribe(MqttMessageListener onMessage);
+    void unsubscribe(MqttPubSubServiceListener onMessage);
 
     /**
      * Remove all listeners which subscribe the topic 'beaver-iot/${username}/${topicSubPath}'.
@@ -57,6 +60,10 @@ public interface MqttPubSubServiceProvider {
      * Remove all listeners which subscribe the topic 'beaver-iot/+/${topicSubPath}'.
      */
     void unsubscribe(String topicSubPath);
+
+    void onConnect(String username, MqttConnectEventListener listener);
+
+    void onDisconnect(String username, MqttDisconnectEventListener listener);
 
     /**
      * Get full topic name

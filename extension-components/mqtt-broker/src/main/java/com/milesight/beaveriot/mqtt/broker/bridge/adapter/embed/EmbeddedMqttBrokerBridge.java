@@ -4,13 +4,17 @@ import com.milesight.beaveriot.mqtt.broker.bridge.AbstractMqttBrokerBridge;
 import com.milesight.beaveriot.mqtt.broker.bridge.auth.MqttAcl;
 import com.milesight.beaveriot.mqtt.broker.bridge.auth.MqttAction;
 import com.milesight.beaveriot.mqtt.broker.bridge.auth.MqttAuthProvider;
-import com.milesight.beaveriot.mqtt.broker.bridge.listener.MqttMessageEvent;
+import com.milesight.beaveriot.mqtt.broker.bridge.listener.event.MqttClientConnectEvent;
+import com.milesight.beaveriot.mqtt.broker.bridge.listener.event.MqttClientDisconnectEvent;
+import com.milesight.beaveriot.mqtt.broker.bridge.listener.event.MqttMessageEvent;
 import io.moquette.broker.Server;
 import io.moquette.broker.config.MemoryConfig;
 import io.moquette.broker.security.IAuthenticator;
 import io.moquette.broker.security.IAuthorizatorPolicy;
 import io.moquette.broker.subscriptions.Topic;
 import io.moquette.interception.AbstractInterceptHandler;
+import io.moquette.interception.messages.InterceptConnectMessage;
+import io.moquette.interception.messages.InterceptConnectionLostMessage;
 import io.moquette.interception.messages.InterceptPublishMessage;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.mqtt.MqttMessageBuilders;
@@ -100,6 +104,16 @@ public class EmbeddedMqttBrokerBridge extends AbstractMqttBrokerBridge {
         }
 
         @Override
+        public void onConnect(InterceptConnectMessage msg) {
+            EmbeddedMqttBrokerBridge.this.onConnect(new MqttClientConnectEvent(msg.getClientID(), msg.getUsername(), System.currentTimeMillis()));
+        }
+
+        @Override
+        public void onConnectionLost(InterceptConnectionLostMessage msg) {
+            EmbeddedMqttBrokerBridge.this.onDisconnect(new MqttClientDisconnectEvent(msg.getClientID(), msg.getUsername(), System.currentTimeMillis()));
+        }
+
+        @Override
         public String getID() {
             return "DEFAULT_PUBLISH_LISTENER";
         }
@@ -114,6 +128,9 @@ public class EmbeddedMqttBrokerBridge extends AbstractMqttBrokerBridge {
 
         @Override
         public boolean checkValid(String clientId, String username, byte[] password) {
+            if (password == null) {
+                return true;
+            }
             return EmbeddedMqttBrokerBridge.this.getMqttAuthProvider().canLogin(clientId, username, new String(password));
         }
 

@@ -1,11 +1,14 @@
 package com.milesight.beaveriot.mqtt.broker.bridge.adapter.emqx;
 
+import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.mqtt.broker.bridge.AbstractMqttBrokerBridge;
 import com.milesight.beaveriot.mqtt.broker.bridge.adapter.emqx.model.EmqxAcl;
 import com.milesight.beaveriot.mqtt.broker.bridge.auth.MqttAcl;
 import com.milesight.beaveriot.mqtt.broker.bridge.auth.MqttAuthProvider;
-import com.milesight.beaveriot.mqtt.broker.bridge.listener.MqttMessageEvent;
+import com.milesight.beaveriot.mqtt.broker.bridge.listener.event.MqttClientConnectEvent;
+import com.milesight.beaveriot.mqtt.broker.bridge.listener.event.MqttClientDisconnectEvent;
+import com.milesight.beaveriot.mqtt.broker.bridge.listener.event.MqttMessageEvent;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import lombok.*;
 import lombok.extern.slf4j.*;
@@ -30,6 +33,8 @@ import java.util.List;
 public class EmqxMqttBrokerBridge extends AbstractMqttBrokerBridge {
 
     public static final String DEFAULT_SHARED_SUBSCRIPTION_TOPIC_FILTER = "$share/beaver-iot-server/#";
+
+    public static final String CLIENT_SYS_EVENT_TOPIC_FILTER = "$SYS/brokers/+/clients/+/#";
 
     public static final String DEFAULT_TOPIC_FILTER = "#";
 
@@ -61,7 +66,7 @@ public class EmqxMqttBrokerBridge extends AbstractMqttBrokerBridge {
         emqxRestApi.ensureAuthenticator();
         emqxRestApi.ensureAuthorizationSource();
 
-        sharedSubscriptionMqttClient.setCallback(new MqttSubscriptionCallback(sharedSubscriptionMqttClient, DEFAULT_SHARED_SUBSCRIPTION_TOPIC_FILTER) {
+        sharedSubscriptionMqttClient.setCallback(new MqttSubscriptionCallback(sharedSubscriptionMqttClient, List.of(DEFAULT_SHARED_SUBSCRIPTION_TOPIC_FILTER)) {
 
             @Override
             public void messageArrived(String topic, MqttMessage message) {
@@ -71,11 +76,28 @@ public class EmqxMqttBrokerBridge extends AbstractMqttBrokerBridge {
 
         });
 
-        broadcastMqttClient.setCallback(new MqttSubscriptionCallback(broadcastMqttClient, DEFAULT_TOPIC_FILTER) {
+        broadcastMqttClient.setCallback(new MqttSubscriptionCallback(broadcastMqttClient, List.of(DEFAULT_TOPIC_FILTER, CLIENT_SYS_EVENT_TOPIC_FILTER)) {
+
             @Override
             public void messageArrived(String topic, MqttMessage message) {
                 log.debug("received broadcast message from emqx mqtt broker, topic: '{}', message: '{}'", topic, message);
-                EmqxMqttBrokerBridge.this.onBroadcast(new MqttMessageEvent(topic, message.getPayload()));
+                if (!topic.startsWith("$SYS/")) {
+                    EmqxMqttBrokerBridge.this.onBroadcast(new MqttMessageEvent(topic, message.getPayload()));
+                } else {
+                    val content = JsonUtils.fromJSON(new String(message.getPayload()));
+                    if (content == null) {
+                        return;
+                    }
+                    val clientId = content.get("clientid").textValue();
+                    val username = content.get("username").textValue();
+                    val ts = content.get("ts").asLong();
+                    // todo deduplication
+                    if (topic.endsWith("/connected")) {
+                        EmqxMqttBrokerBridge.this.onConnect(new MqttClientConnectEvent(clientId, username, ts));
+                    } else if (topic.endsWith("/disconnected")) {
+                        EmqxMqttBrokerBridge.this.onDisconnect(new MqttClientDisconnectEvent(clientId, username, ts));
+                    }
+                }
             }
 
         });
@@ -163,11 +185,11 @@ public class EmqxMqttBrokerBridge extends AbstractMqttBrokerBridge {
     private abstract static class MqttSubscriptionCallback implements MqttCallback {
 
         protected final IMqttAsyncClient client;
-        protected final String topic;
+        protected final List<String> topics;
 
         @Override
         public void disconnected(MqttDisconnectResponse disconnectResponse) {
-            log.info("disconnected from emqx mqtt broker: {}", disconnectResponse.getReasonString());
+            log.info("disconnect from emqx mqtt broker: {}", disconnectResponse.getReasonString());
         }
 
         @Override
@@ -189,18 +211,21 @@ public class EmqxMqttBrokerBridge extends AbstractMqttBrokerBridge {
         @Override
         public void connectComplete(boolean reconnect, String serverURI) {
             if (reconnect) {
-                log.info("reconnected to emqx mqtt broker: '{}' ('{}')", serverURI, topic);
+                log.info("reconnect to emqx mqtt broker: '{}' ({})", serverURI, String.join(", ", topics));
             } else {
-                log.info("connected to emqx mqtt broker: '{}' ('{}')", serverURI, topic);
+                log.info("connect to emqx mqtt broker: '{}' ({})", serverURI, String.join(", ", topics));
             }
 
-            val subscriptionProperties = new MqttProperties();
-            subscriptionProperties.setSubscriptionIdentifiers(List.of(0));
-            try {
-                client.subscribe(new MqttSubscription(topic), null, null, null, subscriptionProperties).waitForCompletion(10000);
-            } catch (Exception e) {
-                log.error("{} failed to subscribe to emqx mqtt broker", topic, e);
-            }
+            topics.forEach(topic -> {
+                val subscriptionProperties = new MqttProperties();
+                subscriptionProperties.setSubscriptionIdentifiers(List.of(0));
+                try {
+                    client.subscribe(new MqttSubscription(topic), null, null, null, subscriptionProperties).waitForCompletion(10000);
+                    log.info("subscribed topic: '{}'", topic);
+                } catch (Exception e) {
+                    log.error("subscribe topic failed: {}", topic, e);
+                }
+            });
         }
 
     }

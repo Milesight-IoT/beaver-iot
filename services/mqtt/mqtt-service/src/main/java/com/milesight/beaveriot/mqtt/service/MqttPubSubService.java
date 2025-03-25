@@ -2,16 +2,23 @@ package com.milesight.beaveriot.mqtt.service;
 
 import com.milesight.beaveriot.context.api.CredentialsServiceProvider;
 import com.milesight.beaveriot.context.integration.enums.CredentialsType;
-import com.milesight.beaveriot.context.mqtt.MqttBrokerInfo;
-import com.milesight.beaveriot.context.mqtt.MqttMessage;
-import com.milesight.beaveriot.context.mqtt.MqttMessageListener;
-import com.milesight.beaveriot.context.mqtt.MqttQos;
-import com.milesight.beaveriot.context.mqtt.MqttTopicChannel;
+import com.milesight.beaveriot.context.mqtt.enums.MqttQos;
+import com.milesight.beaveriot.context.mqtt.enums.MqttTopicChannel;
+import com.milesight.beaveriot.context.mqtt.listener.MqttConnectEventListener;
+import com.milesight.beaveriot.context.mqtt.listener.MqttDisconnectEventListener;
+import com.milesight.beaveriot.context.mqtt.listener.MqttMessageListener;
+import com.milesight.beaveriot.context.mqtt.listener.MqttPubSubServiceListener;
+import com.milesight.beaveriot.context.mqtt.model.MqttBrokerInfo;
+import com.milesight.beaveriot.context.mqtt.model.MqttConnectEvent;
+import com.milesight.beaveriot.context.mqtt.model.MqttDisconnectEvent;
+import com.milesight.beaveriot.context.mqtt.model.MqttMessage;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.mqtt.api.MqttAdminPubSubServiceProvider;
 import com.milesight.beaveriot.mqtt.broker.bridge.MqttBrokerBridge;
 import com.milesight.beaveriot.mqtt.broker.bridge.listener.MqttEventListener;
-import com.milesight.beaveriot.mqtt.broker.bridge.listener.MqttMessageEvent;
+import com.milesight.beaveriot.mqtt.broker.bridge.listener.event.MqttClientConnectEvent;
+import com.milesight.beaveriot.mqtt.broker.bridge.listener.event.MqttClientDisconnectEvent;
+import com.milesight.beaveriot.mqtt.broker.bridge.listener.event.MqttMessageEvent;
 import io.moquette.broker.subscriptions.Token;
 import io.moquette.broker.subscriptions.Topic;
 import io.netty.handler.codec.mqtt.MqttQoS;
@@ -32,16 +39,32 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
     private static final String SINGLE_LEVEL_WILDCARD = "+";
 
     /**
-     * Topic Subscribers <br>
+     * Topic Subscribers
+     * <p>
      * username -> topic -> callback -> isSharedSubscription
      */
     private static final ConcurrentHashMap<String, ConcurrentHashMap<Topic, ConcurrentHashMap<MqttMessageListener, Boolean>>> subscribers = new ConcurrentHashMap<>();
 
     /**
-     * Subscriber Index <br>
+     * Subscriber Index
+     * <p>
      * callback -> callbacks sets
      */
     private static final ConcurrentHashMap<MqttMessageListener, ConcurrentHashMap<Topic, Boolean>> subscriberIndex = new ConcurrentHashMap<>();
+
+    /**
+     * MQTT Client Connect Event Listeners
+     * <p>
+     * username -> listeners
+     */
+    private static final ConcurrentHashMap<String, ConcurrentHashMap<MqttConnectEventListener, Boolean>> connectEventListeners = new ConcurrentHashMap<>();
+
+    /**
+     * MQTT Client Disconnect Event Listeners
+     * <p>
+     * username -> listeners
+     */
+    private static final ConcurrentHashMap<String, ConcurrentHashMap<MqttDisconnectEventListener, Boolean>> disconnectEventListeners = new ConcurrentHashMap<>();
 
     private final MqttBrokerBridge mqttBrokerBridge;
 
@@ -97,6 +120,24 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
             @Override
             public void onBroadcast(MqttMessageEvent event) {
                 fireEvent(event, true);
+            }
+
+            @Override
+            public void onClientConnect(MqttClientConnectEvent event) {
+                val listeners = connectEventListeners.get(event.getUsername());
+                if (listeners != null) {
+                    val e = new MqttConnectEvent(event.getClientId(), event.getUsername(), event.getTs());
+                    listeners.keySet().forEach(listener -> listener.accept(e));
+                }
+            }
+
+            @Override
+            public void onClientDisconnect(MqttClientDisconnectEvent event) {
+                val listeners = disconnectEventListeners.get(event.getUsername());
+                if (listeners != null) {
+                    val e = new MqttDisconnectEvent(event.getClientId(), event.getUsername(), event.getTs());
+                    listeners.keySet().forEach(listener -> listener.accept(e));
+                }
             }
         });
 
@@ -183,8 +224,18 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
     }
 
     @Override
-    public void unsubscribe(MqttMessageListener listener) {
+    public void unsubscribe(MqttPubSubServiceListener listener) {
         Assert.notNull(listener, "listener cannot be null");
+        if (listener instanceof MqttMessageListener mqttMessageListener) {
+            removeMqttMessageListener(mqttMessageListener);
+        } else if (listener instanceof MqttConnectEventListener mqttConnectEventListener){
+            connectEventListeners.forEach((username, listeners) -> listeners.remove(mqttConnectEventListener));
+        } else if (listener instanceof MqttDisconnectEventListener mqttDisconnectEventListener) {
+            disconnectEventListeners.forEach((username, listeners) -> listeners.remove(mqttDisconnectEventListener));
+        }
+    }
+
+    private void removeMqttMessageListener(MqttMessageListener listener) {
         synchronized (subscriberIndex) {
             val topics = subscriberIndex.get(listener);
             if (topics == null) {
@@ -221,6 +272,18 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
     @Override
     public void unsubscribe(String topicSubPath) {
         unsubscribe(SINGLE_LEVEL_WILDCARD, topicSubPath);
+    }
+
+    @Override
+    public void onConnect(String username, MqttConnectEventListener listener) {
+        connectEventListeners.computeIfAbsent(username, k -> new ConcurrentHashMap<>())
+                .put(listener, true);
+    }
+
+    @Override
+    public void onDisconnect(String username, MqttDisconnectEventListener listener) {
+        disconnectEventListeners.computeIfAbsent(username, k -> new ConcurrentHashMap<>())
+                .put(listener, true);
     }
 
     @Override

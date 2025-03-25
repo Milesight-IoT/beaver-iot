@@ -143,7 +143,6 @@ oauth2:
 
 mqtt:
   broker:
-    host: localhost
     mqtt_port: 1883
     mqtts_port: 8883
     ws_path: /mqtt

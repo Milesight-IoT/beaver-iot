@@ -2,9 +2,9 @@ package com.milesight.beaveriot.mqtt.api;
 
 
 import com.milesight.beaveriot.context.api.MqttPubSubServiceProvider;
-import com.milesight.beaveriot.context.mqtt.MqttMessageListener;
-import com.milesight.beaveriot.context.mqtt.MqttQos;
-import com.milesight.beaveriot.context.mqtt.MqttTopicChannel;
+import com.milesight.beaveriot.context.mqtt.enums.MqttQos;
+import com.milesight.beaveriot.context.mqtt.enums.MqttTopicChannel;
+import com.milesight.beaveriot.context.mqtt.listener.MqttMessageListener;
 
 public interface MqttAdminPubSubServiceProvider extends MqttPubSubServiceProvider {
 
