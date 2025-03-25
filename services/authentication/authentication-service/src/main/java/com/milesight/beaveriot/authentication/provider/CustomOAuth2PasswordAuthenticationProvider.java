@@ -29,7 +29,6 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 
 import java.security.Principal;
-import java.util.Map;
 
 /**
  * @author loong
@@ -68,7 +67,7 @@ public class CustomOAuth2PasswordAuthenticationProvider implements Authenticatio
         TenantDTO tenantDTO = userFacade.analyzeTenantId(tenantId);
         if (tenantDTO == null) {
             OAuth2Error error = new OAuth2Error(OAuth2ErrorCodes.INVALID_REQUEST,
-                    "subDomain not found.", null);
+                    "tenant not found.", null);
             throw new OAuth2AuthenticationException(error);
         }
         tenantId = tenantDTO.getTenantId();
