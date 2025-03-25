@@ -1,7 +1,7 @@
 package net.javacrumbs.shedlock.spring.aop;
 
 import com.milesight.beaveriot.context.security.TenantContext;
-import com.milesight.beaveriot.shedlock.annotations.LockScope;
+import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
 import lombok.Getter;
 import net.javacrumbs.shedlock.core.ClockProvider;
 import net.javacrumbs.shedlock.core.LockConfiguration;
