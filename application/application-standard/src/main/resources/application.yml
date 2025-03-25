@@ -56,6 +56,12 @@ spring:
         codec:
           class: "org.redisson.codec.JsonJacksonCodec"
         transportMode: "NIO"
+  task:
+    execution:
+      pool:
+        core-size: 8
+        max-size: 16
+        queue-capacity: 10000
 
 management:
   endpoints:

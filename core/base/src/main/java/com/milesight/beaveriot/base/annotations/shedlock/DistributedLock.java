@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.shedlock.annotations;
+package com.milesight.beaveriot.base.annotations.shedlock;
 
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.core.annotation.AliasFor;

@@ -40,7 +40,7 @@ public class EventBusAutoConfiguration {
     }
 
     @Bean
-    public Executor eventBusTaskExecutor(ExecutionOptions disruptorOptions) {
+    public ThreadPoolTaskExecutor eventBusTaskExecutor(ExecutionOptions disruptorOptions) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(disruptorOptions.getCorePoolSize());
         executor.setMaxPoolSize(disruptorOptions.getMaxPoolSize());

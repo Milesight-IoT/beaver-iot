@@ -1,6 +1,6 @@
 package net.javacrumbs.shedlock.spring.aop;
 
-import com.milesight.beaveriot.shedlock.annotations.DistributedLock;
+import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
 import net.javacrumbs.shedlock.core.LockConfiguration;
 import net.javacrumbs.shedlock.spring.ExtendedLockConfigurationExtractor;
 import org.springframework.core.annotation.AnnotationUtils;

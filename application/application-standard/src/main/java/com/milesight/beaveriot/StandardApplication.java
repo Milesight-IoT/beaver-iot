@@ -16,7 +16,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 /**
  * @author leon
  */
-@EnableAsync
+@EnableAsync(proxyTargetClass = true)
 @EnableJpaAuditing
 @EnableJpaRepositories(repositoryBaseClass = BaseJpaRepositoryImpl.class )
 @SpringBootApplication(exclude = {RedissonAutoConfigurationV2.class})
