@@ -130,6 +130,9 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
             @Override
             public void onClientConnect(MqttClientConnectEvent event) {
                 val tenantId = updateTenantContextByUsername(event.getUsername());
+                if (tenantId == null) {
+                    return;
+                }
                 val e = new MqttConnectEvent(tenantId, event.getClientId(), event.getUsername(), event.getTs());
                 connectEventListeners.forEach(listener -> listener.accept(e));
             }
@@ -137,6 +140,9 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
             @Override
             public void onClientDisconnect(MqttClientDisconnectEvent event) {
                 val tenantId = updateTenantContextByUsername(event.getUsername());
+                if (tenantId == null) {
+                    return;
+                }
                 val e = new MqttDisconnectEvent(tenantId, event.getClientId(), event.getUsername(), event.getTs());
                 disconnectEventListeners.forEach(listener -> listener.accept(e));
             }
