@@ -16,7 +16,11 @@ public interface DeviceServiceProvider {
 
     Device findByKey(String deviceKey);
 
+    List<Device> findByKeys(List<String> deviceKey);
+
     Device findByIdentifier(String identifier, String integrationId);
+
+    List<Device> findByIdentifiers(List<String> identifier, String integrationId);
 
     List<Device> findAll(String integrationId);
 }

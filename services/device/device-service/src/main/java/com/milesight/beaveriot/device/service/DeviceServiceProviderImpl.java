@@ -13,6 +13,7 @@ import com.milesight.beaveriot.eventbus.EventBus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.util.ObjectUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -125,6 +126,21 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
     }
 
     @Override
+    public List<Device> findByKeys(List<String> deviceKeys) {
+        if (ObjectUtils.isEmpty(deviceKeys)) {
+            return List.of();
+        }
+
+        return deviceRepository
+                .findAll(f -> f
+                        .in(DevicePO.Fields.key, deviceKeys.toArray())
+                )
+                .stream()
+                .map(deviceConverter::convertPO)
+                .toList();
+    }
+
+    @Override
     public Device findByIdentifier(String identifier, String integrationId) {
         return deviceRepository
                 .findOne(f -> f
@@ -133,6 +149,22 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
                 )
                 .map(deviceConverter::convertPO)
                 .orElse(null);
+    }
+
+    @Override
+    public List<Device> findByIdentifiers(List<String> identifiers, String integrationId) {
+        if (ObjectUtils.isEmpty(identifiers)) {
+            return List.of();
+        }
+
+        return deviceRepository
+                .findAll(f -> f
+                        .in(DevicePO.Fields.identifier, identifiers.toArray())
+                        .eq(DevicePO.Fields.integration, integrationId)
+                )
+                .stream()
+                .map(deviceConverter::convertPO)
+                .toList();
     }
 
     @Override
