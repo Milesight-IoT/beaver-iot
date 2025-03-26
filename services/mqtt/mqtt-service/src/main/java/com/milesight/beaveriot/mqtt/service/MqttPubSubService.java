@@ -82,12 +82,7 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
 
         val publisherUsername = topicTokens.get(1);
         val topicSubPath = String.join("/", topicTokens.subList(2, topicTokens.size()));
-        val usernameTokens = publisherUsername.split("@");
-        String tenantId = null;
-        if (usernameTokens.length == 2 && !usernameTokens[1].isEmpty()) {
-            tenantId = usernameTokens[1];
-            TenantContext.setTenantId(tenantId);
-        }
+        val tenantId = updateTenantContextByUsername(publisherUsername);
 
         val mqttMessage = new MqttMessage(event.getTopic(), topicSubPath,
                 topicChannel, publisherUsername, tenantId, topicTokens, event.getPayload());
@@ -106,6 +101,19 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
         });
     }
 
+    private static String updateTenantContextByUsername(String publisherUsername) {
+        val usernameTokens = publisherUsername.split("@");
+        if (usernameTokens.length != 2) {
+            return null;
+        }
+        val tenantId = usernameTokens[1];
+        if (tenantId.isEmpty()) {
+            return null;
+        }
+        TenantContext.setTenantId(tenantId);
+        return tenantId;
+    }
+
     @PostConstruct
     protected void init() {
         mqttBrokerBridge.addListener(new MqttEventListener() {
@@ -121,13 +129,15 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
 
             @Override
             public void onClientConnect(MqttClientConnectEvent event) {
-                val e = new MqttConnectEvent(event.getClientId(), event.getUsername(), event.getTs());
+                val tenantId = updateTenantContextByUsername(event.getUsername());
+                val e = new MqttConnectEvent(tenantId, event.getClientId(), event.getUsername(), event.getTs());
                 connectEventListeners.forEach(listener -> listener.accept(e));
             }
 
             @Override
             public void onClientDisconnect(MqttClientDisconnectEvent event) {
-                val e = new MqttDisconnectEvent(event.getClientId(), event.getUsername(), event.getTs());
+                val tenantId = updateTenantContextByUsername(event.getUsername());
+                val e = new MqttDisconnectEvent(tenantId, event.getClientId(), event.getUsername(), event.getTs());
                 disconnectEventListeners.forEach(listener -> listener.accept(e));
             }
         });

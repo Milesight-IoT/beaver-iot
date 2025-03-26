@@ -10,6 +10,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MqttDisconnectEvent {
+    private String tenantId;
     private String clientId;
     private String username;
     private Long ts;
