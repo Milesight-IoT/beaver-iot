@@ -1,5 +1,6 @@
-package com.milesight.beaveriot.context.mqtt;
+package com.milesight.beaveriot.context.mqtt.model;
 
+import com.milesight.beaveriot.context.mqtt.enums.MqttTopicChannel;
 import lombok.*;
 
 import java.util.List;

@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.mqtt.broker.bridge;
 
 
-import com.milesight.beaveriot.context.mqtt.MqttBrokerInfo;
+import com.milesight.beaveriot.context.mqtt.model.MqttBrokerInfo;
 import com.milesight.beaveriot.mqtt.broker.bridge.auth.MqttAcl;
 import com.milesight.beaveriot.mqtt.broker.bridge.listener.MqttEventListener;
 import io.netty.handler.codec.mqtt.MqttQoS;

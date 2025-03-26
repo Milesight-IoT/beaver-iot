@@ -2,16 +2,23 @@ package com.milesight.beaveriot.mqtt.service;
 
 import com.milesight.beaveriot.context.api.CredentialsServiceProvider;
 import com.milesight.beaveriot.context.integration.enums.CredentialsType;
-import com.milesight.beaveriot.context.mqtt.MqttBrokerInfo;
-import com.milesight.beaveriot.context.mqtt.MqttMessage;
-import com.milesight.beaveriot.context.mqtt.MqttMessageListener;
-import com.milesight.beaveriot.context.mqtt.MqttQos;
-import com.milesight.beaveriot.context.mqtt.MqttTopicChannel;
+import com.milesight.beaveriot.context.mqtt.enums.MqttQos;
+import com.milesight.beaveriot.context.mqtt.enums.MqttTopicChannel;
+import com.milesight.beaveriot.context.mqtt.listener.MqttConnectEventListener;
+import com.milesight.beaveriot.context.mqtt.listener.MqttDisconnectEventListener;
+import com.milesight.beaveriot.context.mqtt.listener.MqttMessageListener;
+import com.milesight.beaveriot.context.mqtt.listener.MqttPubSubServiceListener;
+import com.milesight.beaveriot.context.mqtt.model.MqttBrokerInfo;
+import com.milesight.beaveriot.context.mqtt.model.MqttConnectEvent;
+import com.milesight.beaveriot.context.mqtt.model.MqttDisconnectEvent;
+import com.milesight.beaveriot.context.mqtt.model.MqttMessage;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.mqtt.api.MqttAdminPubSubServiceProvider;
 import com.milesight.beaveriot.mqtt.broker.bridge.MqttBrokerBridge;
 import com.milesight.beaveriot.mqtt.broker.bridge.listener.MqttEventListener;
-import com.milesight.beaveriot.mqtt.broker.bridge.listener.MqttMessageEvent;
+import com.milesight.beaveriot.mqtt.broker.bridge.listener.event.MqttClientConnectEvent;
+import com.milesight.beaveriot.mqtt.broker.bridge.listener.event.MqttClientDisconnectEvent;
+import com.milesight.beaveriot.mqtt.broker.bridge.listener.event.MqttMessageEvent;
 import io.moquette.broker.subscriptions.Token;
 import io.moquette.broker.subscriptions.Topic;
 import io.netty.handler.codec.mqtt.MqttQoS;
@@ -23,6 +30,7 @@ import org.springframework.util.Assert;
 
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 @Slf4j
 @Service
@@ -32,16 +40,28 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
     private static final String SINGLE_LEVEL_WILDCARD = "+";
 
     /**
-     * Topic Subscribers <br>
+     * Topic Subscribers
+     * <p>
      * username -> topic -> callback -> isSharedSubscription
      */
     private static final ConcurrentHashMap<String, ConcurrentHashMap<Topic, ConcurrentHashMap<MqttMessageListener, Boolean>>> subscribers = new ConcurrentHashMap<>();
 
     /**
-     * Subscriber Index <br>
+     * Subscriber Index
+     * <p>
      * callback -> callbacks sets
      */
     private static final ConcurrentHashMap<MqttMessageListener, ConcurrentHashMap<Topic, Boolean>> subscriberIndex = new ConcurrentHashMap<>();
+
+    /**
+     * MQTT Client Connect Event Listeners
+     */
+    private static final CopyOnWriteArraySet<MqttConnectEventListener> connectEventListeners = new CopyOnWriteArraySet<>();
+
+    /**
+     * MQTT Client Disconnect Event Listeners
+     */
+    private static final CopyOnWriteArraySet<MqttDisconnectEventListener> disconnectEventListeners = new CopyOnWriteArraySet<>();
 
     private final MqttBrokerBridge mqttBrokerBridge;
 
@@ -62,12 +82,7 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
 
         val publisherUsername = topicTokens.get(1);
         val topicSubPath = String.join("/", topicTokens.subList(2, topicTokens.size()));
-        val usernameTokens = publisherUsername.split("@");
-        String tenantId = null;
-        if (usernameTokens.length == 2 && !usernameTokens[1].isEmpty()) {
-            tenantId = usernameTokens[1];
-            TenantContext.setTenantId(tenantId);
-        }
+        val tenantId = updateTenantContextByUsername(publisherUsername);
 
         val mqttMessage = new MqttMessage(event.getTopic(), topicSubPath,
                 topicChannel, publisherUsername, tenantId, topicTokens, event.getPayload());
@@ -86,6 +101,19 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
         });
     }
 
+    private static String updateTenantContextByUsername(String publisherUsername) {
+        val usernameTokens = publisherUsername.split("@");
+        if (usernameTokens.length != 2) {
+            return null;
+        }
+        val tenantId = usernameTokens[1];
+        if (tenantId.isEmpty()) {
+            return null;
+        }
+        TenantContext.setTenantId(tenantId);
+        return tenantId;
+    }
+
     @PostConstruct
     protected void init() {
         mqttBrokerBridge.addListener(new MqttEventListener() {
@@ -97,6 +125,26 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
             @Override
             public void onBroadcast(MqttMessageEvent event) {
                 fireEvent(event, true);
+            }
+
+            @Override
+            public void onClientConnect(MqttClientConnectEvent event) {
+                val tenantId = updateTenantContextByUsername(event.getUsername());
+                if (tenantId == null) {
+                    return;
+                }
+                val e = new MqttConnectEvent(tenantId, event.getClientId(), event.getUsername(), event.getTs());
+                connectEventListeners.forEach(listener -> listener.accept(e));
+            }
+
+            @Override
+            public void onClientDisconnect(MqttClientDisconnectEvent event) {
+                val tenantId = updateTenantContextByUsername(event.getUsername());
+                if (tenantId == null) {
+                    return;
+                }
+                val e = new MqttDisconnectEvent(tenantId, event.getClientId(), event.getUsername(), event.getTs());
+                disconnectEventListeners.forEach(listener -> listener.accept(e));
             }
         });
 
@@ -183,8 +231,18 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
     }
 
     @Override
-    public void unsubscribe(MqttMessageListener listener) {
+    public void unsubscribe(MqttPubSubServiceListener listener) {
         Assert.notNull(listener, "listener cannot be null");
+        if (listener instanceof MqttMessageListener mqttMessageListener) {
+            removeMqttMessageListener(mqttMessageListener);
+        } else if (listener instanceof MqttConnectEventListener mqttConnectEventListener){
+            connectEventListeners.remove(mqttConnectEventListener);
+        } else if (listener instanceof MqttDisconnectEventListener mqttDisconnectEventListener) {
+            disconnectEventListeners.remove(mqttDisconnectEventListener);
+        }
+    }
+
+    private void removeMqttMessageListener(MqttMessageListener listener) {
         synchronized (subscriberIndex) {
             val topics = subscriberIndex.get(listener);
             if (topics == null) {
@@ -221,6 +279,16 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
     @Override
     public void unsubscribe(String topicSubPath) {
         unsubscribe(SINGLE_LEVEL_WILDCARD, topicSubPath);
+    }
+
+    @Override
+    public void onConnect(MqttConnectEventListener listener) {
+        connectEventListeners.add(listener);
+    }
+
+    @Override
+    public void onDisconnect(MqttDisconnectEventListener listener) {
+        disconnectEventListeners.add(listener);
     }
 
     @Override

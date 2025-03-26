@@ -1,9 +1,11 @@
 package com.milesight.beaveriot.mqtt.broker.bridge;
 
-import com.milesight.beaveriot.context.mqtt.MqttBrokerInfo;
+import com.milesight.beaveriot.context.mqtt.model.MqttBrokerInfo;
 import com.milesight.beaveriot.mqtt.broker.bridge.auth.MqttAuthProvider;
 import com.milesight.beaveriot.mqtt.broker.bridge.listener.MqttEventListener;
-import com.milesight.beaveriot.mqtt.broker.bridge.listener.MqttMessageEvent;
+import com.milesight.beaveriot.mqtt.broker.bridge.listener.event.MqttClientConnectEvent;
+import com.milesight.beaveriot.mqtt.broker.bridge.listener.event.MqttClientDisconnectEvent;
+import com.milesight.beaveriot.mqtt.broker.bridge.listener.event.MqttMessageEvent;
 import lombok.*;
 import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +48,14 @@ public abstract class AbstractMqttBrokerBridge implements MqttBrokerBridge {
 
     protected void onPublish(MqttMessageEvent event) {
         parallelEachListener(listener -> listener.onPublish(event));
+    }
+
+    protected void onConnect(MqttClientConnectEvent event) {
+        parallelEachListener(listener -> listener.onClientConnect(event));
+    }
+
+    protected void onDisconnect(MqttClientDisconnectEvent event) {
+        parallelEachListener(listener -> listener.onClientDisconnect(event));
     }
 
     protected void onBroadcast(MqttMessageEvent event) {
