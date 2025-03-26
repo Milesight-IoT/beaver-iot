@@ -39,7 +39,11 @@ public class IntegrationAuthorizedService implements CommandLineRunner {
         integrationServiceProvider.batchSave(integrations);
 
         integrations.forEach(integration -> {
-            SpringContext.getBean(integration.getIntegrationClass()).onEnabled(tenantId, integration);
+            try {
+                SpringContext.getBean(integration.getIntegrationClass()).onEnabled(tenantId, integration);
+            } catch (Exception e) {
+                log.error("loading integration {} error: {}", integration.getId(), e.getMessage());
+            }
         });
     }
 

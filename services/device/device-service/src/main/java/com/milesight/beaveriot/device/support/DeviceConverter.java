@@ -35,12 +35,16 @@ public class DeviceConverter {
                     .computeIfAbsent(deviceKey, k -> new ArrayList<>())
                     .add(entity);
         }));
-        return devicePOList.stream().map((devicePO -> new DeviceBuilder(devicePO.getIntegration())
-                .name(devicePO.getName())
-                .identifier(devicePO.getIdentifier())
-                .id(devicePO.getId())
-                .additional(devicePO.getAdditionalData())
-                .entities(deviceEntityMap.getOrDefault(devicePO.getKey(), new ArrayList<>()))
-                .build())).collect(Collectors.toList());
+        return devicePOList.stream().map((devicePO -> {
+            Device device = new DeviceBuilder(devicePO.getIntegration())
+                    .name(devicePO.getName())
+                    .identifier(devicePO.getIdentifier())
+                    .id(devicePO.getId())
+                    .additional(devicePO.getAdditionalData())
+                    .entities(deviceEntityMap.getOrDefault(devicePO.getKey(), new ArrayList<>()))
+                    .build();
+            device.setCreatedAt(device.getCreatedAt());
+            return device;
+        })).collect(Collectors.toList());
     }
 }
