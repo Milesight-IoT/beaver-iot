@@ -30,6 +30,7 @@ import org.springframework.util.Assert;
 
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 @Slf4j
 @Service
@@ -54,17 +55,13 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
 
     /**
      * MQTT Client Connect Event Listeners
-     * <p>
-     * username -> listeners
      */
-    private static final ConcurrentHashMap<String, ConcurrentHashMap<MqttConnectEventListener, Boolean>> connectEventListeners = new ConcurrentHashMap<>();
+    private static final CopyOnWriteArraySet<MqttConnectEventListener> connectEventListeners = new CopyOnWriteArraySet<>();
 
     /**
      * MQTT Client Disconnect Event Listeners
-     * <p>
-     * username -> listeners
      */
-    private static final ConcurrentHashMap<String, ConcurrentHashMap<MqttDisconnectEventListener, Boolean>> disconnectEventListeners = new ConcurrentHashMap<>();
+    private static final CopyOnWriteArraySet<MqttDisconnectEventListener> disconnectEventListeners = new CopyOnWriteArraySet<>();
 
     private final MqttBrokerBridge mqttBrokerBridge;
 
@@ -124,20 +121,14 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
 
             @Override
             public void onClientConnect(MqttClientConnectEvent event) {
-                val listeners = connectEventListeners.get(event.getUsername());
-                if (listeners != null) {
-                    val e = new MqttConnectEvent(event.getClientId(), event.getUsername(), event.getTs());
-                    listeners.keySet().forEach(listener -> listener.accept(e));
-                }
+                val e = new MqttConnectEvent(event.getClientId(), event.getUsername(), event.getTs());
+                connectEventListeners.forEach(listener -> listener.accept(e));
             }
 
             @Override
             public void onClientDisconnect(MqttClientDisconnectEvent event) {
-                val listeners = disconnectEventListeners.get(event.getUsername());
-                if (listeners != null) {
-                    val e = new MqttDisconnectEvent(event.getClientId(), event.getUsername(), event.getTs());
-                    listeners.keySet().forEach(listener -> listener.accept(e));
-                }
+                val e = new MqttDisconnectEvent(event.getClientId(), event.getUsername(), event.getTs());
+                disconnectEventListeners.forEach(listener -> listener.accept(e));
             }
         });
 
@@ -229,9 +220,9 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
         if (listener instanceof MqttMessageListener mqttMessageListener) {
             removeMqttMessageListener(mqttMessageListener);
         } else if (listener instanceof MqttConnectEventListener mqttConnectEventListener){
-            connectEventListeners.forEach((username, listeners) -> listeners.remove(mqttConnectEventListener));
+            connectEventListeners.remove(mqttConnectEventListener);
         } else if (listener instanceof MqttDisconnectEventListener mqttDisconnectEventListener) {
-            disconnectEventListeners.forEach((username, listeners) -> listeners.remove(mqttDisconnectEventListener));
+            disconnectEventListeners.remove(mqttDisconnectEventListener);
         }
     }
 
@@ -275,15 +266,13 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
     }
 
     @Override
-    public void onConnect(String username, MqttConnectEventListener listener) {
-        connectEventListeners.computeIfAbsent(username, k -> new ConcurrentHashMap<>())
-                .put(listener, true);
+    public void onConnect(MqttConnectEventListener listener) {
+        connectEventListeners.add(listener);
     }
 
     @Override
-    public void onDisconnect(String username, MqttDisconnectEventListener listener) {
-        disconnectEventListeners.computeIfAbsent(username, k -> new ConcurrentHashMap<>())
-                .put(listener, true);
+    public void onDisconnect(MqttDisconnectEventListener listener) {
+        disconnectEventListeners.add(listener);
     }
 
     @Override

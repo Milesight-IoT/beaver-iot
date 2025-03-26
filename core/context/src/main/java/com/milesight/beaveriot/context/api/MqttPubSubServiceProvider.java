@@ -61,9 +61,9 @@ public interface MqttPubSubServiceProvider {
      */
     void unsubscribe(String topicSubPath);
 
-    void onConnect(String username, MqttConnectEventListener listener);
+    void onConnect(MqttConnectEventListener listener);
 
-    void onDisconnect(String username, MqttDisconnectEventListener listener);
+    void onDisconnect(MqttDisconnectEventListener listener);
 
     /**
      * Get full topic name
