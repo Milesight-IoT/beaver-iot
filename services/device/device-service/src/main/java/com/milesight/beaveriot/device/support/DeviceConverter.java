@@ -43,7 +43,7 @@ public class DeviceConverter {
                     .additional(devicePO.getAdditionalData())
                     .entities(deviceEntityMap.getOrDefault(devicePO.getKey(), new ArrayList<>()))
                     .build();
-            device.setCreatedAt(device.getCreatedAt());
+            device.setCreatedAt(devicePO.getCreatedAt());
             return device;
         })).collect(Collectors.toList());
     }

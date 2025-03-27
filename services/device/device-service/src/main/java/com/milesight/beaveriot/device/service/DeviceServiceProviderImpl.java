@@ -131,13 +131,10 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
             return List.of();
         }
 
-        return deviceRepository
+        return deviceConverter.convertPO(deviceRepository
                 .findAll(f -> f
                         .in(DevicePO.Fields.key, deviceKeys.toArray())
-                )
-                .stream()
-                .map(deviceConverter::convertPO)
-                .toList();
+                ));
     }
 
     @Override
@@ -157,22 +154,17 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
             return List.of();
         }
 
-        return deviceRepository
+        return deviceConverter.convertPO(deviceRepository
                 .findAll(f -> f
                         .in(DevicePO.Fields.identifier, identifiers.toArray())
                         .eq(DevicePO.Fields.integration, integrationId)
-                )
-                .stream()
-                .map(deviceConverter::convertPO)
-                .toList();
+                ));
     }
 
     @Override
     public List<Device> findAll(String integrationId) {
-        return deviceRepository
-                .findAll(f -> f.eq(DevicePO.Fields.integration, integrationId))
-                .stream().map(deviceConverter::convertPO)
-                .toList();
+        return deviceConverter.convertPO(deviceRepository
+                .findAll(f -> f.eq(DevicePO.Fields.integration, integrationId)));
     }
 
     private boolean deviceAdditionalDataEqual(Map<String, Object> arg1, Map<String, Object> arg2) {
