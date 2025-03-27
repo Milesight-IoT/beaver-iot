@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.context.mqtt;
+package com.milesight.beaveriot.context.mqtt.model;
 
 import lombok.*;
 import org.springframework.lang.Nullable;

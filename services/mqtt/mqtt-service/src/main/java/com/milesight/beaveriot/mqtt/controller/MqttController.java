@@ -2,7 +2,7 @@ package com.milesight.beaveriot.mqtt.controller;
 
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
-import com.milesight.beaveriot.context.mqtt.MqttBrokerInfo;
+import com.milesight.beaveriot.context.mqtt.model.MqttBrokerInfo;
 import com.milesight.beaveriot.mqtt.model.WebMqttCredentials;
 import com.milesight.beaveriot.mqtt.service.MqttAclService;
 import com.milesight.beaveriot.mqtt.service.MqttPubSubService;
