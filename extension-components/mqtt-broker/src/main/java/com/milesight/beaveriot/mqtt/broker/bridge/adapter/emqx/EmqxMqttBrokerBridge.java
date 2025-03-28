@@ -64,6 +64,7 @@ public class EmqxMqttBrokerBridge extends AbstractMqttBrokerBridge {
         }
 
         emqxRestApi.ensureAuthenticator();
+        emqxRestApi.ensureMqttAdminUser(mqttBrokerSettings.getEmqx().getInternalMqttUsername(), mqttBrokerSettings.getEmqx().getInternalMqttPassword());
         emqxRestApi.ensureAuthorizationSource();
 
         sharedSubscriptionMqttClient.setCallback(new MqttSubscriptionCallback(sharedSubscriptionMqttClient, List.of(DEFAULT_SHARED_SUBSCRIPTION_TOPIC_FILTER)) {
@@ -135,7 +136,7 @@ public class EmqxMqttBrokerBridge extends AbstractMqttBrokerBridge {
 
     @Override
     public void addUser(String username, String password) {
-        emqxRestApi.addUser(username, password);
+        emqxRestApi.addUser(username, password, false);
     }
 
     @Override

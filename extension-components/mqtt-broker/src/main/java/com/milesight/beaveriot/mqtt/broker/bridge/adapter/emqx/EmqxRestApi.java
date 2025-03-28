@@ -52,10 +52,17 @@ public class EmqxRestApi {
         return true;
     }
 
+    public boolean ensureMqttAdminUser(String username, String password) {
+        if (checkUserExist(username)) {
+            return true;
+        }
+        return addUser(username, password, true);
+    }
+
     @SneakyThrows
-    public boolean addUser(String username, String password) {
+    public boolean addUser(String username, String password, boolean isAdmin) {
         val response = httpClient.send(HttpRequest.newBuilder()
-                        .POST(HttpRequest.BodyPublishers.ofString(String.format("{\"user_id\":\"%s\",\"password\":\"%s\"}", username, password)))
+                        .POST(HttpRequest.BodyPublishers.ofString(String.format("{\"user_id\":\"%s\",\"password\":\"%s\",\"is_superuser\":%b}", username, password, isAdmin)))
                         .uri(new URI(String.format("%s/api/v5/authentication/password_based:built_in_database/users", restApiEndpoint)))
                         .header("Content-Type", "application/json")
                         .header("Accept", "application/json")
@@ -113,6 +120,26 @@ public class EmqxRestApi {
             log.error("emqx delete acl for user '{}' failed, status code: {}, body: {}", username, response.statusCode(), response.body());
             return false;
         }
+        return true;
+    }
+
+    @SneakyThrows
+    public boolean checkUserExist(String username) {
+        val response = httpClient.send(HttpRequest.newBuilder()
+                        .GET()
+                        .uri(new URI(String.format("%s/api/v5/authentication/password_based:built_in_database/users/%s", restApiEndpoint, username)))
+                        .header("Content-Type", "application/json")
+                        .header("Accept", "application/json")
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 404) {
+            // not exist
+            return false;
+        } else if (response.statusCode() >= 400) {
+            log.error("emqx check user '{}' exist failed, status code: {}, body: {}", username, response.statusCode(), response.body());
+            return false;
+        }
+        log.info("emqx user found: {}", response.body());
         return true;
     }
 
