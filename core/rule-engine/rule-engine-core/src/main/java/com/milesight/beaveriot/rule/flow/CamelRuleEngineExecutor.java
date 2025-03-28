@@ -2,6 +2,7 @@ package com.milesight.beaveriot.rule.flow;
 
 import com.milesight.beaveriot.rule.RuleEngineExecutor;
 import org.apache.camel.*;
+import org.apache.camel.support.ExchangeHelper;
 import org.springframework.util.ObjectUtils;
 
 import java.util.Map;
@@ -39,7 +40,8 @@ public class CamelRuleEngineExecutor implements RuleEngineExecutor {
 
     @Override
     public Object executeWithResponse(String endPointUri, Object payload, Map<String, Object> properties) {
-        return producerTemplate.send(endPointUri, ExchangePattern.InOut, createProcessor(payload, properties));
+        Exchange result = producerTemplate.send(endPointUri, ExchangePattern.InOut, createProcessor(payload, properties));
+        return ExchangeHelper.extractResultBody(result, ExchangePattern.InOut);
     }
 
     @Override
