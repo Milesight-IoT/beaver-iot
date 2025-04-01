@@ -482,6 +482,8 @@ public class EntityService implements EntityServiceProvider {
                 .in(entityQuery.getEntityIds() != null && !entityQuery.getEntityIds().isEmpty(), EntityPO.Fields.id, entityQuery.getEntityIds() == null ? null : entityQuery.getEntityIds().toArray())
                 .in(entityQuery.getEntityValueType() != null && !entityQuery.getEntityValueType().isEmpty(), EntityPO.Fields.valueType, entityQuery.getEntityValueType() == null ? null : entityQuery.getEntityValueType().toArray())
                 .in(entityQuery.getEntityAccessMod() != null && !entityQuery.getEntityAccessMod().isEmpty(), EntityPO.Fields.accessMod, entityQuery.getEntityAccessMod() == null ? null : entityQuery.getEntityAccessMod().toArray())
+                .in(entityQuery.getEntityKeys() != null && !entityQuery.getEntityKeys().isEmpty(), EntityPO.Fields.key, entityQuery.getEntityKeys() == null ? null : entityQuery.getEntityKeys().toArray())
+                .in(entityQuery.getEntityNames() != null && !entityQuery.getEntityNames().isEmpty(), EntityPO.Fields.name, entityQuery.getEntityNames() == null ? null : entityQuery.getEntityNames().toArray())
                 .eq(Boolean.TRUE.equals(entityQuery.getCustomized()), EntityPO.Fields.attachTargetId, IntegrationConstants.SYSTEM_INTEGRATION_ID)
                 .ne(Boolean.FALSE.equals(entityQuery.getCustomized()), EntityPO.Fields.attachTargetId, IntegrationConstants.SYSTEM_INTEGRATION_ID)
                 .eq(!Boolean.TRUE.equals(entityQuery.getShowHidden()), EntityPO.Fields.visible, true)

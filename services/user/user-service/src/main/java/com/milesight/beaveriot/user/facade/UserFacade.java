@@ -149,7 +149,7 @@ public class UserFacade implements IUserFacade {
 
     @Override
     public void deleteResource(ResourceType resourceType, List<Long> resourceIds) {
-        if (resourceIds == null || resourceIds.isEmpty()){
+        if (resourceIds == null || resourceIds.isEmpty()) {
             return;
         }
         List<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filterable -> filterable.in(RoleResourcePO.Fields.resourceId, resourceIds.toArray()).eq(RoleResourcePO.Fields.resourceType, resourceType));
@@ -160,7 +160,7 @@ public class UserFacade implements IUserFacade {
 
     @Override
     public void associateResource(Long userId, ResourceType resourceType, List<Long> resourceIds) {
-        if (resourceIds == null || resourceIds.isEmpty()){
+        if (resourceIds == null || resourceIds.isEmpty()) {
             return;
         }
         List<UserRolePO> userRolePOList = userRoleRepository.findAll(filterable -> filterable.eq(UserRolePO.Fields.userId, userId));
@@ -184,8 +184,8 @@ public class UserFacade implements IUserFacade {
 
     @Override
     public List<UserDTO> getUserLike(String keyword) {
-        List<UserPO> userPOS = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(keyword),UserPO.Fields.nickname, keyword)
-                .likeIgnoreCase(StringUtils.hasText(keyword),UserPO.Fields.email, keyword)));
+        List<UserPO> userPOS = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.nickname, keyword)
+                .likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.email, keyword)));
         return UserConverter.INSTANCE.convertDTOList(userPOS);
     }
 
