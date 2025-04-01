@@ -29,6 +29,7 @@ public class DashboardPO {
     private String tenantId;
     private Long userId;
     private String name;
+    private Boolean home;
     @CreatedDate
     private Long createdAt;
     @LastModifiedDate
