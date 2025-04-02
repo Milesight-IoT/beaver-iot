@@ -15,6 +15,7 @@ public class DashboardResponse {
     private String dashboardId;
     private String userId;
     private String name;
+    private Boolean home;
     private List<DashboardWidgetDTO> widgets;
     private String createdAt;
 

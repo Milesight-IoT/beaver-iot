@@ -26,7 +26,7 @@ public class EntityCreateRequest {
 
     /**
      * The value attribute of the entity. <br>
-     * Example: {"min":100,"max":600,"enum":{200:"OK",404:"NOT_FOUND"}}
+     * Example: {"min":100,"max":600,"unit":"","enum":{200:"OK",404:"NOT_FOUND"}}
      */
     private Map<String, Object> valueAttribute;
 
