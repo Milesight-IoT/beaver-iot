@@ -31,6 +31,8 @@ public class EntityQuery extends GenericQueryPageRequest {
 
     private List<String> entityNames;
 
+    private String entitySourceName;
+
     /**
      * Filter customized entities
      */

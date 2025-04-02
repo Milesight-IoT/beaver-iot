@@ -476,6 +476,7 @@ public class EntityService implements EntityServiceProvider {
         if(!hasEntityCustomViewPermission){
             entityQuery.setCustomized(false);
         }
+        List<String> sourceTargetIds = searchAttachTargetIdsByKeyword(entityQuery.getEntitySourceName());
 
         Consumer<Filterable> filterable = f -> f.isNull(isExcludeChildren, EntityPO.Fields.parent)
                 .in(entityQuery.getEntityType() != null && !entityQuery.getEntityType().isEmpty(), EntityPO.Fields.type, entityQuery.getEntityType() == null ? null : entityQuery.getEntityType().toArray())
@@ -487,6 +488,7 @@ public class EntityService implements EntityServiceProvider {
                 .eq(Boolean.TRUE.equals(entityQuery.getCustomized()), EntityPO.Fields.attachTargetId, IntegrationConstants.SYSTEM_INTEGRATION_ID)
                 .ne(Boolean.FALSE.equals(entityQuery.getCustomized()), EntityPO.Fields.attachTargetId, IntegrationConstants.SYSTEM_INTEGRATION_ID)
                 .eq(!Boolean.TRUE.equals(entityQuery.getShowHidden()), EntityPO.Fields.visible, true)
+                .in(!sourceTargetIds.isEmpty(), EntityPO.Fields.attachTargetId, sourceTargetIds.toArray())
                 .or(f1 -> f1.likeIgnoreCase(StringUtils.hasText(entityQuery.getKeyword()), EntityPO.Fields.name, entityQuery.getKeyword())
                         .likeIgnoreCase(StringUtils.hasText(entityQuery.getKeyword()), EntityPO.Fields.key, entityQuery.getKeyword())
                         .in(!attachTargetIds.isEmpty(), EntityPO.Fields.attachTargetId, attachTargetIds.toArray()));
