@@ -72,3 +72,10 @@ ALTER COLUMN tenant_id TYPE VARCHAR(255);
 
 update t_flow set tenant_id = 'default' where tenant_id = '1';
 update t_flow_log set tenant_id = 'default' where tenant_id = '1';
+
+-- changeset loong:workflow_v1.1.0_2025040711_162400
+ALTER TABLE t_flow
+alter column tenant_id set default 'default';
+
+ALTER TABLE t_flow_log
+alter column tenant_id set default 'default';

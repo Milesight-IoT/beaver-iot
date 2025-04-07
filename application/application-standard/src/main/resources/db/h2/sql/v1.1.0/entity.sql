@@ -66,3 +66,13 @@ EXECUTE IMMEDIATE 'ALTER TABLE t_entity_history DROP CONSTRAINT ' ||
                    WHERE TABLE_NAME = 'T_ENTITY_HISTORY' AND CONSTRAINT_TYPE = 'UNIQUE'
     LIMIT 1);
 
+-- changeset loong:entity_v1.1.0_20250407_165500
+alter table t_entity
+alter column tenant_id set default 'default';
+
+alter table t_entity_history
+alter column tenant_id set default 'default';
+
+alter table t_entity_latest
+alter column tenant_id set default 'default';
+

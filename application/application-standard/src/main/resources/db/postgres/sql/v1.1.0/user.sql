@@ -161,3 +161,22 @@ update "t_user_role" set tenant_id='default' where tenant_id='1';
 update "t_role_resource" set tenant_id='default' where tenant_id='1';
 update "t_menu" set tenant_id='default' where tenant_id='1';
 update "t_role_menu" set tenant_id='default' where tenant_id='1';
+
+-- changeset loong:user_v1.1.0_2025040711_162400
+alter table t_user
+alter column tenant_id set default 'default';
+
+alter table t_role
+alter column tenant_id set default 'default';
+
+alter table t_user_role
+alter column tenant_id set default 'default';
+
+alter table t_role_resource
+alter column tenant_id set default 'default';
+
+alter table t_menu
+alter column tenant_id set default 'default';
+
+alter table t_role_menu
+alter column tenant_id set default 'default';
