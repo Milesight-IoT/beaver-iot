@@ -205,7 +205,7 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
 
     @Override
     public void publish(String topicSubPath, byte[] payload, MqttQos qos, boolean retained) {
-        val credentials = credentialsServiceProvider.getOrCreateDefaultCredentials(CredentialsType.MQTT);
+        val credentials = credentialsServiceProvider.getOrCreateCredentials(CredentialsType.MQTT);
         val username = credentials.getAccessKey();
         publish(username, topicSubPath, payload, qos, retained);
     }
