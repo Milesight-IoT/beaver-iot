@@ -17,13 +17,17 @@ public interface CredentialsServiceProvider {
 
     Optional<Credentials> getCredentials(CredentialsType credentialType);
 
-    Credentials getOrCreateDefaultCredentials(String credentialType);
+    Credentials getOrCreateCredentials(String credentialType);
 
-    Credentials getOrCreateDefaultCredentials(CredentialsType credentialType);
+    Credentials getOrCreateCredentials(String credentialType, String password);
 
-    Credentials getOrCreateCredentials(String credentialType, String username);
+    Credentials getOrCreateCredentials(CredentialsType credentialType);
 
-    Credentials getOrCreateCredentials(CredentialsType credentialType, String username);
+    Credentials getOrCreateCredentials(CredentialsType credentialType, String password);
+
+    Credentials getOrCreateCredentials(String credentialType, String username, String password);
+
+    Credentials getOrCreateCredentials(CredentialsType credentialType, String username, String password);
 
     Optional<Credentials> getCredentials(Long id);
 
