@@ -140,7 +140,7 @@ public class DashboardService {
     public List<DashboardResponse> getDashboards() {
         List<DashboardPO> dashboardPOList;
         try {
-            dashboardPOList = dashboardRepository.findAllWithDataPermission().stream().sorted(Comparator.comparing(DashboardPO::getCreatedAt)).collect(Collectors.toList());
+            dashboardPOList = dashboardRepository.findAllWithDataPermission().stream().sorted(Comparator.comparing(DashboardPO::getHome, Comparator.reverseOrder()).thenComparing(DashboardPO::getCreatedAt)).collect(Collectors.toList());
         }catch (Exception e) {
             if (e instanceof ServiceException && Objects.equals(((ServiceException) e).getErrorCode(), ErrorCode.FORBIDDEN_PERMISSION.getErrorCode())) {
                 return new ArrayList<>();
@@ -164,6 +164,24 @@ public class DashboardService {
             return new ArrayList<>();
         }
         return DashboardWidgetConvert.INSTANCE.convertResponseList(dashboardWidgetPOList);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void setHomeDashboard(Long dashboardId) {
+        DashboardPO homeDashboardPO = dashboardRepository.findOneWithDataPermission(filterable -> filterable.eq(DashboardPO.Fields.home, true)).orElse(null);
+        if (homeDashboardPO != null) {
+            homeDashboardPO.setHome(false);
+            dashboardRepository.save(homeDashboardPO);
+        }
+        DashboardPO dashboardPO = dashboardRepository.findOneWithDataPermission(filterable -> filterable.eq(DashboardPO.Fields.id, dashboardId)).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).detailMessage("dashboard not exist").build());
+        dashboardPO.setHome(true);
+        dashboardRepository.save(dashboardPO);
+    }
+
+    public void cancelSetHomeDashboard(Long dashboardId) {
+        DashboardPO dashboardPO = dashboardRepository.findOneWithDataPermission(filterable -> filterable.eq(DashboardPO.Fields.id, dashboardId)).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).detailMessage("dashboard not exist").build());
+        dashboardPO.setHome(false);
+        dashboardRepository.save(dashboardPO);
     }
 
 }

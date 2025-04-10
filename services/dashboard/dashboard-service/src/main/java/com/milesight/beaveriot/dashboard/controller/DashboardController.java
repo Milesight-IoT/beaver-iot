@@ -60,4 +60,16 @@ public class DashboardController {
         return ResponseBuilder.success(dashboardResponseList);
     }
 
+    @PostMapping("/{dashboardId}/home")
+    public ResponseBody<Void> setHomeDashboard(@PathVariable("dashboardId") Long dashboardId) {
+        dashboardService.setHomeDashboard(dashboardId);
+        return ResponseBuilder.success();
+    }
+
+    @PostMapping("/{dashboardId}/cancel-home")
+    public ResponseBody<Void> cancelSetHomeDashboard(@PathVariable("dashboardId") Long dashboardId) {
+        dashboardService.cancelSetHomeDashboard(dashboardId);
+        return ResponseBuilder.success();
+    }
+
 }

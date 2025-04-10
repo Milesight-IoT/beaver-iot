@@ -10,3 +10,7 @@ alter table t_device
 alter column tenant_id type varchar(255);
 
 update t_device set tenant_id = 'default' where tenant_id = '1';
+
+--changeset loong:device_v1.1.0_2025040711_162400
+alter table t_device
+alter column tenant_id set default 'default';

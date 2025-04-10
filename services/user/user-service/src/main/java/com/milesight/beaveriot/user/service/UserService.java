@@ -320,6 +320,12 @@ public class UserService {
 
     @Transactional(rollbackFor = Exception.class)
     public void deleteUser(Long userId) {
+        if (userId == null) {
+            return;
+        }
+        if (userId.equals(com.milesight.beaveriot.context.security.SecurityUserContext.getUserId())) {
+            throw ServiceException.with(ErrorCode.SERVER_ERROR).detailMessage("delete current user is not allowed").build();
+        }
         userRepository.deleteById(userId);
         userRoleRepository.deleteByUserId(userId);
     }
@@ -329,6 +335,9 @@ public class UserService {
         List<Long> userIds = batchDeleteUserRequest.getUserIdList();
         if (userIds == null || userIds.isEmpty()) {
             return;
+        }
+        if (userIds.contains(com.milesight.beaveriot.context.security.SecurityUserContext.getUserId())) {
+            throw ServiceException.with(ErrorCode.SERVER_ERROR).detailMessage("delete current user is not allowed").build();
         }
         userRepository.deleteAllById(userIds);
         userRoleRepository.deleteByUserIds(userIds);
