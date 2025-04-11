@@ -33,7 +33,7 @@ import java.util.Map;
 public class ServiceInvocationComponent implements ProcessorNode<Exchange> {
 
     @UriParam(javaType = "java.util.Map", prefix = "bean", displayName = "Service Setting")
-    @UriParamExtension(uiComponent = "serviceEntitySetting")
+    @UriParamExtension(uiComponent = "serviceEntitySetting", loggable = true)
     private Map<String, Object> serviceInvocationSetting;
 
     @Autowired

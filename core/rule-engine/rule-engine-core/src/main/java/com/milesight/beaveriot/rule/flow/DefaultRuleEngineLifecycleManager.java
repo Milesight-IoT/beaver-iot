@@ -14,6 +14,7 @@ import com.milesight.beaveriot.rule.model.flow.route.FromNodeDefinition;
 import com.milesight.beaveriot.rule.model.trace.FlowTraceInfo;
 import com.milesight.beaveriot.rule.model.trace.NodeTraceInfo;
 import com.milesight.beaveriot.rule.support.RuleFlowIdGenerator;
+import com.milesight.beaveriot.rule.trace.RuleNodeLogVariablesSupport;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
@@ -100,6 +101,7 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
     @Override
     public boolean removeFlow(String flowId) {
         try {
+            RuleNodeLogVariablesSupport.removeLogVariables(flowId);
             camelContext.stopRoute(flowId);
             return camelContext.removeRoute(flowId);
         } catch (Exception e) {

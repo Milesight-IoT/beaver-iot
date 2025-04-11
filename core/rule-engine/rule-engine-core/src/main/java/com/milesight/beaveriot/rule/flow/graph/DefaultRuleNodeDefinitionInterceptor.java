@@ -2,6 +2,7 @@ package com.milesight.beaveriot.rule.flow.graph;
 
 import com.milesight.beaveriot.rule.RuleNodeDefinitionInterceptor;
 import com.milesight.beaveriot.rule.model.flow.route.AbstractNodeDefinition;
+import com.milesight.beaveriot.rule.model.flow.route.ChoiceNodeDefinition;
 import com.milesight.beaveriot.rule.model.flow.route.FromNodeDefinition;
 import com.milesight.beaveriot.rule.model.flow.route.ToNodeDefinition;
 import org.apache.camel.model.ProcessorDefinition;
@@ -52,5 +53,13 @@ public class DefaultRuleNodeDefinitionInterceptor implements RuleNodeDefinitionI
             }
         }
         return null;
+    }
+
+    @Override
+    public ChoiceNodeDefinition interceptChoiceNodeDefinition(String flowId, ChoiceNodeDefinition choiceNodeDefinition) {
+        for (RuleNodeDefinitionInterceptor interceptor : ruleNodeDefinitionInterceptors) {
+            choiceNodeDefinition = interceptor.interceptChoiceNodeDefinition(flowId, choiceNodeDefinition);
+        }
+        return choiceNodeDefinition;
     }
 }

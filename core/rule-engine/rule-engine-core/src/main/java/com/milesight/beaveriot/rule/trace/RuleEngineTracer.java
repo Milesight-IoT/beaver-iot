@@ -5,7 +5,6 @@ import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
 import com.milesight.beaveriot.rule.enums.ExecutionStatus;
 import com.milesight.beaveriot.rule.model.trace.FlowTraceInfo;
 import com.milesight.beaveriot.rule.model.trace.NodeTraceInfo;
-import com.milesight.beaveriot.rule.support.JsonHelper;
 import com.milesight.beaveriot.rule.support.RuleFlowIdGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
@@ -23,9 +22,6 @@ import org.springframework.util.StringUtils;
  */
 @Slf4j
 public class RuleEngineTracer extends DefaultTracer {
-
-    private static final long TRACER_BODY_MAX_LENGTH = 100000;
-    private static final String TRACER_BODY_EXCEED_MAX_WARNING = "Tracer body exceed maximum length " + TRACER_BODY_MAX_LENGTH;
 
     private ApplicationEventPublisher applicationEventPublisher;
     private RuleProperties ruleProperties;
@@ -57,7 +53,7 @@ public class RuleEngineTracer extends DefaultTracer {
         if (route instanceof RouteDefinition routeDefinition) {
             FromDefinition input = routeDefinition.getInput();
             NodeTraceInfo nodeTraceInfo = createNodeTraceInfo(input.getId(), input.getLabel(), routeDefinition.getDescriptionText(), exchange);
-            nodeTraceInfo.setOutput(getExchangeBody(exchange));
+            nodeTraceInfo.setOutput(RuleNodeLogVariablesSupport.getExchangeOutputBody(exchange, nodeTraceInfo.getNodeId()));
             flowTraceInfo.getTraceInfos().add(nodeTraceInfo);
         }
     }
@@ -71,7 +67,6 @@ public class RuleEngineTracer extends DefaultTracer {
         if (traceContext != null && shouldTraceNodeByPrefix(node)) {
             try {
                 NodeTraceInfo nodeTraceResponse = createNodeTraceInfo(node.getId(), node.getLabel(), node.getDescriptionText(), exchange);
-                nodeTraceResponse.setInput(getExchangeBody(exchange));
                 traceContext.getTraceInfos().add(nodeTraceResponse);
             } catch (Exception ex) {
                 log.error("Before trace node log exceptions:", ex);
@@ -102,7 +97,8 @@ public class RuleEngineTracer extends DefaultTracer {
             try {
                 NodeTraceInfo traceInfo = traceContext.findTraceInfo(RuleFlowIdGenerator.removeNamespacedId(exchange.getFromRouteId(), node.getId()), exchange.getIn().getMessageId());
                 if (traceInfo != null) {
-                    traceInfo.setOutput(getExchangeBody(exchange));
+                    traceInfo.setInput(RuleNodeLogVariablesSupport.getExchangeInputBody(exchange, traceInfo.getNodeId()));
+                    traceInfo.setOutput(RuleNodeLogVariablesSupport.getExchangeOutputBody(exchange, traceInfo.getNodeId()));
                     traceInfo.setTimeCost(System.currentTimeMillis() - traceInfo.getStartTime());
                     traceInfo.setParentTraceId(exchange.getIn().getHeader(ExchangeHeaders.EXCHANGE_LATEST_TRACE_ID, String.class));
                     if (exchange.getException() != null) {
@@ -115,20 +111,6 @@ public class RuleEngineTracer extends DefaultTracer {
         }
     }
 
-    private String getExchangeBody(Exchange exchange) {
-        Object body = exchange.getIn().getBody();
-        if (body == null) {
-            return null;
-        }
-        try {
-            String bodyStr = (body instanceof Exchange exchangeBody) ? JsonHelper.toJSON(exchangeBody.getIn().getBody()) : JsonHelper.toJSON(body);
-            return !ObjectUtils.isEmpty(bodyStr) && bodyStr.length() > TRACER_BODY_MAX_LENGTH ? TRACER_BODY_EXCEED_MAX_WARNING : bodyStr;
-        } catch (Exception ex) {
-            log.error("Convert exchange body failed on tracing", ex);
-            return "Convert exchange body failed:" + ex.getMessage();
-        }
-    }
-
     @Override
     public void traceAfterRoute(NamedRoute route, Exchange exchange) {
         if (shouldTraceByLogging()) {
@@ -138,14 +120,14 @@ public class RuleEngineTracer extends DefaultTracer {
         FlowTraceInfo flowTraceResponse = (FlowTraceInfo) exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE);
         if (shouldTraceAfterRoute(exchange, flowTraceResponse)) {
             if (exchange.getException() != null) {
-                log.error("Execution workflow exception, flow ID: {}",flowTraceResponse.getFlowId(), exchange.getException());
+                log.error("Execution workflow exception, flow ID: {}", flowTraceResponse.getFlowId(), exchange.getException());
                 flowTraceResponse.setStatus(ExecutionStatus.ERROR);
             }
             flowTraceResponse.setTimeCost(System.currentTimeMillis() - flowTraceResponse.getStartTime());
             log.debug("After trace route log exceptions:: {}", flowTraceResponse);
             // if trace for test, do not publish event
             Boolean traceForTest = exchange.getProperty(ExchangeHeaders.TRACE_FOR_TEST, false, boolean.class);
-             if (Boolean.FALSE.equals(traceForTest)) {
+            if (Boolean.FALSE.equals(traceForTest)) {
                 applicationEventPublisher.publishEvent(flowTraceResponse);
             }
         }
@@ -178,5 +160,4 @@ public class RuleEngineTracer extends DefaultTracer {
         }
         return node.getId().startsWith(ruleProperties.getTraceNodePrefix());
     }
-
 }

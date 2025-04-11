@@ -26,7 +26,7 @@ import java.util.Random;
 public class WebhookComponent implements ProcessorNode<Exchange> {
 
     @UriParam(prefix = "bean", displayName = "Payload")
-    @UriParamExtension(uiComponent = "paramAssignInput")
+    @UriParamExtension(uiComponent = "paramAssignInput", loggable = true)
     private Map<String, Object> inputArguments;
     @UriParam(prefix = "bean")
     private String webhookUrl;

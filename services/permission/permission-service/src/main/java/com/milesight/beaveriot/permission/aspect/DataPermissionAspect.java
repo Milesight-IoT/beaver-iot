@@ -13,7 +13,7 @@ import com.milesight.beaveriot.permission.service.DashboardPermissionService;
 import com.milesight.beaveriot.permission.service.DevicePermissionService;
 import com.milesight.beaveriot.permission.service.EntityPermissionService;
 import com.milesight.beaveriot.permission.service.WorkflowPermissionService;
-import com.milesight.beaveriot.permission.util.TypeUtil;
+import com.milesight.beaveriot.base.utils.TypeUtil;
 import jakarta.persistence.Table;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;

@@ -39,7 +39,7 @@ public class EmailComponent implements ProcessorNode<Exchange> {
     @UriParam(displayName = "Recipients", description = "Email recipients.", prefix = "bean", javaType = "java.util.List<java.lang.String>")
     private List<String> recipients;
 
-    @UriParamExtension(uiComponentGroup = "emailContent", uiComponent = "emailContent")
+    @UriParamExtension(uiComponentGroup = "emailContent", uiComponent = "emailContent", loggable = true)
     @UriParam(displayName = "Content", description = "Email content.", prefix = "bean")
     private String content;
 
