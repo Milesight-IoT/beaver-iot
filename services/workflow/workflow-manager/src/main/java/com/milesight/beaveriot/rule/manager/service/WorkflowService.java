@@ -13,8 +13,12 @@ import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.eventbus.annotations.EventSubscribe;
 import com.milesight.beaveriot.permission.aspect.OperationPermission;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
+import com.milesight.beaveriot.pubsub.MessagePubSub;
 import com.milesight.beaveriot.rule.RuleEngineComponentManager;
 import com.milesight.beaveriot.rule.RuleEngineLifecycleManager;
+import com.milesight.beaveriot.rule.manager.model.event.BaseWorkflowEvent;
+import com.milesight.beaveriot.rule.manager.model.event.WorkflowDeployEvent;
+import com.milesight.beaveriot.rule.manager.model.event.WorkflowRemoveEvent;
 import com.milesight.beaveriot.rule.manager.support.WorkflowTenantCache;
 import com.milesight.beaveriot.rule.manager.model.request.*;
 import com.milesight.beaveriot.rule.manager.model.response.*;
@@ -63,6 +67,8 @@ public class WorkflowService {
     @Autowired
     WorkflowEntityRelationService workflowEntityRelationService;
 
+    @Autowired
+    MessagePubSub messagePubSub;
     private final AtomicBoolean workflowPrepared = new AtomicBoolean(true);
 
     @Async
@@ -82,7 +88,7 @@ public class WorkflowService {
                     .findAllIgnoreTenant(f -> f.eq(WorkflowPO.Fields.enabled, true).isNotNull(WorkflowPO.Fields.designData), pageRequest.toPageable());
             workflowPOPage.forEach(workflowPO -> {
                 try {
-                    this.deployFlow(workflowPO);
+                    this.deployFlowAndNotify(workflowPO);
                 } catch (Exception e) {
                     log.error("Load Workflow Error: {} {} {}", workflowPO.getId(), workflowPO.getName(), e.getMessage());
                 }
@@ -194,21 +200,37 @@ public class WorkflowService {
         return ruleFlowConfig;
     }
 
-    private void deployFlow(WorkflowPO wp) {
-        RuleFlowConfig ruleFlowConfig = parseRuleFlowConfig(wp.getId().toString(), wp.getDesignData());
-        ruleFlowConfig.setName(wp.getName());
+    public void deployFlowAndNotify(WorkflowPO workflowPO) {
+        WorkflowDeployEvent workflowDeployEvent = new WorkflowDeployEvent(
+                workflowPO.getTenantId(),
+                workflowPO.getId().toString(),
+                workflowPO.getName(),
+                workflowPO.getDesignData()
+        );
+        deployFlow(workflowDeployEvent);
+        messagePubSub.publishAfterCommit(workflowDeployEvent);
+    }
+    public void deployFlow(WorkflowDeployEvent deployEvent) {
+        RuleFlowConfig ruleFlowConfig = parseRuleFlowConfig(deployEvent.getId().toString(), deployEvent.getDesignData());
+        ruleFlowConfig.setName(deployEvent.getName());
         if (ruleFlowConfig == null) {
-            removeFlow(wp);
+            removeFlow(deployEvent);
             return;
         }
         ruleEngineLifecycleManager.deployFlow(ruleFlowConfig);
-        String tenantId = ObjectUtils.isEmpty(wp.getTenantId()) ? TenantContext.getTenantId() : wp.getTenantId();
-        WorkflowTenantCache.INSTANCE.put(wp.getId().toString(), tenantId);
+        String tenantId = ObjectUtils.isEmpty(deployEvent.getTenantId()) ? TenantContext.getTenantId() : deployEvent.getTenantId();
+        WorkflowTenantCache.INSTANCE.put(deployEvent.getId().toString(), tenantId);
     }
 
-    private void removeFlow(WorkflowPO wp) {
-        ruleEngineLifecycleManager.removeFlow(wp.getId().toString());
-        WorkflowTenantCache.INSTANCE.remove(wp.getId().toString());
+    public void removeFlowAndNotify(WorkflowPO workflowPO) {
+        WorkflowRemoveEvent workflowRemoveEvent = new WorkflowRemoveEvent(workflowPO.getTenantId(), workflowPO.getId().toString());
+        removeFlow(workflowRemoveEvent);
+        messagePubSub.publishAfterCommit(workflowRemoveEvent);
+    }
+
+    public void removeFlow(BaseWorkflowEvent removeEvent) {
+        ruleEngineLifecycleManager.removeFlow(removeEvent.getId().toString());
+        WorkflowTenantCache.INSTANCE.remove(removeEvent.getId().toString());
     }
 
     public void disableFlowImmediately(Long flowId) {
@@ -231,9 +253,9 @@ public class WorkflowService {
         }
 
         if (status) {
-            deployFlow(wp);
+            deployFlowAndNotify(wp);
         } else {
-            removeFlow(wp);
+            removeFlowAndNotify(wp);
         }
 
         wp.setEnabled(status);
@@ -339,7 +361,7 @@ public class WorkflowService {
         RuleFlowConfig ruleFlowConfig = parseRuleFlowConfig(workflowIdStr, request.getDesignData());
 
         if (Boolean.TRUE.equals(workflowPO.getEnabled())) {
-            deployFlow(workflowPO);
+            deployFlowAndNotify(workflowPO);
         } else if (ruleFlowConfig != null) {
             ruleEngineLifecycleManager.validateFlow(ruleFlowConfig);
         }
@@ -391,10 +413,10 @@ public class WorkflowService {
         workflowPO.setEnabled(request.getEnabled());
         if (Boolean.TRUE.equals(workflowPO.getEnabled()) && (isFlowUpdated || isEnableUpdated)) {
             // a workflow would be validated at the time it is deployed
-            deployFlow(workflowPO);
+            deployFlowAndNotify(workflowPO);
         } else if (Boolean.FALSE.equals(workflowPO.getEnabled())) {
             if (isEnableUpdated) {
-                removeFlow(workflowPO);
+                removeFlowAndNotify(workflowPO);
             }
 
             if (isFlowUpdated && ruleFlowConfig != null) {

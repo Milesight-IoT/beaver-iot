@@ -32,6 +32,13 @@ spring:
       path: /public/h2-console
       settings:
         webAllowOthers: true
+  cache:
+    redis:
+      cache-null-values: true
+      value-serializer-class: org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer
+#      time-to-live: 10m
+#      time-to-lives:
+#        ["demo:key:*"]: 100s
   redis:
     ssl: ${REDIS_SSL:false}
     host: ${REDIS_HOST:}
