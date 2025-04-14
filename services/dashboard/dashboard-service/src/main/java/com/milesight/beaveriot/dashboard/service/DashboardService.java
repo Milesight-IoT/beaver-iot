@@ -64,6 +64,7 @@ public class DashboardService {
         dashboardPO.setId(SnowflakeUtil.nextId());
         dashboardPO.setUserId(userId);
         dashboardPO.setName(name);
+        dashboardPO.setHome(false);
         dashboardRepository.save(dashboardPO);
 
         userFacade.associateResource(userId, ResourceType.DASHBOARD, Collections.singletonList(dashboardPO.getId()));
@@ -140,7 +141,7 @@ public class DashboardService {
     public List<DashboardResponse> getDashboards() {
         List<DashboardPO> dashboardPOList;
         try {
-            dashboardPOList = dashboardRepository.findAllWithDataPermission().stream().sorted(Comparator.comparing(DashboardPO::getHome, Comparator.reverseOrder()).thenComparing(DashboardPO::getCreatedAt)).collect(Collectors.toList());
+            dashboardPOList = dashboardRepository.findAllWithDataPermission().stream().sorted(Comparator.comparing(DashboardPO::getHome, Comparator.nullsLast(Comparator.reverseOrder())).thenComparing(DashboardPO::getCreatedAt)).collect(Collectors.toList());
         }catch (Exception e) {
             if (e instanceof ServiceException && Objects.equals(((ServiceException) e).getErrorCode(), ErrorCode.FORBIDDEN_PERMISSION.getErrorCode())) {
                 return new ArrayList<>();
