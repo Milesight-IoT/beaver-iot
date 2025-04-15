@@ -13,4 +13,6 @@ public interface ResourceManagerFacade {
     void persistByUrl(String url, ResourcePersistDTO resourcePersistDTO);
 
     void deleteByUrl(String url);
+
+    void unlinkRef(String refId, String refType);
 }

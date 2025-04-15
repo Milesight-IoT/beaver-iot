@@ -5,16 +5,20 @@ import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.resource.adapter.db.service.model.DbResourceBasicProjection;
 import com.milesight.beaveriot.resource.adapter.db.service.po.DbResourceDataPO;
-import com.milesight.beaveriot.resource.adapter.db.service.po.DbResourceDataPreSignPO;
-import com.milesight.beaveriot.resource.adapter.db.service.repository.DbResourceDataPreSignRepository;
+import com.milesight.beaveriot.resource.adapter.db.service.model.DbResourceDataPreSignData;
 import com.milesight.beaveriot.resource.adapter.db.service.repository.DbResourceDataRepository;
 import com.milesight.beaveriot.resource.config.ResourceConstants;
 import com.milesight.beaveriot.resource.model.ResourceStat;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * DbResourceService class.
@@ -27,23 +31,40 @@ public class DbResourceService {
     @Autowired
     DbResourceDataRepository resourceDataRepository;
 
-    @Autowired
-    DbResourceDataPreSignRepository preSignRepository;
+//    @Autowired
+//    CacheManager cacheManager;
+
+    private static final Map<String, DbResourceDataPreSignData> cache = new ConcurrentHashMap<>();
+
+    private static final String CACHE_NAME = "db-resource";
+
+    public DbResourceDataPreSignData getPreSignData(String objKey) {
+//        Cache cache = cacheManager.getCache(CACHE_NAME);
+//        assert cache != null;
+//        return cache.get(objKey, DbResourceDataPreSignData.class);
+        return cache.get(objKey);
+    }
+
+    public void putPreSignData(String objKey, DbResourceDataPreSignData data) {
+//        Cache cache = cacheManager.getCache(CACHE_NAME);
+//        assert cache != null;
+        cache.put(objKey, data);
+    }
 
     public String preSign(String objKey) {
-        DbResourceDataPreSignPO preSignPO = preSignRepository.findById(objKey).orElse(null);
-        if (preSignPO == null) {
-            preSignPO = new DbResourceDataPreSignPO();
-            preSignPO.setObjKey(objKey);
+        DbResourceDataPreSignData preSignData = getPreSignData(objKey);
+        if (preSignData == null) {
+            preSignData = new DbResourceDataPreSignData();
+            preSignData.setObjKey(objKey);
         }
 
-        preSignPO.setExpiredAt(System.currentTimeMillis() + ResourceConstants.PUT_RESOURCE_PRE_SIGN_EXPIRY_MINUTES * 60 * 1000);
-        preSignRepository.save(preSignPO);
+        preSignData.setExpiredAt(System.currentTimeMillis() + ResourceConstants.PUT_RESOURCE_PRE_SIGN_EXPIRY_MINUTES * 60 * 1000);
+        putPreSignData(objKey, preSignData);
         return "/" + DbResourceConstants.RESOURCE_URL_PREFIX + "/" + objKey;
     }
 
     public boolean validateSign(String objKey) {
-        DbResourceDataPreSignPO preSignPO = preSignRepository.findById(objKey).orElse(null);
+        DbResourceDataPreSignData preSignPO = getPreSignData(objKey);
         if (preSignPO == null) {
             return false;
         }

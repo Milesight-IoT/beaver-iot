@@ -1,8 +1,7 @@
-package com.milesight.beaveriot.resource.adapter.minio;
+package com.milesight.beaveriot.resource.adapter.s3;
 
 import com.milesight.beaveriot.resource.adapter.BaseResourceAdapter;
 import com.milesight.beaveriot.resource.config.ResourceConstants;
-import com.milesight.beaveriot.resource.config.ResourceHelper;
 import com.milesight.beaveriot.resource.config.ResourceSettings;
 import com.milesight.beaveriot.resource.model.PutResourceRequest;
 import com.milesight.beaveriot.resource.model.ResourceStat;
@@ -12,8 +11,6 @@ import io.minio.http.Method;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
-import java.net.URI;
-import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -23,41 +20,27 @@ import java.util.concurrent.TimeUnit;
  * @date 2025/4/3
  */
 @Slf4j
-public class MinioResourceAdapter implements BaseResourceAdapter {
-    MinioClient minioClient;
+public class S3ResourceAdapter implements BaseResourceAdapter {
+    MinioClient s3Client;
 
     String bucketName;
 
     String endpoint;
 
     @SneakyThrows
-    private void initBucket() {
-        MakeBucketArgs makeBucketArgs = MakeBucketArgs.builder()
-                .bucket(bucketName)
-                .build();
-        minioClient.makeBucket(makeBucketArgs);
-
-        SetBucketPolicyArgs setBucketPolicyArgs = SetBucketPolicyArgs.builder()
-                .bucket(bucketName)
-                .config(ResourceHelper.getBucketPolicy(bucketName))
-                .build();
-        minioClient.setBucketPolicy(setBucketPolicyArgs);
-    }
-
-    @SneakyThrows
     private void checkBucket() {
         BucketExistsArgs bucketExistsArgs = BucketExistsArgs.builder()
                 .bucket(bucketName)
                 .build();
-        if (!minioClient.bucketExists(bucketExistsArgs)) {
+        if (!s3Client.bucketExists(bucketExistsArgs)) {
             throw new MinioException("Bucket not found: " + bucketName);
         }
     }
 
-    public MinioResourceAdapter(ResourceSettings settings) {
+    public S3ResourceAdapter(ResourceSettings settings) {
         this.bucketName = settings.getS3().getBucket();
         this.endpoint = settings.getS3().getEndpoint();
-        minioClient = MinioClient.builder()
+        s3Client = MinioClient.builder()
                 .credentials(settings.getS3().getAccessKey(), settings.getS3().getAccessSecret())
                 .region(settings.getS3().getRegion())
                 .endpoint(settings.getS3().getEndpoint())
@@ -74,7 +57,7 @@ public class MinioResourceAdapter implements BaseResourceAdapter {
                 .object(objKey)
                 .expiry(ResourceConstants.PUT_RESOURCE_PRE_SIGN_EXPIRY_MINUTES, TimeUnit.MINUTES)
                 .build();
-        return minioClient.getPresignedObjectUrl(getPresignedObjectUrlArgs);
+        return s3Client.getPresignedObjectUrl(getPresignedObjectUrlArgs);
     }
 
     @Override
@@ -85,7 +68,7 @@ public class MinioResourceAdapter implements BaseResourceAdapter {
                 .bucket(bucketName)
                 .object(objKey)
                 .build();
-        return minioClient.getPresignedObjectUrl(getPresignedObjectUrlArgs).split("\\?", 2)[0];
+        return s3Client.getPresignedObjectUrl(getPresignedObjectUrlArgs).split("\\?", 2)[0];
     }
 
     @Override
@@ -95,7 +78,7 @@ public class MinioResourceAdapter implements BaseResourceAdapter {
                 .object(objKey)
                 .build();
         try {
-            StatObjectResponse response = minioClient.statObject(statObjectArgs);
+            StatObjectResponse response = s3Client.statObject(statObjectArgs);
             ResourceStat stat = new ResourceStat();
             stat.setSize(response.size());
             stat.setContentType(response.contentType());
@@ -113,7 +96,7 @@ public class MinioResourceAdapter implements BaseResourceAdapter {
                 .bucket(bucketName)
                 .object(objKey)
                 .build();
-        GetObjectResponse getObjectResponse = minioClient.getObject(getObjectArgs);
+        GetObjectResponse getObjectResponse = s3Client.getObject(getObjectArgs);
         return getObjectResponse.readAllBytes();
     }
 
@@ -124,7 +107,7 @@ public class MinioResourceAdapter implements BaseResourceAdapter {
                 .bucket(bucketName)
                 .object(objKey)
                 .build();
-        minioClient.removeObject(removeObjectArgs);
+        s3Client.removeObject(removeObjectArgs);
     }
 
     @Override
@@ -136,6 +119,6 @@ public class MinioResourceAdapter implements BaseResourceAdapter {
                 .contentType(request.getContentType())
                 .stream(request.getContentInput(), request.getContentLength(), ResourceConstants.MAX_FILE_SIZE)
                 .build();
-        minioClient.putObject(putObjectArgs);
+        s3Client.putObject(putObjectArgs);
     }
 }

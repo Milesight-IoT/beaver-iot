@@ -14,17 +14,6 @@ CREATE TABLE `t_resource_data`
     UNIQUE (obj_key)
 );
 
-CREATE TABLE `t_resource_data_pre_sign`
-(
-    obj_key                 VARCHAR(512) NOT NULL,
-    expired_at              BIGINT NOT NULL,
-    created_at              BIGINT NOT NULL,
-
-    PRIMARY KEY (obj_key)
-);
-
-CREATE INDEX idx_resource_data_pre_sign_expired_at ON `t_resource_data_pre_sign` (expired_at);
-
 CREATE TABLE `t_resource`
 (
     id                      BIGINT NOT NULL,

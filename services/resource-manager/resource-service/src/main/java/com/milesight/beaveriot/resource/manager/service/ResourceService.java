@@ -129,6 +129,11 @@ public class ResourceService implements ResourceManagerFacade {
         resourceRepository.delete(resourcePO);
     }
 
+    @Override
+    public void unlinkRef(String refId, String refType) {
+        resourceRefRepository.deleteByRefIdAndRefType(refId, refType);
+    }
+
     // TODO: Potential storage leak: upload object by put after delete
 
     // TODO: schedule periodic deleting temp resource

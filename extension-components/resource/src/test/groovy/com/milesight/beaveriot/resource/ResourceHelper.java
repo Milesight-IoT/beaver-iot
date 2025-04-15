@@ -1,4 +1,6 @@
-package com.milesight.beaveriot.resource.config;
+package com.milesight.beaveriot.resource;
+
+import com.milesight.beaveriot.resource.config.ResourceConstants;
 
 /**
  * ResourceHelper class.
@@ -7,6 +9,8 @@ package com.milesight.beaveriot.resource.config;
  * @date 2025/4/3
  */
 public class ResourceHelper {
+    private ResourceHelper() {}
+
     public static String getBucketPolicy(String brand, String bucketName) {
         return "{\n" +
                 "  \"Version\":\"2012-10-17\",\n" +
@@ -17,9 +21,5 @@ public class ResourceHelper {
                 "    \"Resource\":\"arn:" + brand + ":s3:::" + bucketName + "/" + ResourceConstants.PUBLIC_PATH_PREFIX + "/*\"\n" +
                 "  }]\n" +
                 "}";
-    }
-
-    public static String getBucketPolicy(String bucketName) {
-        return getBucketPolicy("aws", bucketName);
     }
 }

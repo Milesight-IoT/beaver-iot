@@ -11,4 +11,6 @@ import com.milesight.beaveriot.resource.manager.po.ResourceRefPO;
  */
 public interface ResourceRefRepository extends BaseJpaRepository<ResourceRefPO, Long> {
     void deleteByResourceId(Long resourceId);
+
+    void deleteByRefIdAndRefType(String refId, String refType);
 }

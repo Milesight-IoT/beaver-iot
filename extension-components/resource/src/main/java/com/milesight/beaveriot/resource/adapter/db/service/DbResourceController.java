@@ -42,7 +42,7 @@ public class DbResourceController {
     }
 
     @GetMapping("/{keyScope}/{keyIdentifier}")
-    public ResponseEntity<byte[]> putResource(
+    public ResponseEntity<byte[]> getResource(
             @PathVariable("keyScope") String keyScope,
             @PathVariable("keyIdentifier") String keyIdentifier,
             HttpServletResponse response
