@@ -60,6 +60,7 @@ public class CredentialsService implements CredentialsServiceProvider {
     private CredentialsResponse convertPOToResponse(CredentialsPO po) {
         return CredentialsResponse.builder()
                 .id(String.valueOf(po.getId()))
+                .tenantId(po.getTenantId())
                 .credentialsType(po.getCredentialsType())
                 .description(po.getDescription())
                 .accessKey(po.getAccessKey())
@@ -94,6 +95,8 @@ public class CredentialsService implements CredentialsServiceProvider {
 
     @Transactional(rollbackFor = Throwable.class)
     public CredentialsResponse addCredentials(AddCredentialsRequest request) {
+        log.info("add credentials, accessKey: '{}', tenantId: '{}'", request.getAccessKey(), TenantContext.getTenantId());
+
         val operatorId = SecurityUserContext.getUserId() == null ? null : SecurityUserContext.getUserId().toString();
         val credentialsPO = credentialsRepository.save(CredentialsPO.builder()
                 .id(SnowflakeUtil.nextId())
@@ -113,11 +116,12 @@ public class CredentialsService implements CredentialsServiceProvider {
 
     @Transactional(rollbackFor = Throwable.class)
     public CredentialsResponse updateCredentials(Long id, UpdateCredentialsRequest request) {
+        log.info("update credentials, id: '{}', tenantId: '{}'", id, TenantContext.getTenantId());
+
         var credentialsPO = credentialsRepository.findById(id)
                 .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND));
         val operatorId = SecurityUserContext.getUserId() == null ? null : SecurityUserContext.getUserId().toString();
         credentialsPO.setDescription(request.getDescription());
-        credentialsPO.setAccessKey(request.getAccessKey());
         credentialsPO.setAccessSecret(request.getAccessSecret());
         credentialsPO.setAdditionalData(JsonUtils.toJSON(request.getAdditionalData()));
         credentialsPO.setUpdatedBy(operatorId);
@@ -139,6 +143,8 @@ public class CredentialsService implements CredentialsServiceProvider {
     @Transactional(rollbackFor = Throwable.class)
     @Override
     public void batchDeleteCredentials(List<Long> ids) {
+        log.info("batch delete credentials, ids: '{}', tenantId: '{}'", ids, TenantContext.getTenantId());
+
         if (ids == null || ids.isEmpty()) {
             return;
         }
