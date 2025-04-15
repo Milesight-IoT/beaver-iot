@@ -21,5 +21,12 @@ create table t_dashboard_home
 );
 
 -- changeset loong:dashboard_v1.2.0_20250415_145400
-alter table t_dashboard_home
-    alter column user_id type bigint;
+drop table t_dashboard_home;
+create table t_dashboard_home
+(
+    id         BIGINT PRIMARY KEY,
+    tenant_id  VARCHAR(255) not null,
+    dashboard_id BIGINT not null,
+    user_id   BIGINT not null,
+    created_at BIGINT not null
+);
