@@ -20,6 +20,6 @@ create table t_dashboard_home
     created_at BIGINT not null
 );
 
--- changeset loong:dashboard_v1.2.0_20250415_095400
+-- changeset loong:dashboard_v1.2.0_20250415_145400
 alter table t_dashboard_home
     alter column user_id type bigint;
