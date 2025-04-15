@@ -155,7 +155,7 @@ public class DashboardService {
         if (dashboardPOList.isEmpty()) {
             return new ArrayList<>();
         }
-        DashboardHomePO dashboardHomePO = dashboardHomeRepository.findOne(filterable -> filterable.eq(DashboardHomePO.Fields.userId, SecurityUserContext.getUserId())).orElse(null);
+        DashboardHomePO dashboardHomePO = dashboardHomeRepository.findOneWithDataPermission(filterable -> filterable.eq(DashboardHomePO.Fields.userId, SecurityUserContext.getUserId())).orElse(null);
         Map<Long, DashboardHomePO> dashboardHomePOMap = new HashMap<>();
         if (dashboardHomePO != null) {
             dashboardHomePOMap.put(dashboardHomePO.getDashboardId(), dashboardHomePO);
@@ -185,15 +185,15 @@ public class DashboardService {
         if (dashboardHomePO != null) {
             dashboardHomeRepository.delete(dashboardHomePO);
         }
-        DashboardHomePO newDashboardPO = new DashboardHomePO();
-        newDashboardPO.setId(SnowflakeUtil.nextId());
-        newDashboardPO.setUserId(SecurityUserContext.getUserId());
-        newDashboardPO.setDashboardId(dashboardId);
-        dashboardHomeRepository.save(newDashboardPO);
+        DashboardHomePO newDashboardHomePO = new DashboardHomePO();
+        newDashboardHomePO.setId(SnowflakeUtil.nextId());
+        newDashboardHomePO.setUserId(SecurityUserContext.getUserId());
+        newDashboardHomePO.setDashboardId(dashboardId);
+        dashboardHomeRepository.save(newDashboardHomePO);
     }
 
     public void cancelSetHomeDashboard(Long dashboardId) {
-        DashboardHomePO dashboardHomePO = dashboardHomeRepository.findOneWithDataPermission(filterable -> filterable.eq(DashboardPO.Fields.userId, SecurityUserContext.getUserId()).eq(DashboardHomePO.Fields.dashboardId, dashboardId)).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).detailMessage("dashboard not exist").build());
+        DashboardHomePO dashboardHomePO = dashboardHomeRepository.findOneWithDataPermission(filterable -> filterable.eq(DashboardHomePO.Fields.userId, SecurityUserContext.getUserId()).eq(DashboardHomePO.Fields.dashboardId, dashboardId)).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).detailMessage("dashboard not exist").build());
         dashboardHomeRepository.delete(dashboardHomePO);
     }
 
