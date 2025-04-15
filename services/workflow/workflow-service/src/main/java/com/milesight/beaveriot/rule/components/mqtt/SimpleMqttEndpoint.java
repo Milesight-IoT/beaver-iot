@@ -25,7 +25,6 @@ import java.util.List;
 @Slf4j
 @UriEndpoint(firstVersion = "4.4.3", scheme = "simpleMqtt", title = "MQTT", syntax = "simpleMqtt:flowId",
         remote = false, consumerOnly = true, category = {Category.MESSAGING})
-@RuleNode(type = RuleNodeType.ENTRY, value = "simpleMqtt", testable = false)
 public class SimpleMqttEndpoint extends DefaultEndpoint {
 
     @Setter

@@ -17,7 +17,6 @@ import java.util.Map;
 /**
  * @author loong
  */
-@RuleNode(value = "httpRequest", type = RuleNodeType.ACTION, description = "HttpRequest")
 @Data
 public class HttpRequestComponent implements ProcessorNode<Exchange> {
 

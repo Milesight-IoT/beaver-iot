@@ -92,8 +92,6 @@ camel:
           title: "Trigger"
         - name: "eventListener"
           title: "Event Listener"
-        - name: "simpleMqtt"
-          title: "MQTT"
       control:
         - name: "choice"
           title: "IF/ELSE"
