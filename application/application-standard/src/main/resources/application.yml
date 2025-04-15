@@ -161,6 +161,14 @@ mqtt:
         mqtt:
           message_size: 1048576
 
+resource:
+  storage: ${RESOURCE_STORAGE:db}
+  s3:
+     endpoint: ${RESOURCE_STORAGE_S3_ENDPOINT:} # starts with http / https
+     region: ${RESOURCE_STORAGE_S3_REGION:}
+     access_key: ${RESOURCE_STORAGE_S3_ACCESS_KEY:}
+     access_secret: ${RESOURCE_STORAGE_S3_ACCESS_SECRET:}
+     bucket: ${RESOURCE_STORAGE_S3_BUCKET:}
 
 logging:
   level:

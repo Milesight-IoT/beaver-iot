@@ -46,6 +46,7 @@
         <module>permission</module>
         <module>credentials</module>
         <module>mqtt</module>
+        <module>resource-manager</module>
     </modules>
 
     <properties>

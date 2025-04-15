@@ -165,6 +165,11 @@
             <artifactId>workflow-service</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>resource-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.milesight.beaveriot</groupId>
@@ -181,6 +186,12 @@
         <dependency>
             <groupId>com.milesight.beaveriot</groupId>
             <artifactId>metrics</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>resource</artifactId>
             <version>${project.version}</version>
         </dependency>
 
