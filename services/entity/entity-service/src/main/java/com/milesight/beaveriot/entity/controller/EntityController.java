@@ -51,35 +51,35 @@ public class EntityController {
     @Autowired
     EntityExportService entityExportService;
 
-    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.ENTITY_CUSTOM_VIEW, OperationPermissionCode.ENTITY_DATA_VIEW})
+    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.ENTITY_CUSTOM_VIEW, OperationPermissionCode.ENTITY_DATA_VIEW, OperationPermissionCode.WORKFLOW_EDIT})
     @PostMapping("/search")
     public ResponseBody<Page<EntityResponse>> search(@RequestBody EntityQuery entityQuery) {
         Page<EntityResponse> entityResponse = entityService.search(entityQuery);
         return ResponseBuilder.success(entityResponse);
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW, OperationPermissionCode.INTEGRATION_VIEW})
+    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW, OperationPermissionCode.INTEGRATION_VIEW, OperationPermissionCode.WORKFLOW_EDIT})
     @GetMapping("/{entityId}/children")
     public ResponseBody<List<EntityResponse>> getChildren(@PathVariable("entityId") Long entityId) {
         List<EntityResponse> entityResponse = entityService.getChildren(entityId);
         return ResponseBuilder.success(entityResponse);
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW, OperationPermissionCode.ENTITY_DATA_VIEW})
+    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW, OperationPermissionCode.ENTITY_DATA_VIEW, OperationPermissionCode.WORKFLOW_EDIT})
     @PostMapping("/history/search")
     public ResponseBody<Page<EntityHistoryResponse>> historySearch(@RequestBody EntityHistoryQuery entityHistoryQuery) {
         Page<EntityHistoryResponse> entityHistoryResponse = entityValueService.historySearch(entityHistoryQuery);
         return ResponseBuilder.success(entityHistoryResponse);
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW})
+    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW, OperationPermissionCode.WORKFLOW_EDIT})
     @PostMapping("/history/aggregate")
     public ResponseBody<EntityAggregateResponse> historyAggregate(@RequestBody EntityAggregateQuery entityAggregateQuery) {
         EntityAggregateResponse entityAggregateResponse = entityValueService.historyAggregate(entityAggregateQuery);
         return ResponseBuilder.success(entityAggregateResponse);
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW})
+    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW, OperationPermissionCode.WORKFLOW_EDIT})
     @GetMapping("/{entityId}/status")
     public ResponseBody<EntityLatestResponse> getEntityStatus(@PathVariable("entityId") Long entityId) {
         EntityLatestResponse entityLatestResponse = entityValueService.getEntityStatus(entityId);
@@ -92,14 +92,14 @@ public class EntityController {
         return ResponseBuilder.success(entityMetaResponse);
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.INTEGRATION_VIEW,OperationPermissionCode.DASHBOARD_VIEW,OperationPermissionCode.DASHBOARD_EDIT})
+    @OperationPermission(codes = {OperationPermissionCode.INTEGRATION_VIEW,OperationPermissionCode.DASHBOARD_VIEW,OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.WORKFLOW_EDIT})
     @PostMapping("/property/update")
     public ResponseBody<Void> updatePropertyEntity(@RequestBody UpdatePropertyEntityRequest updatePropertyEntityRequest) {
         entityService.updatePropertyEntity(updatePropertyEntityRequest);
         return ResponseBuilder.success();
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.INTEGRATION_VIEW,OperationPermissionCode.DASHBOARD_VIEW,OperationPermissionCode.DASHBOARD_EDIT})
+    @OperationPermission(codes = {OperationPermissionCode.INTEGRATION_VIEW,OperationPermissionCode.DASHBOARD_VIEW,OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.WORKFLOW_EDIT})
     @PostMapping("/service/call")
     public ResponseBody<EventResponse> serviceCall(@RequestBody ServiceCallRequest serviceCallRequest) {
         EventResponse eventResponse = entityService.serviceCall(serviceCallRequest);
