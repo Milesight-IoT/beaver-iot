@@ -6,7 +6,7 @@
 
     <groupId>com.milesight.beaveriot</groupId>
     <artifactId>beaver-iot-parent</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.1.1</version>
     <packaging>pom</packaging>
     <name>beaver-iot-parent</name>
     <description>An open-source platform designed for rapid and intuitive IoT application development.</description>
