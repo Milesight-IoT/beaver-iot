@@ -8,6 +8,7 @@ import com.milesight.beaveriot.resource.adapter.db.service.po.DbResourceDataPO;
 import com.milesight.beaveriot.resource.adapter.db.service.model.DbResourceDataPreSignData;
 import com.milesight.beaveriot.resource.adapter.db.service.repository.DbResourceDataRepository;
 import com.milesight.beaveriot.resource.config.ResourceConstants;
+import com.milesight.beaveriot.resource.config.ResourceSettings;
 import com.milesight.beaveriot.resource.model.ResourceStat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
@@ -31,23 +32,23 @@ public class DbResourceService {
     @Autowired
     DbResourceDataRepository resourceDataRepository;
 
-//    @Autowired
-//    CacheManager cacheManager;
+    @Autowired
+    ResourceSettings resourceSettings;
 
-    private static final Map<String, DbResourceDataPreSignData> cache = new ConcurrentHashMap<>();
+    @Autowired
+    CacheManager cacheManager;
 
-    private static final String CACHE_NAME = "db-resource";
+    private static final String CACHE_NAME = "resource:data-pre-sign";
 
     public DbResourceDataPreSignData getPreSignData(String objKey) {
-//        Cache cache = cacheManager.getCache(CACHE_NAME);
-//        assert cache != null;
-//        return cache.get(objKey, DbResourceDataPreSignData.class);
-        return cache.get(objKey);
+        Cache cache = cacheManager.getCache(CACHE_NAME);
+        assert cache != null;
+        return cache.get(objKey, DbResourceDataPreSignData.class);
     }
 
     public void putPreSignData(String objKey, DbResourceDataPreSignData data) {
-//        Cache cache = cacheManager.getCache(CACHE_NAME);
-//        assert cache != null;
+        Cache cache = cacheManager.getCache(CACHE_NAME);
+        assert cache != null;
         cache.put(objKey, data);
     }
 
@@ -58,7 +59,7 @@ public class DbResourceService {
             preSignData.setObjKey(objKey);
         }
 
-        preSignData.setExpiredAt(System.currentTimeMillis() + ResourceConstants.PUT_RESOURCE_PRE_SIGN_EXPIRY_MINUTES * 60 * 1000);
+        preSignData.setExpiredAt(System.currentTimeMillis() + resourceSettings.getPreSignExpire().toMillis());
         putPreSignData(objKey, preSignData);
         return "/" + DbResourceConstants.RESOURCE_URL_PREFIX + "/" + objKey;
     }

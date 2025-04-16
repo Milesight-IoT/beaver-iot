@@ -55,7 +55,8 @@ CREATE TABLE `t_resource_ref`
     resource_id             BIGINT NOT NULL,
     created_at              BIGINT NOT NULL,
 
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    UNIQUE (ref_type, ref_id, resource_id)
 );
 
 CREATE INDEX idx_resource_ref_resource_id ON `t_resource_ref` (resource_id);

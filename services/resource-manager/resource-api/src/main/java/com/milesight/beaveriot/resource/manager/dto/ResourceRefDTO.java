@@ -9,7 +9,7 @@ import lombok.Data;
  * @date 2025/4/14
  */
 @Data
-public class ResourcePersistDTO {
+public class ResourceRefDTO {
     private String refId;
 
     private String refType;

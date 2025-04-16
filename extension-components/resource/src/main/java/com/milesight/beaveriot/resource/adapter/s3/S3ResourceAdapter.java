@@ -11,6 +11,7 @@ import io.minio.http.Method;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -27,6 +28,8 @@ public class S3ResourceAdapter implements BaseResourceAdapter {
 
     String endpoint;
 
+    Duration preSignExpire;
+
     @SneakyThrows
     private void checkBucket() {
         BucketExistsArgs bucketExistsArgs = BucketExistsArgs.builder()
@@ -40,6 +43,7 @@ public class S3ResourceAdapter implements BaseResourceAdapter {
     public S3ResourceAdapter(ResourceSettings settings) {
         this.bucketName = settings.getS3().getBucket();
         this.endpoint = settings.getS3().getEndpoint();
+        this.preSignExpire = settings.getPreSignExpire();
         s3Client = MinioClient.builder()
                 .credentials(settings.getS3().getAccessKey(), settings.getS3().getAccessSecret())
                 .region(settings.getS3().getRegion())
@@ -55,7 +59,7 @@ public class S3ResourceAdapter implements BaseResourceAdapter {
                 .method(Method.PUT)
                 .bucket(bucketName)
                 .object(objKey)
-                .expiry(ResourceConstants.PUT_RESOURCE_PRE_SIGN_EXPIRY_MINUTES, TimeUnit.MINUTES)
+                .expiry((int) preSignExpire.getSeconds(), TimeUnit.SECONDS)
                 .build();
         return s3Client.getPresignedObjectUrl(getPresignedObjectUrlArgs);
     }

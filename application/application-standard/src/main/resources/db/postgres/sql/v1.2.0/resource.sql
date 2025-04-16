@@ -48,7 +48,9 @@ CREATE TABLE "t_resource_ref"
     ref_id                  VARCHAR(255) NOT NULL,
     ref_type                VARCHAR(255) NOT NULL,
     resource_id             BIGINT NOT NULL,
-    created_at              BIGINT NOT NULL
+    created_at              BIGINT NOT NULL,
+
+    CONSTRAINT uk_resource_ref_ref_type_ref_id_resource_id UNIQUE (ref_type, ref_id, resource_id)
 );
 
 CREATE INDEX idx_resource_ref_resource_id ON "t_resource_ref" (resource_id);

@@ -1,7 +1,5 @@
 package com.milesight.beaveriot.resource.config;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * ResourceConstants class.
  *
@@ -9,7 +7,7 @@ import java.util.concurrent.TimeUnit;
  * @date 2025/4/2
  */
 public class ResourceConstants {
-    public static final Integer PUT_RESOURCE_PRE_SIGN_EXPIRY_MINUTES = 15;
+    private ResourceConstants() {}
 
     public static final String PUBLIC_PATH_PREFIX = "beaver-iot-public";
 

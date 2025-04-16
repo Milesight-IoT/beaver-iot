@@ -34,16 +34,17 @@ spring:
         webAllowOthers: true
   cache:
     #    type: caffeine
-    #    cache-names: "demo:oss:test"
+    cache-names: "resource:data-pre-sign"
     caffeine:
       spec: maximumSize=50000,expireAfterAccess=10m
     redis:
       cache-null-values: true
       value-serializer-class: org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer
       time-to-live: 10m
-#    specs:
-#      time-to-lives:
-#        [ "demo:oss:*" ]: 10s
+    specs:
+      time-to-lives:
+        [ "resource:data-pre-sign" ]: ${resource.pre_sign_expire}
+
   redis:
     ssl: ${REDIS_SSL:false}
     host: ${REDIS_HOST:}
@@ -175,6 +176,7 @@ mqtt:
 
 resource:
   storage: ${RESOURCE_STORAGE:db}
+  pre_sign_expire: 15m
   s3:
      endpoint: ${RESOURCE_STORAGE_S3_ENDPOINT:} # starts with http / https
      region: ${RESOURCE_STORAGE_S3_REGION:}

@@ -4,6 +4,8 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
+
 /**
  * ResourceSettings class.
  *
@@ -16,6 +18,8 @@ import org.springframework.stereotype.Component;
 public class ResourceSettings {
 
     private String storage;
+
+    private Duration preSignExpire;
 
     private S3 s3;
 
