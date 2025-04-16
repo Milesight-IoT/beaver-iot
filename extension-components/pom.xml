@@ -42,6 +42,7 @@
         <module>cluster</module>
         <module>scheduler</module>
         <module>metrics</module>
+        <module>resource</module>
     </modules>
 
     <properties>
