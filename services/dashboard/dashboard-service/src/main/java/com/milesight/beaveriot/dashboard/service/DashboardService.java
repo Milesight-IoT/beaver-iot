@@ -19,6 +19,8 @@ import com.milesight.beaveriot.dashboard.repository.DashboardHomeRepository;
 import com.milesight.beaveriot.dashboard.repository.DashboardRepository;
 import com.milesight.beaveriot.dashboard.repository.DashboardWidgetRepository;
 import com.milesight.beaveriot.dashboard.repository.DashboardWidgetTemplateRepository;
+import com.milesight.beaveriot.resource.manager.dto.ResourceRefDTO;
+import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -53,6 +56,8 @@ public class DashboardService {
     private DashboardHomeRepository dashboardHomeRepository;
     @Autowired
     IUserFacade userFacade;
+    @Autowired
+    ResourceManagerFacade resourceManagerFacade;
 
     public CreateDashboardResponse createDashboard(CreateDashboardRequest createDashboardRequest) {
         String name = createDashboardRequest.getName();
@@ -98,10 +103,18 @@ public class DashboardService {
             dashboardWidgetPOMap.putAll(dataDashboardWidgetPOList.stream().collect(Collectors.toMap(t -> String.valueOf(t.getId()), Function.identity())));
         }
         List<DashboardWidgetPO> dashboardWidgetPOList = new ArrayList<>();
+        Map<String, String> deleteUrlMap = new HashMap<>();
+        Map<String, String> addUrlMap = new HashMap<>();
         if (dashboardWidgetDTOList != null && !dashboardWidgetDTOList.isEmpty()) {
             dashboardWidgetDTOList.forEach(dashboardWidgetDTO -> {
                 String widgetId = dashboardWidgetDTO.getWidgetId();
                 Map<String, Object> data = dashboardWidgetDTO.getData();
+                String url = Optional.ofNullable(data)
+                        .map(m -> (Map<String, Object>) m.get("config"))
+                        .map(m -> (Map<String, Object>) m.get("file"))
+                        .map(m -> m.get("url"))
+                        .map(Object::toString)
+                        .orElse(null);
                 if (widgetId == null) {
                     DashboardWidgetPO dashboardWidgetPO = new DashboardWidgetPO();
                     dashboardWidgetPO.setId(SnowflakeUtil.nextId());
@@ -110,11 +123,29 @@ public class DashboardService {
                     dashboardWidgetPO.setDashboardId(dashboardId);
                     dashboardWidgetPO.setData(data);
                     dashboardWidgetPOList.add(dashboardWidgetPO);
+
+                    if (StringUtils.hasText(url)) {
+                        addUrlMap.put(String.valueOf(dashboardWidgetPO.getId()), url);
+                    }
                 } else {
                     DashboardWidgetPO existDashboardWidgetPO = dashboardWidgetPOMap.get(widgetId);
+                    String orginUrl = null;
                     if (existDashboardWidgetPO != null) {
                         existDashboardWidgetPO.setData(data);
                         dashboardWidgetPOList.add(existDashboardWidgetPO);
+
+                        orginUrl = Optional.ofNullable(existDashboardWidgetPO.getData())
+                                .map(m -> (Map<String, Object>) m.get("config"))
+                                .map(m -> (Map<String, Object>) m.get("file"))
+                                .map(m -> m.get("url"))
+                                .map(Object::toString)
+                                .orElse(null);
+                    }
+                    if (StringUtils.hasText(orginUrl) && !orginUrl.equals(url)) {
+                        deleteUrlMap.put(widgetId, orginUrl);
+                    }
+                    if (StringUtils.hasText(url) && !url.equals(orginUrl)) {
+                        addUrlMap.put(widgetId, url);
                     }
                 }
             });
@@ -130,14 +161,32 @@ public class DashboardService {
         if (!dashboardWidgetPOList.isEmpty()) {
             dashboardWidgetRepository.saveAll(dashboardWidgetPOList);
         }
+        deleteUrlMap.forEach((widgetId, url) -> resourceManagerFacade.unlinkRef(new ResourceRefDTO(widgetId, "DASHBOARD_WIDGET")));
+        addUrlMap.forEach((widgetId, url) -> resourceManagerFacade.linkByUrl(url, new ResourceRefDTO(widgetId, "DASHBOARD_WIDGET")));
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void deleteDashboard(Long dashboardId) {
+        List<DashboardWidgetPO> dataDashboardWidgetPOList = dashboardWidgetRepository.findAll(filter -> filter.eq(DashboardWidgetPO.Fields.dashboardId, dashboardId));
+        Map<String, String> deleteUrlMap = new HashMap<>();
+        if (dataDashboardWidgetPOList != null && !dataDashboardWidgetPOList.isEmpty()) {
+            dataDashboardWidgetPOList.forEach(dashboardWidgetPO -> {
+                String orginUrl = Optional.ofNullable(dashboardWidgetPO.getData())
+                        .map(m -> (Map<String, Object>) m.get("config"))
+                        .map(m -> (Map<String, Object>) m.get("file"))
+                        .map(m -> m.get("url"))
+                        .map(Object::toString)
+                        .orElse(null);
+                if (StringUtils.hasText(orginUrl)) {
+                    deleteUrlMap.put(String.valueOf(dashboardWidgetPO.getId()), orginUrl);
+                }
+            });
+        }
         dashboardRepository.findOneWithDataPermission(filterable -> filterable.eq(DashboardPO.Fields.id, dashboardId)).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).detailMessage("dashboard not exist").build());
         dashboardRepository.deleteById(dashboardId);
         dashboardWidgetRepository.deleteByDashboardId(dashboardId);
         dashboardHomeRepository.deleteByDashboardId(dashboardId);
+        deleteUrlMap.forEach((widgetId, url) -> resourceManagerFacade.unlinkRef(new ResourceRefDTO(widgetId, "DASHBOARD_WIDGET")));
 
         userFacade.deleteResource(ResourceType.DASHBOARD, Collections.singletonList(dashboardId));
     }
