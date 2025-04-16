@@ -33,12 +33,17 @@ spring:
       settings:
         webAllowOthers: true
   cache:
+    #    type: caffeine
+    #    cache-names: "demo:oss:test"
+    caffeine:
+      spec: maximumSize=50000,expireAfterAccess=10m
     redis:
       cache-null-values: true
       value-serializer-class: org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer
-#      time-to-live: 10m
+      time-to-live: 10m
+#    specs:
 #      time-to-lives:
-#        ["demo:key:*"]: 100s
+#        [ "demo:oss:*" ]: 10s
   redis:
     ssl: ${REDIS_SSL:false}
     host: ${REDIS_HOST:}
