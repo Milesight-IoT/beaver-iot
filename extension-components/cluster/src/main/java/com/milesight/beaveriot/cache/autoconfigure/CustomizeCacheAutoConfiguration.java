@@ -37,7 +37,7 @@ public class CustomizeCacheAutoConfiguration {
     CustomizeRedisCacheManager cacheManger(CacheProperties cacheProperties,CustomizeCacheProperties customizeCacheProperties,
                                   ObjectProvider<org.springframework.data.redis.cache.RedisCacheConfiguration> redisCacheConfiguration,
                                   RedisConnectionFactory redisConnectionFactory, ResourceLoader resourceLoader) {
-        CustomizeRedisCacheManager.CustomizeRedisCacheManagerBuilder builder = CustomizeRedisCacheManager.customizeBuilder(redisConnectionFactory, customizeCacheProperties.getRedis())
+        CustomizeRedisCacheManager.CustomizeRedisCacheManagerBuilder builder = CustomizeRedisCacheManager.customizeBuilder(redisConnectionFactory, customizeCacheProperties)
                 .cacheDefaults(
                         determineConfiguration(cacheProperties, customizeCacheProperties, redisCacheConfiguration, resourceLoader.getClassLoader()));
         List<String> cacheNames = cacheProperties.getCacheNames();

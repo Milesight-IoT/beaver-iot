@@ -1,2 +1,3 @@
 org.springframework.context.ApplicationContextInitializer=\
-net.javacrumbs.shedlock.spring.aop.ScopedLockApplicationContextInitializer
+net.javacrumbs.shedlock.spring.aop.ScopedLockApplicationContextInitializer,\
+com.milesight.beaveriot.cache.PrepareCacheTypeApplicationContextInitializer
