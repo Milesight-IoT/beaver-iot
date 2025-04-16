@@ -25,7 +25,7 @@ import java.util.Map;
 @RuleNode(type = RuleNodeType.ACTION, value = "code", title = "Script Code", description = "Script Code")
 public class ScriptCodeComponent implements ProcessorNode<Exchange> {
 
-    @UriParamExtension(uiComponent = "paramAssignInput")
+    @UriParamExtension(uiComponent = "paramAssignInput", loggable = true)
     @UriParam(displayName = "Input Arguments", prefix = "bean")
     private Map<String, Object> inputArguments;
 

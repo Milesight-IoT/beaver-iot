@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.permission.util;
+package com.milesight.beaveriot.base.utils;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;

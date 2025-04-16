@@ -101,6 +101,11 @@
         </dependency>
 
         <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>base</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-spring-starter</artifactId>
             <exclusions>

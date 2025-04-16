@@ -69,6 +69,20 @@ spring:
         core-size: 8
         max-size: 16
         queue-capacity: 10000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,metrics,prometheus,info"
+        exclude: shutdown,beans
+  metrics:
+    enable:
+      logback: false
+      spring.data: false
+      spring.security: false
+      disk: false
+
 camel:
   springboot:
     routes-include-pattern: classpath:routes/*.yaml
@@ -128,6 +142,7 @@ oauth2:
     - "/user/register"
     - "/user/status"
     - "/public/**"
+    - "/actuator/**"
 
 mqtt:
   broker:

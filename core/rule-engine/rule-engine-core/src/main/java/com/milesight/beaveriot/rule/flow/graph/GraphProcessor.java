@@ -15,6 +15,7 @@ import org.apache.camel.support.AsyncProcessorSupport;
 import org.apache.camel.support.PluginHelper;
 import org.apache.camel.support.service.ServiceHelper;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.Map;
@@ -31,26 +32,47 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
     private final MutableGraph<String> graphStructure;
     private final String beginNodeId;
     private final CamelContext camelContext;
+    private final String outputNodeId;
 
-    public GraphProcessor(CamelContext camelContext, String beginNodeId, Map<String, AsyncProcessor> processors, MutableGraph<String> graphStructure) {
+    public GraphProcessor(CamelContext camelContext, String beginNodeId, Map<String, AsyncProcessor> processors, MutableGraph<String> graphStructure, String outputNodeId) {
         this.processors = processors;
         this.graphStructure = graphStructure;
         this.beginNodeId = beginNodeId;
         this.camelContext = camelContext;
+        this.outputNodeId = outputNodeId;
     }
 
+    public boolean isEndProcessor() {
+        return graphStructure.successors(beginNodeId).isEmpty();
+    }
     @Override
     public boolean process(final Exchange exchange, final AsyncCallback callback) {
 
         Set<String> successors = graphStructure.successors(beginNodeId);
 
-        GraphTaskExecutor graphTaskExecutor = GraphTaskExecutor.create(beginNodeId, successors, graphStructure, processors, camelContext);
+        GraphTaskExecutor graphTaskExecutor = GraphTaskExecutor.create(beginNodeId, successors, graphStructure, processors, camelContext, outputNodeId);
 
         graphTaskExecutor.execute(exchange, callback);
+
+        afterProcess(exchange, callback);
 
         callback.done(true);
 
         return true;
+    }
+
+    private void afterProcess(Exchange exchange, AsyncCallback callback) {
+        try {
+            if (!ObjectUtils.isEmpty(outputNodeId)) {
+                AsyncProcessor asyncProcessor = processors.get(outputNodeId);
+                asyncProcessor.process(exchange);
+            }
+        } catch (Exception e) {
+            if (exchange.getException() == null) {
+                exchange.setException(e);
+            }
+            throw new RuleEngineException(e);
+        }
     }
 
     @Override
@@ -113,18 +135,20 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
         protected final MutableGraph<String> graphStructure;
         protected final Map<String, AsyncProcessor> processors;
         protected final CamelContext context;
+        protected final String outputNodeId;
 
-        protected GraphTaskExecutor(MutableGraph<String> graphStructure, Map<String, AsyncProcessor> processors, CamelContext context) {
+        protected GraphTaskExecutor(MutableGraph<String> graphStructure, Map<String, AsyncProcessor> processors, CamelContext context, String outputNodeId) {
             this.graphStructure = graphStructure;
             this.processors = processors;
             this.context = context;
+            this.outputNodeId = outputNodeId;
         }
 
-        public static GraphTaskExecutor create(String parentNodeId, Set<String> successors, MutableGraph<String> graphStructure, Map<String, AsyncProcessor> processors, CamelContext context) {
+        public static GraphTaskExecutor create(String parentNodeId, Set<String> successors, MutableGraph<String> graphStructure, Map<String, AsyncProcessor> processors, CamelContext context, String outputNodeId) {
             if (successors.size() == 1) {
-                return new SequenceTaskExecutor(parentNodeId, successors.iterator().next(), graphStructure, processors, context);
+                return new SequenceTaskExecutor(parentNodeId, successors.iterator().next(), graphStructure, processors, context, outputNodeId);
             } else {
-                return new ParallelTaskExecutor(parentNodeId, successors, graphStructure, processors, context);
+                return new ParallelTaskExecutor(parentNodeId, successors, graphStructure, processors, context, outputNodeId);
             }
         }
 
@@ -133,7 +157,7 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
         protected boolean doExecute(String successor, Exchange exchange, AsyncCallback asyncCallback) {
 
             try {
-                if (exchange.getException() != null) {
+                if (exchange.getException() != null || successor.equals(outputNodeId)) {
                     return true;
                 }
 
@@ -150,7 +174,7 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
                     setExchangeTraceId(exchange, exchange.getExchangeId(), successor);
                     doExecute(nextSuccessor, exchange, asyncCallback);
                 } else {
-                    GraphTaskExecutor graphTaskExecutor = GraphTaskExecutor.create(successor, successors, graphStructure, processors, context);
+                    GraphTaskExecutor graphTaskExecutor = GraphTaskExecutor.create(successor, successors, graphStructure, processors, context, outputNodeId);
                     graphTaskExecutor.execute(exchange, asyncCallback);
                 }
 
@@ -188,8 +212,8 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
         private String successor;
         private final String parentNodeId;
 
-        public SequenceTaskExecutor(String parentNodeId, String successor, MutableGraph<String> graphStructure, Map<String, AsyncProcessor> processors, CamelContext context) {
-            super(graphStructure, processors, context);
+        public SequenceTaskExecutor(String parentNodeId, String successor, MutableGraph<String> graphStructure, Map<String, AsyncProcessor> processors, CamelContext context, String outputNodeId) {
+            super(graphStructure, processors, context, outputNodeId);
             this.successor = successor;
             this.parentNodeId = parentNodeId;
         }
@@ -210,8 +234,8 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
         private final AsyncProcessorAwaitManager awaitManager;
 
 
-        public ParallelTaskExecutor(String parentNodeId, Set<String> successors, MutableGraph<String> graphStructure, Map<String, AsyncProcessor> processors, CamelContext context) {
-            super(graphStructure, processors, context);
+        public ParallelTaskExecutor(String parentNodeId, Set<String> successors, MutableGraph<String> graphStructure, Map<String, AsyncProcessor> processors, CamelContext context, String outputNodeId) {
+            super(graphStructure, processors, context, outputNodeId);
             this.successors = successors;
             this.parentNodeId = parentNodeId;
             this.awaitManager = PluginHelper.getAsyncProcessorAwaitManager(context);

@@ -13,6 +13,7 @@ public class ComponentOutputDefinition extends ComponentOptionExtensionDefinitio
     protected String displayName;
     protected String type;
     protected String javaType;
+    protected String genericType;
     protected String description;
     protected boolean editable;
 

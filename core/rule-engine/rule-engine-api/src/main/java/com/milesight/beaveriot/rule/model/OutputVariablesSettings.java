@@ -11,7 +11,7 @@ import java.util.Map;
  * @author leon
  */
 @Data
-public class OutputVariablesSettings {
+public class OutputVariablesSettings implements VariableNamed {
 
     private DataTypeEnums type;
     private String name;

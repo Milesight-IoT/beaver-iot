@@ -45,7 +45,7 @@ public class GraphProcessorReifier extends ProcessorReifier<GraphProcessorDefini
 
         String originFromId = RuleFlowIdGenerator.removeNamespacedId(flowGraph.getFlowId(), flowGraph.getFromDefinition().getId());
 
-        return new GraphProcessor(getCamelContext(), originFromId, processors, flowGraph.getGraphStructure());
+        return new GraphProcessor(getCamelContext(), originFromId, processors, flowGraph.getGraphStructure(), flowGraph.outputNodeId);
     }
 
     protected AsyncProcessor createChannel(ProcessorDefinition<?> value) {

@@ -16,7 +16,12 @@ public interface RuleNodeNames {
     String innerDirectExchangePredicate = "innerDirectExchangePredicate";
     String innerWorkflowTriggerByEntity = "innerWorkflowTriggerByEntity";
 
+    String CAMEL_TRIGGER = "trigger";
     String CAMEL_DIRECT = "direct";
     String CAMEL_CHOICE = "choice";
+    String CAMEL_OUTPUT = "output";
+    String CAMEL_BEAN = "bean";
+    String CAMEL_BEAN_SCHEMA = "bean:";
+    String CAMEL_BEAN_PREFIX = "bean.";
 
 }

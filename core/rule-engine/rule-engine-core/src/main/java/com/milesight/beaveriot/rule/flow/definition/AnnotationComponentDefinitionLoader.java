@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.rule.flow.definition;
 
+import com.milesight.beaveriot.base.utils.TypeUtil;
 import com.milesight.beaveriot.rule.annotations.OutputArguments;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
 import com.milesight.beaveriot.rule.annotations.UriParamExtension;
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -236,6 +238,7 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
             option.setUiComponent(uriParamExtension.uiComponent());
             option.setUiComponentTags(uriParamExtension.uiComponentTags());
             option.setUiComponentGroup(uriParamExtension.uiComponentGroup());
+            option.setLoggable(uriParamExtension.loggable());
         }
     }
 
@@ -252,6 +255,10 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
                 String type = ComponentDefinitionHelper.getType(javaType, false, "java.time.Duration".equals(javaType), Map.class.isAssignableFrom(fieldElement.getType()));
                 componentOutputDefinition.setJavaType(javaType);
                 componentOutputDefinition.setType(type);
+                Type firstType = TypeUtil.getTypeArgument(fieldElement.getGenericType(), 0);
+                if (firstType != null) {
+                    componentOutputDefinition.setGenericType(firstType.getTypeName());
+                }
                 componentOutputDefinition.setName(name);
                 componentOutputDefinition.setDisplayName(displayName);
                 componentOutputDefinition.setDescription(description);

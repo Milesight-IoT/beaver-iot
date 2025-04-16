@@ -3,8 +3,14 @@ package com.milesight.beaveriot.rule.support;
 import com.milesight.beaveriot.rule.enums.ExpressionLanguage;
 import org.apache.camel.Exchange;
 import org.apache.camel.Expression;
+import org.springframework.expression.ParserContext;
+import org.springframework.expression.common.CompositeStringExpression;
+import org.springframework.expression.common.TemplateParserContext;
+import org.springframework.expression.spel.standard.SpelExpression;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.util.ObjectUtils;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +33,7 @@ public class SpELExpressionHelper {
             return Map.of();
         }
         Map<String,Object> result = new HashMap<>();
-        expressionMap.entrySet().stream().forEach(entry -> result.put(entry.getKey(), resolveExpression(exchange, entry.getValue())));
+        expressionMap.entrySet().stream().forEach(entry -> result.put(entry.getKey(), resolveStringExpression(exchange, entry.getValue())));
         return result;
     }
 
@@ -35,10 +41,10 @@ public class SpELExpressionHelper {
         if (ObjectUtils.isEmpty(expressionList)) {
             return List.of();
         }
-        return expressionList.stream().map(expression -> (String) resolveExpression(exchange, expression)).toList();
+        return expressionList.stream().map(expression -> (String) resolveStringExpression(exchange, expression)).toList();
     }
 
-    public static Object resolveExpression(Exchange exchange, Object expressionValue) {
+    public static Object resolveStringExpression(Exchange exchange, Object expressionValue) {
         if (ObjectUtils.isEmpty(expressionValue)) {
             return expressionValue;
         }
@@ -55,4 +61,25 @@ public class SpELExpressionHelper {
         return stringValue instanceof String value && value.contains(SPEL_EXPRESSION_PREFIX);
     }
 
+    public static SpelExpression[] extractSpELExpression(Object value) {
+        if (ObjectUtils.isEmpty(value)) {
+            return new SpelExpression[0];
+        }
+        String stringValue = value instanceof String ? (String) value : value.toString();
+        if (containSpELExpression(stringValue)) {
+            ParserContext parserContext = new TemplateParserContext();
+            SpelExpressionParser expressionParser = new SpelExpressionParser();
+            org.springframework.expression.Expression expression = expressionParser.parseExpression(stringValue, parserContext);
+            if (expression instanceof SpelExpression spelExpression) {
+                return new SpelExpression[]{spelExpression};
+            } else if (expression instanceof CompositeStringExpression compositeStringExpression) {
+                return Arrays.stream(compositeStringExpression.getExpressions())
+                        .filter(SpelExpression.class::isInstance)
+                        .toArray(SpelExpression[]::new);
+            } else {
+                return new SpelExpression[0];
+            }
+        }
+        return new SpelExpression[0];
+    }
 }

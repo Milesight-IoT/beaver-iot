@@ -36,4 +36,9 @@ public @interface UriParamExtension {
      */
     String uiComponentGroup() default "";
 
+    /**
+     * if true, the parameter will be collected in the input log
+     * @return
+     */
+    boolean loggable() default false;
 }

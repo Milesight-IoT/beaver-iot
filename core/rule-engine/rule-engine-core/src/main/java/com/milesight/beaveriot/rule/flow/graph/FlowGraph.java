@@ -23,6 +23,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import static com.milesight.beaveriot.rule.constants.RuleNodeNames.CAMEL_DIRECT;
+import static com.milesight.beaveriot.rule.constants.RuleNodeNames.CAMEL_OUTPUT;
+
 /**
  * @author leon
  */
@@ -33,12 +36,14 @@ public class FlowGraph {
     protected final MutableGraph<String> graphStructure;
     protected final FromDefinition fromDefinition;
     protected final Map<String, ProcessorDefinition<?>> nodeDefinitions;
+    protected final String outputNodeId;
 
-    protected FlowGraph(String flowId, MutableGraph<String> graphStructure, FromDefinition fromDefinition, Map<String, ProcessorDefinition<?>> nodeDefinitions) {
+    protected FlowGraph(String flowId, MutableGraph<String> graphStructure, FromDefinition fromDefinition, Map<String, ProcessorDefinition<?>> nodeDefinitions, String outputNodeId) {
         this.graphStructure = graphStructure;
         this.fromDefinition = fromDefinition;
         this.nodeDefinitions = nodeDefinitions;
         this.flowId = flowId;
+        this.outputNodeId = outputNodeId;
     }
 
     public static FlowGraphBuilder builder(String flowId) {
@@ -59,6 +64,7 @@ public class FlowGraph {
         private Map<String, List<String>> choiceWhenEdges = new ConcurrentHashMap<>();
         private final RuleFlowConfig ruleFlowConfig;
         private final Function<String, ComponentDefinition> componentDefinitionLoader;
+        private String outputNodeId;
         private RuleNodeDefinitionInterceptor ruleNodeDefinitionInterceptor = new DefaultRuleNodeDefinitionInterceptor();
 
         public FlowGraphBuilder(String flowId) {
@@ -97,7 +103,7 @@ public class FlowGraph {
                     .filter(entry -> !(entry.getKey().equals(fromNodeDefinition.getId())))
                     .forEach(entry -> processorDefinitions.put(entry.getKey(), RouteDefinitionConverter.convertProcessorDefinition(ruleFlowConfig.getFlowId(), entry.getValue(), choiceWhenEdges)));
 
-            return new FlowGraph(ruleFlowConfig.getFlowId(), graphStructure, fromDefinition, processorDefinitions);
+            return new FlowGraph(ruleFlowConfig.getFlowId(), graphStructure, fromDefinition, processorDefinitions, outputNodeId);
         }
 
         private FromNodeDefinition populateGraphFromNodeDefinitions() {
@@ -133,6 +139,9 @@ public class FlowGraph {
             AbstractNodeDefinition abstractNodeDefinition = convertToNodeDefinition(nodeConfig);
             nodeDefinitionConfigs.put(nodeConfig.getId(), abstractNodeDefinition);
             graphStructure.addNode(abstractNodeDefinition.getId());
+            if (nodeConfig.getComponentName().equals(CAMEL_OUTPUT)) {
+                 outputNodeId = nodeConfig.getId();
+            }
         }
 
         private FromNodeDefinition convertToFromNodeDefinition(RuleConfig nodeConfig) {
@@ -144,7 +153,7 @@ public class FlowGraph {
         private AbstractNodeDefinition convertToNodeDefinition(RuleConfig nodeConfig) {
             ComponentDefinition componentDefinition = componentDefinitionLoader.apply(nodeConfig.getComponentName());
             if (nodeConfig instanceof RuleChoiceConfig ruleChoiceConfig) {
-                return ChoiceNodeDefinition.create(ruleChoiceConfig);
+                return ruleNodeDefinitionInterceptor.interceptChoiceNodeDefinition(ruleFlowConfig.getFlowId(), ChoiceNodeDefinition.create(ruleChoiceConfig));
             } else if (nodeConfig instanceof RuleNodeConfig ruleNodeConfig) {
                 return ruleNodeDefinitionInterceptor.interceptToNodeDefinition(ruleFlowConfig.getFlowId(), ToNodeDefinition.create(ruleNodeConfig, componentDefinition));
             } else {

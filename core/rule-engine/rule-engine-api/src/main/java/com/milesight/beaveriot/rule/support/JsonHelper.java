@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -46,6 +47,17 @@ public class JsonHelper {
         }
         try {
             return JSON.readValue(json, type);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    public static <T> T readValue(String content, JavaType valueType) {
+        if (ObjectUtils.isEmpty(content)) {
+            return null;
+        }
+        try {
+            return JSON.readValue(content, valueType);
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException(e);
         }

@@ -31,6 +31,8 @@ public enum ExpressionOperator {
     private String label;
     private String expression;
 
+    public static final String EXPRESSION_PREFIX = "T(com.milesight.beaveriot.rule.enums.ExpressionOperator)";
+
     ExpressionOperator(String label, String expression) {
         this.label = label;
         this.expression = expression;

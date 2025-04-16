@@ -123,6 +123,8 @@ camel:
           title: "email"
         - name: "webhook"
           title: "Webhook"
+        - name: "output"
+          title: "Output Node"
     languages:
       - code:
           - "groovy"
@@ -152,6 +154,7 @@ oauth2:
     - "/user/register"
     - "/user/status"
     - "/public/**"
+    - "/actuator/**"
 
 mqtt:
   broker:

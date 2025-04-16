@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.rule;
 
 import com.milesight.beaveriot.rule.model.flow.route.AbstractNodeDefinition;
+import com.milesight.beaveriot.rule.model.flow.route.ChoiceNodeDefinition;
 import com.milesight.beaveriot.rule.model.flow.route.FromNodeDefinition;
 import com.milesight.beaveriot.rule.model.flow.route.ToNodeDefinition;
 import org.apache.camel.model.ProcessorDefinition;
@@ -31,6 +32,10 @@ public interface RuleNodeDefinitionInterceptor extends Ordered {
         return toNodeDefinition;
     }
 
+    default ChoiceNodeDefinition interceptChoiceNodeDefinition(String flowId, ChoiceNodeDefinition choiceNodeDefinition) {
+        return choiceNodeDefinition;
+    }
+
     /**
      * ProcessorDefinition pre-processing, supports returning custom ProcessorDefinition
      * @param flowId
@@ -45,5 +50,4 @@ public interface RuleNodeDefinitionInterceptor extends Ordered {
     default int getOrder() {
         return 0;
     }
-
 }

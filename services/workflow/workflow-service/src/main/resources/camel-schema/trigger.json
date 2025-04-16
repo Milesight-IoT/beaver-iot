@@ -39,12 +39,22 @@
       "label": "producer",
       "required": true,
       "type": "object",
-      "javaType": "java.util.Map<java.lang.String, java.lang.Object>",
+      "javaType": "java.util.List",
       "deprecated": false,
       "autowired": false,
       "secret": false,
       "description": "Configuration settings for entities passed to the trigger.",
       "uiComponent": "paramDefineInput"
+    }
+  },
+  "outputProperties": {
+    "entityConfigs": {
+      "index": 1,
+      "type": "object",
+      "javaType": "java.util.List",
+      "genericType": "com.milesight.beaveriot.rule.model.GenericVariable",
+      "uiComponent": "paramDefineInput",
+      "loggable": true
     }
   }
 }
