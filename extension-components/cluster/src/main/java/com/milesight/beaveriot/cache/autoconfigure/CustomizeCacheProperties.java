@@ -2,6 +2,7 @@ package com.milesight.beaveriot.cache.autoconfigure;
 
 import com.milesight.beaveriot.base.constants.StringConstant;
 import lombok.Data;
+import lombok.Getter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.time.Duration;
@@ -22,14 +23,15 @@ public class CustomizeCacheProperties {
      */
     private RedisConfig redis = new RedisConfig();
 
-    @Data
-    public static class RedisConfig{
+    private Specs specs = new Specs();
+
+
+    @Getter
+    public static class Specs {
         /**
          * Precisely set the expiration time (unit s) of the corresponding cache, and use timeToLive global configuration when it is not configured. Support prefix matching, for example: demo:key1:*
          */
         public Map<String, Duration> timeToLives = new LinkedHashMap<>();
-
-        public String valueSerializerClass;
 
         public Duration getMatchTimeToLive(String key){
             //Since timeToLives may have a prefix match, take the prefix[]
@@ -44,13 +46,19 @@ public class CustomizeCacheProperties {
             return matchKey == null ? null : timeToLives.get(matchKey);
         }
 
-        private String unwrapPrefixAndSubfix(String key) {
+        public static String unwrapPrefixAndSubfix(String key) {
             if(key.startsWith(StringConstant.BRACKET_START) && key.endsWith(StringConstant.BRACKET_END)){
                 return key.substring(1, key.length() - 1);
             }else{
                 return key;
             }
         }
+    }
+    @Data
+    public static class RedisConfig{
+
+        public String valueSerializerClass;
+
     }
 
 }

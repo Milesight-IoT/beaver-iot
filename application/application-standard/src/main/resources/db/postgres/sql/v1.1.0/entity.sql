@@ -60,3 +60,13 @@ update t_entity_latest set tenant_id = 'default' where tenant_id = '1';
 -- changeset loong:entity_v1.1.0_20250304_100000
 alter table t_entity_history
     drop constraint uk_entity_history;
+
+-- changeset loong:entity_v1.1.0_20250407_165500
+alter table t_entity
+alter column tenant_id set default 'default';
+
+alter table t_entity_history
+alter column tenant_id set default 'default';
+
+alter table t_entity_latest
+alter column tenant_id set default 'default';

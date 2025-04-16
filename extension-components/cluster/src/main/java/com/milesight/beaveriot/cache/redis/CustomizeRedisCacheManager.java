@@ -12,9 +12,9 @@ import java.util.Map;
 import java.util.Set;
 
 public class CustomizeRedisCacheManager extends RedisCacheManager {
-    private final CustomizeCacheProperties.RedisConfig redisConfig;
+    private final CustomizeCacheProperties.Specs redisConfig;
 
-    public CustomizeRedisCacheManager(RedisCacheWriter redisCacheManager, RedisCacheConfiguration redisCacheConfiguration, Map<String, RedisCacheConfiguration> initialCacheConfiguration, boolean allowInFlightCacheCreation , CustomizeCacheProperties.RedisConfig redisConfig) {
+    public CustomizeRedisCacheManager(RedisCacheWriter redisCacheManager, RedisCacheConfiguration redisCacheConfiguration, Map<String, RedisCacheConfiguration> initialCacheConfiguration, boolean allowInFlightCacheCreation , CustomizeCacheProperties.Specs redisConfig) {
         super(redisCacheManager, redisCacheConfiguration,initialCacheConfiguration,allowInFlightCacheCreation);
         this.redisConfig = redisConfig;
     }
@@ -30,15 +30,15 @@ public class CustomizeRedisCacheManager extends RedisCacheManager {
         return super.createRedisCache(name, cacheConfig);
     }
 
-    public static CustomizeRedisCacheManagerBuilder customizeBuilder(RedisConnectionFactory redisConnectionFactory, CustomizeCacheProperties.RedisConfig redisConfig) {
+    public static CustomizeRedisCacheManagerBuilder customizeBuilder(RedisConnectionFactory redisConnectionFactory, CustomizeCacheProperties redisConfig) {
         return CustomizeRedisCacheManagerBuilder.fromConnectionFactory(redisConnectionFactory, redisConfig);
     }
 
     public static class CustomizeRedisCacheManagerBuilder {
 
-        private CustomizeCacheProperties.RedisConfig redisConfig;
+        private CustomizeCacheProperties redisConfig;
 
-        public static CustomizeRedisCacheManagerBuilder fromConnectionFactory(RedisConnectionFactory connectionFactory, CustomizeCacheProperties.RedisConfig redisConfig) {
+        public static CustomizeRedisCacheManagerBuilder fromConnectionFactory(RedisConnectionFactory connectionFactory, CustomizeCacheProperties redisConfig) {
 
             Assert.notNull(connectionFactory, "ConnectionFactory must not be null");
 
@@ -58,7 +58,7 @@ public class CustomizeRedisCacheManager extends RedisCacheManager {
 
         private @Nullable RedisCacheWriter cacheWriter;
 
-        private CustomizeRedisCacheManagerBuilder(RedisCacheWriter cacheWriter, CustomizeCacheProperties.RedisConfig redisConfig) {
+        private CustomizeRedisCacheManagerBuilder(RedisCacheWriter cacheWriter, CustomizeCacheProperties redisConfig) {
             this.cacheWriter = cacheWriter;
             this.redisConfig = redisConfig;
         }
@@ -136,7 +136,7 @@ public class CustomizeRedisCacheManager extends RedisCacheManager {
         }
 
         private CustomizeRedisCacheManager newRedisCacheManager(RedisCacheWriter cacheWriter) {
-            return new CustomizeRedisCacheManager(cacheWriter, cacheDefaults(), this.initialCaches,this.allowRuntimeCacheCreation, this.redisConfig);
+            return new CustomizeRedisCacheManager(cacheWriter, cacheDefaults(), this.initialCaches,this.allowRuntimeCacheCreation, this.redisConfig.getSpecs());
         }
     }
 }

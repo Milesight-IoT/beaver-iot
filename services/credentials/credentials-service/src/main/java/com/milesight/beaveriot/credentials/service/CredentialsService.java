@@ -60,6 +60,7 @@ public class CredentialsService implements CredentialsServiceProvider {
     private CredentialsResponse convertPOToResponse(CredentialsPO po) {
         return CredentialsResponse.builder()
                 .id(String.valueOf(po.getId()))
+                .tenantId(po.getTenantId())
                 .credentialsType(po.getCredentialsType())
                 .description(po.getDescription())
                 .accessKey(po.getAccessKey())
@@ -94,6 +95,8 @@ public class CredentialsService implements CredentialsServiceProvider {
 
     @Transactional(rollbackFor = Throwable.class)
     public CredentialsResponse addCredentials(AddCredentialsRequest request) {
+        log.info("add credentials, accessKey: '{}', tenantId: '{}'", request.getAccessKey(), TenantContext.getTenantId());
+
         val operatorId = SecurityUserContext.getUserId() == null ? null : SecurityUserContext.getUserId().toString();
         val credentialsPO = credentialsRepository.save(CredentialsPO.builder()
                 .id(SnowflakeUtil.nextId())
@@ -113,11 +116,12 @@ public class CredentialsService implements CredentialsServiceProvider {
 
     @Transactional(rollbackFor = Throwable.class)
     public CredentialsResponse updateCredentials(Long id, UpdateCredentialsRequest request) {
+        log.info("update credentials, id: '{}', tenantId: '{}'", id, TenantContext.getTenantId());
+
         var credentialsPO = credentialsRepository.findById(id)
                 .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND));
         val operatorId = SecurityUserContext.getUserId() == null ? null : SecurityUserContext.getUserId().toString();
         credentialsPO.setDescription(request.getDescription());
-        credentialsPO.setAccessKey(request.getAccessKey());
         credentialsPO.setAccessSecret(request.getAccessSecret());
         credentialsPO.setAdditionalData(JsonUtils.toJSON(request.getAdditionalData()));
         credentialsPO.setUpdatedBy(operatorId);
@@ -139,6 +143,8 @@ public class CredentialsService implements CredentialsServiceProvider {
     @Transactional(rollbackFor = Throwable.class)
     @Override
     public void batchDeleteCredentials(List<Long> ids) {
+        log.info("batch delete credentials, ids: '{}', tenantId: '{}'", ids, TenantContext.getTenantId());
+
         if (ids == null || ids.isEmpty()) {
             return;
         }
@@ -170,6 +176,13 @@ public class CredentialsService implements CredentialsServiceProvider {
                 .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND));
     }
 
+    @Transactional(rollbackFor = Throwable.class)
+    public CredentialsResponse getOrCreateCredentialsResponse(String credentialsType, Boolean autoGeneratePassword) {
+        val password = Boolean.TRUE.equals(autoGeneratePassword) ? SecretUtils.randomSecret(32) : "";
+        val credentials = getOrCreateCredentials(credentialsType, password);
+        return getCredentialsResponse(credentials.getId());
+    }
+
     public CredentialsResponse getCredentialsResponse(Long id) {
         return credentialsRepository.findById(id)
                 .map(this::convertPOToResponse)
@@ -188,21 +201,36 @@ public class CredentialsService implements CredentialsServiceProvider {
 
     @Transactional(rollbackFor = Throwable.class)
     @Override
-    public Credentials getOrCreateDefaultCredentials(String credentialsType) {
-        return getOrCreateCredentials(credentialsType, getCredentialsDefaultAccessKeyByType(credentialsType));
+    public Credentials getOrCreateCredentials(CredentialsType credentialType, String password) {
+        return getOrCreateCredentials(credentialType.name(), password);
     }
 
     @Transactional(rollbackFor = Throwable.class)
     @Override
-    public Credentials getOrCreateDefaultCredentials(CredentialsType credentialType) {
-        return getOrCreateDefaultCredentials(credentialType.name());
+    public Credentials getOrCreateCredentials(String credentialType) {
+        return getOrCreateCredentials(credentialType, SecretUtils.randomSecret(32));
     }
 
     @Transactional(rollbackFor = Throwable.class)
     @Override
-    public Credentials getOrCreateCredentials(String credentialsType, String username) {
+    public Credentials getOrCreateCredentials(String credentialsType, String password) {
+        return getOrCreateCredentials(credentialsType, getCredentialsDefaultAccessKeyByType(credentialsType), password);
+    }
+
+    @Transactional(rollbackFor = Throwable.class)
+    @Override
+    public Credentials getOrCreateCredentials(CredentialsType credentialType) {
+        return getOrCreateCredentials(credentialType, SecretUtils.randomSecret(32));
+    }
+
+    @Transactional(rollbackFor = Throwable.class)
+    public Credentials getOrCreateCredentials(String credentialsType, String username, String password) {
         Assert.notNull(credentialsType, "credentialsType cannot be null");
         Assert.notNull(username, "username cannot be null");
+
+        if (password == null) {
+            password = "";
+        }
 
         var credentials = getCredentials(credentialsType, username).orElse(null);
         if (credentials == null) {
@@ -212,7 +240,7 @@ public class CredentialsService implements CredentialsServiceProvider {
                     addCredentials(Credentials.builder()
                             .credentialsType(credentialsType)
                             .accessKey(username)
-                            .accessSecret(SecretUtils.randomSecret(32))
+                            .accessSecret(password)
                             .build());
                     credentials = getCredentials(credentialsType, username)
                             .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND, "credentials not found"));
@@ -224,8 +252,8 @@ public class CredentialsService implements CredentialsServiceProvider {
 
     @Transactional(rollbackFor = Throwable.class)
     @Override
-    public Credentials getOrCreateCredentials(CredentialsType credentialType, String username) {
-        return getOrCreateCredentials(credentialType.name(), username);
+    public Credentials getOrCreateCredentials(CredentialsType credentialType, String username, String password) {
+        return getOrCreateCredentials(credentialType.name(), username, password);
     }
 
     public Optional<Credentials> getCredentials(Long id) {

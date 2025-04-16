@@ -51,7 +51,7 @@ public class EventBusDispatcher<T extends Event<? extends IdentityKey>> implemen
 
         Executor executor = getEventBusExecutor();
 
-        log.debug("Ready to publish EventBus events, hit Invocation size：{}", invocationHolders.size());
+        log.debug("Ready to publish EventBus events {}, hit Invocation size：{}", event.getEventType(), invocationHolders.size());
 
         invocationHolders.forEach(invocationHolder -> executor.execute(() -> {
             try {

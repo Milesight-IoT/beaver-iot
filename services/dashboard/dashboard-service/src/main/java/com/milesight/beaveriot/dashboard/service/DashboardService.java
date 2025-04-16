@@ -12,8 +12,10 @@ import com.milesight.beaveriot.dashboard.model.request.CreateDashboardRequest;
 import com.milesight.beaveriot.dashboard.model.request.UpdateDashboardRequest;
 import com.milesight.beaveriot.dashboard.model.response.CreateDashboardResponse;
 import com.milesight.beaveriot.dashboard.model.response.DashboardResponse;
+import com.milesight.beaveriot.dashboard.po.DashboardHomePO;
 import com.milesight.beaveriot.dashboard.po.DashboardPO;
 import com.milesight.beaveriot.dashboard.po.DashboardWidgetPO;
+import com.milesight.beaveriot.dashboard.repository.DashboardHomeRepository;
 import com.milesight.beaveriot.dashboard.repository.DashboardRepository;
 import com.milesight.beaveriot.dashboard.repository.DashboardWidgetRepository;
 import com.milesight.beaveriot.dashboard.repository.DashboardWidgetTemplateRepository;
@@ -28,9 +30,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -46,7 +50,7 @@ public class DashboardService {
     @Autowired
     private DashboardWidgetRepository dashboardWidgetRepository;
     @Autowired
-    private DashboardWidgetTemplateRepository dashboardWidgetTemplateRepository;
+    private DashboardHomeRepository dashboardHomeRepository;
     @Autowired
     IUserFacade userFacade;
 
@@ -133,6 +137,7 @@ public class DashboardService {
         dashboardRepository.findOneWithDataPermission(filterable -> filterable.eq(DashboardPO.Fields.id, dashboardId)).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).detailMessage("dashboard not exist").build());
         dashboardRepository.deleteById(dashboardId);
         dashboardWidgetRepository.deleteByDashboardId(dashboardId);
+        dashboardHomeRepository.deleteByDashboardId(dashboardId);
 
         userFacade.deleteResource(ResourceType.DASHBOARD, Collections.singletonList(dashboardId));
     }
@@ -150,11 +155,19 @@ public class DashboardService {
         if (dashboardPOList.isEmpty()) {
             return new ArrayList<>();
         }
+        DashboardHomePO dashboardHomePO = dashboardHomeRepository.findOneWithDataPermission(filterable -> filterable.eq(DashboardHomePO.Fields.userId, SecurityUserContext.getUserId())).orElse(null);
+        Map<Long, DashboardHomePO> dashboardHomePOMap = new HashMap<>();
+        if (dashboardHomePO != null) {
+            dashboardHomePOMap.put(dashboardHomePO.getDashboardId(), dashboardHomePO);
+        }
         List<DashboardResponse> dashboardResponseList = DashboardConvert.INSTANCE.convertResponseList(dashboardPOList);
         List<Long> dashboardIdList = dashboardResponseList.stream().map(t -> Long.parseLong(t.getDashboardId())).toList();
         List<DashboardWidgetDTO> dashboardWidgetDTOList = getWidgetsByDashBoards(dashboardIdList);
         Map<Long, List<DashboardWidgetDTO>> dashboardWidgetMap = dashboardWidgetDTOList.stream().filter(dashboardWidgetDTO -> dashboardWidgetDTO.getDashboardId() != null).collect(Collectors.groupingBy(DashboardWidgetDTO::getDashboardId));
-        dashboardResponseList.forEach(dashboardResponse -> dashboardResponse.setWidgets(dashboardWidgetMap.get(Long.parseLong(dashboardResponse.getDashboardId()))));
+        dashboardResponseList.forEach(dashboardResponse -> {
+            dashboardResponse.setWidgets(dashboardWidgetMap.get(Long.parseLong(dashboardResponse.getDashboardId())));
+            dashboardResponse.setHome(dashboardHomePOMap.get(Long.parseLong(dashboardResponse.getDashboardId())) != null);
+        });
         return dashboardResponseList;
     }
 
@@ -164,6 +177,24 @@ public class DashboardService {
             return new ArrayList<>();
         }
         return DashboardWidgetConvert.INSTANCE.convertResponseList(dashboardWidgetPOList);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void setHomeDashboard(Long dashboardId) {
+        DashboardHomePO dashboardHomePO = dashboardHomeRepository.findOneWithDataPermission(filterable -> filterable.eq(DashboardHomePO.Fields.userId, SecurityUserContext.getUserId())).orElse(null);
+        if (dashboardHomePO != null) {
+            dashboardHomeRepository.delete(dashboardHomePO);
+        }
+        DashboardHomePO newDashboardHomePO = new DashboardHomePO();
+        newDashboardHomePO.setId(SnowflakeUtil.nextId());
+        newDashboardHomePO.setUserId(SecurityUserContext.getUserId());
+        newDashboardHomePO.setDashboardId(dashboardId);
+        dashboardHomeRepository.save(newDashboardHomePO);
+    }
+
+    public void cancelSetHomeDashboard(Long dashboardId) {
+        DashboardHomePO dashboardHomePO = dashboardHomeRepository.findOneWithDataPermission(filterable -> filterable.eq(DashboardHomePO.Fields.userId, SecurityUserContext.getUserId()).eq(DashboardHomePO.Fields.dashboardId, dashboardId)).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).detailMessage("dashboard not exist").build());
+        dashboardHomeRepository.delete(dashboardHomePO);
     }
 
 }

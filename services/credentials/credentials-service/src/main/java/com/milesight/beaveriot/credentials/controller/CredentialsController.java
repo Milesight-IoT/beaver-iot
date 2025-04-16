@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 
@@ -44,9 +45,9 @@ public class CredentialsController {
      * @param credentialsType credentials type, e.g. MQTT, SMTP
      * @return credentials response
      */
-    @GetMapping("/default/{credentialsType}")
-    public ResponseBody<CredentialsResponse> getCredentials(@PathVariable("credentialsType") String credentialsType) {
-        return ResponseBuilder.success(credentialsService.getCredentialsResponse(credentialsType));
+    @GetMapping("/default/{credentials_type}")
+    public ResponseBody<CredentialsResponse> getCredentials(@PathVariable("credentials_type") String credentialsType, @RequestParam(name = "auto_generate_password", required = false) Boolean autoGeneratePassword) {
+        return ResponseBuilder.success(credentialsService.getOrCreateCredentialsResponse(credentialsType, autoGeneratePassword));
     }
 
     @PostMapping

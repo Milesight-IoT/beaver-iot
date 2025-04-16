@@ -8,6 +8,7 @@ import lombok.*;
 public enum CredentialsType {
     MQTT,
     SMTP,
+    HTTP,
     ;
 
     @Override

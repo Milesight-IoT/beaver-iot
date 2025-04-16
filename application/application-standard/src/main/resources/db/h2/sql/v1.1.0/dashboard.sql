@@ -32,3 +32,13 @@ alter column tenant_id VARCHAR(255);
 update t_dashboard set tenant_id = 'default' where tenant_id = '1';
 update t_dashboard_widget set tenant_id = 'default' where tenant_id = '1';
 update t_dashboard_widget_template set tenant_id = 'default' where tenant_id = '1';
+
+-- changeset loong:dashboard_v1.1.0_2025040711_162400
+alter table t_dashboard
+alter column tenant_id set default 'default';
+
+alter table t_dashboard_widget
+alter column tenant_id set default 'default';
+
+alter table t_dashboard_widget_template
+alter column tenant_id set default 'default';
