@@ -1,10 +1,13 @@
 package com.milesight.beaveriot.rule.components.httprequest;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.milesight.beaveriot.rule.annotations.OutputArguments;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
 import com.milesight.beaveriot.rule.annotations.UriParamExtension;
 import com.milesight.beaveriot.rule.api.ProcessorNode;
 import com.milesight.beaveriot.rule.constants.RuleNodeType;
+import com.milesight.beaveriot.rule.model.OutputVariablesSettings;
+import com.milesight.beaveriot.rule.support.JsonHelper;
 import lombok.Data;
 import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
@@ -12,6 +15,7 @@ import org.apache.camel.spi.UriParam;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,33 +25,38 @@ import java.util.Map;
 @Data
 public class HttpRequestComponent implements ProcessorNode<Exchange> {
 
-    @OutputArguments
     @UriParam(javaType = "string", prefix = "bean", displayName = "API/API Method")
     @UriParamExtension(uiComponent = "method")
     private String method;
-    @OutputArguments
     @UriParam(javaType = "string", prefix = "bean", displayName = "URL")
     @UriParamExtension(uiComponent = "url")
     private String url;
-    @OutputArguments
     @UriParam(javaType = "java.util.Map", prefix = "bean", displayName = "Header")
     @UriParamExtension(uiComponent = "header")
     private Map<String, Object> header;
-    @OutputArguments
     @UriParam(javaType = "java.util.Map", prefix = "bean", displayName = "PARAMS")
     @UriParamExtension(uiComponent = "params")
     private Map<String, Object> params;
-    @OutputArguments
     @UriParam(javaType = "string", prefix = "bean", displayName = "Data Encoding Format")
     @UriParamExtension(uiComponent = "bodyType")
     private String bodyType;
-    @OutputArguments
     @UriParam(prefix = "bean", displayName = "Body")
     @UriParamExtension(uiComponent = "body")
     private Object body;
 
+    @OutputArguments(displayName = "Output Variables")
+    @UriParamExtension(uiComponent = "paramDefineInput")
+    @UriParam(displayName = "Output Variables", description = "Received MQTT message.", defaultValue = "{\"statusCode\":\"INT\",\"responseBody\":\"STRING\",\"responseHeaders\":\"MAP\"}")
+    private List<OutputVariablesSettings> message;
+
     @Autowired
     private ProducerTemplate producerTemplate;
+
+    public void setMessage(String json) {
+        //noinspection Convert2Diamond
+        message = JsonHelper.fromJSON(json, new TypeReference<List<OutputVariablesSettings>>() {
+        });
+    }
 
     @Override
     public void processor(Exchange exchange) {
@@ -79,9 +88,11 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
             String responseBody = responseExchange.getOut().getBody(String.class);
             int statusCode = responseExchange.getOut().getHeader(Exchange.HTTP_RESPONSE_CODE, Integer.class);
 
-            exchange.getIn().setBody(responseBody);
-            exchange.getIn().setHeaders(responseHeaders);
-            exchange.getIn().setHeader(Exchange.HTTP_RESPONSE_CODE, statusCode);
+            Map<String, Object> bodyOut = new HashMap<>();
+            bodyOut.put("statusCode", statusCode);
+            bodyOut.put("responseBody", responseBody);
+            bodyOut.put("responseHeaders", responseHeaders);
+            exchange.getIn().setBody(bodyOut);
         }
     }
 }
