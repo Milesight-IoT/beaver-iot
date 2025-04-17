@@ -32,10 +32,10 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
     @UriParamExtension(uiComponent = "url")
     private String url;
     @UriParam(javaType = "java.util.Map", prefix = "bean", displayName = "Header")
-    @UriParamExtension(uiComponent = "header")
+    @UriParamExtension(uiComponent = "header", loggable = true)
     private Map<String, Object> header;
     @UriParam(javaType = "java.util.Map", prefix = "bean", displayName = "PARAMS")
-    @UriParamExtension(uiComponent = "params")
+    @UriParamExtension(uiComponent = "params", loggable = true)
     private Map<String, Object> params;
     @UriParam(javaType = "string", prefix = "bean", displayName = "Data Encoding Format")
     @UriParamExtension(uiComponent = "bodyType")
@@ -46,7 +46,7 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
 
     @OutputArguments(displayName = "Output Variables")
     @UriParamExtension(uiComponent = "paramDefineInput")
-    @UriParam(displayName = "Output Variables", description = "Received MQTT message.", defaultValue = "{\"statusCode\":\"INT\",\"responseBody\":\"STRING\",\"responseHeaders\":\"MAP\"}")
+    @UriParam(displayName = "Output Variables", description = "Received HTTP message.", defaultValue = "[{\"name\":\"statusCode\",\"type\":\"LONG\"},{\"name\":\"responseBody\",\"type\":\"STRING\"},{\"name\":\"responseHeaders\",\"type\":\"OTHER\"}]")
     private List<OutputVariablesSettings> message;
 
     @Autowired
