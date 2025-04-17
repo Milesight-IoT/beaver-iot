@@ -41,7 +41,7 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
     @UriParamExtension(uiComponent = "bodyType")
     private String bodyType;
     @UriParam(prefix = "bean", displayName = "Body")
-    @UriParamExtension(uiComponent = "body")
+    @UriParamExtension(uiComponent = "body", loggable = true)
     private Object body;
 
     @OutputArguments(displayName = "Output Variables")

@@ -144,7 +144,14 @@ public class DashboardService {
         List<Long> dashboardWidgetIdList = dashboardWidgetPOList.stream().map(DashboardWidgetPO::getId).toList();
         List<Long> deleteDashboardWidgetIdList = new ArrayList<>();
         if (dataDashboardWidgetPOList != null && !dataDashboardWidgetPOList.isEmpty()) {
-            deleteDashboardWidgetIdList.addAll(dataDashboardWidgetPOList.stream().map(DashboardWidgetPO::getId).filter(id -> !dashboardWidgetIdList.contains(id)).toList());
+            List<DashboardWidgetPO> deleteDashboardWidgetPOList = dataDashboardWidgetPOList.stream().filter(t -> !dashboardWidgetIdList.contains(t.getId())).toList();
+            deleteDashboardWidgetIdList.addAll(deleteDashboardWidgetPOList.stream().map(DashboardWidgetPO::getId).toList());
+            deleteDashboardWidgetPOList.forEach(t -> {
+                String deleteUrl = getDashboardWidgetUrl(t.getData());
+                if (StringUtils.hasText(deleteUrl)) {
+                    deleteUrlMap.put(String.valueOf(t.getId()), deleteUrl);
+                }
+            });
         }
         if (!deleteDashboardWidgetIdList.isEmpty()) {
             dashboardWidgetRepository.deleteAllById(deleteDashboardWidgetIdList);
