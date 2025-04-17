@@ -88,7 +88,8 @@ public class WorkflowService {
                     .findAllIgnoreTenant(f -> f.eq(WorkflowPO.Fields.enabled, true).isNotNull(WorkflowPO.Fields.designData), pageRequest.toPageable());
             workflowPOPage.forEach(workflowPO -> {
                 try {
-                    this.deployFlowAndNotify(workflowPO);
+                    WorkflowDeployEvent workflowDeployEvent = new WorkflowDeployEvent(workflowPO.getTenantId(), workflowPO.getId().toString(), workflowPO.getName(), workflowPO.getDesignData());
+                    this.deployFlow(workflowDeployEvent);
                 } catch (Exception e) {
                     log.error("Load Workflow Error: {} {} {}", workflowPO.getId(), workflowPO.getName(), e.getMessage());
                 }
