@@ -92,6 +92,8 @@ public class WorkflowService {
                     this.deployFlow(workflowDeployEvent);
                 } catch (Exception e) {
                     log.error("Load Workflow Error: {} {} {}", workflowPO.getId(), workflowPO.getName(), e.getMessage());
+                } finally {
+                    TenantContext.clear();
                 }
             });
             pageRequest.setPageNumber(pageRequest.getPageNumber() + 1);
@@ -218,8 +220,9 @@ public class WorkflowService {
             removeFlow(deployEvent);
             return;
         }
-        ruleEngineLifecycleManager.deployFlow(ruleFlowConfig);
         String tenantId = ObjectUtils.isEmpty(deployEvent.getTenantId()) ? TenantContext.getTenantId() : deployEvent.getTenantId();
+        TenantContext.setTenantId(tenantId);
+        ruleEngineLifecycleManager.deployFlow(ruleFlowConfig);
         WorkflowTenantCache.INSTANCE.put(deployEvent.getId().toString(), tenantId);
     }
 
