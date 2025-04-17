@@ -35,5 +35,12 @@
             <artifactId>entity-service</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.simplejavamail</groupId>
+            <artifactId>simple-java-mail</artifactId>
+            <version>${simple-java-mail.version}</version>
+        </dependency>
+
     </dependencies>
 </project>

@@ -7,6 +7,7 @@ import org.simplejavamail.email.EmailBuilder;
 import org.simplejavamail.mailer.MailerBuilder;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 
 @Slf4j
@@ -16,7 +17,7 @@ public class SmtpChannel implements EmailChannel {
 
     private final EmailConfig.SmtpConfig smtpConfig;
 
-    public SmtpChannel(EmailConfig.SmtpConfig smtpConfig) {
+    public SmtpChannel(EmailConfig.SmtpConfig smtpConfig, ExecutorService executorService) {
         log.info("Init smtp channel");
         this.smtpConfig = smtpConfig;
         mailer = MailerBuilder
@@ -32,6 +33,7 @@ public class SmtpChannel implements EmailChannel {
                 )
                 .withSessionTimeout(15 * 1000)
                 .clearEmailValidator()
+                .withExecutorService(executorService)
                 .buildMailer();
         log.info("SMTP channel init successfully");
     }
@@ -48,4 +50,8 @@ public class SmtpChannel implements EmailChannel {
         log.debug("Send email successfully");
     }
 
+    @Override
+    public void close() throws Exception {
+        mailer.close();
+    }
 }

@@ -1,5 +1,10 @@
 package com.milesight.beaveriot.rule.components.email;
 
+import com.milesight.beaveriot.base.enums.ErrorCode;
+import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.utils.JsonUtils;
+import com.milesight.beaveriot.context.api.CredentialsServiceProvider;
+import com.milesight.beaveriot.context.integration.enums.CredentialsType;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
 import com.milesight.beaveriot.rule.annotations.UriParamExtension;
 import com.milesight.beaveriot.rule.api.ProcessorNode;
@@ -11,15 +16,25 @@ import lombok.extern.slf4j.*;
 import org.apache.camel.Exchange;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriParam;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 
 @Slf4j
 @Data
 @RuleNode(type = RuleNodeType.ACTION, value = "email", title = "Email sender", description = "Email sender")
 public class EmailComponent implements ProcessorNode<Exchange> {
+
+    private static final ExecutorService SHARED_SMTP_EXECUTOR = new ThreadPoolExecutor(1, 20, 300L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1000));
+
+    @Autowired
+    private CredentialsServiceProvider credentialsServiceProvider;
 
     @UriParamExtension(uiComponentGroup = "emailContent", uiComponent = "text")
     @UriParam(displayName = "Subject", description = "Email subject.", prefix = "bean")
@@ -64,7 +79,21 @@ public class EmailComponent implements ProcessorNode<Exchange> {
             }
             if (EmailProvider.SMTP.equals(emailConfig.getProvider())
                     && emailConfig.getSmtpConfig() != null) {
-                emailChannel = new SmtpChannel(emailConfig.getSmtpConfig());
+
+                var smtpConfig = emailConfig.getSmtpConfig();
+                if (EmailConfig.SmtpConfig.Type.CREDENTIALS.equals(smtpConfig.getConfigType())) {
+                    val credentials = credentialsServiceProvider.getCredentials(CredentialsType.SMTP)
+                            .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND, "credentials not found"));
+                    smtpConfig = JsonUtils.fromJSON(credentials.getAdditionalData(), EmailConfig.SmtpConfig.class);
+                    if (smtpConfig == null) {
+                        throw new ServiceException(ErrorCode.DATA_NO_FOUND, "smtp config not found");
+                    }
+                    if (smtpConfig.getPassword() == null) {
+                        smtpConfig.setPassword(credentials.getAccessSecret());
+                    }
+                }
+
+                emailChannel = new SmtpChannel(smtpConfig, SHARED_SMTP_EXECUTOR);
             } else {
                 throw new IllegalArgumentException("Email provider is not supported or config is null: " + emailConfig.getProvider());
             }

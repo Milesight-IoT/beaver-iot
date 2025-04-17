@@ -19,6 +19,8 @@ public class EmailConfig {
     @AllArgsConstructor
     public static class SmtpConfig {
 
+        private Type configType;
+
         private String host;
 
         private Integer port;
@@ -28,6 +30,12 @@ public class EmailConfig {
         private String password;
 
         private SmtpEncryption encryption;
+
+        public enum Type {
+            DEFAULT,
+            CREDENTIALS,
+            ;
+        }
 
     }
 
