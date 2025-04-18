@@ -8,6 +8,7 @@ import com.milesight.beaveriot.rule.api.ProcessorNode;
 import com.milesight.beaveriot.rule.constants.RuleNodeType;
 import com.milesight.beaveriot.rule.model.OutputVariablesSettings;
 import com.milesight.beaveriot.rule.support.JsonHelper;
+import com.milesight.beaveriot.rule.support.SpELExpressionHelper;
 import lombok.Data;
 import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
@@ -37,12 +38,9 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
     @UriParam(javaType = "java.util.Map", prefix = "bean", displayName = "PARAMS")
     @UriParamExtension(uiComponent = "params", loggable = true)
     private Map<String, Object> params;
-    @UriParam(javaType = "string", prefix = "bean", displayName = "Data Encoding Format")
-    @UriParamExtension(uiComponent = "bodyType")
-    private String bodyType;
-    @UriParam(prefix = "bean", displayName = "Body")
+    @UriParam(javaType = "java.util.Map", prefix = "bean", displayName = "Body")
     @UriParamExtension(uiComponent = "body", loggable = true)
-    private Object body;
+    private Map<String, Object> body;
 
     @OutputArguments(displayName = "Output Variables")
     @UriParamExtension(uiComponent = "paramDefineInput")
@@ -62,12 +60,14 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
     public void processor(Exchange exchange) {
         Map<String, Object> httpHeader = new HashMap<>();
         httpHeader.put(Exchange.HTTP_METHOD, method);
-        if (header != null) {
-            httpHeader.putAll(header);
+        if(header != null && !header.isEmpty()) {
+            Map<String, Object> headerVariables = SpELExpressionHelper.resolveExpression(exchange, header);
+            httpHeader.putAll(headerVariables);
         }
         StringBuilder requestUrl = new StringBuilder(url);
-        if (params != null) {
-            params.forEach((key, value) -> {
+        if (params != null && !params.isEmpty()) {
+            Map<String, Object> paramsVariables = SpELExpressionHelper.resolveExpression(exchange, params);
+            paramsVariables.forEach((key, value) -> {
                 if (requestUrl.indexOf("?") == -1) {
                     requestUrl.append("?");
                 }else {
@@ -76,12 +76,20 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
                 requestUrl.append(key).append("=").append(value);
             });
         }
-
-        httpHeader.put(Exchange.CONTENT_TYPE, bodyType);
-
+        Object bodyValueVariables = null;
+        if(body != null) {
+            String bodyType = body.get("type") == null ? null : body.get("type").toString();
+            if (bodyType != null) {
+                httpHeader.put(Exchange.CONTENT_TYPE, bodyType);
+            }
+            Object bodyValue = body.get("value");
+            if (bodyValue != null) {
+                bodyValueVariables = SpELExpressionHelper.resolveStringExpression(exchange, bodyValue);
+            }
+        }
         Exchange responseExchange = (Exchange) producerTemplate.requestBodyAndHeaders(
                 requestUrl.toString(),
-                body,
+                bodyValueVariables,
                 httpHeader);
         if (responseExchange != null && responseExchange.getOut() != null) {
             Map<String, Object> responseHeaders = responseExchange.getOut().getHeaders();
