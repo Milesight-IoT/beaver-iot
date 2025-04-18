@@ -107,6 +107,8 @@ camel:
           title: "Event Listener"
         - name: "simpleMqtt"
           title: "MQTT"
+        - name: "httpIn"
+          title: "HTTP in"
       control:
         - name: "choice"
           title: "IF/ELSE"
@@ -156,6 +158,7 @@ oauth2:
     - "/user/status"
     - "/public/**"
     - "/actuator/**"
+    - "/workflow-http-in/**"
 
 mqtt:
   broker:
