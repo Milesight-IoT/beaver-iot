@@ -20,7 +20,5 @@ public class HttpInRequestContent {
 
     private Map<String, String> pathParams;
 
-    private Map<String, String> queryParams;
-
-    private byte[] body;
+    private String body;
 }

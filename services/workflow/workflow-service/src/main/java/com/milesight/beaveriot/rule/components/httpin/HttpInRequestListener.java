@@ -10,7 +10,9 @@ import com.milesight.beaveriot.context.integration.model.Credentials;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.rule.components.httpin.model.HttpInRequestContent;
 import com.milesight.beaveriot.rule.components.httpin.model.ListenConfig;
+import com.milesight.beaveriot.rule.support.JsonHelper;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
@@ -43,7 +45,6 @@ public class HttpInRequestListener {
             @PathVariable("credentialName") String credentialName,
             @PathVariable("tenantId") String tenantId,
             @RequestParam Map<String, String> requestParam,
-            @RequestBody byte[] body,
             HttpServletRequest httpRequest
     ) {
         String path = httpRequest.getServletPath();
@@ -63,6 +64,7 @@ public class HttpInRequestListener {
         }
 
         TenantContext.setTenantId(tenantId);
+        // [Auth] Authentication
         Long credentialsId = checkAuth(httpRequest.getHeader(HttpInConstants.AUTH_HEADER));
         if (credentialsId == null) {
             throw ServiceException.with(ErrorCode.AUTHENTICATION_FAILED.getErrorCode(), "auth failed").build();
@@ -79,7 +81,7 @@ public class HttpInRequestListener {
         listenConfigMap
                 .values().stream()
                 .filter(c -> c.getMethod().equals(httpRequest.getMethod())
-                        && Objects.equals(c.getCredentialsId(), credentialsId)
+                        && Objects.equals(c.getCredentialsId(), credentialsId) // [Auth] Authorization
                         && c.getUrlTemplate().matches(customPath)
                 )
                 .forEach(c -> {
@@ -87,9 +89,18 @@ public class HttpInRequestListener {
                     content.setUrl(customPath);
                     content.setMethod(httpRequest.getMethod());
                     content.setHeaders(headers);
-                    content.setBody(body);
+                    try {
+                        byte[] rawBody = httpRequest.getInputStream().readAllBytes();
+                        if (rawBody.length == 0) {
+                            content.setBody(JsonHelper.toJSON(requestParam));
+                        } else {
+                            content.setBody(new String(rawBody, StandardCharsets.UTF_8));
+                        }
+                    } catch (Exception e) {
+                        log.error("Read body error: " + e.getMessage());
+                    }
                     content.setPathParams(c.getUrlTemplate().match(customPath));
-                    content.setQueryParams(requestParam);
+                    log.debug("Request http in: {}", content);
                     c.getCb().accept(content);
                 });
         return ResponseBuilder.success();

@@ -37,10 +37,10 @@ public class HttpInConsumer extends DefaultConsumer {
             try {
                 Map<String, Object> payload = new java.util.HashMap<>(Map.of(
                         HttpInConstants.OUT_HEADER_NAME, JsonHelper.toJSON(request.getHeaders()),
-                        HttpInConstants.OUT_BODY_NAME, new String(request.getBody(), StandardCharsets.UTF_8),
+                        HttpInConstants.OUT_BODY_NAME, request.getBody(),
                         HttpInConstants.OUT_URL_NAME, request.getUrl()
                 ));
-                request.getPathParams().forEach((key, value) -> payload.put("pathParam." + key, value));
+                request.getPathParams().forEach((key, value) -> payload.put(HttpInConstants.OUT_PATH_PARAM_NAME + "." + key, value));
                 exchange.getIn().setBody(payload);
                 getProcessor().process(exchange);
             } catch (Exception e) {
