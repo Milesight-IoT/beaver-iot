@@ -12,7 +12,7 @@ import java.util.Optional;
 @SuperBuilder
 public class TenantContext {
 
-    public static final String HEADER_TENANT_ID = "TENANT_ID";
+    public static final String HEADER_TENANT_ID = "TENANT-ID";
 
     public static final String TENANT_ID = "tenantId";
 

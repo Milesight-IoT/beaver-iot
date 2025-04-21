@@ -27,19 +27,19 @@ import java.util.Map;
 public class HttpRequestComponent implements ProcessorNode<Exchange> {
 
     @UriParam(javaType = "string", prefix = "bean", displayName = "API/API Method")
-    @UriParamExtension(uiComponent = "method")
+    @UriParamExtension(uiComponentGroup = "API", uiComponent = "method")
     private String method;
     @UriParam(javaType = "string", prefix = "bean", displayName = "URL")
-    @UriParamExtension(uiComponent = "url")
+    @UriParamExtension(uiComponentGroup = "API", uiComponent = "url")
     private String url;
     @UriParam(javaType = "java.util.Map", prefix = "bean", displayName = "Header")
-    @UriParamExtension(uiComponent = "header", loggable = true)
+    @UriParamExtension(uiComponent = "paramAssignInput", loggable = true)
     private Map<String, Object> header;
     @UriParam(javaType = "java.util.Map", prefix = "bean", displayName = "PARAMS")
-    @UriParamExtension(uiComponent = "params", loggable = true)
+    @UriParamExtension(uiComponent = "paramAssignInput", loggable = true)
     private Map<String, Object> params;
     @UriParam(javaType = "java.util.Map", prefix = "bean", displayName = "Body")
-    @UriParamExtension(uiComponent = "body", loggable = true)
+    @UriParamExtension(uiComponent = "httpBodyInput", loggable = true)
     private Map<String, Object> body;
 
     @OutputArguments(displayName = "Output Variables")
