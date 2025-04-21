@@ -4,6 +4,7 @@ import com.milesight.beaveriot.context.integration.enums.CredentialsType;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.rule.annotations.OutputArguments;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
+import com.milesight.beaveriot.rule.annotations.UriParamExtension;
 import com.milesight.beaveriot.rule.constants.RuleNodeType;
 import com.milesight.beaveriot.rule.enums.DataTypeEnums;
 import com.milesight.beaveriot.rule.model.OutputVariablesSettings;
@@ -48,7 +49,6 @@ import java.util.List;
         category = {Category.MESSAGING}
 )
 public class HttpInEndpoint extends DefaultEndpoint {
-    @UriPath
     @Metadata(required = true, autowired = true)
     private String flowId;
 
@@ -62,12 +62,14 @@ public class HttpInEndpoint extends DefaultEndpoint {
     private UriTemplate urlTemplate;
 
     @Metadata(required = true)
-    @UriParam(displayName = "Url")
-    private String url;
-
-    @Metadata(required = true)
+    @UriParamExtension(uiComponentGroup = "Setting")
     @UriParam(displayName = "HTTP Method", enums = "POST,GET,PUT,DELETE")
     private String method;
+
+    @Metadata(required = true)
+    @UriParamExtension(uiComponentGroup = "Setting")
+    @UriParam(displayName = "Url")
+    private String url;
 
     @OutputArguments(displayName = "Output Variables")
     @UriParam(displayName = "Output Variables")

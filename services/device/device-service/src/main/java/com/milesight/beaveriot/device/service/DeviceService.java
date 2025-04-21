@@ -74,7 +74,7 @@ public class DeviceService implements IDeviceFacade {
     IUserFacade userFacade;
 
     @Autowired
-    EventBus eventBus;
+    EventBus<DeviceEvent> eventBus;
 
     @Autowired
     EntityValueServiceProvider entityValueServiceProvider;

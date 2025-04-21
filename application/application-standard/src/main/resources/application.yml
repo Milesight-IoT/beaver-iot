@@ -44,6 +44,7 @@ spring:
     specs:
       time-to-lives:
         [ "resource:data-pre-sign" ]: ${resource.pre_sign_expire}
+        [ "resource:data" ]: 2m
 
   redis:
     ssl: ${REDIS_SSL:false}
