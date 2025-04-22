@@ -56,7 +56,7 @@ public enum ExpressionOperator {
 
     public static boolean endsWith(Object str, Object suffix) {
         if (str instanceof CharSequence strValue && suffix instanceof CharSequence suffixValue) {
-            return StringUtils.startsWith(strValue, suffixValue);
+            return StringUtils.endsWith(strValue, suffixValue);
         } else {
             throw new IllegalArgumentException("Unsupported expression type, StartWith only supports strings ");
         }
