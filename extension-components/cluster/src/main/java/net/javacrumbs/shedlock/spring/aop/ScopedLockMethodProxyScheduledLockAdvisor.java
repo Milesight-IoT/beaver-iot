@@ -68,15 +68,9 @@ public class ScopedLockMethodProxyScheduledLockAdvisor extends AbstractPointcutA
 
             LockProvider lockProvider = lockProviderSupplier.supply(
                     invocation.getThis(), invocation.getMethod(), invocation.getArguments());
-            LockingTaskExecutor.TaskResult<Object> result = new TimedRetryPolicy(lockConfiguration.getWaitForLock()) {
-
-                @Override
-                protected LockingTaskExecutor.TaskResult<Object> doRetry() throws Throwable {
-                    DefaultLockingTaskExecutor lockingTaskExecutor = new DefaultLockingTaskExecutor(lockProvider);
-                    LockingTaskExecutor.TaskResult<Object> result = lockingTaskExecutor.executeWithLock(invocation::proceed, lockConfiguration);
-                    return result;
-                }
-            }.retry();
+            LockProvider retryableLockProvider = lockProvider instanceof RetryableLockProvider ? lockProvider : new RetryableLockProvider(lockProvider);
+            DefaultLockingTaskExecutor lockingTaskExecutor = new DefaultLockingTaskExecutor(retryableLockProvider);
+            LockingTaskExecutor.TaskResult<Object> result = lockingTaskExecutor.executeWithLock(invocation::proceed, lockConfiguration);
 
             boolean throwOnLockFailure = getThrowOnLockFailure(lockConfiguration);
             if (throwOnLockFailure && !result.wasExecuted()) {

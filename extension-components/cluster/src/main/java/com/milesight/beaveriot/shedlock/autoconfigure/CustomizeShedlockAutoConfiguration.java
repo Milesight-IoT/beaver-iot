@@ -2,6 +2,7 @@ package com.milesight.beaveriot.shedlock.autoconfigure;
 
 import net.javacrumbs.shedlock.core.LockConfiguration;
 import net.javacrumbs.shedlock.core.LockProvider;
+import net.javacrumbs.shedlock.core.RetryableLockProvider;
 import net.javacrumbs.shedlock.core.SimpleLock;
 import net.javacrumbs.shedlock.provider.inmemory.InMemoryLockProvider;
 import net.javacrumbs.shedlock.provider.redis.spring.RedisLockProvider;
@@ -32,13 +33,13 @@ public class CustomizeShedlockAutoConfiguration {
     @Primary
     @ConditionalOnBean({RedisConnectionFactory.class})
     public LockProvider redisLockProvider(RedisConnectionFactory connectionFactory) {
-        return new ScopeRedisLockProvider(connectionFactory, env);
+        return new RetryableLockProvider(new ScopeRedisLockProvider(connectionFactory, env));
     }
 
     @Bean
     @ConditionalOnMissingBean({RedisConnectionFactory.class})
     public LockProvider memoryLockProvider() {
-        return new ScopeInMemoryLockProvider();
+        return new RetryableLockProvider(new ScopeInMemoryLockProvider());
     }
 
     public class ScopeRedisLockProvider extends RedisLockProvider {
