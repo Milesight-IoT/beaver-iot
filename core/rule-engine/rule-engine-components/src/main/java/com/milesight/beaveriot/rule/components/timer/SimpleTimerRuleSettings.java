@@ -29,6 +29,7 @@ public class SimpleTimerRuleSettings {
 
     public Cron toCron() {
         var builder = CronBuilder.cron(CronDefinitionBuilder.instanceDefinitionFor(CronType.SPRING))
+                .withSecond(on(0))
                 .withDoM(questionMark())
                 .withMonth(always());
 

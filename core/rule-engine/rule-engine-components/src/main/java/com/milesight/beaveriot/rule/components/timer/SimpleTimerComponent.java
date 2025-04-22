@@ -1,11 +1,14 @@
 package com.milesight.beaveriot.rule.components.timer;
 
+import com.milesight.beaveriot.scheduler.core.Scheduler;
+import lombok.*;
 import lombok.extern.slf4j.*;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
 import org.apache.camel.ExtendedStartupListener;
 import org.apache.camel.spi.annotations.Component;
 import org.apache.camel.support.DefaultComponent;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Map;
 
@@ -13,6 +16,10 @@ import java.util.Map;
 @Slf4j
 @Component("simpleTimer")
 public class SimpleTimerComponent extends DefaultComponent implements ExtendedStartupListener {
+
+    @Getter
+    @Autowired
+    private Scheduler scheduler;
 
     public SimpleTimerComponent(CamelContext camelContext) {
         super(camelContext);
@@ -40,6 +47,5 @@ public class SimpleTimerComponent extends DefaultComponent implements ExtendedSt
     @Override
     protected void doStop() throws Exception {
         log.info("do stop");
-        SimpleTimerScheduler.instance().clear();
     }
 }
