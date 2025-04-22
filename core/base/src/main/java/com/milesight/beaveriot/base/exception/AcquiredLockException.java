@@ -1,6 +1,4 @@
-package com.milesight.beaveriot.shedlock.exception;
-
-import com.milesight.beaveriot.base.exception.BaseException;
+package com.milesight.beaveriot.base.exception;
 
 /**
  * @author leon

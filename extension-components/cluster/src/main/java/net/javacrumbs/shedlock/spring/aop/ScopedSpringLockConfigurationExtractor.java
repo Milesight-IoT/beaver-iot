@@ -4,8 +4,10 @@ import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
 import net.javacrumbs.shedlock.core.LockConfiguration;
 import net.javacrumbs.shedlock.spring.ExtendedLockConfigurationExtractor;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.util.ObjectUtils;
 
 import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.Optional;
 
 /**
@@ -13,6 +15,7 @@ import java.util.Optional;
  */
 public class ScopedSpringLockConfigurationExtractor implements ExtendedLockConfigurationExtractor {
 
+    private final StringToDurationConverter durationConverter = StringToDurationConverter.INSTANCE;
     private SpringLockConfigurationExtractor springLockConfigurationExtractor;
 
     public ScopedSpringLockConfigurationExtractor(SpringLockConfigurationExtractor springLockConfigurationExtractor) {
@@ -33,12 +36,17 @@ public class ScopedSpringLockConfigurationExtractor implements ExtendedLockConfi
                         .name(configuration.getName())
                         .lockAtMostFor(configuration.getLockAtMostFor())
                         .lockAtLeastFor(configuration.getLockAtLeastFor())
+                        .waitForLock(getDurationValue(annotation.waitForLock()))
                         .build();
                 return Optional.of(scopedLockConfiguration);
             }
         } else {
             return Optional.empty();
         }
+    }
+
+    private Duration getDurationValue(String value) {
+        return ObjectUtils.isEmpty(value) ? null : durationConverter.convert(value);
     }
 
     @Override

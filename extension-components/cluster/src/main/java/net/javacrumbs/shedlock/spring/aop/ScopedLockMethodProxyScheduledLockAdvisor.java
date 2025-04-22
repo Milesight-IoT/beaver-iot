@@ -1,10 +1,7 @@
 package net.javacrumbs.shedlock.spring.aop;
 
-import com.milesight.beaveriot.shedlock.exception.AcquiredLockException;
-import net.javacrumbs.shedlock.core.DefaultLockingTaskExecutor;
-import net.javacrumbs.shedlock.core.LockConfiguration;
-import net.javacrumbs.shedlock.core.LockProvider;
-import net.javacrumbs.shedlock.core.LockingTaskExecutor;
+import com.milesight.beaveriot.base.exception.AcquiredLockException;
+import net.javacrumbs.shedlock.core.*;
 import net.javacrumbs.shedlock.spring.ExtendedLockConfigurationExtractor;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import net.javacrumbs.shedlock.support.annotation.Nullable;
@@ -28,8 +25,7 @@ public class ScopedLockMethodProxyScheduledLockAdvisor extends AbstractPointcutA
 
     private final Advice advice;
 
-    ScopedLockMethodProxyScheduledLockAdvisor(ConfigurableListableBeanFactory beanFactory
-            /*ExtendedLockConfigurationExtractor lockConfigurationExtractor, LockProviderSupplier lockProviderSupplier*/) {
+    ScopedLockMethodProxyScheduledLockAdvisor(ConfigurableListableBeanFactory beanFactory) {
         this.advice = new LockingInterceptor(beanFactory);
     }
 
@@ -66,14 +62,22 @@ public class ScopedLockMethodProxyScheduledLockAdvisor extends AbstractPointcutA
                 throw new LockingNotSupportedException("Can not lock method returning primitive value");
             }
 
-            LockConfiguration lockConfiguration = getLockConfigurationExtractor()
+            ScopedLockConfiguration lockConfiguration = (ScopedLockConfiguration) getLockConfigurationExtractor()
                     .getLockConfiguration(invocation.getThis(), invocation.getMethod(), invocation.getArguments())
                     .get();
 
             LockProvider lockProvider = lockProviderSupplier.supply(
                     invocation.getThis(), invocation.getMethod(), invocation.getArguments());
-            DefaultLockingTaskExecutor lockingTaskExecutor = new DefaultLockingTaskExecutor(lockProvider);
-            LockingTaskExecutor.TaskResult<Object> result = lockingTaskExecutor.executeWithLock(invocation::proceed, lockConfiguration);
+            LockingTaskExecutor.TaskResult<Object> result = new TimedRetryPolicy(lockConfiguration.getWaitForLock()) {
+
+                @Override
+                protected LockingTaskExecutor.TaskResult<Object> doRetry() throws Throwable {
+                    DefaultLockingTaskExecutor lockingTaskExecutor = new DefaultLockingTaskExecutor(lockProvider);
+                    LockingTaskExecutor.TaskResult<Object> result = lockingTaskExecutor.executeWithLock(invocation::proceed, lockConfiguration);
+                    return result;
+                }
+            }.retry();
+
             boolean throwOnLockFailure = getThrowOnLockFailure(lockConfiguration);
             if (throwOnLockFailure && !result.wasExecuted()) {
                  throw new AcquiredLockException("Could not acquire distributed lock.");
