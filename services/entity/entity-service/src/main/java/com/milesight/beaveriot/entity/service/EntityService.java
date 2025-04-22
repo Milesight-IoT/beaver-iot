@@ -775,13 +775,18 @@ public class EntityService implements EntityServiceProvider {
      */
     @Transactional(rollbackFor = Throwable.class)
     public EntityMetaResponse updateEntityBasicInfo(Long entityId, EntityModifyRequest entityModifyRequest) {
-        if (!StringUtils.hasText(entityModifyRequest.getName())) {
-            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("name is empty").build();
+        if (!StringUtils.hasText(entityModifyRequest.getName()) && CollectionUtils.isEmpty(entityModifyRequest.getValueAttribute())) {
+            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("name and valueAttribute can not be empty").build();
         }
 
         EntityPO entityPO = entityRepository.findById(entityId)
                 .orElseThrow(ServiceException.with(ErrorCode.DATA_NO_FOUND).detailMessage("entity not found")::build);
-        entityPO.setName(entityModifyRequest.getName());
+        if (entityModifyRequest.getName() != null) {
+            entityPO.setName(entityModifyRequest.getName());
+        }
+        if (!CollectionUtils.isEmpty(entityModifyRequest.getValueAttribute())) {
+            entityPO.setValueAttribute(entityModifyRequest.getValueAttribute());
+        }
         entityRepository.save(entityPO);
 
         return convertEntityPOToEntityMetaResponse(entityPO);

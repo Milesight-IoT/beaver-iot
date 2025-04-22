@@ -1,10 +1,14 @@
 package com.milesight.beaveriot.rule.components.httprequest;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.milesight.beaveriot.rule.annotations.OutputArguments;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
 import com.milesight.beaveriot.rule.annotations.UriParamExtension;
 import com.milesight.beaveriot.rule.api.ProcessorNode;
 import com.milesight.beaveriot.rule.constants.RuleNodeType;
+import com.milesight.beaveriot.rule.model.OutputVariablesSettings;
+import com.milesight.beaveriot.rule.support.JsonHelper;
+import com.milesight.beaveriot.rule.support.SpELExpressionHelper;
 import lombok.Data;
 import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
@@ -12,6 +16,7 @@ import org.apache.camel.spi.UriParam;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,44 +26,48 @@ import java.util.Map;
 @Data
 public class HttpRequestComponent implements ProcessorNode<Exchange> {
 
-    @OutputArguments
     @UriParam(javaType = "string", prefix = "bean", displayName = "API/API Method")
-    @UriParamExtension(uiComponent = "method")
+    @UriParamExtension(uiComponentGroup = "API", uiComponent = "method")
     private String method;
-    @OutputArguments
     @UriParam(javaType = "string", prefix = "bean", displayName = "URL")
-    @UriParamExtension(uiComponent = "url")
+    @UriParamExtension(uiComponentGroup = "API", uiComponent = "url")
     private String url;
-    @OutputArguments
     @UriParam(javaType = "java.util.Map", prefix = "bean", displayName = "Header")
-    @UriParamExtension(uiComponent = "header")
+    @UriParamExtension(uiComponent = "paramAssignInput", loggable = true)
     private Map<String, Object> header;
-    @OutputArguments
     @UriParam(javaType = "java.util.Map", prefix = "bean", displayName = "PARAMS")
-    @UriParamExtension(uiComponent = "params")
+    @UriParamExtension(uiComponent = "paramAssignInput", loggable = true)
     private Map<String, Object> params;
-    @OutputArguments
-    @UriParam(javaType = "string", prefix = "bean", displayName = "Data Encoding Format")
-    @UriParamExtension(uiComponent = "bodyType")
-    private String bodyType;
-    @OutputArguments
-    @UriParam(prefix = "bean", displayName = "Body")
-    @UriParamExtension(uiComponent = "body")
-    private Object body;
+    @UriParam(javaType = "java.util.Map", prefix = "bean", displayName = "Body")
+    @UriParamExtension(uiComponent = "httpBodyInput", loggable = true)
+    private Map<String, Object> body;
+
+    @OutputArguments(displayName = "Output Variables")
+    @UriParamExtension(uiComponent = "paramDefineInput")
+    @UriParam(displayName = "Output Variables", description = "Received HTTP message.", defaultValue = "[{\"name\":\"statusCode\",\"type\":\"LONG\"},{\"name\":\"responseBody\",\"type\":\"STRING\"},{\"name\":\"responseHeaders\",\"type\":\"STRING\"}]")
+    private List<OutputVariablesSettings> message;
 
     @Autowired
     private ProducerTemplate producerTemplate;
+
+    public void setMessage(String json) {
+        //noinspection Convert2Diamond
+        message = JsonHelper.fromJSON(json, new TypeReference<List<OutputVariablesSettings>>() {
+        });
+    }
 
     @Override
     public void processor(Exchange exchange) {
         Map<String, Object> httpHeader = new HashMap<>();
         httpHeader.put(Exchange.HTTP_METHOD, method);
-        if (header != null) {
-            httpHeader.putAll(header);
+        if(header != null && !header.isEmpty()) {
+            Map<String, Object> headerVariables = SpELExpressionHelper.resolveExpression(exchange, header);
+            httpHeader.putAll(headerVariables);
         }
         StringBuilder requestUrl = new StringBuilder(url);
-        if (params != null) {
-            params.forEach((key, value) -> {
+        if (params != null && !params.isEmpty()) {
+            Map<String, Object> paramsVariables = SpELExpressionHelper.resolveExpression(exchange, params);
+            paramsVariables.forEach((key, value) -> {
                 if (requestUrl.indexOf("?") == -1) {
                     requestUrl.append("?");
                 }else {
@@ -67,21 +76,31 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
                 requestUrl.append(key).append("=").append(value);
             });
         }
-
-        httpHeader.put(Exchange.CONTENT_TYPE, bodyType);
-
+        Object bodyValueVariables = null;
+        if(body != null) {
+            String bodyType = body.get("type") == null ? null : body.get("type").toString();
+            if (bodyType != null) {
+                httpHeader.put(Exchange.CONTENT_TYPE, bodyType);
+            }
+            Object bodyValue = body.get("value");
+            if (bodyValue != null) {
+                bodyValueVariables = SpELExpressionHelper.resolveStringExpression(exchange, bodyValue);
+            }
+        }
         Exchange responseExchange = (Exchange) producerTemplate.requestBodyAndHeaders(
                 requestUrl.toString(),
-                body,
+                bodyValueVariables,
                 httpHeader);
         if (responseExchange != null && responseExchange.getOut() != null) {
             Map<String, Object> responseHeaders = responseExchange.getOut().getHeaders();
             String responseBody = responseExchange.getOut().getBody(String.class);
             int statusCode = responseExchange.getOut().getHeader(Exchange.HTTP_RESPONSE_CODE, Integer.class);
 
-            exchange.getIn().setBody(responseBody);
-            exchange.getIn().setHeaders(responseHeaders);
-            exchange.getIn().setHeader(Exchange.HTTP_RESPONSE_CODE, statusCode);
+            Map<String, Object> bodyOut = new HashMap<>();
+            bodyOut.put("statusCode", statusCode);
+            bodyOut.put("responseBody", responseBody);
+            bodyOut.put("responseHeaders", JsonHelper.toJSON(responseHeaders));
+            exchange.getIn().setBody(bodyOut);
         }
     }
 }
