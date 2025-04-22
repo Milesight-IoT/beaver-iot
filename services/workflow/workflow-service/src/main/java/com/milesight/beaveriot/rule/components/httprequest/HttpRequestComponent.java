@@ -44,7 +44,7 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
 
     @OutputArguments(displayName = "Output Variables")
     @UriParamExtension(uiComponent = "paramDefineInput")
-    @UriParam(displayName = "Output Variables", description = "Received HTTP message.", defaultValue = "[{\"name\":\"statusCode\",\"type\":\"LONG\"},{\"name\":\"responseBody\",\"type\":\"STRING\"},{\"name\":\"responseHeaders\",\"type\":\"OTHER\"}]")
+    @UriParam(displayName = "Output Variables", description = "Received HTTP message.", defaultValue = "[{\"name\":\"statusCode\",\"type\":\"LONG\"},{\"name\":\"responseBody\",\"type\":\"STRING\"},{\"name\":\"responseHeaders\",\"type\":\"STRING\"}]")
     private List<OutputVariablesSettings> message;
 
     @Autowired
@@ -99,7 +99,7 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
             Map<String, Object> bodyOut = new HashMap<>();
             bodyOut.put("statusCode", statusCode);
             bodyOut.put("responseBody", responseBody);
-            bodyOut.put("responseHeaders", responseHeaders);
+            bodyOut.put("responseHeaders", JsonHelper.toJSON(responseHeaders));
             exchange.getIn().setBody(bodyOut);
         }
     }
