@@ -44,6 +44,7 @@ spring:
     specs:
       time-to-lives:
         [ "resource:data-pre-sign" ]: ${resource.pre_sign_expire}
+        [ "resource:data" ]: 2m
 
   redis:
     ssl: ${REDIS_SSL:false}
@@ -107,6 +108,8 @@ camel:
           title: "Event Listener"
         - name: "simpleMqtt"
           title: "MQTT"
+        - name: "httpIn"
+          title: "HTTP in"
       control:
         - name: "choice"
           title: "IF/ELSE"
@@ -156,6 +159,7 @@ oauth2:
     - "/user/status"
     - "/public/**"
     - "/actuator/**"
+    - "/workflow-http-in/**"
 
 mqtt:
   broker:

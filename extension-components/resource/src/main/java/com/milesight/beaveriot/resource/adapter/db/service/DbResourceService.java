@@ -13,6 +13,8 @@ import com.milesight.beaveriot.resource.model.ResourceStat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -38,16 +40,18 @@ public class DbResourceService {
     @Autowired
     CacheManager cacheManager;
 
-    private static final String CACHE_NAME = "resource:data-pre-sign";
+    private static final String PRE_SIGN_CACHE_NAME = "resource:data-pre-sign";
+
+    private static final String RESOURCE_DATA_CACHE_NAME = "resource:data";
 
     public DbResourceDataPreSignData getPreSignData(String objKey) {
-        Cache cache = cacheManager.getCache(CACHE_NAME);
+        Cache cache = cacheManager.getCache(PRE_SIGN_CACHE_NAME);
         assert cache != null;
         return cache.get(objKey, DbResourceDataPreSignData.class);
     }
 
     public void putPreSignData(String objKey, DbResourceDataPreSignData data) {
-        Cache cache = cacheManager.getCache(CACHE_NAME);
+        Cache cache = cacheManager.getCache(PRE_SIGN_CACHE_NAME);
         assert cache != null;
         cache.put(objKey, data);
     }
@@ -73,6 +77,7 @@ public class DbResourceService {
         return preSignPO.getExpiredAt() >= System.currentTimeMillis();
     }
 
+    @CacheEvict(cacheNames = RESOURCE_DATA_CACHE_NAME, key = "#p0")
     public void putResource(String objKey, String contentType, byte[] data) {
         if (!validateSign(objKey)) {
             throw ServiceException
@@ -112,6 +117,7 @@ public class DbResourceService {
         return stat;
     }
 
+    @Cacheable(cacheNames = RESOURCE_DATA_CACHE_NAME, key = "#p0")
     public DbResourceDataPO getResource(String objKey) {
         return resourceDataRepository.findByObjKey(objKey).orElse(null);
     }
@@ -124,6 +130,4 @@ public class DbResourceService {
 
         resourceDataRepository.delete(resourceData);
     }
-
-    // TODO: delete expired pre sign
 }
