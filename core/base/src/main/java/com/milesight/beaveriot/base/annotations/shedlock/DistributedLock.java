@@ -55,4 +55,9 @@ public @interface DistributedLock {
      */
     boolean throwOnLockFailure() default true;
 
+    /**
+     * The wait time for the lock
+     * @return
+     */
+    String waitForLock() default "";
 }

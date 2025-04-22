@@ -17,10 +17,13 @@ public class ScopedLockConfiguration extends LockConfiguration {
     private LockScope lockScope;
 
     private boolean throwOnLockFailure = false;
-    protected ScopedLockConfiguration(LockConfiguration lockConfiguration, LockScope lockScope, boolean throwOnLockFailure) {
+
+    private Duration waitForLock;
+    protected ScopedLockConfiguration(LockConfiguration lockConfiguration, LockScope lockScope, boolean throwOnLockFailure, Duration waitForLock) {
         super(ClockProvider.now(), lockConfiguration.getName(), lockConfiguration.getLockAtMostFor(), lockConfiguration.getLockAtLeastFor());
         this.lockScope = lockScope;
         this.throwOnLockFailure = throwOnLockFailure;
+        this.waitForLock = waitForLock;
     }
 
     public static ScopedLockConfigurationBuilder builder(LockScope scope) {
@@ -33,6 +36,7 @@ public class ScopedLockConfiguration extends LockConfiguration {
         private Duration lockAtMostFor;
         private Duration lockAtLeastFor;
         private boolean throwOnLockFailure = true;
+        private Duration waitForLock;
         ScopedLockConfigurationBuilder(LockScope lockScope) {
             this.lockScope = lockScope;
         }
@@ -42,6 +46,10 @@ public class ScopedLockConfiguration extends LockConfiguration {
         }
         public ScopedLockConfigurationBuilder name(String name) {
             this.name = name;
+            return this;
+        }
+        public ScopedLockConfigurationBuilder waitForLock(Duration waitForLock) {
+            this.waitForLock = waitForLock;
             return this;
         }
         public ScopedLockConfigurationBuilder lockAtMostFor(Duration lockAtMostFor) {
@@ -54,7 +62,7 @@ public class ScopedLockConfiguration extends LockConfiguration {
         }
         public ScopedLockConfiguration build() {
             LockConfiguration lockConfiguration = new LockConfiguration(ClockProvider.now(), wrapLockNameWithNamespace(name, lockScope), lockAtMostFor, lockAtLeastFor);
-            return new ScopedLockConfiguration(lockConfiguration, lockScope, throwOnLockFailure);
+            return new ScopedLockConfiguration(lockConfiguration, lockScope, throwOnLockFailure, waitForLock);
         }
 
         private String wrapLockNameWithNamespace(String name, LockScope lockScope) {
