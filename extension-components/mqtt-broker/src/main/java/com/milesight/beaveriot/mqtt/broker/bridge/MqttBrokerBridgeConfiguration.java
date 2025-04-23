@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinWorkerThread;
 
 @Configuration
 public class MqttBrokerBridgeConfiguration {
@@ -17,7 +18,19 @@ public class MqttBrokerBridgeConfiguration {
         int parallelism = listenerParallelism == null
                 ? Runtime.getRuntime().availableProcessors() * 2
                 : listenerParallelism;
-        return new ForkJoinPool(parallelism);
+        return new ForkJoinPool(parallelism, new ForkJoinPool.ForkJoinWorkerThreadFactory() {
+            @Override
+            public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
+                return new CustomClassLoaderForkJoinWorkerThread(pool);
+            }
+
+            static class CustomClassLoaderForkJoinWorkerThread extends ForkJoinWorkerThread {
+                private CustomClassLoaderForkJoinWorkerThread(final ForkJoinPool pool) {
+                    super(pool);
+                    setContextClassLoader(Thread.currentThread().getContextClassLoader());
+                }
+            }
+        } , null, true);
     }
 
 }
