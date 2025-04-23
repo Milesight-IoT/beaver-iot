@@ -1,7 +1,6 @@
 package com.milesight.beaveriot.permission.enums;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.*;
 
 /**
  * @author loong
@@ -35,6 +34,9 @@ public enum OperationPermissionCode {
     WORKFLOW_DELETE("workflow.delete", MenuCode.WORKFLOW),
 
     INTEGRATION_VIEW("integration.view", MenuCode.INTEGRATION),
+
+    CREDENTIALS_VIEW("credentials.view", MenuCode.CREDENTIALS),
+    CREDENTIALS_EDIT("credentials.edit", MenuCode.CREDENTIALS),
     ;
 
     private final String code;

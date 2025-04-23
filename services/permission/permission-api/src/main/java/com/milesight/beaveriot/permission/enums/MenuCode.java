@@ -1,7 +1,6 @@
 package com.milesight.beaveriot.permission.enums;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.*;
 
 /**
  * @author loong
@@ -17,6 +16,7 @@ public enum MenuCode {
     ENTITY_DATA("entity_data", ENTITY),
     WORKFLOW("workflow", null),
     INTEGRATION("integration", null),
+    CREDENTIALS("credentials", null),
     ;
     private final String code;
     private final MenuCode parent;
