@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.rule.components.eventlistener;
 
+import com.milesight.beaveriot.rule.annotations.OutputArguments;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
 import com.milesight.beaveriot.rule.annotations.UriParamExtension;
 import com.milesight.beaveriot.rule.constants.RuleNodeType;
@@ -30,6 +31,7 @@ public class EventListenerEndpoint extends DefaultEndpoint {
     private String eventListenerName;
     @UriParamExtension(uiComponent = "entityMultipleSelect")
     @UriParam(displayName = "Entity Listening Setting", description = "The entities to listen for events")
+    @OutputArguments
     private List<String> entities;
 
     @Metadata(required = true, autowired = true, defaultValue = "false")
