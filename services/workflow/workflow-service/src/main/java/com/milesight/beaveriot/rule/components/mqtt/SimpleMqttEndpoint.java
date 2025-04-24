@@ -36,23 +36,15 @@ public class SimpleMqttEndpoint extends DefaultEndpoint {
 
     @Setter
     @Getter
-    @UriParamExtension(uiComponent = "text")
+    @UriParamExtension(uiComponent = "mqttTopicInput")
     @Metadata(required = true, defaultValue = "#")
     @UriParam(displayName = "Subscription Topic", description = "MQTT Subscription Topic")
     private String subscriptionTopic;
 
     @Setter
     @Getter
-    @UriParamExtension(uiComponent = "credentials")
-    @Metadata
-    @UriParam(displayName = "Credentials", description = "Credentials")
-    private String credentialsId;
-
-    @Setter
-    @Getter
-    @UriParamExtension(uiComponent = "text")
     @Metadata(required = true)
-    @UriParam(displayName = "Encoding", description = "MQTT Payload Encoding", enums = "UTF8,BASE64")
+    @UriParam(displayName = "Encoding", description = "MQTT Payload Encoding", enums = "UTF-8,Base64")
     private String encoding;
 
     @OutputArguments(displayName = "Output Variables")

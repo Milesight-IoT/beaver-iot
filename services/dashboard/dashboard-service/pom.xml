@@ -109,6 +109,11 @@
             <artifactId>data-jpa</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>mqtt-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
 </project>
