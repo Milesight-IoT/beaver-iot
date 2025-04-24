@@ -23,5 +23,7 @@ public class HttpInConstants {
 
     public static final String OUT_PATH_PARAM_NAME = "pathParam";
 
+    public static final String OUT_PARAM_NAME = "params";
+
     public static final Long MAX_REQUEST_SIZE = (long) 10 * 1024 * 1024;
 }

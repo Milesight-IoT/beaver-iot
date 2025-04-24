@@ -11,16 +11,21 @@ import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.rule.components.httpin.model.HttpInRequestContent;
 import com.milesight.beaveriot.rule.components.httpin.model.ListenConfig;
 import com.milesight.beaveriot.rule.support.JsonHelper;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * HttpInUrlManager class.
@@ -44,7 +49,8 @@ public class HttpInRequestListener {
     public ResponseBody<Void> requestHttpIn(
             @PathVariable("credentialName") String credentialName,
             @PathVariable("tenantId") String tenantId,
-            @RequestParam Map<String, String> requestParam,
+            @RequestBody(required = false) byte[] body,
+            @RequestParam(required = false) Map<String, String> params,
             HttpServletRequest httpRequest
     ) {
         String path = httpRequest.getServletPath();
@@ -89,17 +95,15 @@ public class HttpInRequestListener {
                     content.setUrl(customPath);
                     content.setMethod(httpRequest.getMethod());
                     content.setHeaders(headers);
-                    try {
-                        byte[] rawBody = httpRequest.getInputStream().readAllBytes();
-                        if (rawBody.length == 0) {
-                            content.setBody(JsonHelper.toJSON(requestParam));
-                        } else {
-                            content.setBody(new String(rawBody, StandardCharsets.UTF_8));
-                        }
-                    } catch (Exception e) {
-                        log.error("Read body error: " + e.getMessage());
-                    }
                     content.setPathParams(c.getUrlTemplate().match(customPath));
+                    content.setParams(params);
+
+                    try {
+                        content.setBody(parseBody(httpRequest, body, params));
+                    } catch (Exception e) {
+                        log.error("Parse body error: " + e.getMessage());
+                    }
+
                     log.debug("Request http in: {}", content);
                     c.getCb().accept(content);
                 });
@@ -127,5 +131,31 @@ public class HttpInRequestListener {
         String inputAuth = new String(Base64.getDecoder().decode(auth.substring(HttpInConstants.BASIC_AUTH_PREFIX.length())), StandardCharsets.UTF_8);
         String savedAuth = credentials.getAccessKey() + ":" + credentials.getAccessSecret();
         return inputAuth.equals(savedAuth) ? credentials.getId() : null;
+    }
+
+    private String parseBody(HttpServletRequest httpRequest, byte[] body, Map<String, String> params) throws ServletException, IOException {
+        // resolve content type -> form-data
+        MediaType contentType = httpRequest.getContentType() != null ? MediaType.parseMediaType(httpRequest.getContentType()) : MediaType.APPLICATION_OCTET_STREAM;
+        if (contentType.getType().equals(MediaType.MULTIPART_FORM_DATA.getType())) {
+            httpRequest.getParts().forEach(part -> {
+                try {
+                    if (part.getSubmittedFileName() != null) {
+                        params.put(part.getName(), Base64.getEncoder().encodeToString(part.getInputStream().readAllBytes()));
+                    }
+                } catch (Exception e) {
+                    log.error("Read file {} error: {}", part.getName(), e.getMessage());
+                }
+            });
+
+            return null;
+        }
+
+        byte[] bytesToEncode = (body != null && body.length > 0) ? body : httpRequest.getInputStream().readAllBytes();
+
+        if (bytesToEncode.length > 0) {
+            return new String(bytesToEncode, httpRequest.getCharacterEncoding());
+        }
+
+        return null;
     }
 }
