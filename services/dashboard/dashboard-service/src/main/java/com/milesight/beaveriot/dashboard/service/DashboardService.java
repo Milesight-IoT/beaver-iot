@@ -219,6 +219,7 @@ public class DashboardService {
             dashboardResponse.setWidgets(dashboardWidgetMap.get(Long.parseLong(dashboardResponse.getDashboardId())));
             dashboardResponse.setHome(dashboardHomePOMap.get(Long.parseLong(dashboardResponse.getDashboardId())) != null);
         });
+        dashboardResponseList.sort(Comparator.comparing(DashboardResponse::getHome).reversed().thenComparing(DashboardResponse::getCreatedAt));
         return dashboardResponseList;
     }
 
