@@ -478,7 +478,9 @@ public class EntityService implements EntityServiceProvider {
             entityQuery.setCustomized(false);
         }
         List<String> sourceTargetIds = searchAttachTargetIdsByKeyword(entityQuery.getEntitySourceName());
-
+        if(StringUtils.hasText(entityQuery.getEntitySourceName()) && sourceTargetIds.isEmpty()){
+            return Page.empty();
+        }
         Consumer<Filterable> filterable = f -> f.isNull(isExcludeChildren, EntityPO.Fields.parent)
                 .in(entityQuery.getEntityType() != null && !entityQuery.getEntityType().isEmpty(), EntityPO.Fields.type, entityQuery.getEntityType() == null ? null : entityQuery.getEntityType().toArray())
                 .in(entityQuery.getEntityIds() != null && !entityQuery.getEntityIds().isEmpty(), EntityPO.Fields.id, entityQuery.getEntityIds() == null ? null : entityQuery.getEntityIds().toArray())
