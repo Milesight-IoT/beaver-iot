@@ -7,6 +7,7 @@ import com.milesight.beaveriot.context.integration.model.Credentials;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.context.util.SecretUtils;
 import com.milesight.beaveriot.credentials.api.model.CredentialsChangeEvent;
+import com.milesight.beaveriot.mqtt.api.MqttAdminPubSubServiceProvider;
 import com.milesight.beaveriot.mqtt.broker.bridge.MqttBrokerBridge;
 import com.milesight.beaveriot.mqtt.broker.bridge.auth.MqttAcl;
 import com.milesight.beaveriot.mqtt.broker.bridge.auth.MqttAction;
@@ -127,17 +128,13 @@ public class MqttAclService implements MqttAuthProvider {
 
     public WebMqttCredentials getOrInitWebMqttCredentials() {
         val tenantId = TenantContext.getTenantId();
-        val username = getWebUsername(tenantId);
+        val username = MqttAdminPubSubServiceProvider.getWebUsername(tenantId);
         var credentials = credentialsServiceProvider.getOrCreateCredentials(CREDENTIALS_TYPE, username, SecretUtils.randomSecret(32));
         return WebMqttCredentials.builder()
                 .clientId(String.format("%s#%s", username, SnowflakeUtil.nextId()))
                 .username(username)
                 .password(credentials.getAccessSecret())
                 .build();
-    }
-
-    private static String getWebUsername(String tenantId) {
-        return String.format("mqtt@%s", tenantId);
     }
 
 }

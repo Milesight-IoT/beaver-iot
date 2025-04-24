@@ -35,4 +35,8 @@ public interface MqttAdminPubSubServiceProvider extends MqttPubSubServiceProvide
      */
     void unsubscribe(MqttTopicChannel mqttTopicChannel, String username, String topicSubPath);
 
+    static String getWebUsername(String tenantId) {
+        return String.format("web_mqtt@%s", tenantId);
+    }
+
 }
