@@ -35,11 +35,15 @@ public class HttpInConsumer extends DefaultConsumer {
         config.setCb(request -> {
             Exchange exchange = httpInEndpoint.createExchange();
             try {
-                Map<String, Object> payload = new java.util.HashMap<>(Map.of(
-                        HttpInConstants.OUT_HEADER_NAME, JsonHelper.toJSON(request.getHeaders()),
-                        HttpInConstants.OUT_BODY_NAME, request.getBody(),
-                        HttpInConstants.OUT_URL_NAME, request.getUrl()
-                ));
+                Map<String, Object> payload = new java.util.HashMap<>();
+                payload.put(HttpInConstants.OUT_HEADER_NAME, JsonHelper.toJSON(request.getHeaders()));
+                payload.put(HttpInConstants.OUT_URL_NAME, request.getUrl());
+                if (request.getBody() != null) {
+                    payload.put(HttpInConstants.OUT_BODY_NAME, request.getBody());
+                }
+                if (request.getParams() != null) {
+                    payload.put(HttpInConstants.OUT_PARAM_NAME, JsonHelper.toJSON(request.getParams()));
+                }
                 request.getPathParams().forEach((key, value) -> payload.put(HttpInConstants.OUT_PATH_PARAM_NAME + "." + key, value));
                 exchange.getIn().setBody(payload);
                 getProcessor().process(exchange);

@@ -20,5 +20,7 @@ public class HttpInRequestContent {
 
     private Map<String, String> pathParams;
 
+    private Map<String, String> params;
+
     private String body;
 }

@@ -100,6 +100,7 @@ public class HttpInEndpoint extends DefaultEndpoint {
         messageOut.add(new OutputVariablesSettings(DataTypeEnums.STRING, HttpInConstants.OUT_HEADER_NAME));
         messageOut.add(new OutputVariablesSettings(DataTypeEnums.STRING, HttpInConstants.OUT_BODY_NAME));
         messageOut.add(new OutputVariablesSettings(DataTypeEnums.STRING, HttpInConstants.OUT_URL_NAME));
+        messageOut.add(new OutputVariablesSettings(DataTypeEnums.STRING, HttpInConstants.OUT_PARAM_NAME));
         urlTemplate.getVariableNames().forEach(variableName -> messageOut.add(new OutputVariablesSettings(DataTypeEnums.STRING, HttpInConstants.OUT_PATH_PARAM_NAME + "." + variableName)));
         return new HttpInConsumer(this, processor);
     }
