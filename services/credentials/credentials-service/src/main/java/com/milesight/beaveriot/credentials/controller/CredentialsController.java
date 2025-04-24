@@ -8,6 +8,8 @@ import com.milesight.beaveriot.credentials.model.request.SearchCredentialsReques
 import com.milesight.beaveriot.credentials.model.request.UpdateCredentialsRequest;
 import com.milesight.beaveriot.credentials.model.response.CredentialsResponse;
 import com.milesight.beaveriot.credentials.service.CredentialsService;
+import com.milesight.beaveriot.permission.aspect.OperationPermission;
+import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -30,11 +32,13 @@ public class CredentialsController {
     private CredentialsService credentialsService;
 
     @GetMapping
+    @OperationPermission(codes = {OperationPermissionCode.CREDENTIALS_VIEW, OperationPermissionCode.CREDENTIALS_EDIT})
     public ResponseBody<Page<CredentialsResponse>> searchCredentials(SearchCredentialsRequest request) {
         return ResponseBuilder.success(credentialsService.searchCredentials(request));
     }
 
     @GetMapping("/{id}")
+    @OperationPermission(codes = {OperationPermissionCode.CREDENTIALS_VIEW, OperationPermissionCode.CREDENTIALS_EDIT})
     public ResponseBody<CredentialsResponse> getCredentials(@PathVariable("id") Long id) {
         return ResponseBuilder.success(credentialsService.getCredentialsResponse(id));
     }
@@ -46,21 +50,25 @@ public class CredentialsController {
      * @return credentials response
      */
     @GetMapping("/default/{credentials_type}")
+    @OperationPermission(codes = {OperationPermissionCode.CREDENTIALS_VIEW, OperationPermissionCode.CREDENTIALS_EDIT})
     public ResponseBody<CredentialsResponse> getCredentials(@PathVariable("credentials_type") String credentialsType, @RequestParam(name = "auto_generate_password", required = false) Boolean autoGeneratePassword) {
         return ResponseBuilder.success(credentialsService.getOrCreateCredentialsResponse(credentialsType, autoGeneratePassword));
     }
 
     @PostMapping
+    @OperationPermission(codes = OperationPermissionCode.CREDENTIALS_EDIT)
     public ResponseBody<CredentialsResponse> addCredentials(@RequestBody AddCredentialsRequest request) {
         return ResponseBuilder.success(credentialsService.addCredentials(request));
     }
 
     @PutMapping("/{id}")
+    @OperationPermission(codes = OperationPermissionCode.CREDENTIALS_EDIT)
     public ResponseBody<CredentialsResponse> updateCredentials(@PathVariable("id") Long id, @RequestBody UpdateCredentialsRequest request) {
         return ResponseBuilder.success(credentialsService.updateCredentials(id, request));
     }
 
     @PostMapping("/delete")
+    @OperationPermission(codes = OperationPermissionCode.CREDENTIALS_EDIT)
     public ResponseBody<Void> batchDeleteCredentials(@RequestBody BatchDeleteCredentialsRequest request) {
         credentialsService.batchDeleteCredentials(request);
         return ResponseBuilder.success();
