@@ -1,6 +1,5 @@
 package com.milesight.beaveriot.rule.components.timer;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.milesight.beaveriot.rule.annotations.RuleNode;
 import com.milesight.beaveriot.rule.annotations.UriParamExtension;
 import com.milesight.beaveriot.rule.constants.RuleNodeType;
@@ -19,7 +18,7 @@ import org.apache.camel.support.DefaultEndpoint;
 
 @Slf4j
 @UriEndpoint(firstVersion = "4.4.3", scheme = "simpleTimer", title = "SimpleTimer", syntax = "simpleTimer:flowId",
-        remote = false, consumerOnly = true, category = { Category.SCHEDULING })
+        remote = false, consumerOnly = true, category = {Category.SCHEDULING})
 @RuleNode(type = RuleNodeType.ENTRY, value = "simpleTimer", testable = false)
 public class SimpleTimerEndpoint extends DefaultEndpoint {
 

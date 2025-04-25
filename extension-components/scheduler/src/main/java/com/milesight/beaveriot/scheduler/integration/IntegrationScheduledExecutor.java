@@ -1,9 +1,9 @@
-package com.milesight.beaveriot.scheduler;
+package com.milesight.beaveriot.scheduler.integration;
 
-import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
 import com.milesight.beaveriot.eventbus.annotations.EventSubscribe;
-import lombok.extern.slf4j.Slf4j;
+import lombok.*;
+import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -13,7 +13,6 @@ import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author loong
@@ -43,18 +42,17 @@ public class IntegrationScheduledExecutor implements SmartInitializingSingleton 
     }
 
     private void configureTask(Object bean, Method method, IntegrationScheduled scheduled) {
-        Runnable task = TaskUtils.decorateTaskWithErrorHandler(() -> {
-            try {
-                method.invoke(bean);
-            } catch (Exception e) {
-                log.error("IntegrationScheduled method invoke error, method: {}", method, e);
-                throw new RuntimeException(e);
-            }
-        }, null, false);
+        Runnable task = TaskUtils.decorateTaskWithErrorHandler(() ->
+                invoke(bean, method), null, false);
         String schedulerName = scheduled.name();
         IntegrationSchedulerRegistry.registerScheduler(schedulerName, task, scheduled);
 
         IntegrationSchedulerRegistry.scheduleTask(schedulerName);
+    }
+
+    @SneakyThrows
+    private static void invoke(Object bean, Method method) {
+        method.invoke(bean);
     }
 
     @EventSubscribe(payloadKeyExpression = "*")
@@ -62,9 +60,8 @@ public class IntegrationScheduledExecutor implements SmartInitializingSingleton 
         List<String> entityKeys = exchangeEvent.getPayload().keySet().stream().toList();
         List<IntegrationScheduled> integrationSchedules = IntegrationSchedulerRegistry.getIntegrationSchedules();
         if (integrationSchedules != null && !integrationSchedules.isEmpty()) {
-            integrationSchedules.forEach(integrationScheduled -> {
-                IntegrationSchedulerRegistry.updateScheduleAnnotationTask(integrationScheduled.name(), entityKeys);
-            });
+            integrationSchedules.forEach(integrationScheduled ->
+                    IntegrationSchedulerRegistry.updateScheduleAnnotationTask(integrationScheduled.name(), entityKeys));
         }
     }
 

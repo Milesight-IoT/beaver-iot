@@ -22,6 +22,8 @@ spring:
     username: "${SPRING_DATASOURCE_USERNAME:sa}"
     password: "${SPRING_DATASOURCE_PASSWORD:}"
     driverClassName: "${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.h2.Driver}"
+    hikari:
+      connection-timeout: 5000
   liquibase:
     enabled: true
     contexts: init,dev,prod,test

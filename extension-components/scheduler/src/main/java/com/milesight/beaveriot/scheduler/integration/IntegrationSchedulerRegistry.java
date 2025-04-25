@@ -1,25 +1,27 @@
-package com.milesight.beaveriot.scheduler;
+package com.milesight.beaveriot.scheduler.integration;
 
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.security.TenantContext;
+import com.milesight.beaveriot.scheduler.core.Scheduler;
+import com.milesight.beaveriot.scheduler.core.model.ScheduleRule;
+import com.milesight.beaveriot.scheduler.core.model.ScheduleSettings;
+import com.milesight.beaveriot.scheduler.core.model.ScheduleType;
 import com.milesight.beaveriot.user.dto.TenantDTO;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import org.springframework.scheduling.support.CronTrigger;
-import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -30,21 +32,23 @@ import java.util.concurrent.TimeUnit;
 public class IntegrationSchedulerRegistry {
 
     private static final Map<String, Runnable> tasks = new ConcurrentHashMap<>();
-    private static final Map<String, IntegrationScheduled> integrationSchedules = new ConcurrentHashMap<>();
-    private static final Map<String, ScheduledFuture<?>> taskFutures = new ConcurrentHashMap<>();
 
-    private static List<TenantDTO> tenants = new ArrayList<>();
-    private static EntityValueServiceProvider entityValueProvider;
+    private static final Map<String, IntegrationScheduled> integrationSchedules = new ConcurrentHashMap<>();
+
+    private static IntegrationSchedulerRegistry self;
 
     @Autowired
-    IUserFacade userFacade;
+    private IUserFacade userFacade;
+
     @Autowired
     private EntityValueServiceProvider entityValueServiceProvider;
 
+    @Autowired
+    private Scheduler scheduler;
+
     @PostConstruct
     public void init() {
-        tenants = userFacade.getAllTenants();
-        entityValueProvider = entityValueServiceProvider;
+        self = this;
     }
 
     public static void registerScheduler(String schedulerName, Runnable task, IntegrationScheduled scheduled) {
@@ -63,7 +67,8 @@ public class IntegrationSchedulerRegistry {
         String fixedDelayEntity = integrationScheduled.fixedDelayEntity();
         String timeUnitEntity = integrationScheduled.timeUnitEntity();
 
-        for(TenantDTO tenantDTO : tenants) {
+        List<TenantDTO> tenants = self.userFacade.getAllTenants();
+        for (TenantDTO tenantDTO : tenants) {
             try {
                 TenantContext.setTenantId(tenantDTO.getTenantId());
 
@@ -82,7 +87,7 @@ public class IntegrationSchedulerRegistry {
                     tenantEntityKeys.add(timeUnitEntity);
                 }
                 if (!tenantEntityKeys.isEmpty()) {
-                    Map<String, Object> tenantEntityValues = entityValueProvider.findValuesByKeys(tenantEntityKeys);
+                    Map<String, Object> tenantEntityValues = self.entityValueServiceProvider.findValuesByKeys(tenantEntityKeys);
                     if (tenantEntityValues != null && !tenantEntityValues.isEmpty()) {
                         if (!cronEntity.isEmpty() && entityKeys.contains(cronEntity) && tenantEntityValues.containsKey(cronEntity)) {
                             cronEntityValue = tenantEntityValues.get(cronEntity).toString();
@@ -102,28 +107,22 @@ public class IntegrationSchedulerRegistry {
                     }
                     scheduleTask(schedulerName, tenantDTO, cronEntityValue, fixedDelayEntityValue, timeUnit, task);
                 }
-            }finally {
+            } finally {
                 TenantContext.clear();
             }
         }
     }
 
-    private static void cancelTask(String taskFutureKey) {
-        ScheduledFuture<?> future = taskFutures.get(taskFutureKey);
-        if (future != null) {
-            future.cancel(true);
-            taskFutures.remove(taskFutureKey);
-        }
-    }
-
     public static void scheduleTask(String schedulerName, String cron, Runnable task) {
-        for(TenantDTO tenantDTO : tenants) {
+        List<TenantDTO> tenants = self.userFacade.getAllTenants();
+        for (TenantDTO tenantDTO : tenants) {
             scheduleTask(schedulerName, tenantDTO, cron, -1, TimeUnit.MILLISECONDS, task);
         }
     }
 
     public static void scheduleTask(String schedulerName, long fixedDelay, TimeUnit timeUnit, Runnable task) {
-        for(TenantDTO tenantDTO : tenants) {
+        List<TenantDTO> tenants = self.userFacade.getAllTenants();
+        for (TenantDTO tenantDTO : tenants) {
             scheduleTask(schedulerName, tenantDTO, null, fixedDelay, timeUnit, task);
         }
     }
@@ -138,7 +137,8 @@ public class IntegrationSchedulerRegistry {
         String fixedDelayEntity = integrationScheduled.fixedDelayEntity();
         String timeUnitEntity = integrationScheduled.timeUnitEntity();
 
-        for(TenantDTO tenantDTO : tenants) {
+        List<TenantDTO> tenants = self.userFacade.getAllTenants();
+        for (TenantDTO tenantDTO : tenants) {
             try {
                 TenantContext.setTenantId(tenantDTO.getTenantId());
 
@@ -156,15 +156,15 @@ public class IntegrationSchedulerRegistry {
                     entityKeys.add(timeUnitEntity);
                 }
                 if (!entityKeys.isEmpty()) {
-                    Map<String, Object> entityValues = entityValueProvider.findValuesByKeys(entityKeys);
+                    Map<String, Object> entityValues = self.entityValueServiceProvider.findValuesByKeys(entityKeys);
                     if (entityValues != null && !entityValues.isEmpty()) {
-                        if(!cronEntity.isEmpty() && entityValues.containsKey(cronEntity)) {
+                        if (!cronEntity.isEmpty() && entityValues.containsKey(cronEntity)) {
                             cronEntityValue = entityValues.get(cronEntity).toString();
                         }
-                        if(!fixedDelayEntity.isEmpty() && entityValues.containsKey(fixedDelayEntity)) {
+                        if (!fixedDelayEntity.isEmpty() && entityValues.containsKey(fixedDelayEntity)) {
                             fixedDelayEntityValue = Long.parseLong(entityValues.get(fixedDelayEntity).toString());
                         }
-                        if(!timeUnitEntity.isEmpty() && entityValues.containsKey(timeUnitEntity)) {
+                        if (!timeUnitEntity.isEmpty() && entityValues.containsKey(timeUnitEntity)) {
                             timeUnitEntityValue = entityValues.get(timeUnitEntity).toString();
                         }
                     }
@@ -182,7 +182,7 @@ public class IntegrationSchedulerRegistry {
                     timeUnit = TimeUnit.valueOf(timeUnitEntityValue);
                 }
                 scheduleTask(schedulerName, tenantDTO, cron, fixedDelay, timeUnit, task);
-            }finally {
+            } finally {
                 TenantContext.clear();
             }
         }
@@ -193,21 +193,14 @@ public class IntegrationSchedulerRegistry {
         tasks.putIfAbsent(schedulerName, task);
 
         String tenantId = tenantDTO.getTenantId();
-        String taskFutureKey = schedulerName + "_" + tenantId;
-
-        cancelTask(taskFutureKey);
-
-        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-        scheduler.setPoolSize(1);
-        scheduler.setThreadNamePrefix("integration-scheduled-task-" + taskFutureKey + "-");
-        scheduler.initialize();
+        String taskKey = String.format("integration-scheduler:%s:%s", schedulerName, tenantId);
 
         Runnable taskWrapper = () -> {
             try {
                 TenantContext.setTenantId(tenantId);
                 task.run();
             } catch (Exception e) {
-                log.error("run task failed: {}", taskFutureKey, e);
+                log.error("run task failed: {}", taskKey, e);
             } finally {
                 TenantContext.clear();
             }
@@ -216,12 +209,23 @@ public class IntegrationSchedulerRegistry {
         if (cron != null && !cron.isEmpty()) {
             String zone = tenantDTO.getTimeZone();
             TimeZone timeZone = zone.isEmpty() ? TimeZone.getDefault() : TimeZone.getTimeZone(zone);
-            ScheduledFuture<?> future = scheduler.schedule(taskWrapper, new CronTrigger(cron, timeZone));
-            taskFutures.put(taskFutureKey, future);
+            ZoneId zoneId = timeZone.toZoneId();
+            self.scheduler.schedule(taskKey, ScheduleSettings.builder()
+                            .scheduleType(ScheduleType.CRON)
+                            .scheduleRule(ScheduleRule.builder()
+                                    .cronExpressions(Set.of(cron))
+                                    .timezone(zoneId.getId())
+                                    .build())
+                            .build(),
+                    scheduledTask -> taskWrapper.run());
         } else if (fixedDelay >= 0) {
-            PeriodicTrigger trigger = new PeriodicTrigger(timeUnit.toMillis(fixedDelay));
-            ScheduledFuture<?> future = scheduler.schedule(taskWrapper, trigger);
-            taskFutures.put(taskFutureKey, future);
+            self.scheduler.schedule(taskKey, ScheduleSettings.builder()
+                            .scheduleType(ScheduleType.FIXED_RATE)
+                            .scheduleRule(ScheduleRule.builder()
+                                    .periodSecond(timeUnit.toSeconds(fixedDelay))
+                                    .build())
+                            .build(),
+                    scheduledTask -> taskWrapper.run());
         }
     }
 

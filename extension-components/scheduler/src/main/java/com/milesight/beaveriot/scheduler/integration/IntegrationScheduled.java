@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.scheduler;
+package com.milesight.beaveriot.scheduler.integration;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
