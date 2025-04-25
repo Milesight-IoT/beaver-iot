@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.permission.service;
 
+import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
@@ -10,6 +11,7 @@ import com.milesight.beaveriot.user.dto.UserResourceDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -31,6 +33,7 @@ public class EntityPermissionService {
     @Autowired
     IDeviceFacade deviceFacade;
 
+    @Cacheable(cacheNames = CacheKeyConstants.ENTITY_PERMISSION_CACHE_NAME_PREFIX, key = "#p0")
     public EntityPermissionDTO getEntityPermission(Long userId) {
         EntityPermissionDTO entityPermissionDTO = new EntityPermissionDTO();
         UserResourceDTO userResourceDTO = userFacade.getResource(userId, Arrays.asList(ResourceType.ENTITY, ResourceType.DEVICE, ResourceType.INTEGRATION));
