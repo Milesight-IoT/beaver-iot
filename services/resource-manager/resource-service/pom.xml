@@ -46,7 +46,11 @@
             <artifactId>permission-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>scheduler</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- unit test -->
         <dependency>

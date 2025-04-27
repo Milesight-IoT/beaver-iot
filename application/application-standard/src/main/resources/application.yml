@@ -163,6 +163,7 @@ oauth2:
     - "/user/status"
     - "/public/**"
     - "/actuator/**"
+    - "/db-resource/**"
     - "/workflow-http-in/**"
 
 mqtt:
