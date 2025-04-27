@@ -3,6 +3,7 @@ package com.milesight.beaveriot.resource.adapter.db.service;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
+import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.resource.adapter.db.service.model.DbResourceBasicProjection;
 import com.milesight.beaveriot.resource.adapter.db.service.po.DbResourceDataPO;
 import com.milesight.beaveriot.resource.adapter.db.service.model.DbResourceDataPreSignData;
@@ -40,18 +41,14 @@ public class DbResourceService {
     @Autowired
     CacheManager cacheManager;
 
-    private static final String PRE_SIGN_CACHE_NAME = "resource:data-pre-sign";
-
-    private static final String RESOURCE_DATA_CACHE_NAME = "resource:data";
-
     public DbResourceDataPreSignData getPreSignData(String objKey) {
-        Cache cache = cacheManager.getCache(PRE_SIGN_CACHE_NAME);
+        Cache cache = cacheManager.getCache(CacheKeyConstants.PRE_SIGN_CACHE_NAME);
         assert cache != null;
         return cache.get(objKey, DbResourceDataPreSignData.class);
     }
 
     public void putPreSignData(String objKey, DbResourceDataPreSignData data) {
-        Cache cache = cacheManager.getCache(PRE_SIGN_CACHE_NAME);
+        Cache cache = cacheManager.getCache(CacheKeyConstants.PRE_SIGN_CACHE_NAME);
         assert cache != null;
         cache.put(objKey, data);
     }
@@ -77,7 +74,7 @@ public class DbResourceService {
         return preSignPO.getExpiredAt() >= System.currentTimeMillis();
     }
 
-    @CacheEvict(cacheNames = RESOURCE_DATA_CACHE_NAME, key = "#p0")
+    @CacheEvict(cacheNames = CacheKeyConstants.RESOURCE_DATA_CACHE_NAME, key = "#p0")
     public void putResource(String objKey, String contentType, byte[] data) {
         if (!validateSign(objKey)) {
             throw ServiceException
@@ -117,7 +114,7 @@ public class DbResourceService {
         return stat;
     }
 
-    @Cacheable(cacheNames = RESOURCE_DATA_CACHE_NAME, key = "#p0")
+    @Cacheable(cacheNames = CacheKeyConstants.RESOURCE_DATA_CACHE_NAME, key = "#p0")
     public DbResourceDataPO getResource(String objKey) {
         return resourceDataRepository.findByObjKey(objKey).orElse(null);
     }
