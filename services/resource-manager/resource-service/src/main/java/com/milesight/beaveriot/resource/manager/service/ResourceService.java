@@ -7,6 +7,7 @@ import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.resource.ResourceStorage;
+import com.milesight.beaveriot.resource.config.ResourceConstants;
 import com.milesight.beaveriot.resource.manager.constants.ResourceManagerConstants;
 import com.milesight.beaveriot.resource.manager.dto.ResourceRefDTO;
 import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
@@ -19,8 +20,15 @@ import com.milesight.beaveriot.resource.manager.repository.ResourceRepository;
 import com.milesight.beaveriot.resource.manager.repository.ResourceTempRepository;
 import com.milesight.beaveriot.resource.model.PreSignResult;
 import com.milesight.beaveriot.resource.model.ResourceStat;
+import com.milesight.beaveriot.scheduler.core.Scheduler;
+import com.milesight.beaveriot.scheduler.core.model.ScheduleRule;
+import com.milesight.beaveriot.scheduler.core.model.ScheduleSettings;
+import com.milesight.beaveriot.scheduler.core.model.ScheduleType;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,12 +58,16 @@ public class ResourceService implements ResourceManagerFacade {
     @Autowired
     ResourceRefRepository resourceRefRepository;
 
+    @Autowired
+    Scheduler scheduler;
+
     public PreSignResult createPreSign(RequestUploadConfig request) {
         PreSignResult preSignResult = resourceStorage.createUploadPreSign(request.getFileName());
         ResourceTempPO resourceTempPO = new ResourceTempPO();
         resourceTempPO.setId(SnowflakeUtil.nextId());
         resourceTempPO.setCreatedAt(System.currentTimeMillis());
         resourceTempPO.setExpiredAt(resourceTempPO.getCreatedAt() + (ResourceManagerConstants.TEMP_RESOURCE_LIVE_MINUTES * 60 * 1000));
+        resourceTempPO.setSettled(false);
 
         ResourcePO resourcePO = new ResourcePO();
         resourcePO.setId(SnowflakeUtil.nextId());
@@ -98,7 +110,12 @@ public class ResourceService implements ResourceManagerFacade {
                 throw ServiceException.with(ErrorCode.DATA_NO_FOUND.getErrorCode(), "Resource data storage not found!").build();
             }
 
-            resourceTempRepository.deleteByResourceId(resourcePO.getId());
+            Optional<ResourceTempPO> tempPO = resourceTempRepository.findOne(f -> f.eq(ResourceTempPO.Fields.resourceId, resourcePO.getId()));
+            if (tempPO.isPresent() && tempPO.get().getSettled().equals(Boolean.FALSE)) {
+                tempPO.get().setSettled(true);
+                resourceTempRepository.save(tempPO.get());
+            }
+
             resourcePO.setContentLength(stat.getSize());
             resourcePO.setContentType(stat.getContentType());
             resourcePO.setUpdatedBy(getCurrentUser());
@@ -151,7 +168,33 @@ public class ResourceService implements ResourceManagerFacade {
         resourceToRemove.forEach(r -> resourceStorage.delete(r.getKey()));
     }
 
-    // TODO: Potential storage leak: upload object by put after delete
+    @PostConstruct
+    protected void init() {
+        ScheduleRule rule = new ScheduleRule();
+        rule.setPeriodSecond(ResourceManagerConstants.CLEAR_TEMP_RESOURCE_INTERVAL.toSeconds());
+        ScheduleSettings settings = new ScheduleSettings();
+        settings.setScheduleType(ScheduleType.FIXED_RATE);
+        settings.setScheduleRule(rule);
+        scheduler.schedule("clear-temp-resource", settings, task -> this.clearExpiredTempResource());
+    }
 
-    // TODO: schedule periodic deleting temp resource
+    protected Page<ResourceTempPO> getBatchExpiredTempResource() {
+        return resourceTempRepository
+                .findAll(f -> f.lt(ResourceTempPO.Fields.expiredAt, System.currentTimeMillis()), Pageable.ofSize(ResourceManagerConstants.CLEAR_TEMP_BATCH_SIZE));
+    }
+
+    protected void clearExpiredTempResource() {
+        Page<ResourceTempPO> expiredTempList = getBatchExpiredTempResource();
+        while (!expiredTempList.isEmpty()) {
+            List<Long> resourceIdToClean = expiredTempList
+                    .stream()
+                    .filter(f -> f.getSettled().equals(Boolean.FALSE))
+                    .map(ResourceTempPO::getResourceId).toList();
+            cleanUpResources(resourceIdToClean);
+            resourceTempRepository.deleteAll(expiredTempList);
+            log.debug("Delete temp resources: {}", resourceIdToClean);
+
+            expiredTempList = getBatchExpiredTempResource();
+        }
+    }
 }

@@ -54,3 +54,7 @@ CREATE TABLE "t_resource_ref"
 );
 
 CREATE INDEX idx_resource_ref_resource_id ON "t_resource_ref" (resource_id);
+
+--changeset simon:resource_v1.2.0_20250427_101200
+alter table t_resource_temp
+    add column settled boolean not null default false;

@@ -1,5 +1,8 @@
 package com.milesight.beaveriot.resource.manager.constants;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+
 /**
  * ResourceConstants class.
  *
@@ -11,5 +14,7 @@ public class ResourceManagerConstants {
 
     public static final int TEMP_RESOURCE_LIVE_MINUTES = 15;
 
-    public static final int EMP_RESOURCE_CLEAR_INTERVAL_SECONDS = 60;
+    public static final Duration CLEAR_TEMP_RESOURCE_INTERVAL = Duration.of(1, ChronoUnit.MINUTES);
+
+    public static final int CLEAR_TEMP_BATCH_SIZE = 1_000;
 }

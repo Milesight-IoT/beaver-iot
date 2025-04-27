@@ -25,6 +25,9 @@ public class ResourceTempPO {
     @Column(name = "resource_id")
     private Long resourceId;
 
+    @Column(name = "settled")
+    private Boolean settled;
+
     @Column(name = "created_at")
     private Long createdAt;
 
