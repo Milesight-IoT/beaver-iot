@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.user.facade;
 
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
+import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.user.constants.UserConstants;
 import com.milesight.beaveriot.user.convert.TenantConverter;
 import com.milesight.beaveriot.user.convert.UserConverter;
@@ -27,6 +28,8 @@ import com.milesight.beaveriot.user.repository.UserRepository;
 import com.milesight.beaveriot.user.repository.UserRoleRepository;
 import com.milesight.beaveriot.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -109,6 +112,7 @@ public class UserFacade implements IUserFacade {
         }).toList();
     }
 
+    @Cacheable(cacheNames = CacheKeyConstants.USER_MENUS_CACHE_NAME_PREFIX, key = "#p0")
     @Override
     public List<MenuDTO> getMenusByUserId(Long userId) {
         List<UserRolePO> userRolePOList = userRoleRepository.findAll(filterable -> filterable.eq(UserRolePO.Fields.userId, userId));
@@ -147,6 +151,10 @@ public class UserFacade implements IUserFacade {
         }).toList();
     }
 
+    @CacheEvict(cacheNames = {CacheKeyConstants.ENTITY_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.DEVICE_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.DASHBOARD_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.INTEGRATION_PERMISSION_CACHE_NAME_PREFIX}, allEntries = true)
     @Override
     public void deleteResource(ResourceType resourceType, List<Long> resourceIds) {
         if (resourceIds == null || resourceIds.isEmpty()) {
@@ -158,6 +166,10 @@ public class UserFacade implements IUserFacade {
         }
     }
 
+    @CacheEvict(cacheNames = {CacheKeyConstants.ENTITY_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.DEVICE_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.DASHBOARD_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.INTEGRATION_PERMISSION_CACHE_NAME_PREFIX}, allEntries = true)
     @Override
     public void associateResource(Long userId, ResourceType resourceType, List<Long> resourceIds) {
         if (resourceIds == null || resourceIds.isEmpty()) {

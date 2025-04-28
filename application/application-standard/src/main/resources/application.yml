@@ -47,6 +47,11 @@ spring:
       time-to-lives:
         [ "resource:data-pre-sign" ]: ${resource.pre_sign_expire}
         [ "resource:data" ]: 2m
+        [ "user-menus:*"] : 1h
+        [ "entity-permission:*" ] : 1h
+        [ "device-permission:*"] : 1h
+        [ "dashboard-permission:*" ] : 1h
+        [ "integration-permission:*" ] : 1h
 
   redis:
     ssl: ${REDIS_SSL:false}

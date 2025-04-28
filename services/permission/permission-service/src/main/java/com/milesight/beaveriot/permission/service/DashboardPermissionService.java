@@ -1,11 +1,13 @@
 package com.milesight.beaveriot.permission.service;
 
+import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.dashboard.facade.IDashboardFacade;
 import com.milesight.beaveriot.permission.dto.DashboardPermissionDTO;
 import com.milesight.beaveriot.user.dto.UserResourceDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -25,6 +27,7 @@ public class DashboardPermissionService {
     @Autowired
     IDashboardFacade dashboardFacade;
 
+    @Cacheable(cacheNames = CacheKeyConstants.DASHBOARD_PERMISSION_CACHE_NAME_PREFIX, key = "#p0")
     public DashboardPermissionDTO getDashboardPermission(Long userId) {
         DashboardPermissionDTO dashboardPermissionDTO = new DashboardPermissionDTO();
         UserResourceDTO userResourceDTO = userFacade.getResource(userId, Collections.singletonList(ResourceType.DASHBOARD));

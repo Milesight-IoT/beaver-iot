@@ -1,10 +1,12 @@
 package com.milesight.beaveriot.permission.service;
 
+import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.permission.dto.IntegrationPermissionDTO;
 import com.milesight.beaveriot.user.dto.UserResourceDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -22,6 +24,7 @@ public class IntegrationPermissionService {
     @Autowired
     IUserFacade userFacade;
 
+    @Cacheable(cacheNames = CacheKeyConstants.INTEGRATION_PERMISSION_CACHE_NAME_PREFIX, key = "#p0")
     public IntegrationPermissionDTO getIntegrationPermission(Long userId) {
         IntegrationPermissionDTO integrationPermissionDTO = new IntegrationPermissionDTO();
         UserResourceDTO userResourceDTO = userFacade.getResource(userId, Arrays.asList(ResourceType.INTEGRATION));

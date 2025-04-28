@@ -7,6 +7,7 @@ import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
+import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.context.integration.model.Integration;
 import com.milesight.beaveriot.dashboard.dto.DashboardDTO;
 import com.milesight.beaveriot.dashboard.facade.IDashboardFacade;
@@ -48,6 +49,7 @@ import com.milesight.beaveriot.user.repository.RoleResourceRepository;
 import com.milesight.beaveriot.user.repository.UserRepository;
 import com.milesight.beaveriot.user.repository.UserRoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -131,6 +133,11 @@ public class RoleService {
         roleRepository.save(rolePO);
     }
 
+    @CacheEvict(cacheNames = {CacheKeyConstants.USER_MENUS_CACHE_NAME_PREFIX,
+            CacheKeyConstants.ENTITY_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.DEVICE_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.DASHBOARD_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.INTEGRATION_PERMISSION_CACHE_NAME_PREFIX}, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
     public void deleteRole(Long roleId) {
         RolePO rolePO = roleRepository.findOne(filterable -> filterable.eq(RolePO.Fields.id, roleId)).orElse(null);
@@ -146,6 +153,7 @@ public class RoleService {
         }
         roleRepository.deleteById(roleId);
         userRoleRepository.deleteByRoleId(roleId);
+        roleMenuRepository.deleteByRoleId(roleId);
         roleResourceRepository.deleteByRoleId(roleId);
     }
 
@@ -545,6 +553,11 @@ public class RoleService {
         return PageConverter.convertToPage(deviceUndistributedResponseList, deviceUndistributedRequest.toPageable());
     }
 
+    @CacheEvict(cacheNames = {CacheKeyConstants.USER_MENUS_CACHE_NAME_PREFIX,
+            CacheKeyConstants.ENTITY_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.DEVICE_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.DASHBOARD_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.INTEGRATION_PERMISSION_CACHE_NAME_PREFIX}, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
     public void associateUser(Long roleId, UserRoleRequest userRoleRequest) {
         List<Long> userIds = userRoleRequest.getUserIds();
@@ -565,6 +578,11 @@ public class RoleService {
         }
     }
 
+    @CacheEvict(cacheNames = {CacheKeyConstants.USER_MENUS_CACHE_NAME_PREFIX,
+            CacheKeyConstants.ENTITY_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.DEVICE_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.DASHBOARD_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.INTEGRATION_PERMISSION_CACHE_NAME_PREFIX}, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
     public void disassociateUser(Long roleId, UserRoleRequest userRoleRequest) {
         List<Long> userIds = userRoleRequest.getUserIds();
@@ -576,6 +594,10 @@ public class RoleService {
         }
     }
 
+    @CacheEvict(cacheNames = {CacheKeyConstants.ENTITY_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.DEVICE_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.DASHBOARD_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.INTEGRATION_PERMISSION_CACHE_NAME_PREFIX}, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
     public void associateResource(Long roleId, RoleResourceRequest roleResourceRequest) {
         List<RoleResourceRequest.Resource> resources = roleResourceRequest.getResources();
@@ -593,6 +615,10 @@ public class RoleService {
         roleResourceRepository.saveAll(roleResourcePOS);
     }
 
+    @CacheEvict(cacheNames = {CacheKeyConstants.ENTITY_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.DEVICE_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.DASHBOARD_PERMISSION_CACHE_NAME_PREFIX,
+            CacheKeyConstants.INTEGRATION_PERMISSION_CACHE_NAME_PREFIX}, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
     public void disassociateResource(Long roleId, RoleResourceRequest roleResourceRequest) {
         List<RoleResourceRequest.Resource> resources = roleResourceRequest.getResources();
@@ -609,6 +635,7 @@ public class RoleService {
         });
     }
 
+    @CacheEvict(cacheNames = CacheKeyConstants.USER_MENUS_CACHE_NAME_PREFIX, allEntries = true)
     @Transactional(rollbackFor = Exception.class)
     public void associateMenu(Long roleId, RoleMenuRequest roleMenuRequest) {
         List<Long> menuIds = roleMenuRequest.getMenuIds();

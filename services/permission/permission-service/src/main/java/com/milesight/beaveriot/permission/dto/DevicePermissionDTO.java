@@ -2,6 +2,7 @@ package com.milesight.beaveriot.permission.dto;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -9,7 +10,7 @@ import java.util.List;
  * @date 2024/11/28 17:09
  */
 @Data
-public class DevicePermissionDTO {
+public class DevicePermissionDTO implements Serializable {
 
     private boolean isHasAllPermission;
     private List<String> deviceIds;
