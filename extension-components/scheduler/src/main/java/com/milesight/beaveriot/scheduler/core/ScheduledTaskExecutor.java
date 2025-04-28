@@ -4,10 +4,10 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
 import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
-import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.pubsub.MessagePubSub;
 import com.milesight.beaveriot.pubsub.api.annotation.MessageListener;
 import com.milesight.beaveriot.scheduler.core.model.ScheduledTask;
+import com.milesight.beaveriot.scheduler.core.model.ScheduledTaskCallbackTerminatedEvent;
 import com.milesight.beaveriot.scheduler.core.model.ScheduledTaskCancelledEvent;
 import com.milesight.beaveriot.scheduler.core.model.ScheduledTaskRemoteTriggeredEvent;
 import com.milesight.beaveriot.scheduler.core.model.ScheduledTaskUpdatedEvent;
@@ -74,10 +74,6 @@ public class ScheduledTaskExecutor {
         taskIds.forEach(taskId -> cancelledTaskIds.put(taskId, taskKey));
     }
 
-    public static void testCallback(ScheduledTask scheduledTask) {
-        log.info("test task triggered: {}", JsonUtils.toPrettyJSON(scheduledTask));
-    }
-
     @Transactional
     @Scheduled(cron = "0 * * * * *")
     @DistributedLock(name = "scheduler", lockAtLeastFor = "59s", lockAtMostFor = "59s", scope = LockScope.GLOBAL, throwOnLockFailure = false)
@@ -123,6 +119,14 @@ public class ScheduledTaskExecutor {
         });
     }
 
+    @Transactional
+    @Scheduled(cron = "11 11 1 * * *")
+    @DistributedLock(name = "scheduled_task_clean_up", lockAtLeastFor = "59s", lockAtMostFor = "59s", scope = LockScope.GLOBAL, throwOnLockFailure = false)
+    public void removeExpiredTasks() {
+        scheduler.removeExpiredTasks(ZonedDateTime.now().minusMonths(1));
+    }
+
+
     private void markAsRunning(ArrayList<Long> runningTaskIds) {
         scheduledTaskRepository.increaseAttemptsByIds(runningTaskIds);
     }
@@ -131,23 +135,23 @@ public class ScheduledTaskExecutor {
         scheduledTaskRepository.updateTriggeredAtAndAttemptsByIds(failedTaskIds, nowEpochSecond());
     }
 
-    public void runTask(ZonedDateTime currentDateTime, ScheduledTask task) {
+    public void runTask(ZonedDateTime taskExecutionDateTime, ScheduledTask task) {
         val now = nowEpochSecond();
         val delay = task.getExecutionEpochSecond() - now;
         try {
             if (delay <= 1) {
                 log.debug("run scheduled task immediately '{}'({})", task.getTaskKey(), task.getId());
-                taskExecutor.submit(() -> doRunTask(currentDateTime, task));
+                taskExecutor.submit(() -> doRunTask(taskExecutionDateTime, task));
             } else {
                 log.debug("scheduled task '{}'({}) will be executed after {} seconds", task.getTaskKey(), task.getId(), delay);
-                hashedWheelTimer.newTimeout(timeout -> taskExecutor.submit(() -> doRunTask(currentDateTime.plusSeconds(delay), task)), delay, TimeUnit.SECONDS);
+                hashedWheelTimer.newTimeout(timeout -> taskExecutor.submit(() -> doRunTask(taskExecutionDateTime.plusSeconds(delay), task)), delay, TimeUnit.SECONDS);
             }
         } catch (Exception e) {
             log.error("submit task failed: '{}'", task.getTaskKey(), e);
         }
     }
 
-    private void doRunTask(ZonedDateTime currentDateTime, ScheduledTask task) {
+    private void doRunTask(ZonedDateTime taskExecutionDateTime, ScheduledTask task) {
         if (cancelledTaskIds.getIfPresent(task.getId()) != null) {
             log.info("scheduled task '{}'({}) was cancelled", task.getTaskKey(), task.getId());
             return;
@@ -156,11 +160,11 @@ public class ScheduledTaskExecutor {
         try {
             val callback = scheduler.getCallback(task.getTaskKey());
             if (callback != null) {
-                triggerTaskCallback(task, currentDateTime, callback);
+                triggerTaskCallback(task, taskExecutionDateTime, callback);
             } else {
                 // the callback may be registered on other nodes
                 log.debug("scheduled task callback was not found in local: '{}'", task.getTaskKey());
-                messagePubSub.publish(new ScheduledTaskRemoteTriggeredEvent(task.getTenantId(), task, currentDateTime));
+                messagePubSub.publish(new ScheduledTaskRemoteTriggeredEvent(task.getTenantId(), task, taskExecutionDateTime));
             }
         } catch (Exception e) {
             log.error("execute task '{}' failed", task.getTaskKey(), e);
@@ -174,7 +178,7 @@ public class ScheduledTaskExecutor {
     @MessageListener
     public void onRemoteTriggered(ScheduledTaskRemoteTriggeredEvent scheduledTaskRemoteTriggeredEvent) {
         val scheduledTask = scheduledTaskRemoteTriggeredEvent.getScheduledTask();
-        val currentDateTime = scheduledTaskRemoteTriggeredEvent.getCurrentDateTime();
+        val taskExecutionDateTime = scheduledTaskRemoteTriggeredEvent.getTaskExecutionDateTime();
         val callback = scheduler.getCallback(scheduledTask.getTaskKey());
         if (callback == null) {
             log.info("scheduled task callback was not found: '{}'", scheduledTask.getTaskKey());
@@ -191,7 +195,7 @@ public class ScheduledTaskExecutor {
                     .build();
             lockProvider.lock(lockConfiguration).ifPresentOrElse(lock -> {
                 try {
-                    triggerTaskCallback(scheduledTask, currentDateTime, callback);
+                    triggerTaskCallback(scheduledTask, taskExecutionDateTime, callback);
                 } catch (Exception e) {
                     log.error("execute task '{}' failed", scheduledTask.getTaskKey(), e);
                 } finally {
@@ -202,11 +206,11 @@ public class ScheduledTaskExecutor {
 
     }
 
-    private void triggerTaskCallback(ScheduledTask scheduledTask, ZonedDateTime currentDateTime, ScheduledTaskCallback callback) {
-        scheduler.createNextTask(scheduledTask, currentDateTime);
+    private void triggerTaskCallback(ScheduledTask scheduledTask, ZonedDateTime taskExecutionDateTime, ScheduledTaskCallback callback) {
+        val nextExecution = scheduler.createNextTask(scheduledTask, taskExecutionDateTime);
         markAsTriggered(scheduledTask);
 
-        if (currentDateTime.toEpochSecond() - scheduledTask.getExecutionEpochSecond() > TASK_EXPIRATION) {
+        if (taskExecutionDateTime.toEpochSecond() - scheduledTask.getExecutionEpochSecond() > TASK_EXPIRATION) {
             log.info("scheduled task '{}'({}) was expired", scheduledTask.getTaskKey(), scheduledTask.getId());
             return;
         }
@@ -214,6 +218,11 @@ public class ScheduledTaskExecutor {
         try {
             log.debug("scheduled task callback triggered: '{}'", scheduledTask.getTaskKey());
             callback.accept(scheduledTask);
+
+            if (nextExecution == null) {
+                // unregister callback
+                messagePubSub.publishAfterCommit(new ScheduledTaskCallbackTerminatedEvent(List.of(scheduledTask.getTaskKey())));
+            }
         } catch (Exception e) {
             log.error("scheduled task '{}' callback failed", scheduledTask.getTaskKey(), e);
         }
@@ -238,6 +247,12 @@ public class ScheduledTaskExecutor {
         log.info("remove callback for scheduled task '{}'", scheduledTaskCancelledEvent.getTaskKey());
         scheduler.removeCallback(scheduledTaskCancelledEvent.getTaskKey());
         cancelTasks(scheduledTaskCancelledEvent.getTaskKey(), scheduledTaskCancelledEvent.getTaskIds());
+    }
+
+    @MessageListener
+    public void onScheduledTaskCallbackTerminated(ScheduledTaskCallbackTerminatedEvent scheduledTaskCallbackTerminatedEvent) {
+        log.info("remove callbacks: {}", scheduledTaskCallbackTerminatedEvent.getTaskKeys());
+        scheduledTaskCallbackTerminatedEvent.getTaskKeys().forEach(scheduler::removeCallback);
     }
 
     @PreDestroy

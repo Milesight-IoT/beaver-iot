@@ -3,7 +3,7 @@ package com.milesight.beaveriot.scheduler.core.model;
 import com.milesight.beaveriot.pubsub.api.message.RemoteBroadcastMessage;
 import lombok.*;
 
-import java.time.ZonedDateTime;
+import java.util.List;
 
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
@@ -11,12 +11,14 @@ import java.time.ZonedDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ScheduledTaskRemoteTriggeredEvent extends RemoteBroadcastMessage {
+public class ScheduledTaskCallbackTerminatedEvent extends RemoteBroadcastMessage {
 
     private String tenantId;
 
-    private ScheduledTask scheduledTask;
+    private List<String> taskKeys;
 
-    private ZonedDateTime taskExecutionDateTime;
+    public ScheduledTaskCallbackTerminatedEvent(List<String> taskKeys) {
+        this.taskKeys = taskKeys;
+    }
 
 }

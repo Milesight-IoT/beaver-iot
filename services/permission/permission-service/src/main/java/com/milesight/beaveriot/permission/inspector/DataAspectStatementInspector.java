@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.permission.inspector;
 
 import com.milesight.beaveriot.permission.context.DataAspectContext;
+import lombok.*;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.Parenthesis;
@@ -8,8 +9,6 @@ import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.expression.operators.relational.InExpression;
-import net.sf.jsqlparser.expression.operators.relational.ItemsList;
-import net.sf.jsqlparser.expression.operators.relational.MultiExpressionList;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
@@ -19,7 +18,6 @@ import net.sf.jsqlparser.statement.insert.Insert;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
-import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.update.Update;
 import org.hibernate.resource.jdbc.spi.StatementInspector;
 
@@ -36,64 +34,44 @@ public class DataAspectStatementInspector implements StatementInspector {
     @Override
     public String inspect(String sql) {
         String tenantSql = doTenantInspect(sql);
-        String dataPermissionSql = doDataPermissionInspect(tenantSql);
-        return dataPermissionSql;
+        return doDataPermissionInspect(tenantSql);
     }
 
+    @SneakyThrows
     private String doTenantInspect(String sql) {
-        try {
-            Statement statement = CCJSqlParserUtil.parse(sql);
-            if (statement instanceof Select) {
-                Select selectStatement = (Select) statement;
-                SelectBody selectBody = selectStatement.getSelectBody();
-                if (selectBody instanceof PlainSelect) {
-                    PlainSelect plainSelect = (PlainSelect) selectBody;
-                    addTenantCondition(plainSelect);
-                }
-            } else if (statement instanceof Update) {
-                Update updateStatement = (Update) statement;
-                addTenantCondition(updateStatement);
-            } else if (statement instanceof Delete) {
-                Delete deleteStatement = (Delete) statement;
-                addTenantCondition(deleteStatement);
-            } else if (statement instanceof Insert) {
-                Insert insertStatement = (Insert) statement;
-                addTenantCondition(insertStatement);
-            }
-            return statement.toString();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse SQL: " + sql, e);
+        Statement statement = CCJSqlParserUtil.parse(sql);
+        if (statement instanceof Select selectStatement) {
+            PlainSelect plainSelect = selectStatement.getPlainSelect();
+            addTenantCondition(plainSelect);
+        } else if (statement instanceof Update updateStatement) {
+            addTenantCondition(updateStatement);
+        } else if (statement instanceof Delete deleteStatement) {
+            addTenantCondition(deleteStatement);
+        } else if (statement instanceof Insert insertStatement) {
+            addTenantCondition(insertStatement);
         }
+        return statement.toString();
     }
 
+    @SneakyThrows
     private String doDataPermissionInspect(String sql) {
-        try {
-            Statement statement = CCJSqlParserUtil.parse(sql);
-
-            if (statement instanceof Select) {
-                Select selectStatement = (Select) statement;
-                SelectBody selectBody = selectStatement.getSelectBody();
-                if (selectBody instanceof PlainSelect) {
-                    PlainSelect plainSelect = (PlainSelect) selectBody;
-                    addDataPermissionCondition(plainSelect);
-                }
-            }
-            return statement.toString();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse SQL: " + sql, e);
+        Statement statement = CCJSqlParserUtil.parse(sql);
+        if (statement instanceof Select selectStatement) {
+            PlainSelect plainSelect = selectStatement.getPlainSelect();
+            addDataPermissionCondition(plainSelect);
         }
+        return statement.toString();
     }
 
     private void addTenantCondition(PlainSelect plainSelect) {
         String tableName = null;
         String alias = null;
         FromItem fromItem = plainSelect.getFromItem();
-        if (fromItem instanceof Table) {
-            Table table = (Table) fromItem;
+        if (fromItem instanceof Table table) {
             tableName = table.getName();
             alias = table.getAlias() != null ? table.getAlias().getName() : tableName;
         }
-        if (tableName == null || alias == null){
+        if (tableName == null || alias == null) {
             return;
         }
         String tenantId = null;
@@ -181,7 +159,7 @@ public class DataAspectStatementInspector implements StatementInspector {
     private void addTenantCondition(Insert insertStatement) {
         List<Column> columns = insertStatement.getColumns();
         String tableName = insertStatement.getTable().getName();
-        ItemsList itemsList = insertStatement.getItemsList();
+        ExpressionList<?> itemList = insertStatement.getValues().getExpressions();
 
         String tenantId = null;
         String columnName;
@@ -206,40 +184,10 @@ public class DataAspectStatementInspector implements StatementInspector {
             columns.add(new Column(columnName));
         }
 
-        if (itemsList instanceof ExpressionList) {
-            ExpressionList expressionList = (ExpressionList) itemsList;
-            List<Expression> expressions = expressionList.getExpressions();
+        if (!itemList.isEmpty() && itemList.get(0) instanceof ExpressionList) {
+            for (ExpressionList expressions : (ExpressionList<ExpressionList>) itemList) {
 
-            if (tenantIdPresent) {
-//                for (int i = 0; i < columns.size(); i++) {
-//                    if (columns.get(i).getColumnName().equalsIgnoreCase(columnName)) {
-//                        expressions.set(i, new StringValue(tenantId));
-//                        break;
-//                    }
-//                }
-            } else {
-                expressions.add(new StringValue(tenantId));
-            }
-
-            // Ensure the columns and expressions lists are of the same size
-            if (columns.size() != expressions.size()) {
-                throw new IllegalStateException("The number of columns and values do not match.");
-            }
-        } else if (itemsList instanceof MultiExpressionList) {
-            MultiExpressionList multiExpressionList = (MultiExpressionList) itemsList;
-            List<ExpressionList> expressionLists = multiExpressionList.getExprList();
-
-            for (ExpressionList expressionList : expressionLists) {
-                List<Expression> expressions = expressionList.getExpressions();
-
-                if (tenantIdPresent) {
-//                    for (int i = 0; i < columns.size(); i++) {
-//                        if (columns.get(i).getColumnName().equalsIgnoreCase(columnName)) {
-//                            expressions.set(i, new StringValue(tenantId));
-//                            break;
-//                        }
-//                    }
-                } else {
+                if (!tenantIdPresent) {
                     expressions.add(new StringValue(tenantId));
                 }
 
@@ -249,7 +197,16 @@ public class DataAspectStatementInspector implements StatementInspector {
                 }
             }
         } else {
-            throw new UnsupportedOperationException("Unsupported ItemsList type: " + itemsList.getClass().getName());
+            List<Expression> expressions = (ExpressionList<Expression>) itemList;
+
+            if (!tenantIdPresent) {
+                expressions.add(new StringValue(tenantId));
+            }
+
+            // Ensure the columns and expressions lists are of the same size
+            if (columns.size() != expressions.size()) {
+                throw new IllegalStateException("The number of columns and values do not match.");
+            }
         }
     }
 
@@ -257,12 +214,11 @@ public class DataAspectStatementInspector implements StatementInspector {
         String tableName = null;
         String alias = null;
         FromItem fromItem = plainSelect.getFromItem();
-        if (fromItem instanceof Table) {
-            Table table = (Table) fromItem;
+        if (fromItem instanceof Table table) {
             tableName = table.getName();
             alias = table.getAlias() != null ? table.getAlias().getName() : tableName;
         }
-        if(tableName == null || alias == null){
+        if (tableName == null || alias == null) {
             return;
         }
         List<Long> dataIds = new ArrayList<>();
