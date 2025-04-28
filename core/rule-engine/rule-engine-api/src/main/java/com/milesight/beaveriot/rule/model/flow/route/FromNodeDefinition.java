@@ -29,7 +29,7 @@ public class FromNodeDefinition extends AbstractNodeDefinition {
 
     public static FromNodeDefinition create(String flowId, RuleNodeConfig ruleNodeConfig, ComponentDefinition componentDefinition) {
         Map<String, Object> parameters = ComponentParameterConverter.convertParameters(ruleNodeConfig.getParameters(), componentDefinition);
-        String uri = componentDefinition.generateUri(flowId, parameters);
+        String uri = componentDefinition.generateUri(flowId, ruleNodeConfig, parameters);
 
         FromNodeDefinition nodeDefinition = new FromNodeDefinition();
         nodeDefinition.setId(ruleNodeConfig.getId());

@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.rule.model.definition;
 
+import com.milesight.beaveriot.rule.model.flow.config.RuleNodeConfig;
 import lombok.Data;
 import org.springframework.util.ObjectUtils;
 
@@ -19,7 +20,9 @@ public class ComponentDefinition {
     protected final Map<String, ComponentOptionDefinition> properties = new LinkedHashMap<>();
     protected final Map<String, ComponentOutputDefinition> outputProperties = new LinkedHashMap<>();
 
-    public String generateUri(String id, Map<String, Object> parameters) {
+    protected final String PROPERTY_NODE_ID = "nodeId";
+
+    public String generateUri(String id, RuleNodeConfig ruleNodeConfig, Map<String, Object> parameters) {
 
         //if component is bean, then use bean name as uri
         if ("bean".equals(component.getScheme())) {
@@ -38,7 +41,15 @@ public class ComponentDefinition {
             }
         }
 
-        return generateUri(component.getScheme(), path);
+        return appendExtraUriParameters(generateUri(component.getScheme(), path), ruleNodeConfig);
+    }
+
+    private String appendExtraUriParameters(String uri, RuleNodeConfig ruleNodeConfig) {
+        //append nodeId if need
+        if (properties.containsKey(PROPERTY_NODE_ID) && properties.containsKey(PROPERTY_NODE_ID) && properties.get(PROPERTY_NODE_ID).isAutowired()) {
+            uri = uri + "?" + PROPERTY_NODE_ID + "=" + ruleNodeConfig.getId();
+        }
+        return uri;
     }
 
     private String generateUri(String scheme, String path) {

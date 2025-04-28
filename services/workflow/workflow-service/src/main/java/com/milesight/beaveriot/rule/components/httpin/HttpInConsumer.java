@@ -1,14 +1,16 @@
 package com.milesight.beaveriot.rule.components.httpin;
 
 import com.milesight.beaveriot.rule.components.httpin.model.ListenConfig;
+import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
 import com.milesight.beaveriot.rule.support.JsonHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.support.DefaultConsumer;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
+
+import static com.milesight.beaveriot.rule.constants.ExchangeHeaders.EXCHANGE_CUSTOM_OUTPUT_LOG_VARIABLES;
 
 /**
  * HttpInConsumer class.
@@ -46,6 +48,7 @@ public class HttpInConsumer extends DefaultConsumer {
                 }
                 request.getPathParams().forEach((key, value) -> payload.put(HttpInConstants.OUT_PATH_PARAM_NAME + "." + key, value));
                 exchange.getIn().setBody(payload);
+                ExchangeHeaders.putMapProperty(exchange, EXCHANGE_CUSTOM_OUTPUT_LOG_VARIABLES, httpInEndpoint.getNodeId(), payload);
                 getProcessor().process(exchange);
             } catch (Exception e) {
                 log.error("Process error: " + e.getMessage());

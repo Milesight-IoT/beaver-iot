@@ -2,6 +2,7 @@ package com.milesight.beaveriot.rule.trace;
 
 import com.google.common.collect.Maps;
 import com.milesight.beaveriot.base.utils.JsonUtils;
+import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
 import com.milesight.beaveriot.rule.model.VariableNamed;
 import com.milesight.beaveriot.rule.support.SpELExpressionHelper;
 import lombok.Data;
@@ -12,6 +13,9 @@ import org.springframework.util.ObjectUtils;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static com.milesight.beaveriot.rule.constants.ExchangeHeaders.EXCHANGE_CUSTOM_INPUT_LOG_VARIABLES;
+import static com.milesight.beaveriot.rule.constants.ExchangeHeaders.EXCHANGE_CUSTOM_OUTPUT_LOG_VARIABLES;
 
 /**
  * @author leon
@@ -43,6 +47,10 @@ public class RuleNodeLogVariablesSupport {
     }
 
     public static String getExchangeInputBody(Exchange exchange, String nodeId) {
+        if (ExchangeHeaders.containsMapProperty(exchange, EXCHANGE_CUSTOM_INPUT_LOG_VARIABLES, nodeId)) {
+            return JsonUtils.toJSON(ExchangeHeaders.getMapProperty(exchange, EXCHANGE_CUSTOM_INPUT_LOG_VARIABLES, nodeId));
+        }
+
         try {
             LogVariables logVariables = getLogVariables(exchange.getFromRouteId(), nodeId);
             if (logVariables == null || ObjectUtils.isEmpty(logVariables.getInputVariables())) {
@@ -61,14 +69,17 @@ public class RuleNodeLogVariablesSupport {
                     variableNode.findOutputVariable(variableName).ifPresent(definitionNamed -> inputVariables.put(definitionNamed.getName(), SpELExpressionHelper.SPEL_EXPRESSION_PREFIX + inputVariable + SpELExpressionHelper.SPEL_EXPRESSION_SUFFIX));
                 }
             }
-            String bodyStr = JsonUtils.toJSON(SpELExpressionHelper.resolveExpression(exchange, inputVariables));
-            return !ObjectUtils.isEmpty(bodyStr) && bodyStr.length() > TRACER_BODY_MAX_LENGTH ? TRACER_BODY_EXCEED_MAX_WARNING : bodyStr;
+            return toJSON(SpELExpressionHelper.resolveExpression(exchange, inputVariables));
         } catch (Exception ex) {
             return  causeException(ex);
         }
     }
 
     public static String getExchangeOutputBody(Exchange exchange, String nodeId) {
+        if (ExchangeHeaders.containsMapProperty(exchange, EXCHANGE_CUSTOM_OUTPUT_LOG_VARIABLES, nodeId)) {
+            return JsonUtils.toJSON(ExchangeHeaders.getMapProperty(exchange, EXCHANGE_CUSTOM_OUTPUT_LOG_VARIABLES, nodeId));
+        }
+
         try {
             LogVariables logVariables = getLogVariables(exchange.getFromRouteId(), nodeId);
             if (logVariables == null || ObjectUtils.isEmpty(logVariables.getOutputVariables())) {
