@@ -60,7 +60,7 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
     public void processor(Exchange exchange) {
         Map<String, Object> httpHeader = new HashMap<>();
         httpHeader.put(Exchange.HTTP_METHOD, method);
-        if(header != null && !header.isEmpty()) {
+        if (header != null && !header.isEmpty()) {
             Map<String, Object> headerVariables = SpELExpressionHelper.resolveExpression(exchange, header);
             httpHeader.putAll(headerVariables);
         }
@@ -70,14 +70,14 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
             paramsVariables.forEach((key, value) -> {
                 if (requestUrl.indexOf("?") == -1) {
                     requestUrl.append("?");
-                }else {
+                } else {
                     requestUrl.append("&");
                 }
                 requestUrl.append(key).append("=").append(value);
             });
         }
         Object bodyValueVariables = null;
-        if(body != null) {
+        if (body != null) {
             String bodyType = body.get("type") == null ? null : body.get("type").toString();
             if (bodyType != null) {
                 httpHeader.put(Exchange.CONTENT_TYPE, bodyType);
@@ -87,20 +87,23 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
                 bodyValueVariables = SpELExpressionHelper.resolveStringExpression(exchange, bodyValue);
             }
         }
-        Exchange responseExchange = (Exchange) producerTemplate.requestBodyAndHeaders(
-                requestUrl.toString(),
-                bodyValueVariables,
-                httpHeader);
-        if (responseExchange != null && responseExchange.getOut() != null) {
-            Map<String, Object> responseHeaders = responseExchange.getOut().getHeaders();
-            String responseBody = responseExchange.getOut().getBody(String.class);
-            int statusCode = responseExchange.getOut().getHeader(Exchange.HTTP_RESPONSE_CODE, Integer.class);
-
+        Object finalBodyValueVariables = bodyValueVariables;
+        Exchange responseExchange = producerTemplate.request(requestUrl.toString(), exchange1 -> {
+            exchange1.getIn().setHeaders(httpHeader);
+            exchange1.getIn().setBody(finalBodyValueVariables);
+        });
+        if (responseExchange != null) {
             Map<String, Object> bodyOut = new HashMap<>();
+
+            int statusCode = responseExchange.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE, Integer.class);
+            String responseBody = responseExchange.getMessage().getBody(String.class);
+            Map<String, Object> responseHeaders = responseExchange.getMessage().getHeaders();
+
             bodyOut.put("statusCode", statusCode);
             bodyOut.put("responseBody", responseBody);
             bodyOut.put("responseHeaders", JsonHelper.toJSON(responseHeaders));
             exchange.getIn().setBody(bodyOut);
         }
     }
+
 }
