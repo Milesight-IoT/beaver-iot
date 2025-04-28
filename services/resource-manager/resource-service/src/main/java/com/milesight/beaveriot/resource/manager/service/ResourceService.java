@@ -190,7 +190,9 @@ public class ResourceService implements ResourceManagerFacade {
                     .stream()
                     .filter(f -> f.getSettled().equals(Boolean.FALSE))
                     .map(ResourceTempPO::getResourceId).toList();
-            cleanUpResources(resourceIdToClean);
+            List<ResourcePO> resourceToRemove = resourceRepository.findAllByIdIgnoreTenant(resourceIdToClean);
+            resourceRepository.deleteAll(resourceToRemove);
+            resourceToRemove.forEach(r -> resourceStorage.delete(r.getKey()));
             resourceTempRepository.deleteAll(expiredTempList);
             log.debug("Delete temp resources: {}", resourceIdToClean);
 
