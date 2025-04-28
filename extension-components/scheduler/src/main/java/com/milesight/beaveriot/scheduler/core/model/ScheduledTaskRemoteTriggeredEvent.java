@@ -17,6 +17,6 @@ public class ScheduledTaskRemoteTriggeredEvent extends RemoteBroadcastMessage {
 
     private ScheduledTask scheduledTask;
 
-    private ZonedDateTime currentDateTime;
+    private ZonedDateTime taskExecutionDateTime;
 
 }

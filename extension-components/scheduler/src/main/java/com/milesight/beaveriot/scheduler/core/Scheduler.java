@@ -120,12 +120,6 @@ public class Scheduler {
         Objects.requireNonNull(taskKey, "taskKey can not be null");
         Objects.requireNonNull(scheduleSettings, "scheduleSettings can not be null");
 
-        val nowDateTime = ZonedDateTime.now();
-        val nextExecutionEpochSecond = getNextExecutionEpochSecond(scheduleSettings.getScheduleType(), scheduleSettings.getScheduleRule(), nowDateTime);
-        if (nextExecutionEpochSecond == null) {
-            throw new IllegalArgumentException("Can not get next execution time, the schedule rule may be invalid");
-        }
-
         List<Long> removedExistingTaskIds = new ArrayList<>();
         var tenantId = TenantContext.tryGetTenantId().orElse(null);
         val existingSchedulePO = scheduleSettingsRepository.findFirstByTaskKey(taskKey);
@@ -139,7 +133,7 @@ public class Scheduler {
 
             log.info("schedule task '{}' already exists", taskKey);
             val existingSchedule = convertToScheduleSettings(existingSchedulePO);
-            val existingTask = getExistingScheduledTask(taskKey, tenantId, nextExecutionEpochSecond, existingSchedule, scheduleSettings);
+            val existingTask = getExistingScheduledTask(taskKey, tenantId, existingSchedule, scheduleSettings);
             if (existingTask != null) {
                 return existingTask;
             }
@@ -156,6 +150,12 @@ public class Scheduler {
         scheduleSettingsPO.setScheduleRule(JsonUtils.toJSON(scheduleSettings.getScheduleRule()));
         scheduleSettingsPO.setPayload(scheduleSettings.getPayload());
         scheduleSettingsPO.setTenantId(tenantId);
+
+        val nowDateTime = ZonedDateTime.now();
+        val nextExecutionEpochSecond = getNextExecutionEpochSecond(scheduleSettings.getScheduleType(), scheduleSettings.getScheduleRule(), null, nowDateTime);
+        if (nextExecutionEpochSecond == null) {
+            throw new IllegalArgumentException("Can not get next execution time, the schedule rule may be invalid");
+        }
 
         var scheduleTaskPO = new ScheduledTaskPO();
         scheduleTaskPO.setId(SnowflakeUtil.nextId());
@@ -176,6 +176,8 @@ public class Scheduler {
         val scheduledTask = convertToScheduledTask(scheduleTaskPO);
         scheduledTask.setScheduleSettings(scheduleSettings);
         messagePubSub.publishAfterCommit(new ScheduledTaskUpdatedEvent(tenantId, scheduledTask, removedExistingTaskIds));
+
+        log.info("schedule task '{}' successfully, next execution time: {}", taskKey, scheduledTask.getExecutionEpochSecond());
         return scheduledTask;
     }
 
@@ -184,15 +186,19 @@ public class Scheduler {
     }
 
     @Nullable
-    private ScheduledTask getExistingScheduledTask(String taskKey, String tenantId, Long nextExecutionEpochSecond,
+    private ScheduledTask getExistingScheduledTask(String taskKey, String tenantId,
                                                    ScheduleSettings existingScheduleSettings, ScheduleSettings newScheduleSettings) {
         if (!newScheduleSettings.equalsWith(existingScheduleSettings)) {
             return null;
         }
 
         log.info("schedule settings not changed: '{}'", taskKey);
-        val taskPO = scheduledTaskRepository.findFirstByTaskKeyAndExecutionEpochSecond(taskKey, nextExecutionEpochSecond);
+        val taskPO = scheduledTaskRepository.findAllByTaskKey(taskKey)
+                .stream()
+                .findFirst()
+                .orElse(null);
         if (taskPO != null) {
+            log.info("existing scheduled task found, execution time: {}", taskPO.getExecutionEpochSecond());
             val task = convertToScheduledTask(taskPO);
             task.setTenantId(tenantId);
             task.setScheduleSettings(existingScheduleSettings);
@@ -211,12 +217,15 @@ public class Scheduler {
                 .map(ScheduledTaskPO::getId)
                 .toList();
         scheduleSettingsRepository.deleteById(existingSchedulePO.getId());
-        scheduledTaskRepository.deleteAllById(existingTaskIds);
+        if (!existingTaskIds.isEmpty()) {
+            scheduledTaskRepository.deleteAllById(existingTaskIds);
+        }
         scheduleSettingsRepository.flush();
         return existingTaskIds;
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @DistributedLock(name = "SCHEDULE(#{#p0.taskKey})", waitForLock = "3s", scope = LockScope.GLOBAL)
     public ScheduledTask createNextTask(ScheduledTask previousTask, ZonedDateTime currentDateTime) {
         val scheduleSettings = previousTask.getScheduleSettings();
         val scheduleType = scheduleSettings.getScheduleType();
@@ -232,7 +241,10 @@ public class Scheduler {
         if (zoneId != currentDateTime.getZone()) {
             currentDateTime = currentDateTime.withZoneSameInstant(zoneId);
         }
-        val nextExecutionEpochSecond = getNextExecutionEpochSecond(scheduleType, rule, currentDateTime);
+        val previousExecutionDateTime = currentDateTime.toEpochSecond() == previousTask.getExecutionEpochSecond()
+                ? currentDateTime
+                : ZonedDateTime.ofInstant(Instant.ofEpochSecond(previousTask.getExecutionEpochSecond()), zoneId);
+        val nextExecutionEpochSecond = getNextExecutionEpochSecond(scheduleType, rule, previousExecutionDateTime, currentDateTime);
         if (nextExecutionEpochSecond == null) {
             log.info("next execution time not found: '{}'", previousTask.getTaskKey());
             return null;
@@ -264,20 +276,24 @@ public class Scheduler {
         return task;
     }
 
-    public Long getNextExecutionEpochSecond(ScheduleType scheduleType, ScheduleRule scheduleRule, ZonedDateTime currentDateTime) {
+    public Long getNextExecutionEpochSecond(ScheduleType scheduleType, ScheduleRule scheduleRule, ZonedDateTime previousExecutionDateTime, ZonedDateTime currentDateTime) {
         if (scheduleType == null || scheduleRule == null) {
             return null;
         }
 
         return switch (scheduleType) {
-            case ONCE -> getNextExecutionEpochSecondByOnce(scheduleRule, currentDateTime);
-            case CRON -> getNextExecutionEpochSecondByCron(scheduleRule, currentDateTime);
-            case FIXED_RATE -> getNextExecutionEpochSecondByFixedRate(scheduleRule, currentDateTime);
+            case ONCE -> getNextExecutionEpochSecondByOnce(scheduleRule, previousExecutionDateTime, currentDateTime);
+            case CRON -> getNextExecutionEpochSecondByCron(scheduleRule, previousExecutionDateTime, currentDateTime);
+            case FIXED_RATE ->
+                    getNextExecutionEpochSecondByFixedRate(scheduleRule, previousExecutionDateTime, currentDateTime);
         };
     }
 
     @Nullable
-    private static Long getNextExecutionEpochSecondByOnce(ScheduleRule scheduleRule, ZonedDateTime currentDateTime) {
+    private static Long getNextExecutionEpochSecondByOnce(ScheduleRule scheduleRule, ZonedDateTime previousExecutionDateTime, ZonedDateTime currentDateTime) {
+        if (previousExecutionDateTime != null) {
+            return null;
+        }
         val currentEpochSecond = currentDateTime.toEpochSecond();
         val startEpochSecond = scheduleRule.getStartEpochSecond();
         if (startEpochSecond == null) {
@@ -290,19 +306,21 @@ public class Scheduler {
     }
 
     @Nullable
-    private static Long getNextExecutionEpochSecondByCron(ScheduleRule scheduleRule, ZonedDateTime currentDateTime) {
-        val currentEpochSecond = currentDateTime.toEpochSecond();
+    private static Long getNextExecutionEpochSecondByCron(ScheduleRule scheduleRule, ZonedDateTime previousExecutionDateTime, ZonedDateTime currentDateTime) {
         val expirationEpochSecond = scheduleRule.getExpirationEpochSecond();
         val startEpochSecond = scheduleRule.getStartEpochSecond();
+        currentDateTime = previousExecutionDateTime == null || currentDateTime.isAfter(previousExecutionDateTime)
+                ? currentDateTime
+                : previousExecutionDateTime;
+        if (startEpochSecond != null && startEpochSecond > currentDateTime.toEpochSecond()) {
+            currentDateTime = ZonedDateTime.ofInstant(Instant.ofEpochSecond(startEpochSecond), currentDateTime.getZone());
+        }
+        val startDateTime = currentDateTime;
 
         return scheduleRule.getCronExpressions().stream()
                 .map(cronExpression -> {
                     val cron = cronParser.parse(cronExpression);
                     val executionTime = ExecutionTime.forCron(cron);
-                    var startDateTime = currentDateTime;
-                    if (startEpochSecond != null && startEpochSecond > currentEpochSecond) {
-                        startDateTime = ZonedDateTime.ofInstant(Instant.ofEpochSecond(startEpochSecond), currentDateTime.getZone());
-                    }
                     return executionTime.nextExecution(startDateTime)
                             .map(ZonedDateTime::toEpochSecond)
                             .orElse(null);
@@ -315,19 +333,27 @@ public class Scheduler {
     }
 
     @Nullable
-    private static Long getNextExecutionEpochSecondByFixedRate(ScheduleRule scheduleRule, ZonedDateTime currentDateTime) {
+    private static Long getNextExecutionEpochSecondByFixedRate(ScheduleRule scheduleRule, ZonedDateTime previousExecutionDateTime, ZonedDateTime currentDateTime) {
         val currentEpochSecond = currentDateTime.toEpochSecond();
         val expirationEpochSecond = scheduleRule.getExpirationEpochSecond();
         val periodSecond = scheduleRule.getPeriodSecond();
         val startEpochSecond = scheduleRule.getStartEpochSecond();
 
-        if (startEpochSecond != null && startEpochSecond > currentEpochSecond) {
+        if (previousExecutionDateTime == null && startEpochSecond != null && startEpochSecond > currentEpochSecond) {
             return startEpochSecond;
         } else {
             if (periodSecond == null || periodSecond <= 0) {
                 return null;
             }
-            val fixedRateNext = currentEpochSecond + periodSecond;
+            if (previousExecutionDateTime == null) {
+                previousExecutionDateTime = currentDateTime;
+            }
+            val previousExecutionEpochSecond = previousExecutionDateTime.toEpochSecond();
+            long fixedRateNext = previousExecutionEpochSecond + periodSecond;
+            // ensure next execution is after current time
+            while (fixedRateNext < currentEpochSecond) {
+                fixedRateNext = fixedRateNext + periodSecond;
+            }
             if (expirationEpochSecond == null || expirationEpochSecond >= fixedRateNext) {
                 return fixedRateNext;
             }
@@ -347,14 +373,13 @@ public class Scheduler {
         return result;
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @DistributedLock(name = "SCHEDULE(#{#p0})", waitForLock = "3s", scope = LockScope.GLOBAL)
     public void cancel(String taskKey) {
         log.info("cancel schedule task: '{}'", taskKey);
-        boolean modified = false;
         val scheduleSettings = scheduleSettingsRepository.findFirstByTaskKey(taskKey);
         if (scheduleSettings != null) {
             scheduleSettingsRepository.deleteById(scheduleSettings.getId());
-            modified = true;
         }
 
         val tasks = scheduledTaskRepository.findAllByTaskKey(taskKey);
@@ -364,12 +389,8 @@ public class Scheduler {
         if (!taskIds.isEmpty()) {
             scheduledTaskRepository.deleteAllById(taskIds);
             messagePubSub.publishAfterCommit(new ScheduledTaskCancelledEvent(taskKey, taskIds));
-            modified = true;
         }
 
-        if (modified) {
-            scheduleSettingsRepository.flush();
-        }
         removeCallback(taskKey);
     }
 
