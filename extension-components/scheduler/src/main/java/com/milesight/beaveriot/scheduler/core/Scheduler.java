@@ -4,6 +4,7 @@ import com.cronutils.model.CronType;
 import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.time.ExecutionTime;
 import com.cronutils.parser.CronParser;
+import com.google.common.collect.Iterators;
 import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
 import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
 import com.milesight.beaveriot.base.enums.ErrorCode;
@@ -18,6 +19,7 @@ import com.milesight.beaveriot.scheduler.core.model.ScheduleSettings;
 import com.milesight.beaveriot.scheduler.core.model.ScheduleSettingsPO;
 import com.milesight.beaveriot.scheduler.core.model.ScheduleType;
 import com.milesight.beaveriot.scheduler.core.model.ScheduledTask;
+import com.milesight.beaveriot.scheduler.core.model.ScheduledTaskCallbackTerminatedEvent;
 import com.milesight.beaveriot.scheduler.core.model.ScheduledTaskCancelledEvent;
 import com.milesight.beaveriot.scheduler.core.model.ScheduledTaskPO;
 import com.milesight.beaveriot.scheduler.core.model.ScheduledTaskUpdatedEvent;
@@ -410,6 +412,20 @@ public class Scheduler {
     public void removeCallback(String taskKey) {
         log.info("remove callback for schedule task '{}'", taskKey);
         taskKeyToRunner.remove(taskKey);
+    }
+
+    @Transactional
+    public void removeExpiredTasks(ZonedDateTime expirationDateTime) {
+        log.info("remove expired schedule tasks before {}", expirationDateTime);
+        scheduledTaskRepository.deleteAllExpired(expirationDateTime.toEpochSecond());
+        val taskKeys = scheduleSettingsRepository.findTerminatedTaskKeys();
+        if (!taskKeys.isEmpty()) {
+            Iterators.partition(taskKeys.iterator(), 200).forEachRemaining(keys -> {
+                log.info("remove terminated schedule tasks: {}", keys);
+                scheduleSettingsRepository.deleteAllByTaskKeyIn(keys);
+                messagePubSub.publishAfterCommit(new ScheduledTaskCallbackTerminatedEvent(keys));
+            });
+        }
     }
 
     public Scheduler self() {

@@ -42,4 +42,9 @@ public interface ScheduledTaskRepository extends BaseJpaRepository<ScheduledTask
     @Query("delete from ScheduledTaskPO t where t.taskKey = :taskKey and t.triggeredAt = 0")
     void deleteByTaskKey(@Param("taskKey") String taskKey);
 
+    @Modifying
+    @Transactional
+    @Query("delete from ScheduledTaskPO t where t.executionEpochSecond <= :expirationEpochSecond and t.triggeredAt > 0")
+    void deleteAllExpired(@Param("expirationEpochSecond") Long expirationEpochSecond);
+
 }

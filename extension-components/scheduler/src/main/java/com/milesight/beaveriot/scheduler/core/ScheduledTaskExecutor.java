@@ -7,6 +7,7 @@ import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
 import com.milesight.beaveriot.pubsub.MessagePubSub;
 import com.milesight.beaveriot.pubsub.api.annotation.MessageListener;
 import com.milesight.beaveriot.scheduler.core.model.ScheduledTask;
+import com.milesight.beaveriot.scheduler.core.model.ScheduledTaskCallbackTerminatedEvent;
 import com.milesight.beaveriot.scheduler.core.model.ScheduledTaskCancelledEvent;
 import com.milesight.beaveriot.scheduler.core.model.ScheduledTaskRemoteTriggeredEvent;
 import com.milesight.beaveriot.scheduler.core.model.ScheduledTaskUpdatedEvent;
@@ -26,7 +27,6 @@ import org.springframework.util.CollectionUtils;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -118,6 +118,14 @@ public class ScheduledTaskExecutor {
             }
         });
     }
+
+    @Transactional
+    @Scheduled(cron = "11 11 1 * * *")
+    @DistributedLock(name = "scheduled_task_clean_up", lockAtLeastFor = "59s", lockAtMostFor = "59s", scope = LockScope.GLOBAL, throwOnLockFailure = false)
+    public void removeExpiredTasks() {
+        scheduler.removeExpiredTasks(ZonedDateTime.now().minusMonths(1));
+    }
+
 
     private void markAsRunning(ArrayList<Long> runningTaskIds) {
         scheduledTaskRepository.increaseAttemptsByIds(runningTaskIds);
@@ -213,7 +221,7 @@ public class ScheduledTaskExecutor {
 
             if (nextExecution == null) {
                 // unregister callback
-                messagePubSub.publishAfterCommit(new ScheduledTaskCancelledEvent(scheduledTask.getTaskKey(), Collections.emptyList()));
+                messagePubSub.publishAfterCommit(new ScheduledTaskCallbackTerminatedEvent(List.of(scheduledTask.getTaskKey())));
             }
         } catch (Exception e) {
             log.error("scheduled task '{}' callback failed", scheduledTask.getTaskKey(), e);
@@ -239,6 +247,12 @@ public class ScheduledTaskExecutor {
         log.info("remove callback for scheduled task '{}'", scheduledTaskCancelledEvent.getTaskKey());
         scheduler.removeCallback(scheduledTaskCancelledEvent.getTaskKey());
         cancelTasks(scheduledTaskCancelledEvent.getTaskKey(), scheduledTaskCancelledEvent.getTaskIds());
+    }
+
+    @MessageListener
+    public void onScheduledTaskCallbackTerminated(ScheduledTaskCallbackTerminatedEvent scheduledTaskCallbackTerminatedEvent) {
+        log.info("remove callbacks: {}", scheduledTaskCallbackTerminatedEvent.getTaskKeys());
+        scheduledTaskCallbackTerminatedEvent.getTaskKeys().forEach(scheduler::removeCallback);
     }
 
     @PreDestroy
