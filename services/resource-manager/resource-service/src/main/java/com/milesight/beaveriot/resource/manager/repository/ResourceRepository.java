@@ -4,6 +4,8 @@ import com.milesight.beaveriot.data.jpa.repository.BaseJpaRepository;
 import com.milesight.beaveriot.permission.aspect.Tenant;
 import com.milesight.beaveriot.resource.manager.po.ResourcePO;
 
+import java.util.List;
+
 /**
  * ResourceRepository class.
  *
@@ -13,4 +15,9 @@ import com.milesight.beaveriot.resource.manager.po.ResourcePO;
 @Tenant
 public interface ResourceRepository extends BaseJpaRepository<ResourcePO, Long> {
     ResourcePO findOneByUrl(String url);
+
+    @Tenant(enable = false)
+    default List<ResourcePO> findAllByIdIgnoreTenant(Iterable<Long> ids) {
+        return findAllById(ids);
+    }
 }
