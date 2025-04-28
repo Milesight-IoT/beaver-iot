@@ -133,7 +133,7 @@ public class UserFacade implements IUserFacade {
                 menuDTO.setMenuId(menuPO.getId());
                 menuDTO.setMenuCode(menuPO.getCode());
                 return menuDTO;
-            }).toList();
+            }).collect(Collectors.toList());
         }
         List<RoleMenuPO> roleMenuPOS = roleMenuRepository.findAll(filterable -> filterable.in(RoleMenuPO.Fields.roleId, roleIds.toArray()));
         if (roleMenuPOS == null || roleMenuPOS.isEmpty()) {
