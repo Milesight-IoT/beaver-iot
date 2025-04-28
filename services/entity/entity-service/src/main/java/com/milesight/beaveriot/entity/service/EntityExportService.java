@@ -86,7 +86,7 @@ public class EntityExportService {
             query.setEndTimestamp(endTime);
             query.setPageNumber(i + 1);
             query.setPageSize(PAGE_SIZE);
-            query.sort(new Sorts().asc(EntityHistoryPO.Fields.id));
+            query.sort(new Sorts().desc(EntityHistoryPO.Fields.timestamp).asc(EntityHistoryPO.Fields.entityId));
             return entityValueService.historySearch(query)
                     .stream()
                     .map(historyResponse -> {
@@ -114,7 +114,7 @@ public class EntityExportService {
                         return entityExportData;
                     })
                     .filter(Objects::nonNull)
-                    .sorted(Comparator.comparing(EntityExportData::getUpdateTime)
+                    .sorted(Comparator.comparing(EntityExportData::getUpdateTime).reversed()
                             .thenComparing(EntityExportData::getEntityIdentifier))
                     .toList();
         });
