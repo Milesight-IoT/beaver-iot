@@ -64,10 +64,7 @@ public class RuleNodeLogVariablesSupport {
                 if (StringUtils.isEmpty(variableNodeId) || StringUtils.isEmpty(variableName)) {
                     continue;
                 }
-                LogVariables variableNode = getLogVariables(exchange.getFromRouteId(), variableNodeId);
-                if (variableNode != null) {
-                    variableNode.findOutputVariable(variableName).ifPresent(definitionNamed -> inputVariables.put(definitionNamed.getName(), SpELExpressionHelper.SPEL_EXPRESSION_PREFIX + inputVariable + SpELExpressionHelper.SPEL_EXPRESSION_SUFFIX));
-                }
+                inputVariables.put(variableName, SpELExpressionHelper.SPEL_EXPRESSION_PREFIX + inputVariable + SpELExpressionHelper.SPEL_EXPRESSION_SUFFIX);
             }
             return toJSON(SpELExpressionHelper.resolveExpression(exchange, inputVariables));
         } catch (Exception ex) {

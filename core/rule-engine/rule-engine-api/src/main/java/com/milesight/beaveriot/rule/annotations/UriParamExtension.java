@@ -41,4 +41,6 @@ public @interface UriParamExtension {
      * @return
      */
     boolean loggable() default false;
+
+    String initialValue() default "";
 }

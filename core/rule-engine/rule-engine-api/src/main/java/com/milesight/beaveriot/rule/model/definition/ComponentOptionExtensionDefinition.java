@@ -13,5 +13,5 @@ public class ComponentOptionExtensionDefinition {
     protected String uiComponentTags;
     protected String uiComponentGroup;
     protected boolean loggable;
-
+    protected String initialValue;
 }
