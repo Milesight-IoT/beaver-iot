@@ -330,7 +330,7 @@ public class Scheduler {
                 .filter(Objects::nonNull)
                 .sorted()
                 .findFirst()
-                .filter(cronNext -> expirationEpochSecond == null || cronNext < expirationEpochSecond)
+                .filter(cronNext -> expirationEpochSecond == null || cronNext <= expirationEpochSecond)
                 .orElse(null);
     }
 

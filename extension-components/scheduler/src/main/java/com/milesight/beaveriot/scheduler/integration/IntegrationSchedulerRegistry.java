@@ -9,20 +9,24 @@ import com.milesight.beaveriot.scheduler.core.model.ScheduleType;
 import com.milesight.beaveriot.user.dto.TenantDTO;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import jakarta.annotation.PostConstruct;
+import lombok.*;
 import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * @author loong
@@ -34,6 +38,7 @@ public class IntegrationSchedulerRegistry {
     private static final Map<String, Runnable> tasks = new ConcurrentHashMap<>();
 
     private static final Map<String, IntegrationScheduled> integrationSchedules = new ConcurrentHashMap<>();
+    private static final String SCHEDULED_TASK_PREFIX = "integration-scheduler";
 
     private static IntegrationSchedulerRegistry self;
 
@@ -52,152 +57,145 @@ public class IntegrationSchedulerRegistry {
     }
 
     public static void registerScheduler(String schedulerName, Runnable task, IntegrationScheduled scheduled) {
-        Assert.isTrue(StringUtils.hasText(schedulerName), "schedulerName cannot be empty");
+        Assert.hasText(schedulerName, "schedulerName cannot be empty");
         tasks.put(schedulerName, task);
-        integrationSchedules.put(schedulerName, scheduled);
+        IntegrationScheduled replaced = integrationSchedules.put(schedulerName, scheduled);
+        if (replaced != null) {
+            log.info("integration scheduler '{}' has been registered already, now replace it", schedulerName);
+        }
     }
 
-    public static void updateScheduleAnnotationTask(String schedulerName, List<String> entityKeys) {
-        Assert.isTrue(StringUtils.hasText(schedulerName), "schedulerName cannot be empty");
-        Runnable task = tasks.get(schedulerName);
-        Assert.isTrue(task != null, "task cannot be null");
+    public static void scheduleTask(IntegrationScheduled integrationScheduled, Set<String> entityKeys) {
+        String tenantId = TenantContext.getTenantId();
+        TenantDTO tenant = self.userFacade.analyzeTenantId(tenantId);
+        Assert.notNull(tenant, "tenant not found");
+        scheduleTask(integrationScheduled, tenant, entityKeys);
+    }
 
-        IntegrationScheduled integrationScheduled = integrationSchedules.get(schedulerName);
-        String cronEntity = integrationScheduled.cronEntity();
-        String fixedDelayEntity = integrationScheduled.fixedDelayEntity();
-        String timeUnitEntity = integrationScheduled.timeUnitEntity();
+    public static void scheduleTask(IntegrationScheduled integrationScheduled) {
+        scheduleTask(integrationScheduled, null, null);
+    }
 
-        List<TenantDTO> tenants = self.userFacade.getAllTenants();
-        for (TenantDTO tenantDTO : tenants) {
-            try {
-                TenantContext.setTenantId(tenantDTO.getTenantId());
+    public static void scheduleTask(IntegrationScheduled integrationScheduled, TenantDTO tenant) {
+        scheduleTask(integrationScheduled, tenant, null);
+    }
 
-                String cronEntityValue = "";
-                long fixedDelayEntityValue = -1;
-                String timeUnitEntityValue = "";
 
-                List<String> tenantEntityKeys = new ArrayList<>();
-                if (!cronEntity.isEmpty() && entityKeys.contains(cronEntity)) {
-                    tenantEntityKeys.add(cronEntity);
-                }
-                if (!fixedDelayEntity.isEmpty() && entityKeys.contains(fixedDelayEntity)) {
-                    tenantEntityKeys.add(fixedDelayEntity);
-                }
-                if (!timeUnitEntity.isEmpty() && entityKeys.contains(timeUnitEntity)) {
-                    tenantEntityKeys.add(timeUnitEntity);
-                }
-                if (!tenantEntityKeys.isEmpty()) {
-                    Map<String, Object> tenantEntityValues = self.entityValueServiceProvider.findValuesByKeys(tenantEntityKeys);
-                    if (tenantEntityValues != null && !tenantEntityValues.isEmpty()) {
-                        if (!cronEntity.isEmpty() && entityKeys.contains(cronEntity) && tenantEntityValues.containsKey(cronEntity)) {
-                            cronEntityValue = tenantEntityValues.get(cronEntity).toString();
-                        }
-                        if (!fixedDelayEntity.isEmpty() && entityKeys.contains(fixedDelayEntity) && tenantEntityValues.containsKey(fixedDelayEntity)) {
-                            fixedDelayEntityValue = Long.parseLong(tenantEntityValues.get(fixedDelayEntity).toString());
-                        }
-                        if (!timeUnitEntity.isEmpty() && entityKeys.contains(timeUnitEntity) && tenantEntityValues.containsKey(timeUnitEntity)) {
-                            timeUnitEntityValue = tenantEntityValues.get(timeUnitEntity).toString();
-                        }
-                    }
-                }
-                if (!cronEntityValue.isEmpty() || fixedDelayEntityValue != -1 || !timeUnitEntityValue.isEmpty()) {
-                    TimeUnit timeUnit = TimeUnit.MILLISECONDS;
-                    if (timeUnitEntityValue != null && !timeUnitEntityValue.isEmpty()) {
-                        timeUnit = TimeUnit.valueOf(timeUnitEntityValue);
-                    }
-                    scheduleTask(schedulerName, tenantDTO, cronEntityValue, fixedDelayEntityValue, timeUnit, task);
-                }
-            } finally {
+    public static void scheduleTask(IntegrationScheduled integrationScheduled, TenantDTO tenant, Set<String> updatedEntityKeys) {
+        Optional<String> previousTenantId = TenantContext.tryGetTenantId();
+        try {
+            String tenantId = null;
+            if (tenant == null) {
+                // global task
                 TenantContext.clear();
+            } else {
+                tenantId = tenant.getTenantId();
+                TenantContext.setTenantId(tenantId);
+            }
+
+            Assert.hasText(integrationScheduled.name(), "schedulerName cannot be empty");
+            Runnable task = tasks.get(integrationScheduled.name());
+            Assert.notNull(task, "task not found");
+
+            String timeZoneEntityKey = integrationScheduled.timeZoneEntity();
+            String cronEntityKey = integrationScheduled.cronEntity();
+            String fixedRateEntityKey = integrationScheduled.fixedRateEntity();
+            String timeUnitEntityKey = integrationScheduled.timeUnitEntity();
+            String enabledEntityKey = integrationScheduled.enabledEntity();
+
+            SchedulerSettings settings = new SchedulerSettings(
+                    integrationScheduled.enabled(),
+                    integrationScheduled.timeZone(),
+                    integrationScheduled.cron(),
+                    integrationScheduled.fixedRate(),
+                    integrationScheduled.timeUnit());
+
+            List<String> definedSchedulerEntityKeys = Stream.of(timeZoneEntityKey, cronEntityKey, fixedRateEntityKey,
+                            timeUnitEntityKey, enabledEntityKey)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+
+            if (updatedEntityKeys != null) {
+                boolean isMatch = definedSchedulerEntityKeys.stream().anyMatch(updatedEntityKeys::contains);
+                if (!isMatch) {
+                    log.debug("given entity key set does not contain any defined scheduler entity keys, skip. scheduler name: '{}', tenant: '{}'", integrationScheduled.name(), tenantId);
+                    return;
+                }
+            }
+
+            Map<String, Object> schedulerEntityValues = self.entityValueServiceProvider.findValuesByKeys(definedSchedulerEntityKeys);
+            handleMapValueIfExists(schedulerEntityValues, timeZoneEntityKey, v -> settings.timeZone = v.toString());
+            handleMapValueIfExists(schedulerEntityValues, cronEntityKey, v -> settings.cron = v.toString());
+            handleMapValueIfExists(schedulerEntityValues, fixedRateEntityKey, v -> settings.fixedRate = Long.parseLong(v.toString()));
+            handleMapValueIfExists(schedulerEntityValues, timeUnitEntityKey, v -> settings.timeUnit = parseTimeUnit(v, settings.timeUnit));
+            handleMapValueIfExists(schedulerEntityValues, enabledEntityKey, v -> settings.enabled = !Boolean.FALSE.equals(v));
+
+            if (!settings.enabled) {
+                log.debug("integration scheduler is disabled, cancel task. scheduler name: '{}', tenant: '{}'", integrationScheduled.name(), tenantId);
+                self.scheduler.cancel(getTaskKey(integrationScheduled.name(), tenantId));
+                return;
+            }
+
+            if (!StringUtils.hasText(settings.timeZone)) {
+                settings.timeZone = tenant != null ? tenant.getTimeZone() : TimeZone.getDefault().getID();
+            }
+
+            if (StringUtils.hasText(settings.cron) || settings.fixedRate > 0) {
+                doScheduleTask(integrationScheduled.name(), tenantId, settings, task);
+            } else {
+                log.debug("integration scheduler configuration is invalid, skip. scheduler name: '{}', tenant: '{}'", integrationScheduled.name(), tenantId);
+            }
+        } finally {
+            previousTenantId.ifPresentOrElse(TenantContext::setTenantId, TenantContext::clear);
+        }
+    }
+
+    @Nullable
+    private static TimeUnit parseTimeUnit(Object v, TimeUnit defaultValue) {
+        TimeUnit timeUnit = defaultValue;
+        try {
+            timeUnit = TimeUnit.valueOf(v.toString());
+        } catch (IllegalArgumentException e) {
+            log.error("invalid time unit '{}'", v);
+        }
+        return timeUnit;
+    }
+
+    private static void handleMapValueIfExists(Map<String, Object> map, String key, Consumer<Object> setter) {
+        if (map == null || map.isEmpty() || key == null || key.isEmpty()) {
+            return;
+        }
+        Object value = map.get(key);
+        if (value != null) {
+            setter.accept(value);
+        }
+    }
+
+    public static void scheduleTask(IntegrationScheduled integrationScheduled, List<TenantDTO> tenants) {
+        if (isGlobal(integrationScheduled)) {
+            scheduleTask(integrationScheduled);
+        } else {
+            for (TenantDTO tenant : tenants) {
+                scheduleTask(integrationScheduled, tenant);
             }
         }
     }
 
-    public static void scheduleTask(String schedulerName, String cron, Runnable task) {
-        List<TenantDTO> tenants = self.userFacade.getAllTenants();
-        for (TenantDTO tenantDTO : tenants) {
-            scheduleTask(schedulerName, tenantDTO, cron, -1, TimeUnit.MILLISECONDS, task);
-        }
+    public static List<TenantDTO> getAllTenants() {
+        return self.userFacade.getAllTenants();
     }
 
-    public static void scheduleTask(String schedulerName, long fixedDelay, TimeUnit timeUnit, Runnable task) {
-        List<TenantDTO> tenants = self.userFacade.getAllTenants();
-        for (TenantDTO tenantDTO : tenants) {
-            scheduleTask(schedulerName, tenantDTO, null, fixedDelay, timeUnit, task);
-        }
-    }
+    private static void doScheduleTask(String schedulerName, String tenantId, SchedulerSettings settings, Runnable task) {
+        Assert.hasText(schedulerName, "schedulerName cannot be empty");
 
-    public static void scheduleTask(String schedulerName) {
-        Assert.isTrue(StringUtils.hasText(schedulerName), "schedulerName cannot be empty");
-        Runnable task = tasks.get(schedulerName);
-        Assert.isTrue(task != null, "task cannot be null");
-
-        IntegrationScheduled integrationScheduled = integrationSchedules.get(schedulerName);
-        String cronEntity = integrationScheduled.cronEntity();
-        String fixedDelayEntity = integrationScheduled.fixedDelayEntity();
-        String timeUnitEntity = integrationScheduled.timeUnitEntity();
-
-        List<TenantDTO> tenants = self.userFacade.getAllTenants();
-        for (TenantDTO tenantDTO : tenants) {
-            try {
-                TenantContext.setTenantId(tenantDTO.getTenantId());
-
-                String cronEntityValue = "";
-                long fixedDelayEntityValue = -1;
-                String timeUnitEntityValue = "";
-                List<String> entityKeys = new ArrayList<>();
-                if (!cronEntity.isEmpty()) {
-                    entityKeys.add(cronEntity);
-                }
-                if (!fixedDelayEntity.isEmpty()) {
-                    entityKeys.add(fixedDelayEntity);
-                }
-                if (!timeUnitEntity.isEmpty()) {
-                    entityKeys.add(timeUnitEntity);
-                }
-                if (!entityKeys.isEmpty()) {
-                    Map<String, Object> entityValues = self.entityValueServiceProvider.findValuesByKeys(entityKeys);
-                    if (entityValues != null && !entityValues.isEmpty()) {
-                        if (!cronEntity.isEmpty() && entityValues.containsKey(cronEntity)) {
-                            cronEntityValue = entityValues.get(cronEntity).toString();
-                        }
-                        if (!fixedDelayEntity.isEmpty() && entityValues.containsKey(fixedDelayEntity)) {
-                            fixedDelayEntityValue = Long.parseLong(entityValues.get(fixedDelayEntity).toString());
-                        }
-                        if (!timeUnitEntity.isEmpty() && entityValues.containsKey(timeUnitEntity)) {
-                            timeUnitEntityValue = entityValues.get(timeUnitEntity).toString();
-                        }
-                    }
-                }
-                String cron = integrationScheduled.cron();
-                if (!cronEntityValue.isEmpty()) {
-                    cron = cronEntityValue;
-                }
-                long fixedDelay = integrationScheduled.fixedDelay();
-                if (fixedDelayEntityValue >= 0) {
-                    fixedDelay = fixedDelayEntityValue;
-                }
-                TimeUnit timeUnit = integrationScheduled.timeUnit();
-                if (!timeUnitEntityValue.isEmpty()) {
-                    timeUnit = TimeUnit.valueOf(timeUnitEntityValue);
-                }
-                scheduleTask(schedulerName, tenantDTO, cron, fixedDelay, timeUnit, task);
-            } finally {
-                TenantContext.clear();
-            }
-        }
-    }
-
-    private static void scheduleTask(String schedulerName, TenantDTO tenantDTO, String cron, long fixedDelay, TimeUnit timeUnit, Runnable task) {
-        Assert.isTrue(StringUtils.hasText(schedulerName), "schedulerName cannot be empty");
-        tasks.putIfAbsent(schedulerName, task);
-
-        String tenantId = tenantDTO.getTenantId();
-        String taskKey = String.format("integration-scheduler:%s:%s", schedulerName, tenantId);
-
+        String taskKey = getTaskKey(schedulerName, tenantId);
         Runnable taskWrapper = () -> {
             try {
-                TenantContext.setTenantId(tenantId);
+                if (tenantId != null) {
+                    TenantContext.setTenantId(tenantId);
+                } else {
+                    TenantContext.clear();
+                }
                 task.run();
             } catch (Exception e) {
                 log.error("run task failed: {}", taskKey, e);
@@ -206,27 +204,33 @@ public class IntegrationSchedulerRegistry {
             }
         };
 
-        if (cron != null && !cron.isEmpty()) {
-            String zone = tenantDTO.getTimeZone();
-            TimeZone timeZone = zone.isEmpty() ? TimeZone.getDefault() : TimeZone.getTimeZone(zone);
-            ZoneId zoneId = timeZone.toZoneId();
+        if (StringUtils.hasText(settings.cron)) {
+            TimeZone tz = StringUtils.hasText(settings.timeZone) ? TimeZone.getTimeZone(settings.timeZone) : TimeZone.getDefault();
+            ZoneId zoneId = tz.toZoneId();
             self.scheduler.schedule(taskKey, ScheduleSettings.builder()
                             .scheduleType(ScheduleType.CRON)
                             .scheduleRule(ScheduleRule.builder()
-                                    .cronExpressions(Set.of(cron))
+                                    .cronExpressions(Set.of(settings.cron))
                                     .timezone(zoneId.getId())
                                     .build())
                             .build(),
                     scheduledTask -> taskWrapper.run());
-        } else if (fixedDelay >= 0) {
+        } else if (settings.fixedRate > 0) {
             self.scheduler.schedule(taskKey, ScheduleSettings.builder()
                             .scheduleType(ScheduleType.FIXED_RATE)
                             .scheduleRule(ScheduleRule.builder()
-                                    .periodSecond(timeUnit.toSeconds(fixedDelay))
+                                    .periodSecond(settings.timeUnit.toSeconds(settings.fixedRate))
                                     .build())
                             .build(),
                     scheduledTask -> taskWrapper.run());
         }
+    }
+
+    private static String getTaskKey(String schedulerName, String tenantId) {
+        if (tenantId == null) {
+            return String.format("%s:%s", SCHEDULED_TASK_PREFIX, schedulerName);
+        }
+        return String.format("%s:%s:%s", SCHEDULED_TASK_PREFIX, schedulerName, tenantId);
     }
 
     public static List<IntegrationScheduled> getIntegrationSchedules() {
@@ -234,6 +238,29 @@ public class IntegrationSchedulerRegistry {
             return null;
         }
         return List.copyOf(integrationSchedules.values());
+    }
+
+    public static boolean isGlobal(IntegrationScheduled integrationScheduled) {
+        String cronEntityKey = integrationScheduled.cronEntity();
+        String fixedRateEntityKey = integrationScheduled.fixedRateEntity();
+        String timeUnitEntityKey = integrationScheduled.timeUnitEntity();
+        String enabledEntityKey = integrationScheduled.enabledEntity();
+        return !StringUtils.hasText(cronEntityKey)
+                && !StringUtils.hasText(fixedRateEntityKey)
+                && !StringUtils.hasText(timeUnitEntityKey)
+                && !StringUtils.hasText(enabledEntityKey);
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @SuppressWarnings({"java:S6548"})
+    private static final class SchedulerSettings {
+        private boolean enabled = true;
+        private String timeZone;
+        private String cron;
+        private long fixedRate = -1;
+        private TimeUnit timeUnit = TimeUnit.SECONDS;
     }
 
 }

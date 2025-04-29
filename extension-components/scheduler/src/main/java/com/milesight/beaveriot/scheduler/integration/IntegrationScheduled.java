@@ -18,11 +18,14 @@ import java.util.concurrent.TimeUnit;
 public @interface IntegrationScheduled {
 
     String name();
+    String timeZone() default "";
+    String timeZoneEntity() default "";
     String cron() default "";
     String cronEntity() default "";
-    long fixedDelay() default -1;
-    String fixedDelayEntity() default "";
-    TimeUnit timeUnit() default TimeUnit.MILLISECONDS;
+    long fixedRate() default -1;
+    String fixedRateEntity() default "";
     String timeUnitEntity() default "";
+    TimeUnit timeUnit() default TimeUnit.SECONDS;
+    String enabledEntity() default "";
     boolean enabled() default true;
 }
