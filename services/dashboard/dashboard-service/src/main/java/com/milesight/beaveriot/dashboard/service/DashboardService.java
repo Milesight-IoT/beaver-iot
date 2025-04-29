@@ -127,10 +127,10 @@ public class DashboardService {
                     DashboardWidgetPO existDashboardWidgetPO = dashboardWidgetPOMap.get(widgetId);
                     String orginUrl = null;
                     if (existDashboardWidgetPO != null) {
+                        orginUrl = getDashboardWidgetUrl(existDashboardWidgetPO.getData());
+
                         existDashboardWidgetPO.setData(data);
                         dashboardWidgetPOList.add(existDashboardWidgetPO);
-
-                        orginUrl = getDashboardWidgetUrl(existDashboardWidgetPO.getData());
                     }
                     if (StringUtils.hasText(orginUrl) && !orginUrl.equals(url)) {
                         deleteUrlMap.put(widgetId, orginUrl);

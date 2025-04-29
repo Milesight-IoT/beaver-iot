@@ -234,9 +234,10 @@ public class DataAspectStatementInspector implements StatementInspector {
             return;
         }
         Column column = new Column(alias + "." + columnName);
-        Expression expression = new InExpression(column, new ExpressionList(dataIds.stream()
+        ExpressionList<Expression> expressionList = new ExpressionList<>(dataIds.stream()
                 .map(LongValue::new)
-                .collect(Collectors.toList())));
+                .collect(Collectors.toList()));
+        Expression expression = new InExpression(column, new Parenthesis(expressionList));
 
         if (plainSelect.getWhere() == null) {
             plainSelect.setWhere(expression);
