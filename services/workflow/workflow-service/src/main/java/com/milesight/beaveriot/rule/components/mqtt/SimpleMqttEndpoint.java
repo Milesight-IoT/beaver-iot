@@ -48,8 +48,8 @@ public class SimpleMqttEndpoint extends DefaultEndpoint {
     private String encoding;
 
     @OutputArguments(displayName = "Output Variables")
-    @UriParamExtension(uiComponent = "paramDefineInput")
-    @UriParam(displayName = "Output Variables", description = "Received MQTT message.", defaultValue = "[{\"name\":\"topic\",\"type\":\"STRING\"},{\"name\":\"payload\",\"type\":\"STRING\"}]")
+    @UriParamExtension(uiComponent = "paramDefineInput", initialValue = "[{\"name\":\"topic\",\"type\":\"STRING\"},{\"name\":\"payload\",\"type\":\"STRING\"}]")
+    @UriParam(displayName = "Output Variables", description = "Received MQTT message.")
     private List<OutputVariablesSettings> message;
 
     public SimpleMqttEndpoint() {

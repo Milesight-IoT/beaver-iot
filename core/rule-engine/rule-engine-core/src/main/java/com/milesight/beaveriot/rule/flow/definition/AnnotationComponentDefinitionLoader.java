@@ -239,6 +239,7 @@ public class AnnotationComponentDefinitionLoader implements ComponentDefinitionL
             option.setUiComponentTags(uriParamExtension.uiComponentTags());
             option.setUiComponentGroup(uriParamExtension.uiComponentGroup());
             option.setLoggable(uriParamExtension.loggable());
+            option.setInitialValue(uriParamExtension.initialValue());
         }
     }
 

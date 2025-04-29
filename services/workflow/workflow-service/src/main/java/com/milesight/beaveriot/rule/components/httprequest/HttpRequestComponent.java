@@ -43,8 +43,8 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
     private Map<String, Object> body;
 
     @OutputArguments(displayName = "Output Variables")
-    @UriParamExtension(uiComponent = "paramDefineInput")
-    @UriParam(displayName = "Output Variables", description = "Received HTTP message.", defaultValue = "[{\"name\":\"statusCode\",\"type\":\"LONG\"},{\"name\":\"responseBody\",\"type\":\"STRING\"},{\"name\":\"responseHeaders\",\"type\":\"STRING\"}]")
+    @UriParamExtension(uiComponent = "paramDefineInput", initialValue = "[{\"name\":\"statusCode\",\"type\":\"LONG\"},{\"name\":\"responseBody\",\"type\":\"STRING\"},{\"name\":\"responseHeaders\",\"type\":\"STRING\"}]")
+    @UriParam(displayName = "Output Variables",prefix = "bean", description = "Received HTTP message.")
     private List<OutputVariablesSettings> message;
 
     @Autowired

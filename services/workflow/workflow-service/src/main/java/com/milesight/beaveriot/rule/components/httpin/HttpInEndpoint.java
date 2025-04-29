@@ -55,6 +55,10 @@ public class HttpInEndpoint extends DefaultEndpoint {
     @Metadata(required = true, autowired = true)
     private String tenantId;
 
+    @UriParam
+    @Metadata(required = true, autowired = true)
+    private String nodeId;
+
     @Metadata(required = true, autowired = true)
     private Long credentialsId;
 

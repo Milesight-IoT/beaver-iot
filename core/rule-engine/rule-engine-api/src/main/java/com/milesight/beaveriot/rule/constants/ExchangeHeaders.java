@@ -1,5 +1,10 @@
 package com.milesight.beaveriot.rule.constants;
 
+import org.apache.camel.Exchange;
+
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author leon
  */
@@ -42,5 +47,41 @@ public interface ExchangeHeaders {
     String EXCHANGE_EXECUTION_REPEAT_COUNT = "CamelExchangeExecutionRepeatCount";
 
     String EXCHANGE_ROOT_FLOW_ID = "CamelExchangeRootFlowId";
+
+    /**
+     * Supports custom log input variable definitions. When obtaining logs,
+     * the variable value defined here is preferred, and stored in Map, where the Key is the node ID.
+     */
+    String EXCHANGE_CUSTOM_INPUT_LOG_VARIABLES = "CamelCustomInputLogVariables";
+
+    /**
+     * Supports custom output variable definitions. When obtaining logs, the variable value defined here is preferred,
+     * and stored in Map, where the Key is the node ID.
+     */
+    String EXCHANGE_CUSTOM_OUTPUT_LOG_VARIABLES = "CamelCustomOutputLogVariables";
+
+    public static boolean containsMapProperty(Exchange exchange, String propertyName, String mapKey) {
+        Object property = exchange.getProperty(propertyName);
+        return property != null && property instanceof Map<?,?> propertyMap && propertyMap.containsKey(mapKey);
+    }
+
+    public static Object getMapProperty(Exchange exchange, String propertyName, String mapKey) {
+        Object property = exchange.getProperty(propertyName);
+        if (property != null && property instanceof Map<?,?> propertyMap) {
+            return propertyMap.get(mapKey);
+        }
+        return null;
+    }
+
+    public static void putMapProperty(Exchange exchange, String propertyName, String mapKey, Object mapValue) {
+        Object property = exchange.getProperty(propertyName);
+        if (property != null && property instanceof Map<?,?> propertyMap) {
+            ((Map<String,Object>)propertyMap).put(mapKey, mapValue);
+        } else {
+            Map<String, Object> newMap = new HashMap<>();
+            newMap.put(mapKey, mapValue);
+            exchange.setProperty(propertyName, newMap);
+        }
+    }
 
 }

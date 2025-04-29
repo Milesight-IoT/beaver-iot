@@ -32,7 +32,7 @@ public class RuleNode implements OutputNode {
 
         Map<String, Object> parameters = ComponentParameterConverter.convertParameters(ruleConfig.getParameters(), componentDefinition);
 
-        return RuleNode.create(generatedId, componentDefinition.generateUri(generatedId, parameters), parameters);
+        return RuleNode.create(generatedId, componentDefinition.generateUri(generatedId, ruleConfig, parameters), parameters);
     }
 
     @Override

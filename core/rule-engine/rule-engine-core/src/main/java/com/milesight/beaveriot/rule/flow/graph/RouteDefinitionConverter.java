@@ -83,10 +83,11 @@ public class RouteDefinitionConverter {
 
     private static String generateUri(String uri, Map<String, Object> parameters) {
         if (!ObjectUtils.isEmpty(parameters)) {
-            return uri + "?" + parameters.entrySet().stream()
+            String splitChar = uri.contains("?") ? "&" : "?";
+            return uri + splitChar + parameters.entrySet().stream()
                     .filter(entry -> entry.getValue() != null)
                     .map(entry -> entry.getKey() + "=RAW(" + entry.getValue() + ")")
-                    .collect(Collectors.joining("&"));
+                    .collect(Collectors.joining("&")) ;
         } else {
             return uri;
         }
