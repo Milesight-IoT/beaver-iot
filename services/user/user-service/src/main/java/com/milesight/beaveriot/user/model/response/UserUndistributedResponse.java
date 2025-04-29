@@ -12,5 +12,6 @@ public class UserUndistributedResponse {
     private String userId;
     private String nickname;
     private String email;
+    private String createdAt;
 
 }
