@@ -2,7 +2,7 @@ package com.milesight.beaveriot.context.configuration;
 
 import com.milesight.beaveriot.authentication.facade.IAuthenticationFacade;
 import com.milesight.beaveriot.context.filter.HttpRequestFilter;
-import com.milesight.beaveriot.context.filter.QueryParameterNameConvertionFilter;
+import com.milesight.beaveriot.context.filter.QueryParameterNameConversionFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -26,9 +26,9 @@ public class FilterConfig {
     }
 
     @Bean
-    public FilterRegistrationBean<QueryParameterNameConvertionFilter> queryParameterNameConvertionFilter() {
-        FilterRegistrationBean<QueryParameterNameConvertionFilter> registrationBean = new FilterRegistrationBean<>();
-        registrationBean.setFilter(new QueryParameterNameConvertionFilter());
+    public FilterRegistrationBean<QueryParameterNameConversionFilter> queryParameterNameConversionFilter() {
+        FilterRegistrationBean<QueryParameterNameConversionFilter> registrationBean = new FilterRegistrationBean<>();
+        registrationBean.setFilter(new QueryParameterNameConversionFilter());
         registrationBean.addUrlPatterns("*");
         return registrationBean;
     }

@@ -13,7 +13,7 @@ import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class QueryParameterNameConvertionFilter extends OncePerRequestFilter {
+public class QueryParameterNameConversionFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
