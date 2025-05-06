@@ -446,7 +446,7 @@ public class RoleService {
 
     public Page<UserUndistributedResponse> getUndistributedUsers(Long roleId, GenericQueryPageRequest userUndistributedRequest) {
         if (userUndistributedRequest.getSort().getOrders().isEmpty()) {
-            userUndistributedRequest.sort(new Sorts().desc(UserPO.Fields.id));
+            userUndistributedRequest.sort(new Sorts().desc(UserPO.Fields.createdAt));
         }
         List<UserPO> userPOS = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(userUndistributedRequest.getKeyword()), UserPO.Fields.nickname, userUndistributedRequest.getKeyword())
                 .likeIgnoreCase(StringUtils.hasText(userUndistributedRequest.getKeyword()), UserPO.Fields.email, userUndistributedRequest.getKeyword())), userUndistributedRequest.getSort().toSort());
@@ -460,6 +460,7 @@ public class RoleService {
             userUndistributedResponse.setUserId(userPO.getId().toString());
             userUndistributedResponse.setEmail(userPO.getEmail());
             userUndistributedResponse.setNickname(userPO.getNickname());
+            userUndistributedResponse.setCreatedAt(userPO.getCreatedAt().toString());
             return userUndistributedResponse;
         }).collect(Collectors.toList());
         return PageConverter.convertToPage(userUndistributedResponseList, userUndistributedRequest.toPageable());

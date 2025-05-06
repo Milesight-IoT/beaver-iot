@@ -30,7 +30,7 @@ public class WebhookComponent implements ProcessorNode<Exchange> {
     private Map<String, Object> inputArguments;
     @UriParam(prefix = "bean")
     private String webhookUrl;
-    @UriParam(prefix = "bean")
+    @UriParam(prefix = "bean", description = "Header.Signature = HmacSha256(Header.Timestamp + Header.Nonce + Body)")
     private String secretKey;
 
     @Autowired
