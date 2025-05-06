@@ -48,7 +48,7 @@ public class RuleNodeLogVariablesSupport {
 
     public static String getExchangeInputBody(Exchange exchange, String nodeId) {
         if (ExchangeHeaders.containsMapProperty(exchange, EXCHANGE_CUSTOM_INPUT_LOG_VARIABLES, nodeId)) {
-            return JsonUtils.toJSON(ExchangeHeaders.getMapProperty(exchange, EXCHANGE_CUSTOM_INPUT_LOG_VARIABLES, nodeId));
+            return toJSON(ExchangeHeaders.getMapProperty(exchange, EXCHANGE_CUSTOM_INPUT_LOG_VARIABLES, nodeId));
         }
 
         try {
@@ -74,7 +74,7 @@ public class RuleNodeLogVariablesSupport {
 
     public static String getExchangeOutputBody(Exchange exchange, String nodeId) {
         if (ExchangeHeaders.containsMapProperty(exchange, EXCHANGE_CUSTOM_OUTPUT_LOG_VARIABLES, nodeId)) {
-            return JsonUtils.toJSON(ExchangeHeaders.getMapProperty(exchange, EXCHANGE_CUSTOM_OUTPUT_LOG_VARIABLES, nodeId));
+            return toJSON(ExchangeHeaders.getMapProperty(exchange, EXCHANGE_CUSTOM_OUTPUT_LOG_VARIABLES, nodeId));
         }
 
         try {

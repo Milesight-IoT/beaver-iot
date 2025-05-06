@@ -30,15 +30,21 @@ spring:
 #    type: caffeine
 #    cache-names: "demo:cache1,demo:oss:cache2"
     caffeine:
-      spec: maximumSize=10000,expireAfterAccess=1m
+      spec: maximumSize=50000,expireAfterAccess=10m
     redis:
       cache-null-values: true
       value-serializer-class: org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer
       time-to-live: 10m
     specs:
       time-to-lives:
-        [ "demo:cache1" ]: 10s
-        [ "demo:oss:*" ]: 10s
+          [ "resource:data-pre-sign" ]: ${resource.pre_sign_expire}
+          [ "resource:data" ]: 2m
+          [ "user:menus"] : 1h
+          [ "entity:permission" ] : 1h
+          [ "device:permission"] : 1h
+          [ "dashboard:permission" ] : 1h
+          [ "integration:permission" ] : 1h
+
   redis:
     ssl: ${REDIS_SSL:false}
     host: ${REDIS_HOST:}
@@ -114,6 +120,10 @@ camel:
           title: "email"
         - name: "webhook"
           title: "webhook"
+        - name: "output"
+          title: "Output Node"
+        - name: "httpRequest"
+          title: "Http Request"
     languages:
       - code:
           - "groovy"
@@ -143,6 +153,7 @@ oauth2:
     - "/user/status"
     - "/public/**"
     - "/actuator/**"
+    - "/workflow-http-in/**"
 
 mqtt:
   broker:

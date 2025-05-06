@@ -129,8 +129,6 @@ camel:
           title: "Service Invocation"
         - name: "code"
           title: "Code"
-        - name: "httpRequest"
-          title: "Http Request"
       external:
         - name: "email"
           title: "email"
@@ -138,6 +136,8 @@ camel:
           title: "Webhook"
         - name: "output"
           title: "Output Node"
+        - name: "httpRequest"
+          title: "Http Request"
     languages:
       - code:
           - "groovy"
