@@ -81,7 +81,7 @@ public class EmailComponent implements ProcessorNode<Exchange> {
                     && emailConfig.getSmtpConfig() != null) {
 
                 var smtpConfig = emailConfig.getSmtpConfig();
-                if (EmailConfig.SmtpConfig.Type.CREDENTIALS.equals(smtpConfig.getConfigType())) {
+                if (Boolean.TRUE.equals(emailConfig.getUseSystemSettings())) {
                     val credentials = credentialsServiceProvider.getCredentials(CredentialsType.SMTP)
                             .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND, "credentials not found"));
                     smtpConfig = JsonUtils.fromJSON(credentials.getAdditionalData(), EmailConfig.SmtpConfig.class);

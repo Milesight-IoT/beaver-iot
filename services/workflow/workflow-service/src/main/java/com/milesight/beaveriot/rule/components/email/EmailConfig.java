@@ -13,13 +13,13 @@ public class EmailConfig {
 
     private SmtpConfig smtpConfig;
 
+    private Boolean useSystemSettings;
+
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SmtpConfig {
-
-        private Type configType;
 
         private String host;
 
