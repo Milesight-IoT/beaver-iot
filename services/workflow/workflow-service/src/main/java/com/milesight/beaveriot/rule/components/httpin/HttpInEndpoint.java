@@ -97,9 +97,17 @@ public class HttpInEndpoint extends DefaultEndpoint {
         return null;
     }
 
+    private String standardizeUrl(String inputUrl) {
+        if (inputUrl.startsWith("/")) {
+            return inputUrl.substring(1);
+        }
+
+        return inputUrl;
+    }
+
     @Override
     public Consumer createConsumer(Processor processor) {
-        urlTemplate = new UriTemplate(this.url);
+        urlTemplate = new UriTemplate(standardizeUrl(this.url));
         messageOut = new ArrayList<>();
         messageOut.add(new OutputVariablesSettings(DataTypeEnums.STRING, HttpInConstants.OUT_HEADER_NAME));
         messageOut.add(new OutputVariablesSettings(DataTypeEnums.STRING, HttpInConstants.OUT_BODY_NAME));
