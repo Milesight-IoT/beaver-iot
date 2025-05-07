@@ -43,4 +43,8 @@ public class EntityQuery extends GenericQueryPageRequest {
      */
     private Boolean showHidden;
 
+    /**
+     * Do not detect keyword in keys
+     */
+    private Boolean notScanKey;
 }

@@ -493,7 +493,7 @@ public class EntityService implements EntityServiceProvider {
                 .eq(!Boolean.TRUE.equals(entityQuery.getShowHidden()), EntityPO.Fields.visible, true)
                 .in(!sourceTargetIds.isEmpty(), EntityPO.Fields.attachTargetId, sourceTargetIds.toArray())
                 .or(f1 -> f1.likeIgnoreCase(StringUtils.hasText(entityQuery.getKeyword()), EntityPO.Fields.name, entityQuery.getKeyword())
-                        .likeIgnoreCase(StringUtils.hasText(entityQuery.getKeyword()), EntityPO.Fields.key, entityQuery.getKeyword())
+                        .likeIgnoreCase(StringUtils.hasText(entityQuery.getKeyword()) && !Boolean.TRUE.equals(entityQuery.getNotScanKey()), EntityPO.Fields.key, entityQuery.getKeyword())
                         .in(!attachTargetIds.isEmpty(), EntityPO.Fields.attachTargetId, attachTargetIds.toArray()));
         List<EntityPO> entityPOList = new ArrayList<>();
         if (!Boolean.TRUE.equals(entityQuery.getCustomized())) {
