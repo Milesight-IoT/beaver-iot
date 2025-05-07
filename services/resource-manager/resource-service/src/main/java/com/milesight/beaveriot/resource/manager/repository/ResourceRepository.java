@@ -20,4 +20,9 @@ public interface ResourceRepository extends BaseJpaRepository<ResourcePO, Long> 
     default List<ResourcePO> findAllByIdIgnoreTenant(Iterable<Long> ids) {
         return findAllById(ids);
     }
+
+    @Tenant(enable = false)
+    default void deleteAllIgnoreTenant(Iterable<ResourcePO> ids) {
+        deleteAll(ids);
+    }
 }
