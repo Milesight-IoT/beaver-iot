@@ -12,12 +12,20 @@ import com.milesight.beaveriot.rule.support.SpELExpressionHelper;
 import lombok.Data;
 import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
+import org.apache.camel.http.base.HttpOperationFailedException;
+import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriParam;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.util.Assert;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author loong
@@ -26,7 +34,7 @@ import java.util.Map;
 @Data
 public class HttpRequestComponent implements ProcessorNode<Exchange> {
 
-    @UriParam(javaType = "string", prefix = "bean", displayName = "API/API Method")
+    @UriParam(javaType = "string", prefix = "bean", displayName = "API/API Method", enums = "GET,POST,PUT,DELETE")
     @UriParamExtension(uiComponentGroup = "API", uiComponent = "method")
     private String method;
     @UriParam(javaType = "string", prefix = "bean", displayName = "URL")
@@ -45,6 +53,7 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
     @OutputArguments(displayName = "Output Variables")
     @UriParamExtension(uiComponent = "paramDefineInput", initialValue = "[{\"name\":\"statusCode\",\"type\":\"LONG\"},{\"name\":\"responseBody\",\"type\":\"STRING\"},{\"name\":\"responseHeaders\",\"type\":\"STRING\"}]")
     @UriParam(displayName = "Output Variables",prefix = "bean", description = "Received HTTP message.")
+    @Metadata(required = true, autowired = true)
     private List<OutputVariablesSettings> message;
 
     @Autowired
@@ -67,25 +76,17 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
         StringBuilder requestUrl = new StringBuilder(url);
         if (params != null && !params.isEmpty()) {
             Map<String, Object> paramsVariables = SpELExpressionHelper.resolveExpression(exchange, params);
-            paramsVariables.forEach((key, value) -> {
-                if (requestUrl.indexOf("?") == -1) {
-                    requestUrl.append("?");
-                } else {
-                    requestUrl.append("&");
-                }
-                requestUrl.append(key).append("=").append(value);
-            });
+            String queryString = toQueryString(paramsVariables, true);
+            requestUrl = requestUrl.indexOf("?") == -1 ? requestUrl.append("?").append(queryString) : requestUrl.append("&").append(queryString);
         }
+
         Object bodyValueVariables = null;
         if (body != null) {
             String bodyType = body.get("type") == null ? null : body.get("type").toString();
             if (bodyType != null) {
                 httpHeader.put(Exchange.CONTENT_TYPE, bodyType);
             }
-            Object bodyValue = body.get("value");
-            if (bodyValue != null) {
-                bodyValueVariables = SpELExpressionHelper.resolveStringExpression(exchange, bodyValue);
-            }
+            bodyValueVariables = convertBody(exchange, body.get("value"), bodyType);
         }
         Object finalBodyValueVariables = bodyValueVariables;
         Exchange responseExchange = producerTemplate.request(requestUrl.toString(), exchange1 -> {
@@ -93,17 +94,56 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
             exchange1.getIn().setBody(finalBodyValueVariables);
         });
         if (responseExchange != null) {
-            Map<String, Object> bodyOut = new HashMap<>();
+            if (responseExchange.getException() == null) {
+                int statusCode = responseExchange.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE, Integer.class);
+                String responseBody = responseExchange.getMessage().getBody(String.class);
+                Map<String, Object> responseHeaders = responseExchange.getMessage().getHeaders();
 
-            int statusCode = responseExchange.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE, Integer.class);
-            String responseBody = responseExchange.getMessage().getBody(String.class);
-            Map<String, Object> responseHeaders = responseExchange.getMessage().getHeaders();
-
-            bodyOut.put("statusCode", statusCode);
-            bodyOut.put("responseBody", responseBody);
-            bodyOut.put("responseHeaders", JsonHelper.toJSON(responseHeaders));
-            exchange.getIn().setBody(bodyOut);
+                createExchangeBody(exchange, statusCode, responseBody, JsonHelper.toJSON(responseHeaders));
+            } else {
+                if (responseExchange.getException() instanceof HttpOperationFailedException httpOperationFailedException) {
+                    createExchangeBody(exchange, httpOperationFailedException.getStatusCode(), httpOperationFailedException.getResponseBody(),
+                            JsonHelper.toJSON(httpOperationFailedException.getResponseHeaders()));
+                } else {
+                    exchange.setException(responseExchange.getException());
+                }
+            }
         }
     }
 
+    private String toQueryString(Map<String, Object> paramsVariables, boolean encodeValue) {
+        if (ObjectUtils.isEmpty(paramsVariables)) {
+            return null;
+        }
+        return paramsVariables.entrySet().stream()
+                .map(entry -> {
+                    if (encodeValue) {
+                        return entry.getKey() + "=" + URLEncoder.encode(ObjectUtils.toString(entry.getValue()), StandardCharsets.UTF_8);
+                    } else {
+                        return entry.getKey() + "=" + ObjectUtils.toString(entry.getValue());
+                    }
+                })
+                .collect(Collectors.joining("&"));
+    }
+
+    private Object convertBody(Exchange exchange, Object bodyValue, String contentType) {
+        if (ObjectUtils.isEmpty(bodyValue)) {
+            return null;
+        }
+
+        if (MediaType.APPLICATION_FORM_URLENCODED_VALUE.equals(contentType)) {
+            Assert.isTrue(bodyValue instanceof Map<?,?> , "bodyValue must be a Map when contentType is application/x-www-form-urlencoded");
+            return SpELExpressionHelper.resolveStringExpression(exchange, toQueryString((Map<String, Object>) bodyValue, false));
+        } else {
+            return SpELExpressionHelper.resolveStringExpression(exchange, bodyValue);
+        }
+    }
+
+    private void createExchangeBody(Exchange exchange, int statusCode, String responseBody, String responseHeaders) {
+        Map<String, Object> bodyOut = new HashMap<>();
+        bodyOut.put("statusCode", statusCode);
+        bodyOut.put("responseBody", responseBody);
+        bodyOut.put("responseHeaders", responseHeaders);
+        exchange.getIn().setBody(bodyOut);
+    }
 }

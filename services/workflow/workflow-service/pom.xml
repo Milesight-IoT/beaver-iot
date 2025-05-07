@@ -42,5 +42,9 @@
             <version>${simple-java-mail.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-http-base</artifactId>
+        </dependency>
     </dependencies>
 </project>
