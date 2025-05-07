@@ -11,5 +11,10 @@ import java.util.List;
 @Data
 public class DeviceDetailResponse extends DeviceResponseData {
     private String identifier;
+
+    private String userNickname;
+
+    private String userEmail;
+
     List<DeviceEntityData> entities;
 }

@@ -26,6 +26,7 @@ import com.milesight.beaveriot.device.repository.DeviceRepository;
 import com.milesight.beaveriot.device.support.DeviceConverter;
 import com.milesight.beaveriot.eventbus.EventBus;
 import com.milesight.beaveriot.permission.aspect.IntegrationPermission;
+import com.milesight.beaveriot.user.dto.UserDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import lombok.extern.slf4j.Slf4j;
@@ -155,7 +156,6 @@ public class DeviceService implements IDeviceFacade {
     }
 
     public Page<DeviceResponseData> searchDevice(SearchDeviceRequest searchDeviceRequest) {
-        // convert to `DeviceResponseData`
         if (searchDeviceRequest.getSort().getOrders().isEmpty()) {
             searchDeviceRequest.sort(new Sorts().desc(DevicePO.Fields.id));
         }
@@ -255,12 +255,23 @@ public class DeviceService implements IDeviceFacade {
         }
 
         DeviceDetailResponse deviceDetailResponse = new DeviceDetailResponse();
+
+        // set detail data
         BeanUtils.copyProperties(convertPOToResponseData(findResult.get()), deviceDetailResponse);
         fillIntegrationInfo(List.of(deviceDetailResponse));
+        deviceDetailResponse.setIdentifier(findResult.get().getIdentifier());
+
+        if (findResult.get().getUserId() != null) {
+            List<UserDTO> userDTOList = userFacade.getUserByIds(List.of(findResult.get().getUserId()));
+            if (!userDTOList.isEmpty()) {
+                UserDTO user = userDTOList.get(0);
+                deviceDetailResponse.setUserNickname(user.getNickname());
+                deviceDetailResponse.setUserEmail(user.getEmail());
+            }
+        }
 
         // set entities
         List<Entity> entities = entityServiceProvider.findByTargetId(AttachTargetType.DEVICE, deviceId.toString());
-        deviceDetailResponse.setIdentifier(findResult.get().getIdentifier());
         deviceDetailResponse.setEntities(entities
                 .stream().flatMap((Entity pEntity) -> {
                     ArrayList<Entity> flatEntities = new ArrayList<>();
