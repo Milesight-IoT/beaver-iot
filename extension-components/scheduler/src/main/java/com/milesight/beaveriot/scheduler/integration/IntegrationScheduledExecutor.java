@@ -2,6 +2,7 @@ package com.milesight.beaveriot.scheduler.integration;
 
 import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
 import com.milesight.beaveriot.eventbus.annotations.EventSubscribe;
+import com.milesight.beaveriot.user.dto.TenantDTO;
 import lombok.*;
 import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.SmartInitializingSingleton;
@@ -12,7 +13,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author loong
@@ -27,6 +30,7 @@ public class IntegrationScheduledExecutor implements SmartInitializingSingleton 
     @Override
     public void afterSingletonsInstantiated() {
         String[] beanNames = applicationContext.getBeanNamesForType(Object.class);
+        List<TenantDTO> tenants = IntegrationSchedulerRegistry.getAllTenants();
 
         for (String beanName : beanNames) {
             Object bean = applicationContext.getBean(beanName);
@@ -34,20 +38,19 @@ public class IntegrationScheduledExecutor implements SmartInitializingSingleton 
 
             for (Method method : methods) {
                 IntegrationScheduled scheduled = method.getAnnotation(IntegrationScheduled.class);
-                if (scheduled != null && scheduled.enabled()) {
-                    configureTask(bean, method, scheduled);
+                if (scheduled != null) {
+                    configureTask(tenants, bean, method, scheduled);
                 }
             }
         }
     }
 
-    private void configureTask(Object bean, Method method, IntegrationScheduled scheduled) {
+    private void configureTask(List<TenantDTO> tenants, Object bean, Method method, IntegrationScheduled scheduled) {
         Runnable task = TaskUtils.decorateTaskWithErrorHandler(() ->
                 invoke(bean, method), null, false);
         String schedulerName = scheduled.name();
         IntegrationSchedulerRegistry.registerScheduler(schedulerName, task, scheduled);
-
-        IntegrationSchedulerRegistry.scheduleTask(schedulerName);
+        IntegrationSchedulerRegistry.scheduleTask(scheduled, tenants);
     }
 
     @SneakyThrows
@@ -57,11 +60,11 @@ public class IntegrationScheduledExecutor implements SmartInitializingSingleton 
 
     @EventSubscribe(payloadKeyExpression = "*")
     public void onScheduleEvent(ExchangeEvent exchangeEvent) {
-        List<String> entityKeys = exchangeEvent.getPayload().keySet().stream().toList();
+        Set<String> entityKeys = new HashSet<>(exchangeEvent.getPayload().keySet());
         List<IntegrationScheduled> integrationSchedules = IntegrationSchedulerRegistry.getIntegrationSchedules();
         if (integrationSchedules != null && !integrationSchedules.isEmpty()) {
             integrationSchedules.forEach(integrationScheduled ->
-                    IntegrationSchedulerRegistry.updateScheduleAnnotationTask(integrationScheduled.name(), entityKeys));
+                    IntegrationSchedulerRegistry.scheduleTask(integrationScheduled, entityKeys));
         }
     }
 
