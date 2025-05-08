@@ -12,18 +12,20 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @author leon
  */
 @Getter
 @Setter
-public class Entity implements IdentityKey {
+public class Entity implements IdentityKey, Cloneable {
 
     private Long id;
     private String deviceKey;
@@ -128,6 +130,29 @@ public class Entity implements IdentityKey {
                 }
             });
         }
+    }
+
+    @Override
+    public Entity clone() {
+        Entity entity = new Entity();
+        entity.setId(id);
+        entity.setDeviceKey(deviceKey);
+        entity.setIntegrationId(integrationId);
+        entity.setName(name);
+        entity.setIdentifier(identifier);
+        entity.setAccessMod(accessMod);
+        entity.setValueType(valueType);
+        entity.setType(type);
+        entity.setAttributes(attributes);
+        entity.setParentIdentifier(parentIdentifier);
+        entity.setChildren(children);
+        entity.setVisible(visible);
+        entity.setDescription(description);
+        if (!ObjectUtils.isEmpty(children)) {
+            List<Entity> copyChildren = children.stream().map(Entity::clone).collect(Collectors.toList());
+            entity.setChildren(copyChildren);
+        }
+        return entity;
     }
 
 }
