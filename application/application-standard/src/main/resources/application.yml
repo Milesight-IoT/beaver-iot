@@ -176,8 +176,6 @@ mqtt:
     mqtt_port: 1883
     ws_path: /mqtt
     ws_port: 8083
-    listener:
-      parallelism: 1
     moquette:
       port: ${mqtt.broker.mqtt_port:1883}
       host: 0.0.0.0

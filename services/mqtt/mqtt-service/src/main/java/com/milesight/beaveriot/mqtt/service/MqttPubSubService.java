@@ -25,6 +25,8 @@ import io.netty.handler.codec.mqtt.MqttQoS;
 import jakarta.annotation.PostConstruct;
 import lombok.*;
 import lombok.extern.slf4j.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -67,7 +69,10 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
 
     private final CredentialsServiceProvider credentialsServiceProvider;
 
-    private static void fireEvent(MqttMessageEvent event, boolean broadcast) {
+    @Autowired
+    private TaskExecutor executor;
+
+    private void fireEvent(MqttMessageEvent event, boolean broadcast) {
         val topic = new Topic(event.getTopic());
         val topicTokens = topic.getTokens().stream().map(Token::toString).toList();
         if (topicTokens.size() < 2) {
@@ -94,8 +99,20 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
             topicSubscribers.forEach((subscriptionTopic, callbacks) ->
                     callbacks.forEach((listener, sharedSubscription) -> {
                         if (Objects.equals(!broadcast, sharedSubscription)
-                                && (topic.match(subscriptionTopic))) {
-                                listener.accept(mqttMessage);
+                                && topic.match(subscriptionTopic)) {
+                            try {
+                                executor.execute(() -> {
+                                    try {
+                                        listener.accept(mqttMessage);
+                                    } catch (Exception e) {
+                                        log.warn("failed to handle the message. topic: '{}'.", subscriptionTopic, e);
+                                    } finally {
+                                        TenantContext.clear();
+                                    }
+                                });
+                            } catch (Exception e) {
+                                log.error("executor error.", e);
+                            }
                         }
                     }));
         });

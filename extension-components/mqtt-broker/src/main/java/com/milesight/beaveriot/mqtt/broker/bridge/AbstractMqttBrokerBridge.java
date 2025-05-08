@@ -9,11 +9,10 @@ import com.milesight.beaveriot.mqtt.broker.bridge.listener.event.MqttMessageEven
 import lombok.*;
 import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -28,8 +27,7 @@ public abstract class AbstractMqttBrokerBridge implements MqttBrokerBridge {
     protected MqttBrokerSettings mqttBrokerSettings;
 
     @Autowired
-    @Qualifier("mqttBrokerBridgeListenerForkJoinPool")
-    private ForkJoinPool listenerForkJoinPool;
+    private TaskExecutor executor;
 
     protected AbstractMqttBrokerBridge(MqttAuthProvider mqttAuthProvider) {
         this.mqttAuthProvider = mqttAuthProvider;
@@ -47,30 +45,35 @@ public abstract class AbstractMqttBrokerBridge implements MqttBrokerBridge {
     }
 
     protected void onPublish(MqttMessageEvent event) {
-        parallelEachListener(listener -> listener.onPublish(event));
+        eachListener(listener -> listener.onPublish(event));
     }
 
     protected void onConnect(MqttClientConnectEvent event) {
-        parallelEachListener(listener -> listener.onClientConnect(event));
+        eachListener(listener -> listener.onClientConnect(event));
     }
 
     protected void onDisconnect(MqttClientDisconnectEvent event) {
-        parallelEachListener(listener -> listener.onClientDisconnect(event));
+        eachListener(listener -> listener.onClientDisconnect(event));
     }
 
     protected void onBroadcast(MqttMessageEvent event) {
-        parallelEachListener(listener -> listener.onBroadcast(event));
+        eachListener(listener -> listener.onBroadcast(event));
     }
 
-    private void parallelEachListener(Consumer<MqttEventListener> consumer) {
-        listenerForkJoinPool.submit(() ->
-                listeners.parallelStream().forEach(listener -> {
+    private void eachListener(Consumer<MqttEventListener> consumer) {
+        listeners.forEach(listener -> {
+            try {
+                executor.execute(() -> {
                     try {
                         consumer.accept(listener);
                     } catch (Exception e) {
-                        log.warn("A listener failed to handle the message.", e);
+                        log.warn("failed to handle the mqtt event.", e);
                     }
-                }));
+                });
+            } catch (Exception e) {
+                log.error("executor error.", e);
+            }
+        });
     }
 
     public void addListener(MqttEventListener listener) {
