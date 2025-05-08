@@ -17,13 +17,27 @@ import java.util.Map;
 @Slf4j
 public class SimpleMqttConsumer extends DefaultConsumer {
 
-    private final MqttMessageListener listener;
-
-    private final Topic subscriptionTopic;
+    private MqttMessageListener listener;
 
     public SimpleMqttConsumer(Endpoint endpoint, Processor processor) {
         super(endpoint, processor);
-        subscriptionTopic = Topic.asTopic(getEndpoint().getSubscriptionTopic());
+    }
+
+    @Override
+    protected void doStart() throws Exception {
+        super.doStart();
+        unsubscribeListener();
+
+        val component = getEndpoint().getComponent(SimpleMqttComponent.class);
+        val credentials = component.getCredentialsServiceProvider().getCredentials(CredentialsType.MQTT.name())
+                .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND, "credentials not found"));
+        val username = credentials.getAccessKey();
+        val topicSubPath = getEndpoint().getSubscriptionTopic()
+                // Only specific topic path pattern allowed here.
+                // So if it not starts with `beaver-iot/{username}` then treat the whole string as a sub-path
+                .replaceFirst("^%s/%s".formatted(MqttTopicChannel.DEFAULT.getTopicPrefix(), username), "");
+        val subscriptionTopic = Topic.asTopic(String.format("%s/%s/%s".formatted(MqttTopicChannel.DEFAULT.getTopicPrefix(), username, topicSubPath)));
+
         listener = message -> {
             val topic = message.getFullTopicName();
             val encoding = MqttPayloadEncodingType.fromString(getEndpoint().getEncoding());
@@ -39,25 +53,20 @@ public class SimpleMqttConsumer extends DefaultConsumer {
                 }
             }
         };
-    }
 
-    @Override
-    protected void doStart() throws Exception {
-        super.doStart();
-        val component = getEndpoint().getComponent(SimpleMqttComponent.class);
-        val credentials = component.getCredentialsServiceProvider().getCredentials(CredentialsType.MQTT.name())
-                .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND, "credentials not found"));
-        val username = credentials.getAccessKey();
-        val topicSubPath = getEndpoint().getSubscriptionTopic()
-                // Only specific topic path pattern allowed here.
-                // So if it not starts with `beaver-iot/{username}` then treat the whole string as a sub-path
-                .replaceFirst("^%s/%s".formatted(MqttTopicChannel.DEFAULT.getTopicPrefix(), username), "");
         component.getMqttPubSubServiceProvider().subscribe(username, topicSubPath, listener);
     }
 
     @Override
     protected void doStop() throws Exception {
         super.doStop();
+        unsubscribeListener();
+    }
+
+    private void unsubscribeListener() {
+        if (listener == null) {
+            return;
+        }
         getEndpoint().getComponent(SimpleMqttComponent.class).getMqttPubSubServiceProvider().unsubscribe(listener);
     }
 
