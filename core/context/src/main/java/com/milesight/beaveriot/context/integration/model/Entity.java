@@ -14,6 +14,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,7 +24,7 @@ import java.util.Optional;
  */
 @Getter
 @Setter
-public class Entity implements IdentityKey {
+public class Entity implements Serializable, IdentityKey {
 
     private Long id;
     private String deviceKey;

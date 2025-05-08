@@ -4,6 +4,7 @@ import com.milesight.beaveriot.base.constants.StringConstant;
 import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.SerializationUtils;
 import org.springframework.util.ObjectUtils;
 
 import java.lang.reflect.Field;
@@ -36,7 +37,7 @@ public enum AnnotationEntityCache {
     }
 
     public List<Entity> getDeviceTemplateEntities(Class<?> clazz) {
-        return deviceTemplateEntitiesCache.get(clazz);
+        return deviceTemplateEntitiesCache.get(clazz) == null ? null : deviceTemplateEntitiesCache.get(clazz).stream().map(SerializationUtils::clone).toList();
     }
 
     public void cacheEntityMethod(Field filed, String key) {
