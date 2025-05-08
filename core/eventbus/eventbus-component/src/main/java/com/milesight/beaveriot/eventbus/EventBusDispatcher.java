@@ -6,11 +6,13 @@ import com.milesight.beaveriot.eventbus.api.Event;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
 import com.milesight.beaveriot.eventbus.api.IdentityKey;
 import com.milesight.beaveriot.eventbus.configuration.ExecutionOptions;
+import com.milesight.beaveriot.eventbus.interceptor.EventInterceptorChain;
 import com.milesight.beaveriot.eventbus.invoke.EventInvoker;
 import com.milesight.beaveriot.eventbus.invoke.EventSubscribeInvoker;
 import com.milesight.beaveriot.eventbus.invoke.ListenerParameterResolver;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -39,9 +41,12 @@ public class EventBusDispatcher<T extends Event<? extends IdentityKey>> implemen
     private ListenerParameterResolver parameterResolver;
     private ApplicationContext applicationContext;
 
-    public EventBusDispatcher(ExecutionOptions executionOptions, ListenerParameterResolver parameterResolver) {
+    private EventInterceptorChain<T> eventInterceptorChain;
+
+    public EventBusDispatcher(ExecutionOptions executionOptions, ListenerParameterResolver parameterResolver, EventInterceptorChain<T> eventInterceptorChain) {
         this.executionOptions = executionOptions;
         this.parameterResolver = parameterResolver;
+        this.eventInterceptorChain = eventInterceptorChain;
     }
 
     @Override
@@ -52,6 +57,14 @@ public class EventBusDispatcher<T extends Event<? extends IdentityKey>> implemen
         Executor executor = getEventBusExecutor();
 
         log.debug("Ready to publish EventBus events {}, hit Invocation size：{}", event.getEventType(), invocationHolders.size());
+
+        if (!ObjectUtils.isEmpty(invocationHolders)) {
+            boolean isContinue = eventInterceptorChain.preHandle(event);
+            if (!isContinue) {
+                log.warn("EventInterceptor preHandle return false, skip publish event: {}", event.getPayloadKey());
+                return;
+            }
+        }
 
         invocationHolders.forEach(invocationHolder -> executor.execute(() -> {
             try {
@@ -71,6 +84,7 @@ public class EventBusDispatcher<T extends Event<? extends IdentityKey>> implemen
         return (Executor) applicationContext.getBean(eventBusTaskExecutor);
     }
 
+    @SneakyThrows
     @Override
     public EventResponse handle(T event) {
 
@@ -81,6 +95,14 @@ public class EventBusDispatcher<T extends Event<? extends IdentityKey>> implemen
         List<InvocationHolder> invocationHolders = createInvocationHolders(event);
 
         log.debug("Ready to handle EventBus events, hit Invocation size：{}", invocationHolders.size());
+
+        if (!ObjectUtils.isEmpty(invocationHolders)) {
+            boolean isContinue = eventInterceptorChain.preHandle(event);
+            if (!isContinue) {
+                log.warn("EventInterceptor preHandle return false, skip handle event: {}", event.getPayloadKey());
+                return eventResponses;
+            }
+        }
 
         invocationHolders.forEach(invocationHolder -> {
             try {
@@ -97,9 +119,11 @@ public class EventBusDispatcher<T extends Event<? extends IdentityKey>> implemen
         });
 
         if (!CollectionUtils.isEmpty(causes)) {
-            throw new EventBusExecutionException("EventSubscribe method invoke error", causes);
+            EventBusExecutionException exception = new EventBusExecutionException("EventSubscribe method invoke error", causes);
+            eventInterceptorChain.afterHandle(event, eventResponses, exception);
+        } else {
+            eventInterceptorChain.afterHandle(event, eventResponses, null);
         }
-
         return eventResponses;
     }
 
