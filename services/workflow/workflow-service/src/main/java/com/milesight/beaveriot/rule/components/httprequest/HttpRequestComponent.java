@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 public class HttpRequestComponent implements ProcessorNode<Exchange> {
 
     @UriParam(javaType = "string", prefix = "bean", displayName = "API/API Method", enums = "GET,POST,PUT,DELETE")
-    @UriParamExtension(uiComponentGroup = "API", uiComponent = "method")
+    @UriParamExtension(uiComponentGroup = "API")
     private String method;
     @UriParam(javaType = "string", prefix = "bean", displayName = "URL")
     @UriParamExtension(uiComponentGroup = "API", uiComponent = "url")
