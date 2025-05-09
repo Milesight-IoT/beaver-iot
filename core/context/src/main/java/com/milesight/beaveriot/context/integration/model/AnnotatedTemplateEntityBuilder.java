@@ -30,12 +30,12 @@ public class AnnotatedTemplateEntityBuilder {
 
         List<Entity> deviceTemplateEntities = AnnotationEntityCache.INSTANCE.getDeviceTemplateEntities(annotatedTemplateEntityClass);
         return deviceTemplateEntities.stream().map(entity -> {
-            entity.setIntegrationId(integrationId);
-            entity.setDeviceKey(IntegrationConstants.formatIntegrationDeviceKey(integrationId, deviceIdentifier));
-            entity.getChildren().stream().forEach(child -> {
-                child.setDeviceKey(MessageFormat.format(child.getDeviceKey(), deviceIdentifier));
-            });
-            return entity;
+            Entity newEntity = entity.clone();
+            String deviceKey = IntegrationConstants.formatIntegrationDeviceKey(integrationId, deviceIdentifier);
+            newEntity.setIntegrationId(integrationId);
+            newEntity.setDeviceKey(deviceKey);
+            newEntity.getChildren().stream().forEach(child -> child.setDeviceKey(deviceKey));
+            return newEntity;
         }).toList();
     }
 

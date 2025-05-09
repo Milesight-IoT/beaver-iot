@@ -4,14 +4,16 @@ import com.milesight.beaveriot.eventbus.AnnotationEventBusRegister;
 import com.milesight.beaveriot.eventbus.EventBusDispatcher;
 import com.milesight.beaveriot.eventbus.api.Event;
 import com.milesight.beaveriot.eventbus.api.IdentityKey;
+import com.milesight.beaveriot.eventbus.interceptor.EventInterceptor;
+import com.milesight.beaveriot.eventbus.interceptor.EventInterceptorChain;
 import com.milesight.beaveriot.eventbus.invoke.ListenerParameterResolver;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -29,8 +31,8 @@ public class EventBusAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public <T extends Event<? extends IdentityKey>> EventBusDispatcher<T> eventBus(ExecutionOptions executionOptions, ListenerParameterResolver listenerParameterResolver){
-        return new EventBusDispatcher<>(executionOptions, listenerParameterResolver);
+    public <T extends Event<? extends IdentityKey>> EventBusDispatcher<T> eventBus(ExecutionOptions executionOptions, ListenerParameterResolver listenerParameterResolver, EventInterceptorChain eventInterceptorChain){
+        return new EventBusDispatcher<>(executionOptions, listenerParameterResolver, eventInterceptorChain);
     }
 
     @Bean
@@ -49,6 +51,12 @@ public class EventBusAutoConfiguration {
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.initialize();
         return executor;
+    }
+
+
+    @Bean
+    public EventInterceptorChain<?> eventInterceptorChain(ObjectProvider<EventInterceptor<?>> eventIterators) {
+        return new EventInterceptorChain(eventIterators);
     }
 
 }
