@@ -2,6 +2,7 @@ package com.milesight.beaveriot.eventbus.interceptor;
 
 import com.milesight.beaveriot.base.utils.TypeUtil;
 import com.milesight.beaveriot.eventbus.api.Event;
+import com.milesight.beaveriot.eventbus.api.EventInterceptor;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
 import com.milesight.beaveriot.eventbus.api.IdentityKey;
 import org.springframework.aop.support.AopUtils;
