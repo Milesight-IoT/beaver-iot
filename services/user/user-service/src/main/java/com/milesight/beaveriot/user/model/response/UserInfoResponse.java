@@ -1,6 +1,6 @@
 package com.milesight.beaveriot.user.model.response;
 
-import lombok.Data;
+import lombok.*;
 
 import java.util.List;
 
@@ -11,6 +11,7 @@ import java.util.List;
 @Data
 public class UserInfoResponse {
 
+    private String tenantId;
     private String userId;
     private String nickname;
     private String email;

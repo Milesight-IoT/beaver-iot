@@ -50,7 +50,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -132,6 +131,7 @@ public class UserService {
         }
         Long userId = securityUser.getUserId();
         userInfoResponse.setUserId(userId.toString());
+        userInfoResponse.setTenantId(securityUser.getTenantId());
         userInfoResponse.setNickname(securityUser.getNickname());
         userInfoResponse.setEmail(securityUser.getEmail());
         userInfoResponse.setCreatedAt(securityUser.getCreatedAt());
@@ -252,6 +252,7 @@ public class UserService {
         return userPages.map(userPO -> {
             UserInfoResponse userInfoResponse = new UserInfoResponse();
             userInfoResponse.setUserId(userPO.getId().toString());
+            userInfoResponse.setTenantId(userPO.getTenantId());
             userInfoResponse.setNickname(userPO.getNickname());
             userInfoResponse.setEmail(userPO.getEmail());
             userInfoResponse.setCreatedAt(userPO.getCreatedAt().toString());
