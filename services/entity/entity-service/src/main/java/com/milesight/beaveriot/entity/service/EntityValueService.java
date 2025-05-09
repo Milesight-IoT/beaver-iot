@@ -26,8 +26,8 @@ import com.milesight.beaveriot.entity.repository.EntityLatestRepository;
 import com.milesight.beaveriot.entity.repository.EntityRepository;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
 import jakarta.persistence.EntityManager;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
+import lombok.*;
+import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalDouble;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -199,23 +200,11 @@ public class EntityValueService implements EntityValueServiceProvider {
             return;
         }
         Map<String, EntityPO> entityKeyMap = entityPOList.stream().collect(Collectors.toMap(EntityPO::getKey, Function.identity()));
-        Map<String, EntityHistoryPO> existUnionIdMap = new HashMap<>();
-        if(isMerge) {
-            List<EntityHistoryUnionQuery> entityHistoryUnionQueryList = recordValues.keySet().stream().map(o -> {
-                EntityPO entityPO = entityKeyMap.get(o);
-                if (entityPO == null) {
-                    return null;
-                }
-                Long entityId = entityPO.getId();
-                EntityHistoryUnionQuery entityHistoryUnionQuery = new EntityHistoryUnionQuery();
-                entityHistoryUnionQuery.setEntityId(entityId);
-                entityHistoryUnionQuery.setTimestamp(timestamp);
-                return entityHistoryUnionQuery;
-            }).filter(Objects::nonNull).toList();
-            List<EntityHistoryPO> existEntityHistoryPOList = entityHistoryRepository.findByUnionUnique(entityManager, entityHistoryUnionQueryList);
-            if (existEntityHistoryPOList != null && !existEntityHistoryPOList.isEmpty()) {
-                existUnionIdMap.putAll(existEntityHistoryPOList.stream().collect(Collectors.toMap(entityHistoryPO -> entityHistoryPO.getEntityId() + ":" + entityHistoryPO.getTimestamp(), Function.identity())));
-            }
+        Map<String, EntityHistoryPO> keyToExistingHistoryRecord = new HashMap<>();
+        if (isMerge) {
+            Map<String, Long> entityKeyToId = entityPOList.stream()
+                    .collect(Collectors.toMap(EntityPO::getKey, EntityPO::getId, (a, b) -> a));
+            keyToExistingHistoryRecord.putAll(getExistingEntityHistoryMap(entityKeyToId, timestamp));
         }
         List<EntityHistoryPO> entityHistoryPOList = new ArrayList<>();
         recordValues.forEach((entityKey, payload) -> {
@@ -226,8 +215,7 @@ public class EntityValueService implements EntityValueServiceProvider {
             Long entityId = entityPO.getId();
             EntityValueType entityValueType = entityPO.getValueType();
             EntityHistoryPO entityHistoryPO = new EntityHistoryPO();
-            String unionId = entityId + ":" + timestamp;
-            EntityHistoryPO dataHistory = existUnionIdMap.get(unionId);
+            EntityHistoryPO dataHistory = keyToExistingHistoryRecord.get(entityKey);
             Long historyId = null;
             String operatorId = SecurityUserContext.getUserId() == null ? null : SecurityUserContext.getUserId().toString();
             if (dataHistory == null) {
@@ -246,6 +234,48 @@ public class EntityValueService implements EntityValueServiceProvider {
             entityHistoryPOList.add(entityHistoryPO);
         });
         entityHistoryRepository.saveAll(entityHistoryPOList);
+    }
+
+    private Map<String, EntityHistoryPO> getExistingEntityHistoryMap(Map<String, Long> entityKeyToId, long timestamp) {
+        List<EntityHistoryUnionQuery> entityHistoryUnionQueryList = entityKeyToId.keySet().stream()
+                .map(o -> {
+                    Long entityId = entityKeyToId.get(o);
+                    if (entityId == null) {
+                        return null;
+                    }
+                    EntityHistoryUnionQuery entityHistoryUnionQuery = new EntityHistoryUnionQuery();
+                    entityHistoryUnionQuery.setEntityId(entityId);
+                    entityHistoryUnionQuery.setTimestamp(timestamp);
+                    return entityHistoryUnionQuery;
+                })
+                .filter(Objects::nonNull)
+                .toList();
+        Map<Long, String> entityIdToKey = entityKeyToId.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey, (a, b) -> a));
+        List<EntityHistoryPO> existEntityHistoryPOList = entityHistoryRepository.findByUnionUnique(entityManager, entityHistoryUnionQueryList);
+        if (existEntityHistoryPOList != null && !existEntityHistoryPOList.isEmpty()) {
+            return new HashMap<>(existEntityHistoryPOList.stream()
+                    .collect(Collectors.toMap(entityHistoryPO -> entityIdToKey.get(entityHistoryPO.getEntityId()), Function.identity(), (a, b) -> a)));
+        }
+        return Collections.emptyMap();
+    }
+
+    /**
+     * Check if the entity history records exist
+     *
+     * @param keys      Entity keys of the history record
+     * @param timestamp Timestamp of the history record
+     * @return Entity keys of the existing history record
+     */
+    @Override
+    public Set<String> existHistoryRecord(Set<String> keys, long timestamp) {
+        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, keys.toArray()));
+        if (entityPOList == null || entityPOList.isEmpty()) {
+            return Collections.emptySet();
+        }
+        Map<String, Long> entityKeyToId = entityPOList.stream()
+                .collect(Collectors.toMap(EntityPO::getKey, EntityPO::getId, (a, b) -> a));
+        return getExistingEntityHistoryMap(entityKeyToId, timestamp).keySet();
     }
 
     @Override
@@ -360,6 +390,7 @@ public class EntityValueService implements EntityValueServiceProvider {
 
         return entityHistoryPage.map(entityHistoryPO -> {
             EntityHistoryResponse response = new EntityHistoryResponse();
+            response.setId(entityHistoryPO.getId().toString());
             response.setEntityId(entityHistoryPO.getEntityId().toString());
             response.setTimestamp(entityHistoryPO.getTimestamp().toString());
             if (entityHistoryPO.getValueBoolean() != null) {
@@ -469,7 +500,7 @@ public class EntityValueService implements EntityValueServiceProvider {
                     }
                     entityAggregateResponse.setValueType(EntityValueType.LONG);
                 } else if (oneEntityHistoryPO.getValueDouble() != null) {
-                    BigDecimal sum = entityHistoryPOList.stream().map(t->BigDecimal.valueOf(t.getValueDouble())).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal sum = entityHistoryPOList.stream().map(t -> BigDecimal.valueOf(t.getValueDouble())).reduce(BigDecimal.ZERO, BigDecimal::add);
                     BigDecimal count = new BigDecimal(entityHistoryPOList.size());
                     BigDecimal avg = sum.divide(count, 8, RoundingMode.HALF_EVEN);
                     entityAggregateResponse.setValue(avg.doubleValue());
@@ -491,7 +522,7 @@ public class EntityValueService implements EntityValueServiceProvider {
                     entityAggregateResponse.setValue(sumAsString);
                     entityAggregateResponse.setValueType(EntityValueType.LONG);
                 } else if (oneEntityHistoryPO.getValueDouble() != null) {
-                    entityAggregateResponse.setValue(entityHistoryPOList.stream().map(t->BigDecimal.valueOf(t.getValueDouble())).reduce(BigDecimal.ZERO, BigDecimal::add).doubleValue());
+                    entityAggregateResponse.setValue(entityHistoryPOList.stream().map(t -> BigDecimal.valueOf(t.getValueDouble())).reduce(BigDecimal.ZERO, BigDecimal::add).doubleValue());
                     entityAggregateResponse.setValueType(EntityValueType.DOUBLE);
                 } else if (oneEntityHistoryPO.getValueString() != null) {
                     throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();

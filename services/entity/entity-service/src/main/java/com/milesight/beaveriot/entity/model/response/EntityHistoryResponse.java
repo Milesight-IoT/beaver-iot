@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.entity.model.response;
 
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
-import lombok.Data;
+import lombok.*;
 
 /**
  * @author loong
@@ -9,6 +9,8 @@ import lombok.Data;
  */
 @Data
 public class EntityHistoryResponse {
+
+    private String id;
 
     private String entityId;
 
