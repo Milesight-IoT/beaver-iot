@@ -4,7 +4,7 @@ import com.milesight.beaveriot.eventbus.AnnotationEventBusRegister;
 import com.milesight.beaveriot.eventbus.EventBusDispatcher;
 import com.milesight.beaveriot.eventbus.api.Event;
 import com.milesight.beaveriot.eventbus.api.IdentityKey;
-import com.milesight.beaveriot.eventbus.interceptor.EventInterceptor;
+import com.milesight.beaveriot.eventbus.api.EventInterceptor;
 import com.milesight.beaveriot.eventbus.interceptor.EventInterceptorChain;
 import com.milesight.beaveriot.eventbus.invoke.ListenerParameterResolver;
 import org.springframework.beans.factory.ObjectProvider;

@@ -1,8 +1,4 @@
-package com.milesight.beaveriot.eventbus.interceptor;
-
-import com.milesight.beaveriot.eventbus.api.Event;
-import com.milesight.beaveriot.eventbus.api.EventResponse;
-import com.milesight.beaveriot.eventbus.api.IdentityKey;
+package com.milesight.beaveriot.eventbus.api;
 
 /**
  * @author leon
