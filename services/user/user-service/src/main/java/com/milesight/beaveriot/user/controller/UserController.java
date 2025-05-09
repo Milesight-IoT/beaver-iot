@@ -7,7 +7,13 @@ import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.user.constants.UserConstants;
-import com.milesight.beaveriot.user.model.request.*;
+import com.milesight.beaveriot.user.model.request.BatchDeleteUserRequest;
+import com.milesight.beaveriot.user.model.request.ChangePasswordRequest;
+import com.milesight.beaveriot.user.model.request.CreateUserRequest;
+import com.milesight.beaveriot.user.model.request.UpdatePasswordRequest;
+import com.milesight.beaveriot.user.model.request.UpdateUserRequest;
+import com.milesight.beaveriot.user.model.request.UserPermissionRequest;
+import com.milesight.beaveriot.user.model.request.UserRegisterRequest;
 import com.milesight.beaveriot.user.model.response.UserInfoResponse;
 import com.milesight.beaveriot.user.model.response.UserMenuResponse;
 import com.milesight.beaveriot.user.model.response.UserPermissionResponse;
@@ -18,7 +24,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -66,10 +79,9 @@ public class UserController {
         return ResponseBuilder.success(userStatusResponse);
     }
 
-    @GetMapping("")
+    @GetMapping
     public ResponseBody<UserInfoResponse> getUserInfo() {
-        UserInfoResponse userInfoResponse = userService.getUserInfo();
-        return ResponseBuilder.success(userInfoResponse);
+        return ResponseBuilder.success(userService.getUserInfo());
     }
 
     @PostMapping("/members/search")
