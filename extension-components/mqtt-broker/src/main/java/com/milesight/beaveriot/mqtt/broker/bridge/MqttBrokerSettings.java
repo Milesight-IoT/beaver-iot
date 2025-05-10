@@ -32,16 +32,10 @@ public class MqttBrokerSettings {
 
     private Integer wssPort;
 
-    private Listener listener;
-
     private Moquette moquette;
 
     @Valid
     private Emqx emqx;
-
-    public static class Listener {
-        private Integer parallelism;
-    }
 
     @Data
     @Builder
