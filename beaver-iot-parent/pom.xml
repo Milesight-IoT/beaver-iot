@@ -6,7 +6,7 @@
 
     <groupId>com.milesight.beaveriot</groupId>
     <artifactId>beaver-iot-parent</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>${projectVersion}</version>
     <packaging>pom</packaging>
     <name>beaver-iot-parent</name>
     <description>An open-source platform designed for rapid and intuitive IoT application development.</description>
@@ -33,6 +33,7 @@
     </licenses>
 
     <properties>
+        <beaver-iot.version>1.1.0</beaver-iot.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -372,6 +373,9 @@
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
+            <properties>
+                <projectVersion>${beaver-iot.version}</projectVersion>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -412,6 +416,9 @@
         </profile>
         <profile>
             <id>snapshot</id>
+            <properties>
+                <projectVersion>${beaver-iot.version}-SNAPSHOT</projectVersion>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
