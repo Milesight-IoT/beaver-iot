@@ -419,7 +419,7 @@
                         <artifactId>maven-deploy-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>deploy</id>
+                                <id>default-deploy</id>
                                 <phase>deploy</phase>
                                 <goals>
                                     <goal>deploy</goal>
@@ -431,13 +431,9 @@
             </build>
 
             <distributionManagement>
-                <repository>
-                    <id>nexus</id>
-                    <url>https://nexus.milesight.com/repository/maven-open-source/</url>
-                </repository>
                 <snapshotRepository>
-                    <id>snapshots</id>
-                    <url>https://nexus.milesight.com/repository/maven-open-source/</url>
+                    <id>central-portal-snapshots</id>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
                     <uniqueVersion>false</uniqueVersion>
                 </snapshotRepository>
             </distributionManagement>
@@ -448,11 +444,11 @@
                     <url>https://jitpack.io</url>
                 </repository>
                 <repository>
-                    <id>snapshots</id>
-                    <name>nexus-snapshots</name>
-                    <url>https://nexus.milesight.com/repository/maven-open-source/</url>
+                    <name>Central Portal Snapshots</name>
+                    <id>central-portal-snapshots</id>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
                     <releases>
-                        <enabled>true</enabled>
+                        <enabled>false</enabled>
                     </releases>
                     <snapshots>
                         <enabled>true</enabled>
