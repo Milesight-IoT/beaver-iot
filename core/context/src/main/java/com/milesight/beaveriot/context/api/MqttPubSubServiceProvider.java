@@ -28,14 +28,14 @@ public interface MqttPubSubServiceProvider {
     void subscribe(String username, String topicSubPath, MqttMessageListener onMessage, boolean shared);
 
     /**
-     * Subscribe mqtt messages from the topic matches 'beaver-iot/${username}/${topicSubPath}'.
+     * Subscribe mqtt messages from the topic matches 'beaver-iot/+/${topicSubPath}'.
      * <p>
      * If `shared` is true and the cluster mode is enabled, the event will be fired only in one node. (Perform like mqtt shared subscription, but work on cluster level)
      */
     void subscribe(String topicSubPath, MqttMessageListener onMessage, boolean shared);
 
     /**
-     * Subscribe mqtt messages from the topic matches 'beaver-iot/+/${topicSubPath}'.
+     * Subscribe mqtt messages from the topic matches 'beaver-iot/${username}/${topicSubPath}'.
      * <p>
      * If `shared` is true and the cluster mode is enabled, the event will be fired only in one node. (Perform like mqtt shared subscription, but work on cluster level)
      */

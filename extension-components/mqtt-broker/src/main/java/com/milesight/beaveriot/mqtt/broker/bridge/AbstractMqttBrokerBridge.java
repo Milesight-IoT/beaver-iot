@@ -41,6 +41,7 @@ public abstract class AbstractMqttBrokerBridge implements MqttBrokerBridge {
                 .mqttsPort(mqttBrokerSettings.getMqttsPort())
                 .wsPort(mqttBrokerSettings.getWsPort())
                 .wssPort(mqttBrokerSettings.getWssPort())
+                .wsPath(mqttBrokerSettings.getWsPath())
                 .build();
     }
 
