@@ -1,0 +1,42 @@
+name: Publish Snapshot Package
+
+on:
+  pull_request_target:
+    branches:
+      - main
+    types:
+      - closed
+
+jobs:
+  build:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Create settings.xml
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/.m2
+          cat <<EOF > $GITHUB_WORKSPACE/.m2/settings.xml
+          <settings>
+            <servers>
+              <server>
+                <id>central-portal-snapshots</id>
+                <username>${{ secrets.SNAPSHOT_OSSRH_USERNAME }}</username>
+                <password>${{ secrets.SNAPSHOT_OSSRH_PASSWORD }}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+
+      - name: Publish to GitHub Packages Apache Maven
+        run: mvn deploy -B -DskipTests -P snapshot -s $GITHUB_WORKSPACE/.m2/settings.xml --projects core/context,extension-components/scheduler -am
