@@ -6,7 +6,7 @@
 
     <groupId>com.milesight.beaveriot</groupId>
     <artifactId>beaver-iot-parent</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>${revision}</version>
     <packaging>pom</packaging>
     <name>beaver-iot-parent</name>
     <description>An open-source platform designed for rapid and intuitive IoT application development.</description>
@@ -33,6 +33,7 @@
     </licenses>
 
     <properties>
+        <beaver-iot.version>1.1.0</beaver-iot.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -330,6 +331,31 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>1.2.7</version>
+                <configuration>
+                    <flattenMode>resolveCiFriendliesOnly</flattenMode>
+                    <updatePomFile>true</updatePomFile>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>flatten-clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
                 <version>3.3.1</version>
@@ -369,9 +395,9 @@
     <profiles>
         <profile>
             <id>release</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
+            <properties>
+                <revision>${beaver-iot.version}</revision>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -412,6 +438,12 @@
         </profile>
         <profile>
             <id>snapshot</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <revision>${beaver-iot.version}-SNAPSHOT</revision>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
