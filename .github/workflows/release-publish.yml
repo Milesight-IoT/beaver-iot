@@ -1,0 +1,50 @@
+name: Publish Release Package
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Import GPG key
+        run: |
+          cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
+          gpg --list-secret-keys --keyid-format LONG
+      - name: Configure Git to use GPG
+        run: |
+          mkdir -p ~/.gnupg
+          echo "use-agent" >> ~/.gnupg/gpg.conf
+          echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+      - name: Create settings.xml
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/.m2
+          cat <<EOF > $GITHUB_WORKSPACE/.m2/settings.xml
+          <settings>
+            <servers>
+              <server>
+                <id>central</id>
+                <username>${{ secrets.CENTRAL_OSSRH_USERNAME }}</username>
+                <password>${{ secrets.CENTRAL_OSSRH_PASSWORD }}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+
+      - name: Publish package
+        env:
+          GPG_TTY: /dev/console
+        run: mvn deploy -B -Dgpg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} --projects core/context,extension-components/scheduler -DskipTests -P release -am -s $GITHUB_WORKSPACE/.m2/settings.xml

@@ -458,6 +458,9 @@
                                 </goals>
                             </execution>
                         </executions>
+                        <configuration>
+                            <skip>${deploy.skip}</skip>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>
