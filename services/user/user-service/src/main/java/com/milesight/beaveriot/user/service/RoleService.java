@@ -59,9 +59,11 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -192,11 +194,11 @@ public class RoleService {
         List<Long> searchUserIds = new ArrayList<>();
         if (StringUtils.hasText(userRolePageRequest.getKeyword())) {
             List<UserPO> userSearchPOs = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(userRolePageRequest.getKeyword()), UserPO.Fields.email, userRolePageRequest.getKeyword())
-                            .likeIgnoreCase(StringUtils.hasText(userRolePageRequest.getKeyword()), UserPO.Fields.nickname, userRolePageRequest.getKeyword()))
+                    .likeIgnoreCase(StringUtils.hasText(userRolePageRequest.getKeyword()), UserPO.Fields.nickname, userRolePageRequest.getKeyword()))
             );
             if (userSearchPOs != null && !userSearchPOs.isEmpty()) {
                 searchUserIds.addAll(userSearchPOs.stream().map(UserPO::getId).toList());
-            }else {
+            } else {
                 return Page.empty();
             }
         }
@@ -267,7 +269,7 @@ public class RoleService {
             if (integrations != null && !integrations.isEmpty()) {
                 List<String> integrationIds = integrations.stream().map(Integration::getId).toList();
                 searchIntegrationIds.addAll(integrationIds);
-            }else {
+            } else {
                 return Page.empty();
             }
         }
@@ -295,10 +297,10 @@ public class RoleService {
     }
 
     public Page<RoleDeviceResponse> getDevicesByRoleId(Long roleId, GenericQueryPageRequest roleDeviceRequest) {
-        List<String> searchIntegrationIds = new ArrayList<>();
-        List<Long> searchDeviceIds = new ArrayList<>();
-        boolean isKeywordSearch = false;
-        if (StringUtils.hasText(roleDeviceRequest.getKeyword())) {
+        Set<String> searchIntegrationIds = new HashSet<>();
+        Set<Long> searchDeviceIds = new HashSet<>();
+        boolean isKeywordSearch = StringUtils.hasText(roleDeviceRequest.getKeyword());
+        if (isKeywordSearch) {
             List<Integration> integrations = integrationServiceProvider.findIntegrations(f -> f.getName().toLowerCase().contains(roleDeviceRequest.getKeyword().toLowerCase()));
             if (integrations != null && !integrations.isEmpty()) {
                 List<String> integrationIds = integrations.stream().map(Integration::getId).toList();
@@ -308,43 +310,52 @@ public class RoleService {
                     searchDeviceIds.addAll(integrationDevices.stream().map(DeviceNameDTO::getId).toList());
                 }
             }
+
             List<DeviceNameDTO> deviceNameDTOList = deviceFacade.fuzzySearchDeviceByName(roleDeviceRequest.getKeyword());
             if (deviceNameDTOList != null && !deviceNameDTOList.isEmpty()) {
                 searchDeviceIds.addAll(deviceNameDTOList.stream().map(DeviceNameDTO::getId).toList());
             }
+
             if (searchDeviceIds.isEmpty() && searchIntegrationIds.isEmpty()) {
                 return Page.empty();
             }
-            isKeywordSearch = true;
         }
-        List<RoleResourcePO> roleIntegrationPOS = new ArrayList<>();
-        if(!isKeywordSearch || !searchIntegrationIds.isEmpty()) {
-            roleIntegrationPOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
-                    .eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION.name())
-                    .in(!searchIntegrationIds.isEmpty(), RoleResourcePO.Fields.resourceId, searchIntegrationIds.toArray()));
-        }
-        List<RoleResourcePO> roleDevicePOS = new ArrayList<>();
-        if(!isKeywordSearch || !searchDeviceIds.isEmpty()) {
-            roleDevicePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
+
+        List<RoleResourcePO> roleDevices = new ArrayList<>();
+        if (!isKeywordSearch || !searchDeviceIds.isEmpty()) {
+            roleDevices = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
                     .eq(RoleResourcePO.Fields.resourceType, ResourceType.DEVICE.name())
                     .in(!searchDeviceIds.isEmpty(), RoleResourcePO.Fields.resourceId, searchDeviceIds.toArray()));
         }
+
         List<Long> responseDeviceIds = new ArrayList<>();
-        if (roleDevicePOS != null && !roleDevicePOS.isEmpty()) {
-            responseDeviceIds.addAll(roleDevicePOS.stream().map(RoleResourcePO::getResourceId).map(Long::parseLong).toList());
+        if (roleDevices != null && !roleDevices.isEmpty()) {
+            responseDeviceIds.addAll(roleDevices.stream().map(RoleResourcePO::getResourceId).map(Long::parseLong).toList());
         }
-        List<Long> responseIntegrationDeviceIds = new ArrayList<>();
-        if(!roleIntegrationPOS.isEmpty()){
-            List<String> integrationIds = roleIntegrationPOS.stream().map(RoleResourcePO::getResourceId).toList();
-            List<DeviceNameDTO> integrationDevices = deviceFacade.getDeviceNameByIntegrations(integrationIds);
-            if (integrationDevices != null && !integrationDevices.isEmpty()) {
-                responseIntegrationDeviceIds.addAll(integrationDevices.stream().map(DeviceNameDTO::getId).toList());
-                responseDeviceIds.addAll(integrationDevices.stream().map(DeviceNameDTO::getId).toList());
+
+        Set<Long> responseIntegrationDeviceIds = new HashSet<>();
+        List<RoleResourcePO> roleIntegrations = roleResourceRepository.findAll(filterable ->
+                filterable.eq(RoleResourcePO.Fields.roleId, roleId)
+                        .eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION.name())
+                        .in(!searchIntegrationIds.isEmpty(), RoleResourcePO.Fields.resourceId, searchIntegrationIds.toArray()));
+        if (!roleIntegrations.isEmpty()) {
+            List<String> integrationIds = roleIntegrations.stream().map(RoleResourcePO::getResourceId).toList();
+            List<Long> integrationDeviceIds = deviceFacade.getDeviceNameByIntegrations(integrationIds).stream()
+                    .filter(d -> !isKeywordSearch
+                            || searchDeviceIds.contains(d.getId())
+                            || searchIntegrationIds.contains(d.getIntegrationId()))
+                    .map(DeviceNameDTO::getId)
+                    .toList();
+            if (!integrationDeviceIds.isEmpty()) {
+                responseIntegrationDeviceIds.addAll(integrationDeviceIds);
+                responseDeviceIds.addAll(integrationDeviceIds);
             }
         }
+
         if (responseDeviceIds.isEmpty()) {
             return Page.empty();
         }
+
         List<DeviceNameDTO> deviceNameDTOList = deviceFacade.getDeviceNameByIds(responseDeviceIds);
         Map<Long, DeviceNameDTO> deviceMap = deviceNameDTOList.stream().collect(Collectors.toMap(DeviceNameDTO::getId, Function.identity()));
         List<Long> userIds = deviceNameDTOList.stream().map(DeviceNameDTO::getUserId).filter(Objects::nonNull).toList();
@@ -353,25 +364,32 @@ public class RoleService {
             List<UserPO> userPOList = userRepository.findAll(filterable -> filterable.in(UserPO.Fields.id, userIds.toArray()));
             userMap.putAll(userPOList.stream().collect(Collectors.toMap(UserPO::getId, Function.identity())));
         }
+
         List<RoleDeviceResponse> roleDeviceResponseList = responseDeviceIds.stream().distinct().map(deviceId -> {
             RoleDeviceResponse roleDeviceResponse = new RoleDeviceResponse();
+            DeviceNameDTO device = deviceMap.get(deviceId);
             roleDeviceResponse.setDeviceId(deviceId.toString());
-            roleDeviceResponse.setDeviceName(deviceMap.get(deviceId) == null ? null : deviceMap.get(deviceId).getName());
-            roleDeviceResponse.setCreatedAt(deviceMap.get(deviceId) == null ? null : deviceMap.get(deviceId).getCreatedAt().toString());
-            Long userId = deviceMap.get(deviceId) == null ? null : deviceMap.get(deviceId).getUserId();
+            roleDeviceResponse.setDeviceName(device == null ? null : device.getName());
+            roleDeviceResponse.setCreatedAt(device == null ? null : device.getCreatedAt().toString());
+
+            Long userId = device == null ? null : device.getUserId();
             if (userId != null) {
+                UserPO user = userMap.get(userId);
                 roleDeviceResponse.setUserId(userId.toString());
-                roleDeviceResponse.setUserEmail(userMap.get(userId) == null ? null : userMap.get(userId).getEmail());
-                roleDeviceResponse.setUserNickname(userMap.get(userId) == null ? null : userMap.get(userId).getNickname());
+                roleDeviceResponse.setUserEmail(user == null ? null : user.getEmail());
+                roleDeviceResponse.setUserNickname(user == null ? null : user.getNickname());
             }
-            Integration integrationConfig = deviceMap.get(deviceId) == null ? null : deviceMap.get(deviceId).getIntegrationConfig();
+
+            Integration integrationConfig = device == null ? null : device.getIntegrationConfig();
             if (integrationConfig != null) {
                 roleDeviceResponse.setIntegrationId(integrationConfig.getId());
                 roleDeviceResponse.setIntegrationName(integrationConfig.getName());
             }
             roleDeviceResponse.setRoleIntegration(responseIntegrationDeviceIds.contains(deviceId));
+
             return roleDeviceResponse;
         }).toList();
+
         return PageConverter.convertToPage(roleDeviceResponseList, roleDeviceRequest.toPageable());
     }
 
@@ -381,7 +399,7 @@ public class RoleService {
             List<DashboardDTO> dashboardPOS = dashboardFacade.getDashboardsLike(roleDashboardRequest.getKeyword(), Sort.unsorted());
             if (dashboardPOS != null && !dashboardPOS.isEmpty()) {
                 searchDashboardIds.addAll(dashboardPOS.stream().map(DashboardDTO::getDashboardId).toList());
-            }else{
+            } else {
                 return Page.empty();
             }
         }
