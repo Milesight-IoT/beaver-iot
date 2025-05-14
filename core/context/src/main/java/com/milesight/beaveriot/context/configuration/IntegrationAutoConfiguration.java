@@ -35,7 +35,7 @@ public class IntegrationAutoConfiguration {
     @Bean
     @ConditionalOnBean(ThreadPoolTaskExecutorBuilder.class)
     @Primary
-    public ThreadPoolTaskExecutor taskExecutor(ThreadPoolTaskExecutorBuilder builder) {
+    public ThreadPoolTaskExecutor integrationTaskExecutor(ThreadPoolTaskExecutorBuilder builder) {
         return builder.build();
     }
 }

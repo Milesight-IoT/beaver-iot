@@ -2,8 +2,6 @@ server:
   port: 9200
 
 spring:
-  main:
-    allow-bean-definition-overriding: true
   jackson:
     default-property-inclusion: non_null
     property-naming-strategy: SNAKE_CASE
@@ -18,7 +16,7 @@ spring:
     #    username: "${SPRING_DATASOURCE_USERNAME:postgres}"
     #    password: "${SPRING_DATASOURCE_PASSWORD:postgres}"
     #    driverClassName: "${SPRING_DRIVER_CLASS_NAME:org.postgresql.Driver}"
-    url: "${SPRING_DATASOURCE_URL:jdbc:h2:file:~/beaver-iot/h2/beaver;AUTO_SERVER=TRUE}"
+    url: "${SPRING_DATASOURCE_URL:jdbc:h2:file:~/beaver-iot/h2/beaver;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1}"
     username: "${SPRING_DATASOURCE_USERNAME:sa}"
     password: "${SPRING_DATASOURCE_PASSWORD:}"
     driverClassName: "${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.h2.Driver}"
