@@ -84,7 +84,7 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
         if (body != null) {
             String bodyType = body.get("type") == null ? null : body.get("type").toString();
             if (bodyType != null) {
-                httpHeader.put(Exchange.CONTENT_TYPE, bodyType);
+                httpHeader.put(Exchange.CONTENT_TYPE, bodyType + ";charset=UTF-8");
             }
             bodyValueVariables = convertBody(exchange, body.get("value"), bodyType);
         }
