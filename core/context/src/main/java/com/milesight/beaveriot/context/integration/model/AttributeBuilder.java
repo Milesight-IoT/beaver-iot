@@ -2,6 +2,7 @@ package com.milesight.beaveriot.context.integration.model;
 
 import com.milesight.beaveriot.base.utils.EnumUtils;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,8 +22,10 @@ public class AttributeBuilder {
     public static final String ATTRIBUTE_FORMAT = "format";
     public static final String ATTRIBUTE_FRACTION_DIGITS = "fraction_digits";
     public static final String ATTRIBUTE_OPTIONAL = "optional";
+    public static final String ATTRIBUTE_LENGTH_RANGE = "length_range";
+    public static final String ATTRIBUTE_DEFAULT_VALUE = "default_value";
 
-    private Map<String, Object> attributes = new HashMap<>();
+    private final Map<String, Object> attributes = new HashMap<>();
 
     public AttributeBuilder unit(String unit) {
         if (ObjectUtils.isEmpty(unit)) {
@@ -33,7 +36,7 @@ public class AttributeBuilder {
     }
 
     public AttributeBuilder max(Double max) {
-        if (max == null || max == Double.NaN) {
+        if (max == null || Double.isNaN(max)) {
             return this;
         }
         attributes.put(ATTRIBUTE_MAX, max);
@@ -41,7 +44,7 @@ public class AttributeBuilder {
     }
 
     public AttributeBuilder min(Double min) {
-        if (min == null || min == Double.NaN) {
+        if (min == null || Double.isNaN(min)) {
             return this;
         }
         attributes.put(ATTRIBUTE_MIN, min);
@@ -68,7 +71,47 @@ public class AttributeBuilder {
         if (ObjectUtils.isEmpty(format)) {
             return this;
         }
-        attributes.put(ATTRIBUTE_FORMAT, format);
+
+        String[] parts = format.split(":", 2);
+        AttributeFormatComponent component = AttributeFormatComponent.valueOf(parts[0]);
+        if (parts.length == 1 || !StringUtils.hasText(parts[1])) {
+            return this.format(component, null);
+        }
+
+        return this.format(component, parts[1]);
+    }
+
+    public AttributeBuilder format(AttributeFormatComponent component, String args) {
+        if (component == null) {
+            return this;
+        }
+
+        if (StringUtils.hasText(args)) {
+            attributes.put(ATTRIBUTE_FORMAT, component + ":" + args);
+        } else {
+            attributes.put(ATTRIBUTE_FORMAT, component.toString());
+        }
+
+        return this;
+    }
+
+    public AttributeBuilder defaultValue(String v) {
+        if (ObjectUtils.isEmpty(v)) {
+            return this;
+        }
+
+        attributes.put(ATTRIBUTE_DEFAULT_VALUE, v);
+
+        return this;
+    }
+
+    public AttributeBuilder lengthRange(String v) {
+        if (ObjectUtils.isEmpty(v)) {
+            return this;
+        }
+
+        attributes.put(ATTRIBUTE_LENGTH_RANGE, v);
+
         return this;
     }
 
@@ -97,6 +140,10 @@ public class AttributeBuilder {
     }
 
     public AttributeBuilder optional(boolean optional) {
+        if (!optional) {
+            return this;
+        }
+
         attributes.put(ATTRIBUTE_OPTIONAL, optional);
         return this;
     }

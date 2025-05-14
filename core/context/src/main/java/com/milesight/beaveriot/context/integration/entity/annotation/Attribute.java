@@ -24,9 +24,24 @@ public @interface Attribute {
 
     int minLength() default AttributeBuilder.POSITIVE_INT_NAN;
 
+    /**
+     * 12,16
+     */
+    String lengthRange() default "";
+
     int fractionDigits() default AttributeBuilder.POSITIVE_INT_NAN;
 
+    /**
+     * <b>[component]:[arguments]</b><br/><br/>
+     * For example:
+     * <ul>
+     *  <li>regex:([0-9A-Fa-f]{2}){16}</li>
+     *  <li>hex:16</li>
+     * </ul>
+     */
     String format() default "";
+
+    String defaultValue() default "";
 
     Class<? extends Enum>[] enumClass() default {};
 
