@@ -8,7 +8,7 @@ spring:
     default-property-inclusion: non_null
     property-naming-strategy: SNAKE_CASE
   jpa:
-    show-sql: true
+    show-sql: false
     properties:
       jakarta.persistence.query.timeout: "${JAVAX_PERSISTENCE_QUERY_TIMEOUT:30000}" # General timeout for JDBC queries
       hibernate.type.wrapper_array_handling: ALLOW
