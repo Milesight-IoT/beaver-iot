@@ -1,0 +1,142 @@
+{
+  "type": "object",
+  "required": ["template_type", "definition"],
+  "properties": {
+    "template_type": {
+      "type": "string",
+      "const": "JSON"
+    },
+    "definition": {
+      "type": "object",
+      "required": ["input"],
+      "properties": {
+        "input": {
+          "type": "object",
+          "required": ["type", "properties"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["object"]
+            },
+            "properties": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/definitions/Property"
+              }
+            }
+          }
+        },
+        "output": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["object"]
+              },
+              "properties": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/Property"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "initial_entities": {
+      "type": "array",
+      "optional": true,
+      "items": {
+        "type": "object",
+        "required": ["identifier", "value_type"],
+        "properties": {
+          "identifier": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "optional": true
+          },
+          "value_type": {
+            "type": "string",
+            "enum": ["object", "string", "long", "double"]
+          },
+          "children": {
+            "type": "array",
+            "optional": true,
+            "items": {
+              "type": "object",
+              "required": ["identifier", "value_type"],
+              "properties": {
+                "identifier": { "type": "string" },
+                "name": { "type": "string" },
+                "value_type": {
+                  "type": "string",
+                  "enum": ["object", "string", "long", "double"]
+                },
+                "attributes": {
+                  "type": "object",
+                  "optional": true
+                }
+              }
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "value_type": {
+                  "const": "object"
+                }
+              }
+            },
+            "then": {
+              "required": ["children"]
+            },
+            "else": {
+              "not": {
+                "required": ["children"]
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "Property": {
+      "type": "object",
+      "required": ["key", "type"],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["object", "string", "long", "double"]
+        },
+        "required": {
+          "type": "boolean",
+          "optional": true
+        },
+        "entity_mapping": {
+          "type": "string",
+          "optional": true
+        },
+        "properties": {
+          "type": "array",
+          "optional": true,
+          "items": {
+            "$ref": "#/definitions/Property"
+          }
+        }
+      }
+    }
+  }
+}
