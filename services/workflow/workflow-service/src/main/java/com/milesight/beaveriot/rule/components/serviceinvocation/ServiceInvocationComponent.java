@@ -14,6 +14,7 @@ import com.milesight.beaveriot.rule.constants.RuleNodeType;
 import com.milesight.beaveriot.rule.model.OutputVariablesSettings;
 import com.milesight.beaveriot.rule.support.JsonHelper;
 import com.milesight.beaveriot.rule.support.SpELExpressionHelper;
+import com.milesight.beaveriot.rule.util.WorkflowEntityHelper;
 import lombok.Data;
 import org.apache.camel.Exchange;
 import org.apache.camel.spi.UriParam;
@@ -39,6 +40,9 @@ public class ServiceInvocationComponent implements ProcessorNode<Exchange> {
     @Autowired
     EntityValueServiceProvider entityValueServiceProvider;
 
+    @Autowired
+    WorkflowEntityHelper workflowEntityHelper;
+
     @UriParamExtension(uiComponent = "paramDefineInput")
     @OutputArguments
     @UriParam(prefix = "bean", name = "payload", displayName = "Output Variables",description = "Define the response of the service call, which is optional and should only be set when the service has a return value.")
@@ -49,6 +53,7 @@ public class ServiceInvocationComponent implements ProcessorNode<Exchange> {
         if(serviceInvocationSetting != null && serviceInvocationSetting.get("serviceParams") != null) {
             Map<String, Object> serviceParams = JsonHelper.fromJSON(JsonHelper.toJSON(serviceInvocationSetting.get("serviceParams")), Map.class);
             Map<String, Object> exchangePayloadVariables = SpELExpressionHelper.resolveExpression(exchange, serviceParams);
+            workflowEntityHelper.checkEntityExist(exchangePayloadVariables.keySet());
             ExchangePayload exchangePayload = ExchangePayload.create(exchangePayloadVariables);
             if (ObjectUtils.isEmpty(exchange.getProperty(ExchangeHeaders.EXCHANGE_ROOT_FLOW_ID))) {
                 exchange.setProperty(ExchangeHeaders.EXCHANGE_ROOT_FLOW_ID, exchange.getFromRouteId());

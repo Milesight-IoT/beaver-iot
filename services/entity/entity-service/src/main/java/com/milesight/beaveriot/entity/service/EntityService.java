@@ -51,13 +51,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -411,7 +405,7 @@ public class EntityService implements EntityServiceProvider {
     }
 
     @Override
-    public Map<String, Entity> findByKeys(List<String> entityKeys) {
+    public Map<String, Entity> findByKeys(Collection<String> entityKeys) {
         if (entityKeys == null || entityKeys.isEmpty()) {
             return new HashMap<>();
         }
@@ -747,7 +741,7 @@ public class EntityService implements EntityServiceProvider {
     /**
      * Return a list of entities corresponding one-to-one with the given keys
      */
-    private <T> List<Entity> mapKeysToEntities(List<Entity> entities, List<T> keys, Function<Entity, T> keyMapper) {
+    private <T> List<Entity> mapKeysToEntities(List<Entity> entities, Collection<T> keys, Function<Entity, T> keyMapper) {
         Map<T, Entity> entityMap = entities.stream()
                 .flatMap(entity -> entity.getChildren() == null
                         ? Stream.of(entity)
@@ -755,6 +749,7 @@ public class EntityService implements EntityServiceProvider {
                 .collect(Collectors.toMap(keyMapper, Function.identity()));
         return keys.stream()
                 .map(entityMap::get)
+                .filter(Objects::nonNull)
                 .toList();
     }
 
