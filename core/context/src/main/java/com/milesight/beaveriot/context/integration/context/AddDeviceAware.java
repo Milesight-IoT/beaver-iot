@@ -16,9 +16,9 @@ public interface AddDeviceAware {
         }
     }
 
-    default String getAddDeviceTemplateId() {
+    default Long getAddDeviceTemplateId() {
         if (this instanceof ExchangePayload exchangePayload) {
-            return (String) exchangePayload.getContext(ExchangeContextKeys.DEVICE_TEMPLATE_ID_ON_ADD);
+            return (Long) exchangePayload.getContext(ExchangeContextKeys.DEVICE_TEMPLATE_ID_ON_ADD);
         } else {
             throw new UnsupportedOperationException("Class must implement ExchangePayload");
         }
