@@ -21,6 +21,8 @@ public interface EntityValueServiceProvider {
 
     void saveValuesAndPublishAsync(ExchangePayload exchangePayload, String eventType);
 
+    void saveLatestValues(ExchangePayload exchangePayload);
+
     void saveValues(ExchangePayload exchangePayload, long timestamp);
 
     void saveValues(ExchangePayload exchangePayload);
