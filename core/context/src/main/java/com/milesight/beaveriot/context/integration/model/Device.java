@@ -22,6 +22,7 @@ public class Device implements IdentityKey {
     private String name;
     private Map<String, Object> additional;
     private String identifier;
+    private Long templateId;
     private List<Entity> entities = new ArrayList<>();
 
     @Setter
@@ -75,6 +76,10 @@ public class Device implements IdentityKey {
 
     public void setAdditional(Map<String, Object> additional) {
         this.additional = additional;
+    }
+
+    public void setTemplateId(Long templateId) {
+        this.templateId = templateId;
     }
 
     protected void setIdentifier(String identifier) {

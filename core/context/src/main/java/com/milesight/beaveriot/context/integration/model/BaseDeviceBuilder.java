@@ -16,6 +16,7 @@ public class BaseDeviceBuilder<T extends BaseDeviceBuilder> {
     protected List<Entity> entities;
     protected String name;
     protected String identifier;
+    protected Long templateId;
     protected Map<String, Object> additional;
     protected String integrationId;
     protected Long id;
@@ -72,12 +73,18 @@ public class BaseDeviceBuilder<T extends BaseDeviceBuilder> {
         return (T) this;
     }
 
+    public T templateId(Long templateId) {
+        this.templateId = templateId;
+        return (T) this;
+    }
+
     public Device build() {
 
         Device device = new Device();
         device.setName(name);
         device.setAdditional(additional);
         device.setIdentifier(identifier);
+        device.setTemplateId(templateId);
         if (StringUtils.hasText(integrationId)) {
             device.setIntegrationId(integrationId);
             device.initializeProperties(integrationId);

@@ -85,6 +85,7 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
             // integration / identifier / key would not be updated
             devicePO.setIntegration(device.getIntegrationId());
             devicePO.setIdentifier(device.getIdentifier());
+            devicePO.setTemplateId(device.getTemplateId());
             devicePO.setKey(device.getKey());
             devicePO = deviceRepository.save(devicePO);
             eventBus.publish(DeviceEvent.of(DeviceEvent.EventType.CREATED, device));
