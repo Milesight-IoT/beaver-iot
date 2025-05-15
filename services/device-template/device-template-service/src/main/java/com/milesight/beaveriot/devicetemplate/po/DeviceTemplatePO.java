@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.device.po;
+package com.milesight.beaveriot.devicetemplate.po;
 
 import com.milesight.beaveriot.data.support.MapJsonConverter;
 import jakarta.persistence.*;
@@ -14,9 +14,9 @@ import java.util.Map;
 @Data
 @Entity
 @FieldNameConstants
-@Table(name = "t_device")
+@Table(name = "t_device_template")
 @EntityListeners(AuditingEntityListener.class)
-public class DevicePO {
+public class DeviceTemplatePO {
 
     @Id
     @Column(name = "id")
@@ -39,12 +39,15 @@ public class DevicePO {
     @Column(name = "identifier")
     private String identifier;
 
-    @Column(name = "template_id")
-    private Long templateId;
+    @Column(name = "content")
+    private String content;
 
     @Column(name = "additional_data", length = 1024)
     @Convert(converter = MapJsonConverter.class)
     private Map<String, Object> additionalData;
+
+    @Column(name = "description")
+    private String description;
 
     @Column(name = "created_at")
     @CreatedDate

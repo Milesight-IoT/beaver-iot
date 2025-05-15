@@ -49,8 +49,52 @@ public class ExchangeContextKeys {
     public static final String DEVICE_NAME_ON_ADD = "_deviceNameOnAdd";
 
     /**
+     * the key of device template id on add
+     */
+    public static final String DEVICE_TEMPLATE_ID_ON_ADD = "_deviceTemplateIdOnAdd";
+
+    /**
      * the key of device on delete
      */
     public static final String DEVICE_ON_DELETE = "_deviceOnDelete";
 
+    /**
+     * the key of device template name on add
+     */
+    public static final String DEVICE_TEMPLATE_NAME_ON_ADD = "_deviceTemplateNameOnAdd";
+
+    /**
+     * the key of device template content on add
+     */
+    public static final String DEVICE_TEMPLATE_CONTENT_ON_ADD = "_deviceTemplateContentOnAdd";
+
+    /**
+     * the key of device template description on add
+     */
+    public static final String DEVICE_TEMPLATE_DESCRIPTION_ON_ADD = "_deviceTemplateDescriptionOnAdd";
+
+    /**
+     * the key of device template name on update
+     */
+    public static final String DEVICE_TEMPLATE_NAME_ON_UPDATE = "_deviceTemplateNameOnUpdate";
+
+    /**
+     * the key of device template content on update
+     */
+    public static final String DEVICE_TEMPLATE_CONTENT_ON_UPDATE = "_deviceTemplateContentOnUpdate";
+
+    /**
+     * the key of device template description on update
+     */
+    public static final String DEVICE_TEMPLATE_DESCRIPTION_ON_UPDATE = "_deviceTemplateDescriptionOnUpdate";
+
+    /**
+     * the key of device template id on update
+     */
+    public static final String DEVICE_TEMPLATE_ID_ON_UPDATE = "_deviceTemplateIdOnUpdate";
+
+    /**
+     * the key of device on delete
+     */
+    public static final String DEVICE_TEMPLATE_ON_DELETE = "_deviceTemplateOnDelete";
 }

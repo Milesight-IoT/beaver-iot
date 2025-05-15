@@ -5,12 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.milesight.beaveriot</groupId>
-        <artifactId>device</artifactId>
+        <artifactId>device-template</artifactId>
         <version>${revision}</version>
     </parent>
 
-    <artifactId>device-service</artifactId>
-    <name>device-service</name>
+    <artifactId>device-template-service</artifactId>
+    <name>device-template-service</name>
     <description>An open-source platform designed for rapid and intuitive IoT application development.</description>
     <url>https://github.com/milesight-iot/beaver-iot</url>
     <scm>
@@ -22,9 +22,9 @@
     </organization>
     <developers>
         <developer>
-            <id>Simon</id>
-            <name>Simon Zhao</name>
-            <email>simon.zhao@milesight.com</email>
+            <id>luxb</id>
+            <name>luxb</name>
+            <email>luxb@milesight.com</email>
         </developer>
     </developers>
     <licenses>
@@ -53,11 +53,6 @@
         <dependency>
             <groupId>com.milesight.beaveriot</groupId>
             <artifactId>data-jpa</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.milesight.beaveriot</groupId>
-            <artifactId>device-api</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

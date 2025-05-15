@@ -1,22 +1,16 @@
-package com.milesight.beaveriot.device.model.response;
+package com.milesight.beaveriot.devicetemplate.model.response;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-import java.util.List;
-
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class DeviceDetailResponse extends DeviceResponseData {
+public class DeviceTemplateDetailResponse extends DeviceTemplateResponseData {
     private String identifier;
-
-    private String templateName;
 
     private String userNickname;
 
     private String userEmail;
-
-    List<DeviceEntityData> entities;
 }

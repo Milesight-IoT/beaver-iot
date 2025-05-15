@@ -5,13 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.milesight.beaveriot</groupId>
-        <artifactId>beaver-iot</artifactId>
+        <artifactId>device-template</artifactId>
         <version>${revision}</version>
     </parent>
 
-    <artifactId>services</artifactId>
-    <packaging>pom</packaging>
-    <name>services</name>
+    <artifactId>device-template-api</artifactId>
+    <name>device-template-api</name>
     <description>An open-source platform designed for rapid and intuitive IoT application development.</description>
     <url>https://github.com/milesight-iot/beaver-iot</url>
     <scm>
@@ -23,9 +22,9 @@
     </organization>
     <developers>
         <developer>
-            <id>Simon</id>
-            <name>Simon Zhao</name>
-            <email>simon.zhao@milesight.com</email>
+            <id>luxb</id>
+            <name>luxb</name>
+            <email>luxb@milesight.com</email>
         </developer>
     </developers>
     <licenses>
@@ -35,25 +34,22 @@
         </license>
     </licenses>
 
-    <modules>
-        <module>dashboard</module>
-        <module>user</module>
-        <module>device</module>
-        <module>authentication</module>
-        <module>integration</module>
-        <module>entity</module>
-        <module>workflow</module>
-        <module>permission</module>
-        <module>credentials</module>
-        <module>mqtt</module>
-        <module>resource-manager</module>
-        <module>device-template</module>
-    </modules>
-
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>context</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 
 </project>
