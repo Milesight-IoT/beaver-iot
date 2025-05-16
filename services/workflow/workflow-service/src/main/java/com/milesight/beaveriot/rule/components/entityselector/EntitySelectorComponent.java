@@ -8,6 +8,7 @@ import com.milesight.beaveriot.rule.annotations.UriParamExtension;
 import com.milesight.beaveriot.rule.api.ProcessorNode;
 import com.milesight.beaveriot.rule.constants.RuleNodeType;
 import com.milesight.beaveriot.rule.support.SpELExpressionHelper;
+import com.milesight.beaveriot.rule.util.WorkflowEntityHelper;
 import lombok.Data;
 import org.apache.camel.Exchange;
 import org.apache.camel.spi.UriParam;
@@ -32,9 +33,13 @@ public class EntitySelectorComponent implements ProcessorNode<Exchange> {
     @Autowired
     EntityValueServiceProvider entityValueServiceProvider;
 
+    @Autowired
+    WorkflowEntityHelper workflowEntityHelper;
+
     @Override
     public void processor(Exchange exchange) {
         List<String> entitiesVariables = SpELExpressionHelper.resolveExpression(exchange, entities);
+        workflowEntityHelper.checkEntityExist(entitiesVariables);
         Map<String, Object> entityValues = entityValueServiceProvider.findValuesByKeys(entitiesVariables);
         ExchangePayload exchangePayload = ExchangePayload.create(entityValues);
         exchange.getIn().setBody(exchangePayload);
