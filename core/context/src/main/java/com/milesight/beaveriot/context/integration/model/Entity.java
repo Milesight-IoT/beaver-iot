@@ -92,9 +92,7 @@ public class Entity implements IdentityKey, Cloneable {
         if (ObjectUtils.isEmpty(entity.getAccessMod())) {
             entity.setAccessMod(this.getAccessMod());
         }
-        if (entity.getVisible() == null) {
-            entity.setVisible(this.getVisible());
-        }
+        entity.setVisible(this.getVisible());
     }
 
     protected void initializeProperties(String integrationId) {
