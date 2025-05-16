@@ -64,7 +64,7 @@
           },
           "value_type": {
             "type": "string",
-            "enum": ["object", "string", "long", "double"]
+            "enum": ["object", "string", "long", "double", "boolean"]
           },
           "children": {
             "type": "array",
@@ -77,7 +77,7 @@
                 "name": { "type": "string" },
                 "value_type": {
                   "type": "string",
-                  "enum": ["object", "string", "long", "double"]
+                  "enum": ["object", "string", "long", "double", "boolean"]
                 },
                 "attributes": {
                   "type": "object",

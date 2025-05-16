@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.devicetemplate.parser.model.json;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.milesight.beaveriot.context.integration.model.Entity;
+import com.milesight.beaveriot.context.integration.model.config.EntityConfig;
 import lombok.Data;
 import lombok.Getter;
 
@@ -16,14 +16,15 @@ import java.util.List;
 public class JsonDeviceTemplate {
     private String templateType;
     private Definition definition;
-    private List<Entity> initialEntities;
+    private List<EntityConfig> initialEntities;
 
     @Getter
     public enum JsonType {
         OBJECT("object"),
         STRING("string"),
         LONG("long"),
-        DOUBLE("double");
+        DOUBLE("double"),
+        BOOLEAN("boolean");
 
         private final String typeName;
 

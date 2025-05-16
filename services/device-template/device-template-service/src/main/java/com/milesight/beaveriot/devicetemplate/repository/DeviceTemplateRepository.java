@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-@Tenant
 public interface DeviceTemplateRepository extends BaseJpaRepository<DeviceTemplatePO, Long> {
     public List<DeviceTemplatePO> findByIdIn(List<Long> ids);
 

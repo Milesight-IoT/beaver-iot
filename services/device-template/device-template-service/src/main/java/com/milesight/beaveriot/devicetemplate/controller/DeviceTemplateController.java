@@ -4,6 +4,7 @@ import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.context.api.DeviceTemplateParserProvider;
 import com.milesight.beaveriot.devicetemplate.model.request.*;
+import com.milesight.beaveriot.devicetemplate.model.response.DeviceTemplateDefaultContent;
 import com.milesight.beaveriot.devicetemplate.model.response.DeviceTemplateDetailResponse;
 import com.milesight.beaveriot.devicetemplate.model.response.DeviceTemplateResponseData;
 import com.milesight.beaveriot.devicetemplate.service.DeviceTemplateService;
@@ -31,6 +32,13 @@ public class DeviceTemplateController {
         return ResponseBuilder.success(deviceTemplateService.searchDeviceTemplate(searchDeviceTemplateRequest));
     }
 
+    @PostMapping("/{deviceTemplateId}/test")
+    public ResponseBody<Void> testDeviceTemplate(@PathVariable("deviceTemplateId") Long deviceTemplateId, @RequestBody TestDeviceTemplateRequest testDeviceTemplateRequest) {
+        String deviceTemplateContent = deviceTemplateService.getDeviceTemplateDetail(deviceTemplateId).getContent();
+        deviceTemplateParserProvider.discover(testDeviceTemplateRequest.getIntegration(), testDeviceTemplateRequest.getTestData(), deviceTemplateId, deviceTemplateContent);
+        return ResponseBuilder.success();
+    }
+
     @PutMapping("/{deviceTemplateId}")
     public ResponseBody<Void> updateDeviceTemplate(@PathVariable("deviceTemplateId") Long deviceTemplateId, @RequestBody UpdateDeviceTemplateRequest updateDeviceTemplateRequest) {
         deviceTemplateService.updateDeviceTemplate(deviceTemplateId, updateDeviceTemplateRequest);
@@ -55,7 +63,7 @@ public class DeviceTemplateController {
     }
 
     @GetMapping("/content/default")
-    public ResponseBody<String> getDefaultDeviceTemplateContent() {
-        return ResponseBuilder.success(deviceTemplateParserProvider.getDefaultDeviceTemplateContent());
+    public ResponseBody<DeviceTemplateDefaultContent> getDefaultDeviceTemplateContent() {
+        return ResponseBuilder.success(DeviceTemplateDefaultContent.build(deviceTemplateParserProvider.getDefaultDeviceTemplateContent()));
     }
 }

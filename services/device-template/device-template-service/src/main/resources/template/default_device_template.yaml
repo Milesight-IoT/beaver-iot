@@ -44,7 +44,7 @@ definition:
             - key: ctrl_status1
               type: long
               entity_mapping: 'set_delay_work.ctrl_status1'
-initial-entities:
+initial_entities:
   - identifier: 'device_id'  # entity identifier
     name: 'device_id'        # entity name
     value_type: string       # entity value type
@@ -94,11 +94,6 @@ initial-entities:
       - identifier: 'event_time'    # entity identifier
         name: 'event_time'          # entity name
         value_type: long            # entity value type
-  - identifier: 'timestamp'  # entity identifier
-    name: 'timestamp'        # entity name
-    value_type: string       # entity value type
-    type: property           # entity type
-    access_mod: R
   - identifier: 'service_id'  # entity identifier
     name: 'service_id'        # entity name
     value_type: string        # entity value type

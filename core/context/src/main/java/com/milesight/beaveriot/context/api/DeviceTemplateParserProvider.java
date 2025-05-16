@@ -1,7 +1,5 @@
 package com.milesight.beaveriot.context.api;
 
-import com.milesight.beaveriot.context.model.DeviceTemplateType;
-
 /**
  * author: Luxb
  * create: 2025/5/15 10:06
@@ -9,5 +7,5 @@ import com.milesight.beaveriot.context.model.DeviceTemplateType;
 public interface DeviceTemplateParserProvider {
     boolean validate(String deviceTemplateContent);
     String getDefaultDeviceTemplateContent();
-    void discoveryDevice(Object data, String deviceTemplateContent);
+    void discover(String integration, Object data, Long deviceTemplateId, String deviceTemplateContent);
 }
