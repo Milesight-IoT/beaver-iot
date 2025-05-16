@@ -124,7 +124,9 @@ public class RuleEngineTracer extends DefaultTracer {
                 flowTraceResponse.setStatus(ExecutionStatus.ERROR);
             }
             flowTraceResponse.setTimeCost(System.currentTimeMillis() - flowTraceResponse.getStartTime());
-            log.debug("After trace route log exceptions:: {}", flowTraceResponse);
+            if (log.isTraceEnabled()) {
+                log.trace("After trace route log: {}", flowTraceResponse);
+            }
             // if trace for test, do not publish event
             Boolean traceForTest = exchange.getProperty(ExchangeHeaders.TRACE_FOR_TEST, false, boolean.class);
             if (Boolean.FALSE.equals(traceForTest)) {
