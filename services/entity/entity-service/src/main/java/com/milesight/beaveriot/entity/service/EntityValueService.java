@@ -110,7 +110,7 @@ public class EntityValueService implements EntityValueServiceProvider {
         // Save property entities
         Map<String, Object> propertyEntities = exchange.getPayloadsByEntityType(EntityType.PROPERTY);
         if (!ObjectUtils.isEmpty(propertyEntities)) {
-            saveLatestValues(propertyEntities);
+            saveLatestValues(ExchangePayload.create(propertyEntities));
             saveHistoryRecord(propertyEntities, timestamp);
         }
 
@@ -126,7 +126,8 @@ public class EntityValueService implements EntityValueServiceProvider {
         saveValues(exchangePayload, exchangePayload.getTimestamp());
     }
 
-    protected void saveLatestValues(Map<String, Object> values) {
+    @Override
+    public void saveLatestValues(ExchangePayload values) {
         saveLatestValues(values, System.currentTimeMillis());
     }
 

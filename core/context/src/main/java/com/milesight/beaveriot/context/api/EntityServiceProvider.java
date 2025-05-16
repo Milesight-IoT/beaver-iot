@@ -4,6 +4,7 @@ import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import lombok.*;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -26,7 +27,7 @@ public interface EntityServiceProvider {
 
     Entity findByKey(String entityKey);
 
-    Map<String, Entity> findByKeys(List<String> entityKeys);
+    Map<String, Entity> findByKeys(Collection<String> entityKeys);
 
     Entity findById(Long entityId);
 
