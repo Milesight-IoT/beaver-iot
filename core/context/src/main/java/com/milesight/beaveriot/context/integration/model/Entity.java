@@ -80,7 +80,17 @@ public class Entity implements IdentityKey, Cloneable {
                 entity.setDeviceKey(deviceKey);
                 entity.setIntegrationId(integrationId);
                 entity.setParentIdentifier(identifier);
+                applyParentConfig(entity);
             });
+        }
+    }
+
+    private void applyParentConfig(Entity entity) {
+        if (ObjectUtils.isEmpty(entity.getType())) {
+            entity.setType(this.getType());
+        }
+        if (ObjectUtils.isEmpty(entity.getAccessMod())) {
+            entity.setAccessMod(this.getAccessMod());
         }
     }
 
@@ -92,6 +102,7 @@ public class Entity implements IdentityKey, Cloneable {
             children.forEach(entity -> {
                 entity.setIntegrationId(integrationId);
                 entity.setParentIdentifier(identifier);
+                applyParentConfig(entity);
             });
         }
     }
