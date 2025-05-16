@@ -37,7 +37,7 @@
       "displayName": "Arguments",
       "group": "producer",
       "label": "producer",
-      "required": true,
+      "required": false,
       "type": "object",
       "javaType": "java.util.List",
       "deprecated": false,
