@@ -25,6 +25,7 @@ public class EntityConfig {
     private EntityType type;
     private Map<String, Object> attributes;
     private List<Entity> children;
+    private Boolean visible = true;
 
     public Entity toEntity() {
         EntityBuilder entityBuilder = new EntityBuilder();
@@ -45,6 +46,7 @@ public class EntityConfig {
                 .valueType(valueType)
                 .attributes(attributes)
                 .children(children)
+                .visible(visible)
                 .build();
     }
 }

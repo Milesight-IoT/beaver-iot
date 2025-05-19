@@ -49,7 +49,7 @@ public class BaseEntityBuilder<T extends BaseEntityBuilder<T>> {
         return (T) this;
     }
 
-    public T visible(boolean visible) {
+    public T visible(Boolean visible) {
         this.visible = visible;
         return (T) this;
     }
