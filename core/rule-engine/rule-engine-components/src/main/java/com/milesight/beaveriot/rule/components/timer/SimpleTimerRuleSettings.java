@@ -8,7 +8,10 @@ import com.cronutils.model.field.expression.FieldExpression;
 import lombok.*;
 
 import java.time.DayOfWeek;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 import static com.cronutils.model.field.expression.FieldExpressionFactory.always;
 import static com.cronutils.model.field.expression.FieldExpressionFactory.on;
@@ -25,7 +28,7 @@ public class SimpleTimerRuleSettings {
 
     private Integer hour;
 
-    private List<DayOfWeek> daysOfWeek;
+    private List<DayOfWeekOptions> daysOfWeek;
 
     public Cron toCron() {
         var builder = CronBuilder.cron(CronDefinitionBuilder.instanceDefinitionFor(CronType.SPRING))
@@ -43,24 +46,21 @@ public class SimpleTimerRuleSettings {
         }
         builder.withMinute(on(minute));
 
-        FieldExpression doW = null;
-        if (daysOfWeek != null && !daysOfWeek.isEmpty()) {
-            for (var dayOfWeek : daysOfWeek) {
-                if (dayOfWeek == null) {
-                    continue;
-                }
-                var dayOfWeekIndex = dayOfWeek.getValue();
-                if (doW == null) {
-                    doW = on(dayOfWeekIndex);
-                } else {
-                    doW = doW.and(on(dayOfWeekIndex));
-                }
-            }
-            builder.withDoW(doW);
-        }
-        if (doW == null) {
-            builder.withDoW(always());
-        }
+        Optional.ofNullable(daysOfWeek)
+                .orElse(Collections.emptyList())
+                .stream()
+                .map(DayOfWeekOptions::getDaysOfWeek)
+                .flatMap(List::stream)
+                .filter(Objects::nonNull)
+                .distinct()
+                .map(DayOfWeek::getValue)
+                .sorted()
+                .map(dayOfWeek -> (FieldExpression) on(dayOfWeek))
+                .reduce(FieldExpression::and)
+                .ifPresentOrElse(
+                        builder::withDoW,
+                        () -> builder.withDoW(always())
+                );
 
         return builder.instance();
     }
