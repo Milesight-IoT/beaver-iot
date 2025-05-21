@@ -42,7 +42,9 @@ import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -409,7 +411,9 @@ public class EntityService implements EntityServiceProvider {
         if (entityKeys == null || entityKeys.isEmpty()) {
             return new HashMap<>();
         }
-        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, entityKeys.toArray()));
+
+        List<EntityPO> entityPOList = ((EntityService)AopContext.currentProxy()).selectByKey(entityKeys);
+
         if (entityPOList == null || entityPOList.isEmpty()) {
             return new HashMap<>();
         }
@@ -425,6 +429,12 @@ public class EntityService implements EntityServiceProvider {
             log.error("find entity by keys error: {}", e.getMessage(), e);
             throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
         }
+    }
+
+    @Cacheable(value = "demo:entity:key", key = "#p0")
+    public List<EntityPO> selectByKey(Collection<String> entityKeys) {
+        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, entityKeys.toArray()));
+        return entityPOList;
     }
 
     @Override
@@ -732,10 +742,18 @@ public class EntityService implements EntityServiceProvider {
                 .toList();
         List<EntityPO> childrenEntityPOList = List.of();
         if (!parentEntityKeys.isEmpty()) {
-            childrenEntityPOList = entityRepository.findAll(
-                    filter -> filter.in(EntityPO.Fields.parent, parentEntityKeys.toArray()));
+            childrenEntityPOList = ((EntityService)AopContext.currentProxy()).selectByParentKey(parentEntityKeys);
+//            childrenEntityPOList = entityRepository.findAll(
+//                    filter -> filter.in(EntityPO.Fields.parent, parentEntityKeys.toArray()));
         }
         return childrenEntityPOList;
+    }
+
+    @Cacheable(value = "demo:entity:parentKey", key = "#p0")
+    public List<EntityPO> selectByParentKey(List<String> parentEntityKeys) {
+      return
+    entityRepository.findAll(
+                filter -> filter.in(EntityPO.Fields.parent, parentEntityKeys.toArray()));
     }
 
     /**

@@ -72,14 +72,14 @@ public class GenericExchangeValidator implements PredicateNode<ExchangePayload> 
             log.warn("ExchangeValidator matches failed, entity is empty ");
             throw new ServiceException(ErrorCode.DATA_NO_FOUND, "ExchangeValidator matches failed, entity is empty");
         }
-        if (!entity.loadActiveIntegration().isPresent()) {
-            log.warn("ExchangeValidator matches failed, activeIntegration is empty :{}", entity.getIntegrationId());
-            throw new ServiceException(ErrorCode.DATA_NO_FOUND, "ExchangeValidator matches failed, activeIntegration is empty " + entity.getIntegrationId());
-        }
-        if (StringUtils.hasText(entity.getDeviceKey()) && !entity.loadDevice().isPresent()) {
-            log.warn("ExchangeValidator matches failed, device is empty : {}", entity.getDeviceKey());
-            throw new ServiceException(ErrorCode.DATA_NO_FOUND, "ExchangeValidator matches failed, device is empty " + entity.getDeviceKey());
-        }
+//        if (!entity.loadActiveIntegration().isPresent()) {
+//            log.warn("ExchangeValidator matches failed, activeIntegration is empty :{}", entity.getIntegrationId());
+//            throw new ServiceException(ErrorCode.DATA_NO_FOUND, "ExchangeValidator matches failed, activeIntegration is empty " + entity.getIntegrationId());
+//        }
+//        if (StringUtils.hasText(entity.getDeviceKey()) && !entity.loadDevice().isPresent()) {
+//            log.warn("ExchangeValidator matches failed, device is empty : {}", entity.getDeviceKey());
+//            throw new ServiceException(ErrorCode.DATA_NO_FOUND, "ExchangeValidator matches failed, device is empty " + entity.getDeviceKey());
+//        }
         return true;
     }
 

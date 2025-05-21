@@ -29,6 +29,7 @@ import jakarta.persistence.EntityManager;
 import lombok.*;
 import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
@@ -131,22 +132,26 @@ public class EntityValueService implements EntityValueServiceProvider {
         saveLatestValues(values, System.currentTimeMillis());
     }
 
+    @Lazy
+    @Autowired
+    private EntityService entityService;
     protected void saveLatestValues(Map<String, Object> values, long timestamp) {
         if (values == null || values.isEmpty()) {
             return;
         }
         List<String> entityKeys = values.keySet().stream().toList();
-        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, entityKeys.toArray()));
+        List<EntityPO> entityPOList = entityService.selectByKey(entityKeys);
+//      List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, entityKeys.toArray()));
         if (entityPOList == null || entityPOList.isEmpty()) {
             return;
         }
         Map<String, EntityPO> entityKeyMap = entityPOList.stream().collect(Collectors.toMap(EntityPO::getKey, Function.identity()));
         List<Long> entityIds = entityPOList.stream().map(EntityPO::getId).toList();
-        List<EntityLatestPO> nowEntityLatestPOList = entityLatestRepository.findAll(filter -> filter.in(EntityLatestPO.Fields.entityId, entityIds.toArray()));
+//        List<EntityLatestPO> nowEntityLatestPOList = entityLatestRepository.findAll(filter -> filter.in(EntityLatestPO.Fields.entityId, entityIds.toArray()));
         Map<Long, EntityLatestPO> entityIdDataMap = new HashMap<>();
-        if (nowEntityLatestPOList != null && !nowEntityLatestPOList.isEmpty()) {
-            entityIdDataMap.putAll(nowEntityLatestPOList.stream().collect(Collectors.toMap(EntityLatestPO::getEntityId, Function.identity())));
-        }
+//        if (nowEntityLatestPOList != null && !nowEntityLatestPOList.isEmpty()) {
+//            entityIdDataMap.putAll(nowEntityLatestPOList.stream().collect(Collectors.toMap(EntityLatestPO::getEntityId, Function.identity())));
+//        }
         List<EntityLatestPO> entityLatestPOList = new ArrayList<>();
         values.forEach((entityKey, payload) -> {
             EntityPO entityPO = entityKeyMap.get(entityKey);
@@ -196,7 +201,8 @@ public class EntityValueService implements EntityValueServiceProvider {
             return;
         }
         List<String> entityKeys = recordValues.keySet().stream().toList();
-        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, entityKeys.toArray()));
+        List<EntityPO> entityPOList = entityService.selectByKey(entityKeys);
+//        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, entityKeys.toArray()));
         if (entityPOList == null || entityPOList.isEmpty()) {
             return;
         }

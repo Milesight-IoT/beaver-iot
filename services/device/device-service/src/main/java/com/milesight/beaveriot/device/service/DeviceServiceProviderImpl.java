@@ -11,6 +11,7 @@ import com.milesight.beaveriot.device.repository.DeviceRepository;
 import com.milesight.beaveriot.device.support.DeviceConverter;
 import com.milesight.beaveriot.eventbus.EventBus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
@@ -115,6 +116,7 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
                 .orElse(null);
     }
 
+    @Cacheable(value = "demo:device", key = "#p0")
     @Override
     public Device findByKey(String deviceKey) {
         return deviceRepository

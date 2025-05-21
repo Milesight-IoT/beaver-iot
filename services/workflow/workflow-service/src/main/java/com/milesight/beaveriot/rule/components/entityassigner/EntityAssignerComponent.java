@@ -39,7 +39,7 @@ public class EntityAssignerComponent implements ProcessorNode<Exchange> {
     @Override
     public void processor(Exchange exchange) {
         Map<String, Object> exchangePayloadVariables = SpELExpressionHelper.resolveExpression(exchange, exchangePayload);
-        workflowEntityHelper.checkEntityExist(exchangePayloadVariables.keySet());
+//        workflowEntityHelper.checkEntityExist(exchangePayloadVariables.keySet());
         ExchangePayload payload = ExchangePayload.create(exchangePayloadVariables);
 
         // Save property entities

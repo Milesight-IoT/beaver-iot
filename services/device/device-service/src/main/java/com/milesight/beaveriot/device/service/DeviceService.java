@@ -30,8 +30,11 @@ import com.milesight.beaveriot.user.dto.UserDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.annotations.Cache;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -336,9 +339,15 @@ public class DeviceService implements IDeviceFacade {
         if (deviceIds == null || deviceIds.isEmpty()) {
             return new ArrayList<>();
         }
-        return convertDevicePOList(deviceRepository.findByIdIn(deviceIds)
+        List<DevicePO> deviceP0s = ((DeviceService)AopContext.currentProxy()).selectByIds(deviceIds);
+        return convertDevicePOList(deviceP0s
                 .stream()
                 .toList());
+    }
+
+    @Cacheable(cacheNames = "demo:deviceentity", key = "#p0")
+    public List<DevicePO> selectByIds(List<Long> deviceIds) {
+        return deviceRepository.findByIdIn(deviceIds);
     }
 
     @Override
