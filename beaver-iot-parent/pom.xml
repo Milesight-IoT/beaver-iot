@@ -33,7 +33,7 @@
     </licenses>
 
     <properties>
-        <beaver-iot.version>1.2.0</beaver-iot.version>
+        <beaver-iot.version>1.2.1</beaver-iot.version>
         <revision>${beaver-iot.version}</revision>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
