@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -35,6 +36,7 @@ public class CredentialsPO {
 
     private String accessSecret;
 
+    @Size(max = 1024)
     private String additionalData;
 
     private String cryptographicAlgorithm;

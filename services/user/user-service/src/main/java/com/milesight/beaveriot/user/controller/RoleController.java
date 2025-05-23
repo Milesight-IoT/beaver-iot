@@ -22,6 +22,7 @@ import com.milesight.beaveriot.user.model.response.RoleResponse;
 import com.milesight.beaveriot.user.model.response.UserRoleResponse;
 import com.milesight.beaveriot.user.model.response.UserUndistributedResponse;
 import com.milesight.beaveriot.user.service.RoleService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -47,13 +48,13 @@ public class RoleController {
     RoleService roleService;
 
     @PostMapping("")
-    public ResponseBody<CreateRoleResponse> createRole(@RequestBody CreateRoleRequest createRoleRequest) {
+    public ResponseBody<CreateRoleResponse> createRole(@RequestBody @Valid CreateRoleRequest createRoleRequest) {
         CreateRoleResponse createRoleResponse = roleService.createRole(createRoleRequest);
         return ResponseBuilder.success(createRoleResponse);
     }
 
     @PutMapping("/{roleId}")
-    public ResponseBody<Void> updateRole(@PathVariable("roleId") Long roleId, @RequestBody UpdateRoleRequest updateRoleRequest) {
+    public ResponseBody<Void> updateRole(@PathVariable("roleId") Long roleId, @RequestBody @Valid UpdateRoleRequest updateRoleRequest) {
         roleService.updateRole(roleId, updateRoleRequest);
         return ResponseBuilder.success();
     }

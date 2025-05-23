@@ -9,6 +9,7 @@ import com.milesight.beaveriot.dashboard.model.response.DashboardResponse;
 import com.milesight.beaveriot.dashboard.service.DashboardService;
 import com.milesight.beaveriot.permission.aspect.OperationPermission;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,14 +35,14 @@ public class DashboardController {
 
     @OperationPermission(codes = OperationPermissionCode.DASHBOARD_ADD)
     @PostMapping("")
-    public ResponseBody<CreateDashboardResponse> createDashboard(@RequestBody CreateDashboardRequest createDashboardRequest) {
+    public ResponseBody<CreateDashboardResponse> createDashboard(@RequestBody @Valid CreateDashboardRequest createDashboardRequest) {
         CreateDashboardResponse createDashboardResponse = dashboardService.createDashboard(createDashboardRequest);
         return ResponseBuilder.success(createDashboardResponse);
     }
 
     @OperationPermission(codes = OperationPermissionCode.DASHBOARD_EDIT)
     @PutMapping("/{dashboardId}")
-    public ResponseBody<Void> updateDashboard(@PathVariable("dashboardId") Long dashboardId, @RequestBody UpdateDashboardRequest updateDashboardRequest) {
+    public ResponseBody<Void> updateDashboard(@PathVariable("dashboardId") Long dashboardId, @RequestBody @Valid UpdateDashboardRequest updateDashboardRequest) {
         dashboardService.updateDashboard(dashboardId, updateDashboardRequest);
         return ResponseBuilder.success();
     }

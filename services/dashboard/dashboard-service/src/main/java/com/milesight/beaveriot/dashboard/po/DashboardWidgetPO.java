@@ -1,12 +1,8 @@
 package com.milesight.beaveriot.dashboard.po;
 
+import com.milesight.beaveriot.dashboard.constants.DashboardDataFieldConstants;
 import com.milesight.beaveriot.data.support.MapJsonConverter;
-import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.DynamicInsert;
@@ -41,4 +37,14 @@ public class DashboardWidgetPO {
     @LastModifiedDate
     private Long updatedAt;
 
+    @PreUpdate
+    @PrePersist
+    private void validateDataSize() {
+        if (getData() != null) {
+            String dataStr = new MapJsonConverter().convertToDatabaseColumn(getData());
+            if (dataStr.length() > DashboardDataFieldConstants.WIDGET_MAX_DATA_SIZE) {
+                throw new IllegalArgumentException("Dashboard too large");
+            }
+        }
+    }
 }

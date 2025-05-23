@@ -11,6 +11,7 @@ import com.milesight.beaveriot.device.model.response.DeviceResponseData;
 import com.milesight.beaveriot.device.service.DeviceService;
 import com.milesight.beaveriot.permission.aspect.OperationPermission;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +25,7 @@ public class DeviceController {
 
     @OperationPermission(codes = OperationPermissionCode.DEVICE_ADD)
     @PostMapping
-    public ResponseBody<String> createDevice(@RequestBody CreateDeviceRequest createDeviceRequest) {
+    public ResponseBody<String> createDevice(@RequestBody @Valid CreateDeviceRequest createDeviceRequest) {
         deviceService.createDevice(createDeviceRequest);
         return ResponseBuilder.success();
     }
@@ -37,7 +38,7 @@ public class DeviceController {
 
     @OperationPermission(codes = OperationPermissionCode.DEVICE_EDIT)
     @PutMapping("/{deviceId}")
-    public ResponseBody<Void> updateDevice(@PathVariable("deviceId") Long deviceId, @RequestBody UpdateDeviceRequest updateDeviceRequest) {
+    public ResponseBody<Void> updateDevice(@PathVariable("deviceId") Long deviceId, @RequestBody @Valid UpdateDeviceRequest updateDeviceRequest) {
         deviceService.updateDevice(deviceId, updateDeviceRequest);
         return ResponseBuilder.success();
     }
