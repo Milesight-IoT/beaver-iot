@@ -3,6 +3,8 @@ package com.milesight.beaveriot.entity.model.request;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
+import com.milesight.beaveriot.entity.constants.EntityDataFieldConstants;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.util.Map;
@@ -16,12 +18,14 @@ import java.util.Map;
 @AllArgsConstructor
 public class EntityCreateRequest {
 
+    @Size(max = EntityDataFieldConstants.CUSTOM_ENTITY_IDENTIFIER_MAX_LENGTH)
     private String identifier;
 
     private AccessMod accessMod;
 
     private EntityType type;
 
+    @Size(max = EntityDataFieldConstants.ENTITY_NAME_MAX_LENGTH)
     private String name;
 
     /**
@@ -34,6 +38,7 @@ public class EntityCreateRequest {
 
     private Boolean visible;
 
+    @Size(max = EntityDataFieldConstants.CUSTOM_ENTITY_IDENTIFIER_MAX_LENGTH)
     private String parentIdentifier;
 
 }

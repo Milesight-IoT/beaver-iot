@@ -21,6 +21,7 @@ import com.milesight.beaveriot.user.model.response.UserStatusResponse;
 import com.milesight.beaveriot.user.po.TenantPO;
 import com.milesight.beaveriot.user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.util.StringUtils;
@@ -47,7 +48,7 @@ public class UserController {
     UserService userService;
 
     @PostMapping("/register")
-    public ResponseBody<Void> register(HttpServletRequest request, @RequestBody UserRegisterRequest userRegisterRequest) {
+    public ResponseBody<Void> register(HttpServletRequest request, @RequestBody @Valid UserRegisterRequest userRegisterRequest) {
         String tenantId = getTenantFromHeader(request);
         TenantPO tenantPO = userService.analyzeTenantId(tenantId);
         if (tenantPO == null) {

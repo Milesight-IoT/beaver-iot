@@ -12,10 +12,7 @@ import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
-import com.milesight.beaveriot.context.integration.model.Entity;
-import com.milesight.beaveriot.context.integration.model.EntityBuilder;
-import com.milesight.beaveriot.context.integration.model.ExchangePayload;
-import com.milesight.beaveriot.context.integration.model.Integration;
+import com.milesight.beaveriot.context.integration.model.*;
 import com.milesight.beaveriot.context.integration.model.event.EntityEvent;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.context.security.TenantContext;
@@ -143,7 +140,7 @@ public class EntityService implements EntityServiceProvider {
         response.setAccessMod(entityPO.getAccessMod());
         response.setValueAttribute(entityPO.getValueAttribute());
         response.setValueType(entityPO.getValueType());
-        response.setCustomized(isCustomizedEntity(entityPO.getAttachTargetId()));
+        response.setCustomized(entityPO.checkIsCustomizedEntity());
         response.setCreatedAt(entityPO.getCreatedAt());
         response.setUpdatedAt(entityPO.getUpdatedAt());
         response.setDescription(entityPO.getDescription());
@@ -551,7 +548,7 @@ public class EntityService implements EntityServiceProvider {
         response.setEntityParentName(entityPO.getParent() == null ? null : parentKeyMap.get(entityPO.getParent()) == null? null : parentKeyMap.get(entityPO.getParent()).getName());
         response.setEntityValueAttribute(entityPO.getValueAttribute());
         response.setEntityValueType(entityPO.getValueType());
-        response.setEntityIsCustomized(isCustomizedEntity(entityPO.getAttachTargetId()));
+        response.setEntityIsCustomized(entityPO.checkIsCustomizedEntity());
         response.setEntityCreatedAt(entityPO.getCreatedAt());
         response.setEntityUpdatedAt(entityPO.getUpdatedAt());
         response.setEntityDescription(entityPO.getDescription());
@@ -705,7 +702,7 @@ public class EntityService implements EntityServiceProvider {
         List<EntityPO> entityPOList = findEntityPOListAndTheirChildrenByIds(entityIds)
                 .stream()
                 // only customized entities allowed to be deleted
-                .filter(entityPO -> isCustomizedEntity(entityPO.getAttachTargetId()))
+                .filter(EntityPO::checkIsCustomizedEntity)
                 .toList();
         deleteEntitiesByPOList(entityPOList);
     }
@@ -782,9 +779,15 @@ public class EntityService implements EntityServiceProvider {
         if (entityModifyRequest.getName() != null) {
             entityPO.setName(entityModifyRequest.getName());
         }
-        if (!CollectionUtils.isEmpty(entityModifyRequest.getValueAttribute())) {
+
+        // Only custom entity can update attribute
+        if (!CollectionUtils.isEmpty(entityModifyRequest.getValueAttribute()) && entityPO.checkIsCustomizedEntity()) {
             entityPO.setValueAttribute(entityModifyRequest.getValueAttribute());
+            if (!entityPO.validateUserModifiedCustomEntity()) {
+                throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Invalid custom entity update data").build();
+            }
         }
+
         entityRepository.save(entityPO);
 
         return convertEntityPOToEntityMetaResponse(entityPO);
@@ -816,6 +819,10 @@ public class EntityService implements EntityServiceProvider {
         entityPO.setUserId(SecurityUserContext.getUserId());
         entityPO.setAttachTarget(AttachTargetType.INTEGRATION);
         entityPO.setAttachTargetId(IntegrationConstants.SYSTEM_INTEGRATION_ID);
+        if (!entityPO.validateUserModifiedCustomEntity()) {
+            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Invalid custom entity create data").build();
+        }
+
         entityPO = entityRepository.save(entityPO);
         return convertEntityPOToEntityMetaResponse(entityPO);
     }
@@ -833,9 +840,4 @@ public class EntityService implements EntityServiceProvider {
         }
         return String.format("%s.%s", parent, identifier);
     }
-
-    private static boolean isCustomizedEntity(String integrationId) {
-        return IntegrationConstants.SYSTEM_INTEGRATION_ID.equals(integrationId);
-    }
-
 }
