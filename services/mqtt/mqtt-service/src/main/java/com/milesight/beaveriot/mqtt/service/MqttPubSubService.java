@@ -26,18 +26,23 @@ import jakarta.annotation.PostConstruct;
 import lombok.*;
 import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+@Order(10000)
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
+public class MqttPubSubService implements MqttAdminPubSubServiceProvider, CommandLineRunner {
 
     private static final String SINGLE_LEVEL_WILDCARD = "+";
 
@@ -69,10 +74,22 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
 
     private final CredentialsServiceProvider credentialsServiceProvider;
 
+    private final AtomicBoolean isReady = new AtomicBoolean(false);
+
+    private static final ConcurrentLinkedQueue<UnreadyInboundMessage> blockedInboundMessages = new ConcurrentLinkedQueue<>();
+
+    private static final ConcurrentLinkedQueue<UnreadyOutboundMessage> blockedOutboundMessages = new ConcurrentLinkedQueue<>();
+
     @Autowired
     private TaskExecutor executor;
 
     private void fireEvent(MqttMessageEvent event, boolean broadcast) {
+        boolean isNotReady = runWithLockIfServiceNotReady(() ->
+                blockedInboundMessages.add(new UnreadyInboundMessage(event, broadcast)));
+        if (isNotReady) {
+            return;
+        }
+
         val topic = new Topic(event.getTopic());
         val topicTokens = topic.getTokens().stream().map(Token::toString).toList();
         if (topicTokens.size() < 2) {
@@ -116,6 +133,18 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
                         }
                     }));
         });
+    }
+
+    private boolean runWithLockIfServiceNotReady(Runnable job) {
+        if (!isReady.get()) {
+            synchronized (isReady) {
+                if (!isReady.get()) {
+                    job.run();
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static String updateTenantContextByUsername(String publisherUsername) {
@@ -180,8 +209,13 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
     @Override
     public void publish(String topicPrefix, String username, String topicSubPath, byte[] payload, MqttQos qos, boolean retained) {
         val topicName = getFullTopicName(topicPrefix, username, topicSubPath);
+        val mqttQoS = MqttQoS.valueOf(qos.getValue());
         log.info("publish to topic: '{}'", topicName);
-        mqttBrokerBridge.publish(topicName, payload, MqttQoS.valueOf(qos.getValue()), retained);
+        boolean isNotReady = runWithLockIfServiceNotReady(() ->
+                blockedOutboundMessages.add(new UnreadyOutboundMessage(topicName, payload, mqttQoS, retained)));
+        if (!isNotReady) {
+            mqttBrokerBridge.publish(topicName, payload, mqttQoS, retained);
+        }
     }
 
     @Override
@@ -252,7 +286,7 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
         Assert.notNull(listener, "listener cannot be null");
         if (listener instanceof MqttMessageListener mqttMessageListener) {
             removeMqttMessageListener(mqttMessageListener);
-        } else if (listener instanceof MqttConnectEventListener mqttConnectEventListener){
+        } else if (listener instanceof MqttConnectEventListener mqttConnectEventListener) {
             connectEventListeners.remove(mqttConnectEventListener);
         } else if (listener instanceof MqttDisconnectEventListener mqttDisconnectEventListener) {
             disconnectEventListeners.remove(mqttDisconnectEventListener);
@@ -371,6 +405,25 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider {
 
     public MqttBrokerInfo getMqttBrokerInfo() {
         return mqttBrokerBridge.getBrokerInfo();
+    }
+
+    @Override
+    public void run(String... args) {
+        // Start sending messages only when the server is ready.
+        synchronized (isReady) {
+            log.info("Ready to dispatch MQTT messages.");
+            isReady.set(true);
+            blockedInboundMessages.forEach(m -> fireEvent(m.mqttMessage, m.broadcast));
+            blockedOutboundMessages.forEach(m -> mqttBrokerBridge.publish(m.topic, m.payload, m.qos, m.retained));
+        }
+    }
+
+    @SuppressWarnings("java:S6218")
+    private record UnreadyInboundMessage(MqttMessageEvent mqttMessage, boolean broadcast) {
+    }
+
+    @SuppressWarnings("java:S6218")
+    private record UnreadyOutboundMessage(String topic, byte[] payload, MqttQoS qos, boolean retained) {
     }
 
 }
