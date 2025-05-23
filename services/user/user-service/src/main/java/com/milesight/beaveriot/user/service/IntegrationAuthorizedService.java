@@ -5,9 +5,10 @@ import com.milesight.beaveriot.context.integration.model.Integration;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.context.support.SpringContext;
 import com.milesight.beaveriot.user.repository.TenantRepository;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -17,6 +18,7 @@ import java.util.List;
 /**
  * @author leon
  */
+@Order(0)
 @Slf4j
 @Service
 public class IntegrationAuthorizedService implements CommandLineRunner {
