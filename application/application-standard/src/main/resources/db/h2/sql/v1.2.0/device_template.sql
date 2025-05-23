@@ -1,6 +1,6 @@
 --liquibase formatted sql
 
---changeset Maglitch65:device_template_v1.2.0_20250514_083900
+--changeset pandalxb:device_template_v1.2.0_20250514_083900
 CREATE TABLE `t_device_template`
 (
     id                      BIGINT       NOT NULL,
