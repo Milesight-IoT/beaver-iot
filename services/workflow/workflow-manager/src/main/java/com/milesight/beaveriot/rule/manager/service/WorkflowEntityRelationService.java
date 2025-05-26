@@ -4,6 +4,7 @@ import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
+import com.milesight.beaveriot.context.integration.model.AttributeBuilder;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.EntityBuilder;
 import com.milesight.beaveriot.entity.facade.IEntityFacade;
@@ -75,12 +76,19 @@ public class WorkflowEntityRelationService {
         List<Entity> childEntities = null;
         if (parameters != null && parameters.getEntityConfigs() != null) {
             childEntities = parameters.getEntityConfigs().stream().
-                    map(entityConfig -> new EntityBuilder()
-                        .identifier(entityConfig.get("identify"))
-                        .service(entityConfig.get("name"))
-                        .valueType(EntityValueType.valueOf(entityConfig.get("type")))
-                        .build()
-                    ).toList();
+                    map(entityConfig -> {
+                        EntityBuilder eb = new EntityBuilder()
+                                .identifier(entityConfig.getIdentify())
+                                .service(entityConfig.getName())
+                                .valueType(entityConfig.getType());
+                        boolean optional = !Optional.ofNullable(entityConfig.getRequired()).orElse(false);
+                        if (optional) {
+                            AttributeBuilder ab = new AttributeBuilder();
+                            ab.optional(optional);
+                            eb.attributes(ab.build());
+                        }
+                        return eb.build();
+                    }).toList();
         }
 
         if (serviceEntity == null) {
