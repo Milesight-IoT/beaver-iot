@@ -11,10 +11,12 @@ import com.milesight.beaveriot.rule.support.JsonHelper;
 import com.milesight.beaveriot.rule.support.SpELExpressionHelper;
 import lombok.Data;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePropertyKey;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.http.base.HttpOperationFailedException;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriParam;
+import org.apache.camel.util.IOHelper;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -69,21 +71,23 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
     public void processor(Exchange exchange) {
         Map<String, Object> httpHeader = new HashMap<>();
         httpHeader.put(Exchange.HTTP_METHOD, method);
-        if (header != null && !header.isEmpty()) {
-            Map<String, Object> headerVariables = SpELExpressionHelper.resolveExpression(exchange, header);
+        Map<String, Object> filteredHeader = filterMap(header);
+        if (filteredHeader != null && !filteredHeader.isEmpty()) {
+            Map<String, Object> headerVariables = SpELExpressionHelper.resolveExpression(exchange, filteredHeader);
             httpHeader.putAll(headerVariables);
         }
         StringBuilder requestUrl = new StringBuilder(url);
-        if (params != null && !params.isEmpty()) {
-            Map<String, Object> paramsVariables = SpELExpressionHelper.resolveExpression(exchange, params);
-            String queryString = toQueryString(paramsVariables, true);
+        Map<String, Object> filteredParams = filterMap(params);
+        if (filteredParams != null && !filteredParams.isEmpty()) {
+            Map<String, Object> paramsVariables = SpELExpressionHelper.resolveExpression(exchange, filteredParams);
+            String queryString = toQueryString(paramsVariables);
             requestUrl = requestUrl.indexOf("?") == -1 ? requestUrl.append("?").append(queryString) : requestUrl.append("&").append(queryString);
         }
 
         Object bodyValueVariables = null;
         if (body != null) {
             String bodyType = body.get("type") == null ? null : body.get("type").toString();
-            if (bodyType != null) {
+            if (bodyType != null && httpHeader.keySet().stream().filter(headerKey -> headerKey.equalsIgnoreCase("content-type")).findFirst().isEmpty()) {
                 httpHeader.put(Exchange.CONTENT_TYPE, bodyType + ";charset=UTF-8");
             }
             bodyValueVariables = convertBody(exchange, body.get("value"), bodyType);
@@ -111,18 +115,12 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
         }
     }
 
-    private String toQueryString(Map<String, Object> paramsVariables, boolean encodeValue) {
+    private String toQueryString(Map<String, Object> paramsVariables) {
         if (ObjectUtils.isEmpty(paramsVariables)) {
             return null;
         }
         return paramsVariables.entrySet().stream()
-                .map(entry -> {
-                    if (encodeValue) {
-                        return entry.getKey() + "=" + URLEncoder.encode(ObjectUtils.toString(entry.getValue()), StandardCharsets.UTF_8);
-                    } else {
-                        return entry.getKey() + "=" + ObjectUtils.toString(entry.getValue());
-                    }
-                })
+                .map(entry -> entry.getKey() + "=" + URLEncoder.encode(ObjectUtils.toString(entry.getValue()), StandardCharsets.UTF_8))
                 .collect(Collectors.joining("&"));
     }
 
@@ -133,7 +131,7 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
 
         if (MediaType.APPLICATION_FORM_URLENCODED_VALUE.equals(contentType)) {
             Assert.isTrue(bodyValue instanceof Map<?,?> , "bodyValue must be a Map when contentType is application/x-www-form-urlencoded");
-            return SpELExpressionHelper.resolveStringExpression(exchange, toQueryString((Map<String, Object>) bodyValue, false));
+            return toQueryString(SpELExpressionHelper.resolveExpression(exchange, (Map<String, Object>) bodyValue));
         } else {
             return SpELExpressionHelper.resolveStringExpression(exchange, bodyValue);
         }
@@ -145,5 +143,15 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
         bodyOut.put("responseBody", responseBody);
         bodyOut.put("responseHeaders", responseHeaders);
         exchange.getIn().setBody(bodyOut);
+    }
+
+    private Map<String, Object> filterMap(Map<String, Object> originalMap) {
+        if (originalMap == null) {
+            return null;
+        }
+
+        return originalMap.entrySet().stream()
+                .filter(entry -> entry.getKey() != null && !entry.getKey().trim().isEmpty())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 }
