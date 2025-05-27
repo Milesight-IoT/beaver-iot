@@ -11,10 +11,12 @@ import com.milesight.beaveriot.rule.support.JsonHelper;
 import com.milesight.beaveriot.rule.support.SpELExpressionHelper;
 import lombok.Data;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePropertyKey;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.http.base.HttpOperationFailedException;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriParam;
+import org.apache.camel.util.IOHelper;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -85,7 +87,7 @@ public class HttpRequestComponent implements ProcessorNode<Exchange> {
         Object bodyValueVariables = null;
         if (body != null) {
             String bodyType = body.get("type") == null ? null : body.get("type").toString();
-            if (bodyType != null) {
+            if (bodyType != null && httpHeader.keySet().stream().filter(headerKey -> headerKey.equalsIgnoreCase("content-type")).findFirst().isEmpty()) {
                 httpHeader.put(Exchange.CONTENT_TYPE, bodyType + ";charset=UTF-8");
             }
             bodyValueVariables = convertBody(exchange, body.get("value"), bodyType);
