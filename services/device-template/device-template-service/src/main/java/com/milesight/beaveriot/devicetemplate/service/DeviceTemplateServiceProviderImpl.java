@@ -1,22 +1,31 @@
 package com.milesight.beaveriot.devicetemplate.service;
 
+import com.milesight.beaveriot.base.enums.ErrorCode;
+import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.DeviceTemplateServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.integration.model.DeviceTemplate;
 import com.milesight.beaveriot.context.integration.model.event.DeviceTemplateEvent;
+import com.milesight.beaveriot.context.model.request.SearchDeviceTemplateRequest;
+import com.milesight.beaveriot.context.model.response.DeviceTemplateResponseData;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.devicetemplate.po.DeviceTemplatePO;
 import com.milesight.beaveriot.devicetemplate.repository.DeviceTemplateRepository;
 import com.milesight.beaveriot.devicetemplate.support.DeviceTemplateConverter;
 import com.milesight.beaveriot.eventbus.EventBus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class DeviceTemplateServiceProviderImpl implements DeviceTemplateServiceProvider {
@@ -112,6 +121,37 @@ public class DeviceTemplateServiceProviderImpl implements DeviceTemplateServiceP
         deviceTemplateService.deleteDeviceTemplate(deviceTemplate);
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void batchDelete(List<Long> ids) {
+        if (ids.isEmpty()) {
+            return;
+        }
+
+        List<DeviceTemplatePO> deviceTemplatePOList = deviceTemplateRepository.findByIdInWithDataPermission(ids.stream().toList());
+        Set<Long> foundIds = deviceTemplatePOList.stream().map(DeviceTemplatePO::getId).collect(Collectors.toSet());
+
+        // check whether all device templates exist
+        if (!new HashSet<>(ids).containsAll(foundIds)) {
+            throw ServiceException
+                    .with(ErrorCode.DATA_NO_FOUND)
+                    .detailMessage("Some id not found!")
+                    .build();
+        }
+
+        List<DeviceTemplate> deviceTemplates = deviceTemplateConverter.convertPO(deviceTemplatePOList);
+
+        deviceTemplates.forEach(this::deleteDeviceTemplate);
+    }
+
+    public void deleteDeviceTemplate(DeviceTemplate deviceTemplate) {
+        entityServiceProvider.deleteByTargetId(deviceTemplate.getId().toString());
+
+        deviceTemplateRepository.deleteById(deviceTemplate.getId());
+
+        eventBus.publish(DeviceTemplateEvent.of(DeviceTemplateEvent.EventType.DELETED, deviceTemplate));
+    }
+
     @Override
     public DeviceTemplate findById(Long id) {
         return deviceTemplateRepository
@@ -120,6 +160,18 @@ public class DeviceTemplateServiceProviderImpl implements DeviceTemplateServiceP
                 )
                 .map(deviceTemplateConverter::convertPO)
                 .orElse(null);
+    }
+
+    @Override
+    public List<DeviceTemplate> findByIds(List<Long> ids) {
+        if (ObjectUtils.isEmpty(ids)) {
+            return List.of();
+        }
+
+        return deviceTemplateConverter.convertPO(deviceTemplateRepository
+                .findAll(f -> f
+                        .in(DeviceTemplatePO.Fields.id, ids.toArray())
+                ));
     }
 
     @Override
@@ -172,6 +224,11 @@ public class DeviceTemplateServiceProviderImpl implements DeviceTemplateServiceP
     public List<DeviceTemplate> findAll(String integrationId) {
         return deviceTemplateConverter.convertPO(deviceTemplateRepository
                 .findAll(f -> f.eq(DeviceTemplatePO.Fields.integration, integrationId)));
+    }
+
+    @Override
+    public Page<DeviceTemplateResponseData> search(SearchDeviceTemplateRequest searchDeviceTemplateRequest) {
+        return deviceTemplateService.searchDeviceTemplate(searchDeviceTemplateRequest);
     }
 
     private boolean deviceTemplateAdditionalDataEqual(Map<String, Object> arg1, Map<String, Object> arg2) {

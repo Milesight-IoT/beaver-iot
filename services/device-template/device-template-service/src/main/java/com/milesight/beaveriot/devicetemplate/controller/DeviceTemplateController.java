@@ -3,23 +3,25 @@ package com.milesight.beaveriot.devicetemplate.controller;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.context.api.DeviceTemplateParserProvider;
+import com.milesight.beaveriot.context.model.request.SearchDeviceTemplateRequest;
+import com.milesight.beaveriot.context.model.response.DeviceTemplateDetailResponse;
+import com.milesight.beaveriot.context.model.response.DeviceTemplateResponseData;
 import com.milesight.beaveriot.devicetemplate.model.request.*;
 import com.milesight.beaveriot.devicetemplate.model.response.DeviceTemplateDefaultContent;
-import com.milesight.beaveriot.devicetemplate.model.response.DeviceTemplateDetailResponse;
-import com.milesight.beaveriot.devicetemplate.model.response.DeviceTemplateResponseData;
 import com.milesight.beaveriot.devicetemplate.service.DeviceTemplateService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/device-template")
 public class DeviceTemplateController {
-    @Autowired
-    DeviceTemplateService deviceTemplateService;
+    private final DeviceTemplateService deviceTemplateService;
+    private final  DeviceTemplateParserProvider deviceTemplateParserProvider;
 
-    @Autowired
-    private DeviceTemplateParserProvider deviceTemplateParserProvider;
+    public DeviceTemplateController(DeviceTemplateService deviceTemplateService, DeviceTemplateParserProvider deviceTemplateParserProvider) {
+        this.deviceTemplateService = deviceTemplateService;
+        this.deviceTemplateParserProvider = deviceTemplateParserProvider;
+    }
 
     @PostMapping
     public ResponseBody<String> createDeviceTemplate(@RequestBody CreateDeviceTemplateRequest createDeviceTemplateRequest) {
@@ -52,8 +54,8 @@ public class DeviceTemplateController {
     }
 
     @GetMapping("/{deviceTemplateId}")
-    public ResponseBody<DeviceTemplateDetailResponse> getDeviceDetail(@PathVariable("deviceTemplateId") Long deviceId) {
-        return ResponseBuilder.success(deviceTemplateService.getDeviceTemplateDetail(deviceId));
+    public ResponseBody<DeviceTemplateDetailResponse> getDeviceDetail(@PathVariable("deviceTemplateId") Long deviceTemplateId) {
+        return ResponseBuilder.success(deviceTemplateService.getDeviceTemplateDetail(deviceTemplateId));
     }
 
     @PostMapping("/validate")

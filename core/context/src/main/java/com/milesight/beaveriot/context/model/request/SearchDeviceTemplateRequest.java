@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.devicetemplate.model.request;
+package com.milesight.beaveriot.context.model.request;
 
 import com.milesight.beaveriot.base.page.GenericPageRequest;
 import lombok.Data;

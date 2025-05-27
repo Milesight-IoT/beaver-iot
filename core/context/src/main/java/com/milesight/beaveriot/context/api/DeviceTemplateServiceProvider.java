@@ -1,6 +1,9 @@
 package com.milesight.beaveriot.context.api;
 
 import com.milesight.beaveriot.context.integration.model.DeviceTemplate;
+import com.milesight.beaveriot.context.model.request.SearchDeviceTemplateRequest;
+import com.milesight.beaveriot.context.model.response.DeviceTemplateResponseData;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -13,6 +16,7 @@ public interface DeviceTemplateServiceProvider {
     void deleteById(Long id);
 
     DeviceTemplate findById(Long id);
+    List<DeviceTemplate> findByIds(List<Long> ids);
 
     DeviceTemplate findByKey(String deviceTemplateKey);
 
@@ -23,4 +27,8 @@ public interface DeviceTemplateServiceProvider {
     List<DeviceTemplate> findByIdentifiers(List<String> identifier, String integrationId);
 
     List<DeviceTemplate> findAll(String integrationId);
+
+    void batchDelete(List<Long> ids);
+
+    Page<DeviceTemplateResponseData> search(SearchDeviceTemplateRequest searchDeviceTemplateRequest);
 }

@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.devicetemplate.model.response;
+package com.milesight.beaveriot.context.model.response;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;

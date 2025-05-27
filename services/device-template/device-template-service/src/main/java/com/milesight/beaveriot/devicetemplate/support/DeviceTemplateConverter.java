@@ -28,6 +28,7 @@ public class DeviceTemplateConverter {
                     .additional(deviceTemplatePO.getAdditionalData())
                     .build();
             deviceTemplate.setCreatedAt(deviceTemplatePO.getCreatedAt());
+            deviceTemplate.setUpdatedAt(deviceTemplatePO.getUpdatedAt());
             return deviceTemplate;
         })).collect(Collectors.toList());
     }

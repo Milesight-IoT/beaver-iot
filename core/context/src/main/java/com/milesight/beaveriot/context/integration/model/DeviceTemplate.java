@@ -31,6 +31,9 @@ public class DeviceTemplate implements IdentityKey {
     @Setter
     private Long createdAt = System.currentTimeMillis();
 
+    @Setter
+    private Long updatedAt;
+
     protected DeviceTemplate() {
     }
 
