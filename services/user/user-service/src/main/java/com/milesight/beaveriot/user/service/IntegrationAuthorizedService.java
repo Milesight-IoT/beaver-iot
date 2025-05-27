@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * @author leon
  */
-@Order(0)
+@Order(1)
 @Slf4j
 @Service
 public class IntegrationAuthorizedService implements CommandLineRunner {
