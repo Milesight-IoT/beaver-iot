@@ -1,11 +1,10 @@
-package com.milesight.beaveriot.entity.model.request;
+package com.milesight.beaveriot.entity.dto;
 
 import com.milesight.beaveriot.base.page.GenericQueryPageRequest;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 
 import java.util.List;
 

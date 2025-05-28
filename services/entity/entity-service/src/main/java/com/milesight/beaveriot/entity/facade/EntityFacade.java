@@ -7,11 +7,14 @@ import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.entity.convert.EntityConverter;
 import com.milesight.beaveriot.entity.dto.EntityDTO;
+import com.milesight.beaveriot.entity.dto.EntityQuery;
+import com.milesight.beaveriot.entity.dto.EntityResponse;
 import com.milesight.beaveriot.entity.po.EntityPO;
 import com.milesight.beaveriot.entity.repository.EntityRepository;
 import com.milesight.beaveriot.entity.service.EntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -37,6 +40,11 @@ public class EntityFacade implements IEntityFacade {
     @Autowired
     @Lazy
     DeviceServiceProvider deviceServiceProvider;
+
+    @Override
+    public Page<EntityResponse> search(EntityQuery entityQuery) {
+        return entityService.search(entityQuery);
+    }
 
     public List<EntityDTO> getUserOrTargetEntities(Long userId, List<String> targetIds) {
         List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.or(filter1 -> filter1.eq(EntityPO.Fields.userId, userId)

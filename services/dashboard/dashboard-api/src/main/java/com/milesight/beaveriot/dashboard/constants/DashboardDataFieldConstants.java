@@ -12,4 +12,6 @@ public class DashboardDataFieldConstants {
     public static final int WIDGET_MAX_DATA_SIZE = 50 * 1024; // 50KB
 
     public static final int WIDGET_MAX_COUNT_PER_DASHBOARD = 120;
+
+    public static final int ENTITY_MAX_COUNT_PER_DASHBOARD = 1000;
 }

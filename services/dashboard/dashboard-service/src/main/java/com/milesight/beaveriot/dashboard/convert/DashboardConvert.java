@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.dashboard.convert;
 
 import com.milesight.beaveriot.dashboard.dto.DashboardDTO;
+import com.milesight.beaveriot.dashboard.model.response.DashboardListItemResponse;
 import com.milesight.beaveriot.dashboard.model.response.DashboardResponse;
 import com.milesight.beaveriot.dashboard.po.DashboardPO;
 import org.mapstruct.Mapper;
@@ -19,9 +20,12 @@ public interface DashboardConvert {
     DashboardConvert INSTANCE = Mappers.getMapper(DashboardConvert.class);
 
     @Mapping(source = "id", target = "dashboardId")
+    DashboardListItemResponse convertListItemResponse(DashboardPO dashboardPO);
+
+    @Mapping(source = "id", target = "dashboardId")
     DashboardResponse convertResponse(DashboardPO dashboardPO);
 
-    List<DashboardResponse> convertResponseList(List<DashboardPO> dashboardPOList);
+    List<DashboardListItemResponse> convertResponseList(List<DashboardPO> dashboardPOList);
 
     @Mapping(source = "id", target = "dashboardId")
     @Mapping(source = "name", target = "dashboardName")
