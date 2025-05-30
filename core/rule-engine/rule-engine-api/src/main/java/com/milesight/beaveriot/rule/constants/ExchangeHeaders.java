@@ -60,6 +60,8 @@ public interface ExchangeHeaders {
      */
     String EXCHANGE_CUSTOM_OUTPUT_LOG_VARIABLES = "CamelCustomOutputLogVariables";
 
+    String EXCHANGE_OUTPUT_PROCESSOR = "CamelOutputProcessor";
+
     public static boolean containsMapProperty(Exchange exchange, String propertyName, String mapKey) {
         Object property = exchange.getProperty(propertyName);
         return property != null && property instanceof Map<?,?> propertyMap && propertyMap.containsKey(mapKey);

@@ -63,7 +63,7 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
 
     private void afterProcess(Exchange exchange, AsyncCallback callback) {
         try {
-            if (!ObjectUtils.isEmpty(outputNodeId)) {
+            if (!ObjectUtils.isEmpty(outputNodeId) && exchange.getProperty(ExchangeHeaders.EXCHANGE_OUTPUT_PROCESSOR, false, Boolean.class)) {
                 AsyncProcessor asyncProcessor = processors.get(outputNodeId);
                 asyncProcessor.process(exchange);
             }
@@ -157,7 +157,11 @@ public class GraphProcessor extends AsyncProcessorSupport implements Traceable, 
         protected boolean doExecute(String successor, Exchange exchange, AsyncCallback asyncCallback) {
 
             try {
-                if (exchange.getException() != null || successor.equals(outputNodeId)) {
+                if (exchange.getException() != null) {
+                    return true;
+                }
+                if (successor.equals(outputNodeId)) {
+                    exchange.setProperty(ExchangeHeaders.EXCHANGE_OUTPUT_PROCESSOR, true);
                     return true;
                 }
 
