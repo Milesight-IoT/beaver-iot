@@ -11,6 +11,7 @@ public class DeviceNameDTO {
     private String key;
     private Long userId;
     private String integrationId;
+    private Long templateId;
     private Integration integrationConfig;
     private String name;
     private Long createdAt;

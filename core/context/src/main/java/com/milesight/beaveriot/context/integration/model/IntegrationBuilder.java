@@ -127,6 +127,21 @@ public class IntegrationBuilder {
             return this;
         }
 
+        public IntegrationConfigBuilder entityIdentifierDeleteDeviceTemplate(String deleteDeviceTemplateEntityIdentifier) {
+            this.integrationBuilder.integration.setEntityIdentifierDeleteDeviceTemplate(deleteDeviceTemplateEntityIdentifier);
+            return this;
+        }
+
+        public IntegrationConfigBuilder entityIdentifierAddDeviceTemplate(String addDeviceTemplateEntityIdentifier) {
+            this.integrationBuilder.integration.setEntityIdentifierAddDeviceTemplate(addDeviceTemplateEntityIdentifier);
+            return this;
+        }
+
+        public IntegrationConfigBuilder entityIdentifierUpdateDeviceTemplate(String updateDeviceTemplateEntityIdentifier) {
+            this.integrationBuilder.integration.setEntityIdentifierUpdateDeviceTemplate(updateDeviceTemplateEntityIdentifier);
+            return this;
+        }
+
         public IntegrationConfigBuilder entityIdentifierDeleteDevice(String deleteDeviceEntityIdentifier) {
             this.integrationBuilder.integration.setEntityIdentifierDeleteDevice(deleteDeviceEntityIdentifier);
             return this;

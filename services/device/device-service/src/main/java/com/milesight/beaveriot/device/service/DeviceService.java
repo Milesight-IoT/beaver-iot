@@ -24,6 +24,8 @@ import com.milesight.beaveriot.device.model.response.DeviceResponseData;
 import com.milesight.beaveriot.device.po.DevicePO;
 import com.milesight.beaveriot.device.repository.DeviceRepository;
 import com.milesight.beaveriot.device.support.DeviceConverter;
+import com.milesight.beaveriot.devicetemplate.dto.DeviceTemplateDTO;
+import com.milesight.beaveriot.devicetemplate.facade.IDeviceTemplateFacade;
 import com.milesight.beaveriot.eventbus.EventBus;
 import com.milesight.beaveriot.permission.aspect.IntegrationPermission;
 import com.milesight.beaveriot.user.dto.UserDTO;
@@ -37,6 +39,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -50,8 +53,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.DEVICE_NAME_ON_ADD;
-import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.DEVICE_ON_DELETE;
+import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.*;
 
 @Service
 @Slf4j
@@ -73,6 +75,9 @@ public class DeviceService implements IDeviceFacade {
 
     @Autowired
     IUserFacade userFacade;
+
+    @Autowired
+    IDeviceTemplateFacade deviceTemplateFacade;
 
     @Autowired
     EventBus<DeviceEvent> eventBus;
@@ -109,6 +114,7 @@ public class DeviceService implements IDeviceFacade {
         // call service for adding
         ExchangePayload payload = createDeviceRequest.getParamEntities();
         payload.putContext(DEVICE_NAME_ON_ADD, createDeviceRequest.getName());
+        payload.putContext(DEVICE_TEMPLATE_ID_ON_ADD, createDeviceRequest.getTemplateId());
 
         // Must return a device
         try {
@@ -267,6 +273,14 @@ public class DeviceService implements IDeviceFacade {
                 UserDTO user = userDTOList.get(0);
                 deviceDetailResponse.setUserNickname(user.getNickname());
                 deviceDetailResponse.setUserEmail(user.getEmail());
+            }
+        }
+
+        if (findResult.get().getTemplateId() != null) {
+            List<DeviceTemplateDTO> deviceTemplateDTOList = deviceTemplateFacade.getDeviceTemplateByIds(List.of(findResult.get().getTemplateId()));
+            if (!CollectionUtils.isEmpty(deviceTemplateDTOList)) {
+                DeviceTemplateDTO deviceTemplate = deviceTemplateDTOList.get(0);
+                deviceDetailResponse.setTemplateName(deviceTemplate.getName());
             }
         }
 
