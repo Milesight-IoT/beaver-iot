@@ -3,6 +3,7 @@ package com.milesight.beaveriot.permission.inspector;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.milesight.beaveriot.permission.context.DataAspectContext;
+import com.milesight.beaveriot.permission.enums.ColumnDataType;
 import lombok.*;
 import lombok.extern.slf4j.*;
 import net.sf.jsqlparser.expression.Expression;
@@ -28,7 +29,6 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * @author loong
@@ -80,18 +80,28 @@ public class DataAspectStatementInspector implements StatementInspector {
         DataAspectContext.DataPermissionContext dataPermissionContext = DataAspectContext.getDataPermissionContext(tableName);
         if (dataPermissionContext != null && !CollectionUtils.isEmpty(dataPermissionContext.getDataIds())) {
             String columnName = tableAlias + "." + dataPermissionContext.getDataColumnName();
-            String dataIdListString = dataPermissionContext.getDataIds()
-                    .stream()
-                    .map(String::valueOf)
-                    .collect(Collectors.joining(","));
+            String dataIdListString = ColumnDataType.STRING.equals(dataPermissionContext.getDataType())
+                    ? concatStringTypeColumnData(dataPermissionContext.getDataIds())
+                    : String.join(",", dataPermissionContext.getDataIds());
             sqlTemplate = sqlTemplate.replace(DATA_ID_COLUMN_PLACEHOLDER, columnName)
                     .replace("IN ()", "IN (" + dataIdListString + ")");
         } else {
             sqlTemplate = sqlTemplate.replace(DATA_ID_COLUMN_PLACEHOLDER, "1")
-                    .replace("IN ()", "IN (1)");
+                    .replace("IN ()", "= 1");
         }
 
         return sqlTemplate;
+    }
+
+    private static String concatStringTypeColumnData(List<String> data) {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < data.size(); i++) {
+            stringBuilder.append("'").append(data.get(i)).append("'");
+            if (i != data.size() - 1) {
+                stringBuilder.append(",");
+            }
+        }
+        return stringBuilder.toString();
     }
 
     private void doTenantInspect(Statement statement) {

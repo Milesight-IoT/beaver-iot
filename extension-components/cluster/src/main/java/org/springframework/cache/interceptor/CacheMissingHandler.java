@@ -1,11 +1,12 @@
 package org.springframework.cache.interceptor;
 
 import com.milesight.beaveriot.base.annotations.cacheable.CacheKeys;
-import lombok.SneakyThrows;
+import lombok.*;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
@@ -68,9 +69,15 @@ public class CacheMissingHandler {
         return args;
     }
 
+    @Nullable
     private Integer retrieveCacheKeysAnnotationIndex(ProceedingJoinPoint pjp) {
         MethodSignature signature = (MethodSignature) pjp.getSignature();
         Method method = signature.getMethod();
+        return retrieveCacheKeysAnnotationIndex(method);
+    }
+
+    @Nullable
+    public static Integer retrieveCacheKeysAnnotationIndex(Method method) {
         Annotation[][] parameterAnnotations = method.getParameterAnnotations();
         for (int i = 0; i < parameterAnnotations.length; i++) {
             Annotation[] annotations = parameterAnnotations[i];

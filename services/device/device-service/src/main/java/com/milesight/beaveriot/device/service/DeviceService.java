@@ -1,18 +1,21 @@
 package com.milesight.beaveriot.device.service;
 
+import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheEvict;
+import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheable;
+import com.milesight.beaveriot.base.annotations.cacheable.CacheKeys;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
+import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.Integration;
 import com.milesight.beaveriot.context.integration.model.event.DeviceEvent;
-import com.milesight.beaveriot.context.support.SpringContext;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.device.model.request.CreateDeviceRequest;
@@ -31,9 +34,10 @@ import com.milesight.beaveriot.permission.aspect.IntegrationPermission;
 import com.milesight.beaveriot.user.dto.UserDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.slf4j.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -42,40 +46,56 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.*;
+import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.DEVICE_NAME_ON_ADD;
+import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.DEVICE_ON_DELETE;
+import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.DEVICE_TEMPLATE_KEY_ON_ADD;
 
 @Service
 @Slf4j
 public class DeviceService implements IDeviceFacade {
+
     @Autowired
-    DeviceRepository deviceRepository;
+    private DeviceRepository deviceRepository;
 
     @Lazy
     @Autowired
-    IntegrationServiceProvider integrationServiceProvider;
+    private IntegrationServiceProvider integrationServiceProvider;
 
     @Lazy
     @Autowired
-    DeviceConverter deviceConverter;
+    private DeviceConverter deviceConverter;
 
     @Lazy
     @Autowired
-    EntityServiceProvider entityServiceProvider;
+    private EntityServiceProvider entityServiceProvider;
 
     @Autowired
-    IUserFacade userFacade;
+    private IUserFacade userFacade;
 
     @Autowired
-    IDeviceTemplateFacade deviceTemplateFacade;
+    private IDeviceTemplateFacade deviceTemplateFacade;
 
     @Autowired
-    EventBus<DeviceEvent> eventBus;
+    private EventBus<DeviceEvent> eventBus;
 
     @Autowired
-    EntityValueServiceProvider entityValueServiceProvider;
+    private EntityValueServiceProvider entityValueServiceProvider;
+
+    @Lazy
+    @Autowired
+    private DeviceService self;
 
     @IntegrationPermission
     public Integration getIntegration(String integrationIdentifier) {
@@ -85,7 +105,7 @@ public class DeviceService implements IDeviceFacade {
     @Transactional(rollbackFor = Exception.class)
     public void createDevice(CreateDeviceRequest createDeviceRequest) {
         String integrationIdentifier = createDeviceRequest.getIntegration();
-        Integration integrationConfig = SpringContext.getBean(DeviceService.class).getIntegration(integrationIdentifier);
+        Integration integrationConfig = self.getIntegration(integrationIdentifier);
 
         if (integrationConfig == null) {
             throw ServiceException
@@ -163,13 +183,15 @@ public class DeviceService implements IDeviceFacade {
             responseDataList = deviceRepository
                     .findAllWithDataPermission(f -> f.likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.name, searchDeviceRequest.getName()), searchDeviceRequest.toPageable())
                     .map(this::convertPOToResponseData);
-        }catch (Exception e) {
-            if (e instanceof ServiceException && Objects.equals(((ServiceException) e).getErrorCode(), ErrorCode.FORBIDDEN_PERMISSION.getErrorCode())) {
+        } catch (Exception e) {
+            if (e instanceof ServiceException serviceException
+                    && ErrorCode.FORBIDDEN_PERMISSION.getErrorCode().equals(serviceException.getErrorCode())) {
                 return Page.empty();
             }
             throw e;
         }
-        fillIntegrationInfo(responseDataList.stream().toList());
+
+        fillIntegrationInfo(responseDataList.getContent());
         return responseDataList;
     }
 
@@ -189,6 +211,7 @@ public class DeviceService implements IDeviceFacade {
         device.setName(newName);
 
         deviceRepository.save(device);
+        self.evictIntegrationIdToDeviceCache(device.getIntegration());
         eventBus.publish(DeviceEvent.of(DeviceEvent.EventType.UPDATED, deviceConverter.convertPO(device)));
     }
 
@@ -214,36 +237,39 @@ public class DeviceService implements IDeviceFacade {
 
         Map<String, Integration> integrationMap = getIntegrationMap(devices.stream().map(Device::getIntegrationId).toList());
 
-        devices.stream().map((Device device) -> {
-            // check ability to delete device
-            Integration integrationConfig = integrationMap.get(device.getIntegrationId());
-            if (integrationConfig == null) {
-                deleteDevice(device);
-                return null;
-            }
+        devices.stream()
+                .map((Device device) -> {
+                    // check ability to delete device
+                    Integration integrationConfig = integrationMap.get(device.getIntegrationId());
+                    if (integrationConfig == null) {
+                        self.deleteDevice(device);
+                        return null;
+                    }
 
-            ExchangePayload payload = new ExchangePayload();
-            String deleteDeviceServiceKey = integrationConfig.getEntityKeyDeleteDevice();
-            if (deleteDeviceServiceKey == null) {
-                throw ServiceException
-                        .with(ErrorCode.METHOD_NOT_ALLOWED)
-                        .detailMessage("integration " + device.getIntegrationId() + " cannot delete device!")
-                        .build();
-            }
+                    ExchangePayload payload = new ExchangePayload();
+                    String deleteDeviceServiceKey = integrationConfig.getEntityKeyDeleteDevice();
+                    if (deleteDeviceServiceKey == null) {
+                        throw ServiceException
+                                .with(ErrorCode.METHOD_NOT_ALLOWED)
+                                .detailMessage("integration " + device.getIntegrationId() + " cannot delete device!")
+                                .build();
+                    }
 
-            payload.put(deleteDeviceServiceKey, "");
-            payload.putContext(DEVICE_ON_DELETE, device);
-            return payload;
-        }).filter(Objects::nonNull).forEach((ExchangePayload payload) -> {
-            // call service for deleting
-            try {
-                entityValueServiceProvider.saveValuesAndPublishSync(payload);
-            } catch (Exception e) {
-                throw ServiceException
-                        .with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "delete device failed")
-                        .build();
-            }
-        });
+                    payload.put(deleteDeviceServiceKey, "");
+                    payload.putContext(DEVICE_ON_DELETE, device);
+                    return payload;
+                })
+                .filter(Objects::nonNull)
+                .forEach((ExchangePayload payload) -> {
+                    // call service for deleting
+                    try {
+                        entityValueServiceProvider.saveValuesAndPublishSync(payload);
+                    } catch (Exception e) {
+                        throw ServiceException
+                                .with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "delete device failed")
+                                .build();
+                    }
+                });
     }
 
     public DeviceDetailResponse getDeviceDetail(Long deviceId) {
@@ -321,21 +347,26 @@ public class DeviceService implements IDeviceFacade {
 
     @Override
     public List<DeviceNameDTO> fuzzySearchDeviceByName(String name) {
-        return convertDevicePOList(deviceRepository
-                .findAll(f -> f.likeIgnoreCase(DevicePO.Fields.name, name))
-                .stream()
-                .toList());
+        return convertDevicePOList(deviceRepository.findAll(f -> f.likeIgnoreCase(DevicePO.Fields.name, name)));
     }
 
     @Override
     public List<DeviceNameDTO> getDeviceNameByIntegrations(List<String> integrationIds) {
-        if (integrationIds == null || integrationIds.isEmpty()) {
-            return new ArrayList<>();
-        }
-        return convertDevicePOList(deviceRepository
-                .findAll(f -> f.in(DevicePO.Fields.integration, integrationIds.toArray()))
+        return convertDevicePOList(self.mapIntegrationIdToDevices(integrationIds)
+                .values()
                 .stream()
+                .flatMap(Collection::stream)
                 .toList());
+    }
+
+    @BatchCacheable(cacheNames = CacheKeyConstants.INTEGRATION_ID_TO_DEVICE, keyPrefix = CacheKeyConstants.TENANT_PREFIX)
+    public Map<String, List<DevicePO>> mapIntegrationIdToDevices(@CacheKeys List<String> integrationIds) {
+        if (integrationIds == null || integrationIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return deviceRepository.findAll(f -> f.in(DevicePO.Fields.integration, integrationIds.toArray()))
+                .stream()
+                .collect(Collectors.groupingBy(DevicePO::getIntegration));
     }
 
     @Override
@@ -343,9 +374,7 @@ public class DeviceService implements IDeviceFacade {
         if (deviceIds == null || deviceIds.isEmpty()) {
             return new ArrayList<>();
         }
-        return convertDevicePOList(deviceRepository.findByIdIn(deviceIds)
-                .stream()
-                .toList());
+        return convertDevicePOList(deviceRepository.findByIdIn(deviceIds));
     }
 
     @Override
@@ -353,9 +382,7 @@ public class DeviceService implements IDeviceFacade {
         if (deviceKeys == null || deviceKeys.isEmpty()) {
             return new ArrayList<>();
         }
-        return convertDevicePOList(deviceRepository.findAll(f -> f.in(DevicePO.Fields.key, deviceKeys.toArray()))
-                .stream()
-                .toList());
+        return convertDevicePOList(deviceRepository.findAll(f -> f.in(DevicePO.Fields.key, deviceKeys.toArray())));
     }
 
     @Override
@@ -382,10 +409,21 @@ public class DeviceService implements IDeviceFacade {
         entityServiceProvider.deleteByTargetId(device.getId().toString());
 
         deviceRepository.deleteById(device.getId());
+        self.evictIntegrationIdToDeviceCache(device.getIntegrationId());
 
         userFacade.deleteResource(ResourceType.DEVICE, Collections.singletonList(device.getId()));
-        userFacade.deleteResource(ResourceType.ENTITY, device.getEntities().stream().map(Entity::getId).collect(Collectors.toList()));
+        userFacade.deleteResource(ResourceType.ENTITY, device.getEntities().stream().map(Entity::getId).toList());
 
         eventBus.publish(DeviceEvent.of(DeviceEvent.EventType.DELETED, device));
+    }
+
+    @CacheEvict(cacheNames = CacheKeyConstants.INTEGRATION_ID_TO_DEVICE, key = "T(com.milesight.beaveriot.context.security.TenantContext).getTenantId()+':'+#p0")
+    public void evictIntegrationIdToDeviceCache(String integrationId) {
+        // do nothing
+    }
+
+    @BatchCacheEvict(cacheNames = CacheKeyConstants.INTEGRATION_ID_TO_DEVICE, keyPrefix = CacheKeyConstants.TENANT_PREFIX)
+    public void evictIntegrationIdToDeviceCache(@CacheKeys Collection<String> integrationIds) {
+        // do nothing
     }
 }

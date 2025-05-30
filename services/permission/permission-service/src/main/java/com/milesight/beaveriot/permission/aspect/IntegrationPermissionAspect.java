@@ -4,9 +4,9 @@ import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.integration.model.Integration;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
-import com.milesight.beaveriot.permission.dto.IntegrationPermissionDTO;
+import com.milesight.beaveriot.permission.dto.PermissionDTO;
 import com.milesight.beaveriot.permission.service.IntegrationPermissionService;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.slf4j.*;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -49,12 +49,12 @@ public class IntegrationPermissionAspect {
             log.warn("user not login");
             throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not logged in").build();
         }
-        IntegrationPermissionDTO integrationPermissionDTO = integrationPermissionService.getIntegrationPermission(userId);
-        boolean hasAllPermission = integrationPermissionDTO.isHasAllPermission();
+        PermissionDTO permissionDTO = integrationPermissionService.getIntegrationPermission(userId);
+        boolean hasAllPermission = permissionDTO.isHaveAllPermissions();
         if (hasAllPermission) {
             return result;
         }
-        List<String> dataIds = integrationPermissionDTO.getIntegrationIds();
+        List<String> dataIds = permissionDTO.getIds();
         if (result instanceof Integration) {
             Integration integration = (Integration) result;
             if (dataIds.contains(integration.getId())) {

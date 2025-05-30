@@ -22,6 +22,8 @@ import org.springframework.util.ObjectUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class DeviceServiceProviderImpl implements DeviceServiceProvider {
@@ -114,6 +116,8 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
         device.setId(devicePO.getId());
 
         entityServiceProvider.batchSave(device.getEntities());
+
+        deviceService.evictIntegrationIdToDeviceCache(device.getIntegrationId());
     }
 
     @Override
@@ -204,11 +208,11 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
 
     @Override
     public void clearTemplate(String deviceTemplateKey) {
-        deviceRepository.findAll(f -> f.eq(DevicePO.Fields.template, deviceTemplateKey)).forEach(
-                devicePO -> {
-                    devicePO.setTemplate(null);
-                    deviceRepository.save(devicePO);
-                }
-        );
+        List<DevicePO> devices = deviceRepository.findAll(f -> f.eq(DevicePO.Fields.template, deviceTemplateKey));
+        devices.forEach(devicePO -> devicePO.setTemplate(null));
+        deviceRepository.saveAll(devices);
+
+        Set<String> integrationIds = devices.stream().map(DevicePO::getIntegration).collect(Collectors.toSet());
+        deviceService.evictIntegrationIdToDeviceCache(integrationIds);
     }
 }

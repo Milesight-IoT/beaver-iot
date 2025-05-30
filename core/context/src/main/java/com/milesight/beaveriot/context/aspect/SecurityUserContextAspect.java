@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.context.aspect;
 
 import com.milesight.beaveriot.context.security.SecurityUser;
+import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.context.util.AnnotationSpelExpressionUtil;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.After;
@@ -23,19 +24,19 @@ import org.springframework.util.ObjectUtils;
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 public class SecurityUserContextAspect {
 
-    @Pointcut("@annotation(SecurityUserContext)")
+    @Pointcut("@annotation(com.milesight.beaveriot.context.aspect.WithSecurityUserContext)")
     public void pointCut() {
     }
 
     @Before("pointCut()")
     public void before(JoinPoint joinPoint) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-        SecurityUserContext securityUserContext = signature.getMethod().getAnnotation(SecurityUserContext.class);
-        if (securityUserContext != null) {
-            String tenantId = AnnotationSpelExpressionUtil.getSpelKeyValue(joinPoint, securityUserContext.tenantId());
-            String userId = AnnotationSpelExpressionUtil.getSpelKeyValue(joinPoint, securityUserContext.userId());
+        WithSecurityUserContext withSecurityUserContext = signature.getMethod().getAnnotation(WithSecurityUserContext.class);
+        if (withSecurityUserContext != null) {
+            String tenantId = AnnotationSpelExpressionUtil.getSpelKeyValue(joinPoint, withSecurityUserContext.tenantId());
+            String userId = AnnotationSpelExpressionUtil.getSpelKeyValue(joinPoint, withSecurityUserContext.userId());
             SecurityUser securityUser = SecurityUser.builder().tenantId(tenantId).userId(parseLongSafely(userId)).build();
-            com.milesight.beaveriot.context.security.SecurityUserContext.setSecurityUser(securityUser);
+            SecurityUserContext.setSecurityUser(securityUser);
         }
     }
 
@@ -45,7 +46,7 @@ public class SecurityUserContextAspect {
 
     @After("pointCut()")
     public void after(JoinPoint joinPoint) {
-        com.milesight.beaveriot.context.security.SecurityUserContext.clear();
+        SecurityUserContext.clear();
     }
 
 }

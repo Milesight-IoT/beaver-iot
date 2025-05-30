@@ -4,7 +4,9 @@ import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheEvict;
 import com.milesight.beaveriot.base.annotations.cacheable.BatchCachePut;
 import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheable;
 import com.milesight.beaveriot.base.annotations.cacheable.BatchCaching;
-import org.springframework.cache.annotation.*;
+import lombok.*;
+import org.springframework.cache.annotation.CacheAnnotationParser;
+import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.interceptor.operation.BatchCacheEvictOperation;
 import org.springframework.cache.interceptor.operation.BatchCachePutOperation;
 import org.springframework.cache.interceptor.operation.BatchCacheableOperation;
@@ -73,33 +75,38 @@ public class SpringBatchCacheAnnotationParser implements CacheAnnotationParser, 
 			return null;
 		}
 
+		Integer cacheKeysPosition = ae instanceof Method method
+				? CacheMissingHandler.retrieveCacheKeysAnnotationIndex(method)
+				: null;
+
 		Collection<CacheOperation> ops = new ArrayList<>(1);
 		annotations.stream().filter(BatchCacheable.class::isInstance).map(BatchCacheable.class::cast).forEach(
-				cacheable -> ops.add(parseCacheableAnnotation(ae, cachingConfig, cacheable)));
+				cacheable -> ops.add(parseCacheableAnnotation(ae, cachingConfig, cacheable, cacheKeysPosition)));
 		annotations.stream().filter(BatchCacheEvict.class::isInstance).map(BatchCacheEvict.class::cast).forEach(
-				cacheEvict -> ops.add(parseEvictAnnotation(ae, cachingConfig, cacheEvict)));
+				cacheEvict -> ops.add(parseEvictAnnotation(ae, cachingConfig, cacheEvict, cacheKeysPosition)));
 		annotations.stream().filter(BatchCachePut.class::isInstance).map(BatchCachePut.class::cast).forEach(
-				cachePut -> ops.add(parsePutAnnotation(ae, cachingConfig, cachePut)));
+				cachePut -> ops.add(parsePutAnnotation(ae, cachingConfig, cachePut, cacheKeysPosition)));
 		annotations.stream().filter(BatchCaching.class::isInstance).map(BatchCaching.class::cast).forEach(
-				caching -> parseCachingAnnotation(ae, cachingConfig, caching, ops));
+				caching -> parseCachingAnnotation(ae, cachingConfig, caching, ops, cacheKeysPosition));
 		return ops;
 	}
 
 	private BatchCacheableOperation parseCacheableAnnotation(
-			AnnotatedElement ae, DefaultCacheConfig defaultConfig, BatchCacheable cacheable) {
+			AnnotatedElement ae, DefaultCacheConfig defaultConfig, BatchCacheable cacheable, @Nullable Integer cacheKeysPosition) {
 
 		BatchCacheableOperation.Builder builder = new BatchCacheableOperation.Builder();
 
+		//noinspection DuplicatedCode
 		builder.setName(ae.toString());
 		builder.setCacheNames(cacheable.cacheNames());
 		builder.setCondition(cacheable.condition());
-		builder.setUnless(cacheable.unless());
-		builder.setKey(cacheable.key());
+		builder.setKey(getOrAutoGenerateKey(cacheable.key(), cacheable.keyGenerator(), cacheKeysPosition));
 		builder.setKeyGenerator(cacheable.keyGenerator());
 		builder.setCacheManager(cacheable.cacheManager());
 		builder.setCacheResolver(cacheable.cacheResolver());
+		builder.setUnless(cacheable.unless());
 		builder.setSync(cacheable.sync());
-		builder.setPrefix(cacheable.prefix());
+		builder.setKeyPrefix(cacheable.keyPrefix());
 
 		defaultConfig.applyDefault(builder);
 		BatchCacheableOperation op = builder.build();
@@ -109,20 +116,21 @@ public class SpringBatchCacheAnnotationParser implements CacheAnnotationParser, 
 	}
 
 	private BatchCacheEvictOperation parseEvictAnnotation(
-			AnnotatedElement ae, DefaultCacheConfig defaultConfig, BatchCacheEvict cacheEvict) {
+			AnnotatedElement ae, DefaultCacheConfig defaultConfig, BatchCacheEvict cacheEvict, @Nullable Integer cacheKeysPosition) {
 
 		BatchCacheEvictOperation.Builder builder = new BatchCacheEvictOperation.Builder();
 
+		//noinspection DuplicatedCode
 		builder.setName(ae.toString());
 		builder.setCacheNames(cacheEvict.cacheNames());
 		builder.setCondition(cacheEvict.condition());
-		builder.setKey(cacheEvict.key());
+		builder.setKey(getOrAutoGenerateKey(cacheEvict.key(), cacheEvict.keyGenerator(), cacheKeysPosition));
 		builder.setKeyGenerator(cacheEvict.keyGenerator());
 		builder.setCacheManager(cacheEvict.cacheManager());
 		builder.setCacheResolver(cacheEvict.cacheResolver());
 		builder.setCacheWide(cacheEvict.allEntries());
 		builder.setBeforeInvocation(cacheEvict.beforeInvocation());
-		builder.setPrefix(cacheEvict.prefix());
+		builder.setKeyPrefix(cacheEvict.keyPrefix());
 
 		defaultConfig.applyDefault(builder);
 		BatchCacheEvictOperation op = builder.build();
@@ -131,19 +139,29 @@ public class SpringBatchCacheAnnotationParser implements CacheAnnotationParser, 
 		return op;
 	}
 
+	@NonNull
+	private static String getOrAutoGenerateKey(String key, String keyGenerator, @Nullable Integer cacheKeysPosition) {
+		if (!StringUtils.hasText(key) && !StringUtils.hasText(keyGenerator) && cacheKeysPosition != null) {
+			return "#p" + cacheKeysPosition;
+		}
+		return key;
+	}
+
 	private CacheOperation parsePutAnnotation(
-			AnnotatedElement ae, DefaultCacheConfig defaultConfig, BatchCachePut cachePut) {
+			AnnotatedElement ae, DefaultCacheConfig defaultConfig, BatchCachePut cachePut, @Nullable Integer cacheKeysPosition) {
 
 		BatchCachePutOperation.Builder builder = new BatchCachePutOperation.Builder();
+
+		//noinspection DuplicatedCode
 		builder.setName(ae.toString());
 		builder.setCacheNames(cachePut.cacheNames());
 		builder.setCondition(cachePut.condition());
-		builder.setUnless(cachePut.unless());
-		builder.setKey(cachePut.key());
+		builder.setKey(getOrAutoGenerateKey(cachePut.key(), cachePut.keyGenerator(), cacheKeysPosition));
 		builder.setKeyGenerator(cachePut.keyGenerator());
 		builder.setCacheManager(cachePut.cacheManager());
 		builder.setCacheResolver(cachePut.cacheResolver());
-		builder.setPrefix(cachePut.prefix());
+		builder.setUnless(cachePut.unless());
+		builder.setKeyPrefix(cachePut.keyPrefix());
 
 		defaultConfig.applyDefault(builder);
 		BatchCachePutOperation op = builder.build();
@@ -153,24 +171,25 @@ public class SpringBatchCacheAnnotationParser implements CacheAnnotationParser, 
 	}
 
 	private void parseCachingAnnotation(
-			AnnotatedElement ae, DefaultCacheConfig defaultConfig, BatchCaching caching, Collection<CacheOperation> ops) {
+			AnnotatedElement ae, DefaultCacheConfig defaultConfig, BatchCaching caching, Collection<CacheOperation> ops, @Nullable Integer cacheKeysPosition) {
 
 		BatchCacheable[] cacheables = caching.cacheable();
 		Assert.isTrue(cacheables.length <= 1, "@BatchCaching can only contain at most one @BatchCacheable annotation");
+
 		for (BatchCacheable cacheable : cacheables) {
-			ops.add(parseCacheableAnnotation(ae, defaultConfig, cacheable));
+			ops.add(parseCacheableAnnotation(ae, defaultConfig, cacheable, cacheKeysPosition));
 		}
 
 		BatchCacheEvict[] cacheEvicts = caching.evict();
 		Assert.isTrue(cacheEvicts.length <= 1, "@BatchCaching can only contain at most one @BatchCacheEvict annotation");
 		for (BatchCacheEvict cacheEvict : cacheEvicts) {
-			ops.add(parseEvictAnnotation(ae, defaultConfig, cacheEvict));
+			ops.add(parseEvictAnnotation(ae, defaultConfig, cacheEvict, cacheKeysPosition));
 		}
 
 		BatchCachePut[] cachePuts = caching.put();
 		Assert.isTrue(cachePuts.length <= 1, "@BatchCaching can only contain at most one @BatchCachePut annotation");
 		for (BatchCachePut cachePut : cachePuts) {
-			ops.add(parsePutAnnotation(ae, defaultConfig, cachePut));
+			ops.add(parsePutAnnotation(ae, defaultConfig, cachePut, cacheKeysPosition));
 		}
 	}
 

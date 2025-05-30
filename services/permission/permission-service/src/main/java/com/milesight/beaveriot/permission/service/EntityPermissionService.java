@@ -1,23 +1,21 @@
 package com.milesight.beaveriot.permission.service;
 
-import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
-import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
-import com.milesight.beaveriot.entity.dto.EntityDTO;
 import com.milesight.beaveriot.entity.facade.IEntityFacade;
-import com.milesight.beaveriot.permission.dto.EntityPermissionDTO;
+import com.milesight.beaveriot.permission.dto.PermissionDTO;
 import com.milesight.beaveriot.user.dto.UserResourceDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author loong
@@ -27,45 +25,50 @@ import java.util.Map;
 public class EntityPermissionService {
 
     @Autowired
-    IUserFacade userFacade;
-    @Autowired
-    IEntityFacade entityFacade;
-    @Autowired
-    IDeviceFacade deviceFacade;
+    private IUserFacade userFacade;
 
-    @Cacheable(cacheNames = CacheKeyConstants.ENTITY_PERMISSION_CACHE_NAME_PREFIX, key = "#p0")
-    public EntityPermissionDTO getEntityPermission(Long userId) {
-        EntityPermissionDTO entityPermissionDTO = new EntityPermissionDTO();
+    @Autowired
+    private IEntityFacade entityFacade;
+
+    @Autowired
+    private IDeviceFacade deviceFacade;
+
+    public PermissionDTO getEntityPermission(Long userId) {
+        PermissionDTO permissionDTO = new PermissionDTO();
         UserResourceDTO userResourceDTO = userFacade.getResource(userId, Arrays.asList(ResourceType.ENTITY, ResourceType.DEVICE, ResourceType.INTEGRATION));
-        entityPermissionDTO.setHasAllPermission(userResourceDTO.isHasAllResource());
-        entityPermissionDTO.setEntityIds(new ArrayList<>());
+        permissionDTO.setHaveAllPermissions(userResourceDTO.isHasAllResource());
+        permissionDTO.setIds(new ArrayList<>());
+
         if (!userResourceDTO.isHasAllResource()) {
-            List<String> targetIds = new ArrayList<>();
-            targetIds.add(IntegrationConstants.SYSTEM_INTEGRATION_ID);
-            List<String> resourceEntityIds = new ArrayList<>();
             Map<ResourceType, List<String>> resource = userResourceDTO.getResource();
+            Set<Long> entityIds = new HashSet<>();
+            List<String> attachTargetIds = new ArrayList<>();
+            attachTargetIds.add(IntegrationConstants.SYSTEM_INTEGRATION_ID);
             if (resource != null && !resource.isEmpty()) {
                 resource.forEach((resourceType, resourceIds) -> {
-                    if (resourceType == ResourceType.ENTITY) {
-                        resourceEntityIds.addAll(resourceIds);
-                    } else if (resourceType == ResourceType.DEVICE) {
-                        targetIds.addAll(resourceIds);
-                    } else if (resourceType == ResourceType.INTEGRATION) {
-                        targetIds.addAll(resourceIds);
-                        List<DeviceNameDTO> integrationDevices = deviceFacade.getDeviceNameByIntegrations(resourceIds);
-                        if (integrationDevices != null && !integrationDevices.isEmpty()) {
-                            List<String> deviceIds = integrationDevices.stream().map(t -> String.valueOf(t.getId())).toList();
-                            targetIds.addAll(deviceIds);
+                    switch (resourceType) {
+                        case ENTITY -> resourceIds.stream().map(Long::valueOf).forEach(entityIds::add);
+                        case DEVICE -> attachTargetIds.addAll(resourceIds);
+                        case INTEGRATION -> {
+                            attachTargetIds.addAll(resourceIds);
+                            List<String> deviceIds = deviceFacade.getDeviceNameByIntegrations(resourceIds).stream()
+                                    .map(t -> String.valueOf(t.getId()))
+                                    .toList();
+                            attachTargetIds.addAll(deviceIds);
+                        }
+                        default -> {
+                            // skip
                         }
                     }
                 });
             }
-            List<EntityDTO> entityDTOList = entityFacade.getTargetEntities(targetIds);
-            if (entityDTOList != null && !entityDTOList.isEmpty()) {
-                resourceEntityIds.addAll(entityDTOList.stream().map(EntityDTO::getEntityId).map(Object::toString).toList());
+
+            if (!entityIds.isEmpty()) {
+                attachTargetIds.addAll(entityFacade.mapEntityIdToAttachTargetId(entityIds).values());
             }
-            entityPermissionDTO.setEntityIds(resourceEntityIds);
+
+            permissionDTO.setIds(attachTargetIds);
         }
-        return entityPermissionDTO;
+        return permissionDTO;
     }
 }

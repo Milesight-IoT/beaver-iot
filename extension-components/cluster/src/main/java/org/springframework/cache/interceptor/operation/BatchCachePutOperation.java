@@ -1,13 +1,13 @@
 package org.springframework.cache.interceptor.operation;
 
-import lombok.EqualsAndHashCode;
+import lombok.*;
 import org.springframework.cache.interceptor.CacheOperation;
 import org.springframework.lang.Nullable;
 
 /**
  * @author leon
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = true)
 public class BatchCachePutOperation extends CacheOperation implements CacheKeyPrefix{
     /**
      * Create a new {@link org.springframework.cache.interceptor.CachePutOperation} instance from the given builder.
@@ -18,7 +18,7 @@ public class BatchCachePutOperation extends CacheOperation implements CacheKeyPr
     public BatchCachePutOperation(Builder b) {
         super(b);
         this.unless = b.unless;
-        this.prefix = b.prefix;
+        this.prefix = b.keyPrefix;
     }
 
     @Nullable
@@ -33,7 +33,7 @@ public class BatchCachePutOperation extends CacheOperation implements CacheKeyPr
     }
 
     @Nullable
-    public String getPrefix() {
+    public String getKeyPrefix() {
         return prefix;
     }
 
@@ -46,29 +46,29 @@ public class BatchCachePutOperation extends CacheOperation implements CacheKeyPr
         @Nullable
         private String unless;
         @Nullable
-        private String prefix;
+        private String keyPrefix;
 
-        public void setUnless(String unless) {
+        public void setUnless(@Nullable String unless) {
             this.unless = unless;
         }
 
-        public void setPrefix(@Nullable String prefix) {
-            this.prefix = prefix;
+        public void setKeyPrefix(@Nullable String keyPrefix) {
+            this.keyPrefix = keyPrefix;
         }
 
         @Override
-        protected StringBuilder getOperationDescription() {
+        protected @NonNull StringBuilder getOperationDescription() {
             StringBuilder sb = super.getOperationDescription();
             sb.append(" | unless='");
             sb.append(this.unless);
             sb.append("'");
-            sb.append(this.prefix);
+            sb.append(this.keyPrefix);
             sb.append("'");
             return sb;
         }
 
         @Override
-        public BatchCachePutOperation build() {
+        public @NonNull BatchCachePutOperation build() {
             return new BatchCachePutOperation(this);
         }
     }

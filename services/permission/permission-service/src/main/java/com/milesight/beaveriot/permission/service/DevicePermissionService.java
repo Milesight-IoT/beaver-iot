@@ -1,14 +1,11 @@
 package com.milesight.beaveriot.permission.service;
 
-import com.milesight.beaveriot.context.constants.CacheKeyConstants;
-import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
-import com.milesight.beaveriot.permission.dto.DevicePermissionDTO;
+import com.milesight.beaveriot.permission.dto.PermissionDTO;
 import com.milesight.beaveriot.user.dto.UserResourceDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -24,16 +21,16 @@ import java.util.Map;
 public class DevicePermissionService {
 
     @Autowired
-    IUserFacade userFacade;
+    private IUserFacade userFacade;
     @Autowired
-    IDeviceFacade deviceFacade;
+    private IDeviceFacade deviceFacade;
 
-    @Cacheable(cacheNames = CacheKeyConstants.DEVICE_PERMISSION_CACHE_NAME_PREFIX, key = "#p0")
-    public DevicePermissionDTO getDevicePermission(Long userId) {
-        DevicePermissionDTO devicePermissionDTO = new DevicePermissionDTO();
+    public PermissionDTO getDevicePermission(Long userId) {
+        PermissionDTO permissionDTO = new PermissionDTO();
         UserResourceDTO userResourceDTO = userFacade.getResource(userId, Arrays.asList(ResourceType.DEVICE, ResourceType.INTEGRATION));
-        devicePermissionDTO.setHasAllPermission(userResourceDTO.isHasAllResource());
-        devicePermissionDTO.setDeviceIds(new ArrayList<>());
+        permissionDTO.setHaveAllPermissions(userResourceDTO.isHasAllResource());
+        permissionDTO.setIds(new ArrayList<>());
+
         if (!userResourceDTO.isHasAllResource()) {
             List<String> deviceIds = new ArrayList<>();
             Map<ResourceType, List<String>> resource = userResourceDTO.getResource();
@@ -42,17 +39,17 @@ public class DevicePermissionService {
                     if (resourceType == ResourceType.DEVICE) {
                         deviceIds.addAll(resourceIds);
                     } else if (resourceType == ResourceType.INTEGRATION) {
-                        List<DeviceNameDTO> integrationDevices = deviceFacade.getDeviceNameByIntegrations(resourceIds);
-                        if (integrationDevices != null && !integrationDevices.isEmpty()) {
-                            List<String> integrationDeviceIds = integrationDevices.stream().map(t -> String.valueOf(t.getId())).toList();
-                            deviceIds.addAll(integrationDeviceIds);
-                        }
+                        List<String> integrationDeviceIds = deviceFacade.getDeviceNameByIntegrations(resourceIds).stream()
+                                .map(t -> String.valueOf(t.getId()))
+                                .toList();
+                        deviceIds.addAll(integrationDeviceIds);
                     }
                 });
             }
-            devicePermissionDTO.setDeviceIds(deviceIds);
+
+            permissionDTO.setIds(deviceIds);
         }
-        return devicePermissionDTO;
+        return permissionDTO;
     }
 
 }

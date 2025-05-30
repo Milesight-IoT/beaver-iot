@@ -1,13 +1,10 @@
 package com.milesight.beaveriot.permission.service;
 
-import com.milesight.beaveriot.context.constants.CacheKeyConstants;
-import com.milesight.beaveriot.dashboard.facade.IDashboardFacade;
-import com.milesight.beaveriot.permission.dto.DashboardPermissionDTO;
+import com.milesight.beaveriot.permission.dto.PermissionDTO;
 import com.milesight.beaveriot.user.dto.UserResourceDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -23,16 +20,14 @@ import java.util.Map;
 public class DashboardPermissionService {
 
     @Autowired
-    IUserFacade userFacade;
-    @Autowired
-    IDashboardFacade dashboardFacade;
+    private IUserFacade userFacade;
 
-    @Cacheable(cacheNames = CacheKeyConstants.DASHBOARD_PERMISSION_CACHE_NAME_PREFIX, key = "#p0")
-    public DashboardPermissionDTO getDashboardPermission(Long userId) {
-        DashboardPermissionDTO dashboardPermissionDTO = new DashboardPermissionDTO();
+    public PermissionDTO getDashboardPermission(Long userId) {
+        PermissionDTO permissionDTO = new PermissionDTO();
         UserResourceDTO userResourceDTO = userFacade.getResource(userId, Collections.singletonList(ResourceType.DASHBOARD));
-        dashboardPermissionDTO.setHasAllPermission(userResourceDTO.isHasAllResource());
-        dashboardPermissionDTO.setDashboardIds(new ArrayList<>());
+        permissionDTO.setHaveAllPermissions(userResourceDTO.isHasAllResource());
+        permissionDTO.setIds(new ArrayList<>());
+
         if (!userResourceDTO.isHasAllResource()) {
             List<String> dashboardIds = new ArrayList<>();
             Map<ResourceType, List<String>> resource = userResourceDTO.getResource();
@@ -43,9 +38,10 @@ public class DashboardPermissionService {
                     }
                 });
             }
-            dashboardPermissionDTO.setDashboardIds(dashboardIds);
+            permissionDTO.setIds(dashboardIds);
         }
-        return dashboardPermissionDTO;
+
+        return permissionDTO;
     }
 
 }
