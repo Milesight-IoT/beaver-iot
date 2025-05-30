@@ -236,16 +236,9 @@ public class Scheduler {
         }
 
         val rule = scheduleSettings.getScheduleRule();
-        var zoneId = ZoneId.systemDefault();
-        if (rule != null && rule.getTimezone() != null) {
-            zoneId = ZoneId.of(rule.getTimezone());
-        }
-        if (zoneId != currentDateTime.getZone()) {
-            currentDateTime = currentDateTime.withZoneSameInstant(zoneId);
-        }
         val previousExecutionDateTime = currentDateTime.toEpochSecond() == previousTask.getExecutionEpochSecond()
                 ? currentDateTime
-                : ZonedDateTime.ofInstant(Instant.ofEpochSecond(previousTask.getExecutionEpochSecond()), zoneId);
+                : ZonedDateTime.ofInstant(Instant.ofEpochSecond(previousTask.getExecutionEpochSecond()), currentDateTime.getZone());
         val nextExecutionEpochSecond = getNextExecutionEpochSecond(scheduleType, rule, previousExecutionDateTime, currentDateTime);
         if (nextExecutionEpochSecond == null) {
             log.info("next execution time not found: '{}'", previousTask.getTaskKey());
@@ -314,6 +307,14 @@ public class Scheduler {
         currentDateTime = previousExecutionDateTime == null || currentDateTime.isAfter(previousExecutionDateTime)
                 ? currentDateTime
                 : previousExecutionDateTime;
+
+        if (scheduleRule.getTimezone() != null) {
+            val zoneId = ZoneId.of(scheduleRule.getTimezone());
+            if (zoneId != currentDateTime.getZone()) {
+                currentDateTime = currentDateTime.withZoneSameInstant(zoneId);
+            }
+        }
+
         if (startEpochSecond != null && startEpochSecond > currentDateTime.toEpochSecond()) {
             currentDateTime = ZonedDateTime.ofInstant(Instant.ofEpochSecond(startEpochSecond), currentDateTime.getZone());
         }
