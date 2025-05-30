@@ -1,9 +1,8 @@
 package org.springframework.cache.interceptor;
 
 import com.milesight.beaveriot.cache.BatchableCache;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
+import lombok.*;
+import lombok.extern.slf4j.*;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.Signature;
 import org.aspectj.lang.annotation.Around;
@@ -36,7 +35,14 @@ import org.springframework.util.function.SingletonSupplier;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -592,8 +598,8 @@ public class BatchCacheAspect extends AbstractCacheInvoker implements BeanFactor
             if (StringUtils.hasText(this.metadata.operation.getKey())) {
                 EvaluationContext evaluationContext = createEvaluationContext(result);
                 Object key = evaluator.key(this.metadata.operation.getKey(), this.metadata.methodKey, evaluationContext);
-                if (this.metadata.operation instanceof CacheKeyPrefix cacheKeyPrefix && StringUtils.hasText(cacheKeyPrefix.getPrefix())) {
-                    Object prefix = evaluator.key(cacheKeyPrefix.getPrefix(), this.metadata.methodKey, evaluationContext);
+                if (this.metadata.operation instanceof CacheKeyPrefix cacheKeyPrefix && StringUtils.hasText(cacheKeyPrefix.getKeyPrefix())) {
+                    Object prefix = evaluator.key(cacheKeyPrefix.getKeyPrefix(), this.metadata.methodKey, evaluationContext);
                     if (ObjectUtils.isEmpty(prefix) || ObjectUtils.isEmpty(key)) {
                         return FullKeyHolder.of(key);
                     }

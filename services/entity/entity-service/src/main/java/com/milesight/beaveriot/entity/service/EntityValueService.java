@@ -33,15 +33,24 @@ import lombok.*;
 import lombok.extern.slf4j.*;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.OptionalDouble;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -425,7 +434,13 @@ public class EntityValueService implements EntityValueServiceProvider {
             entityHistoryQuery.sort(new Sorts().desc(EntityHistoryPO.Fields.timestamp));
         }
 
-        Page<EntityHistoryPO> entityHistoryPage = entityHistoryRepository.findAllWithDataPermission(f -> f.in(EntityHistoryPO.Fields.entityId, entityIds.toArray())
+        List<Long> entityIdsWithPermission = entityRepository.findAllWithDataPermission(f -> f.in(EntityPO.Fields.id, entityIds.toArray()))
+                .stream().map(EntityPO::getId).toList();
+        if (CollectionUtils.isEmpty(entityIdsWithPermission)) {
+            return Page.empty();
+        }
+
+        Page<EntityHistoryPO> entityHistoryPage = entityHistoryRepository.findAll(f -> f.in(EntityHistoryPO.Fields.entityId, entityIdsWithPermission.toArray())
                         .ge(EntityHistoryPO.Fields.timestamp, entityHistoryQuery.getStartTimestamp())
                         .le(EntityHistoryPO.Fields.timestamp, entityHistoryQuery.getEndTimestamp()),
                 entityHistoryQuery.toPageable());
@@ -460,13 +475,20 @@ public class EntityValueService implements EntityValueServiceProvider {
 
     public EntityAggregateResponse historyAggregate(EntityAggregateQuery entityAggregateQuery) {
         EntityAggregateResponse entityAggregateResponse = new EntityAggregateResponse();
-        List<EntityHistoryPO> entityHistoryPOList = entityHistoryRepository.findAllWithDataPermission(filter -> filter.eq(EntityHistoryPO.Fields.entityId, entityAggregateQuery.getEntityId())
+        Long entityIdWithPermission = entityRepository.findOneWithDataPermission(f -> f.eq(EntityPO.Fields.id, entityAggregateQuery.getEntityId()))
+                .map(EntityPO::getId).orElse(null);
+        if (entityIdWithPermission == null) {
+            return entityAggregateResponse;
+        }
+
+        List<EntityHistoryPO> entityHistoryPOList = entityHistoryRepository.findAll(filter -> filter.eq(EntityHistoryPO.Fields.entityId, entityIdWithPermission)
                         .ge(EntityHistoryPO.Fields.timestamp, entityAggregateQuery.getStartTimestamp())
                         .le(EntityHistoryPO.Fields.timestamp, entityAggregateQuery.getEndTimestamp()))
                 .stream().sorted(Comparator.comparingLong(EntityHistoryPO::getTimestamp)).toList();
         if (entityHistoryPOList.isEmpty()) {
             return entityAggregateResponse;
         }
+
         AggregateType aggregateType = entityAggregateQuery.getAggregateType();
         EntityHistoryPO oneEntityHistoryPO = entityHistoryPOList.get(0);
         switch (aggregateType) {
@@ -545,7 +567,11 @@ public class EntityValueService implements EntityValueServiceProvider {
                     }
                     entityAggregateResponse.setValueType(EntityValueType.LONG);
                 } else if (oneEntityHistoryPO.getValueDouble() != null) {
-                    BigDecimal sum = entityHistoryPOList.stream().map(t -> BigDecimal.valueOf(t.getValueDouble())).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal sum = entityHistoryPOList.stream()
+                            .filter(Objects::nonNull)
+                            .filter(t -> t.getValueDouble() != null)
+                            .map(t -> BigDecimal.valueOf(t.getValueDouble()))
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
                     BigDecimal count = new BigDecimal(entityHistoryPOList.size());
                     BigDecimal avg = sum.divide(count, 8, RoundingMode.HALF_EVEN);
                     entityAggregateResponse.setValue(avg.doubleValue());
@@ -567,7 +593,12 @@ public class EntityValueService implements EntityValueServiceProvider {
                     entityAggregateResponse.setValue(sumAsString);
                     entityAggregateResponse.setValueType(EntityValueType.LONG);
                 } else if (oneEntityHistoryPO.getValueDouble() != null) {
-                    entityAggregateResponse.setValue(entityHistoryPOList.stream().map(t -> BigDecimal.valueOf(t.getValueDouble())).reduce(BigDecimal.ZERO, BigDecimal::add).doubleValue());
+                    entityAggregateResponse.setValue(entityHistoryPOList.stream()
+                            .filter(Objects::nonNull)
+                            .filter(t -> t.getValueDouble() != null)
+                            .map(t -> BigDecimal.valueOf(t.getValueDouble()))
+                            .reduce(BigDecimal.ZERO, BigDecimal::add)
+                            .doubleValue());
                     entityAggregateResponse.setValueType(EntityValueType.DOUBLE);
                 } else if (oneEntityHistoryPO.getValueString() != null) {
                     throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();

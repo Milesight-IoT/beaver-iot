@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.permission.context;
 
-import lombok.Builder;
-import lombok.Getter;
+import com.milesight.beaveriot.permission.enums.ColumnDataType;
+import lombok.*;
 
 import java.util.List;
 import java.util.Map;
@@ -68,7 +68,8 @@ public class DataAspectContext {
     @Builder
     @Getter
     public static class DataPermissionContext {
-        private List<Long> dataIds;
+        private List<String> dataIds;
+        private ColumnDataType dataType;
         private String dataColumnName;
     }
 

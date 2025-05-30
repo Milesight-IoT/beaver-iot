@@ -1,16 +1,13 @@
 package com.milesight.beaveriot.permission.service;
 
-import com.milesight.beaveriot.context.constants.CacheKeyConstants;
-import com.milesight.beaveriot.permission.dto.IntegrationPermissionDTO;
+import com.milesight.beaveriot.permission.dto.PermissionDTO;
 import com.milesight.beaveriot.user.dto.UserResourceDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -22,14 +19,14 @@ import java.util.Map;
 public class IntegrationPermissionService {
 
     @Autowired
-    IUserFacade userFacade;
+    private IUserFacade userFacade;
 
-    @Cacheable(cacheNames = CacheKeyConstants.INTEGRATION_PERMISSION_CACHE_NAME_PREFIX, key = "#p0")
-    public IntegrationPermissionDTO getIntegrationPermission(Long userId) {
-        IntegrationPermissionDTO integrationPermissionDTO = new IntegrationPermissionDTO();
-        UserResourceDTO userResourceDTO = userFacade.getResource(userId, Arrays.asList(ResourceType.INTEGRATION));
-        integrationPermissionDTO.setHasAllPermission(userResourceDTO.isHasAllResource());
-        integrationPermissionDTO.setIntegrationIds(new ArrayList<>());
+    public PermissionDTO getIntegrationPermission(Long userId) {
+        PermissionDTO permissionDTO = new PermissionDTO();
+        UserResourceDTO userResourceDTO = userFacade.getResource(userId, List.of(ResourceType.INTEGRATION));
+        permissionDTO.setHaveAllPermissions(userResourceDTO.isHasAllResource());
+        permissionDTO.setIds(new ArrayList<>());
+
         if (!userResourceDTO.isHasAllResource()) {
             List<String> integrationIds = new ArrayList<>();
             Map<ResourceType, List<String>> resource = userResourceDTO.getResource();
@@ -40,8 +37,9 @@ public class IntegrationPermissionService {
                     }
                 });
             }
-            integrationPermissionDTO.setIntegrationIds(integrationIds);
+            permissionDTO.setIds(integrationIds);
         }
-        return integrationPermissionDTO;
+
+        return permissionDTO;
     }
 }

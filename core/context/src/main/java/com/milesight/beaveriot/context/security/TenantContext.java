@@ -1,7 +1,8 @@
 package com.milesight.beaveriot.context.security;
 
 import com.alibaba.ttl.TransmittableThreadLocal;
-import lombok.experimental.SuperBuilder;
+import com.milesight.beaveriot.context.support.KeyValidator;
+import lombok.experimental.*;
 import org.springframework.util.ObjectUtils;
 
 import java.util.Optional;
@@ -38,6 +39,9 @@ public class TenantContext {
     }
 
     public static void setTenantId(String tenantId) {
+        if (!KeyValidator.isValid(tenantId)) {
+            throw new IllegalArgumentException("Tenant ID '" + tenantId + "' is not valid");
+        }
         tenantThreadLocal.set(new TenantId(tenantId));
     }
 

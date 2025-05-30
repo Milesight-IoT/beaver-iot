@@ -15,9 +15,10 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD})
 @Documented
 @Inherited
-public @interface SecurityUserContext {
+public @interface WithSecurityUserContext {
 
     String tenantId() default "";
 
     String userId() default "";
+
 }

@@ -1,14 +1,17 @@
 package com.milesight.beaveriot.user.service;
 
+import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheEvict;
+import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheable;
+import com.milesight.beaveriot.base.annotations.cacheable.CacheKeys;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.GenericQueryPageRequest;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
-import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
 import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.context.integration.model.Integration;
+import com.milesight.beaveriot.context.support.KeyValidator;
 import com.milesight.beaveriot.dashboard.dto.DashboardDTO;
 import com.milesight.beaveriot.dashboard.facade.IDashboardFacade;
 import com.milesight.beaveriot.data.util.PageConverter;
@@ -48,17 +51,20 @@ import com.milesight.beaveriot.user.repository.RoleRepository;
 import com.milesight.beaveriot.user.repository.RoleResourceRepository;
 import com.milesight.beaveriot.user.repository.UserRepository;
 import com.milesight.beaveriot.user.repository.UserRoleRepository;
+import lombok.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +72,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.milesight.beaveriot.context.constants.CacheKeyConstants.TENANT_PREFIX;
 
 /**
  * @author loong
@@ -75,38 +83,51 @@ import java.util.stream.Collectors;
 public class RoleService {
 
     @Autowired
-    RoleRepository roleRepository;
+    private RoleRepository roleRepository;
+
     @Autowired
-    UserRoleRepository userRoleRepository;
+    private UserRoleRepository userRoleRepository;
+
     @Autowired
-    RoleResourceRepository roleResourceRepository;
+    private RoleResourceRepository roleResourceRepository;
+
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
+
     @Autowired
-    RoleMenuRepository roleMenuRepository;
+    private RoleMenuRepository roleMenuRepository;
+
     @Autowired
-    MenuRepository menuRepository;
+    private MenuRepository menuRepository;
+
     @Autowired
-    IDashboardFacade dashboardFacade;
+    private IDashboardFacade dashboardFacade;
+
     @Autowired
-    IDeviceFacade deviceFacade;
+    private IDeviceFacade deviceFacade;
+
     @Autowired
-    IEntityFacade entityFacade;
+    private IEntityFacade entityFacade;
+
     @Autowired
-    IntegrationServiceProvider integrationServiceProvider;
+    private IntegrationServiceProvider integrationServiceProvider;
+
+    @Lazy
     @Autowired
-    EntityServiceProvider entityServiceProvider;
+    private RoleService self;
 
     public CreateRoleResponse createRole(CreateRoleRequest createRoleRequest) {
         String name = createRoleRequest.getName();
         if (!StringUtils.hasText(name)) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("name is empty").build();
         }
-        RolePO rolePO = roleRepository.findOne(filterable -> filterable.eq(RolePO.Fields.name, name)).orElse(null);
-        if (rolePO != null) {
-            throw ServiceException.with(UserErrorCode.NAME_REPEATED).detailMessage("name is exist").build();
-        }
-        rolePO = new RolePO();
+
+        roleRepository.findOne(filterable -> filterable.eq(RolePO.Fields.name, name))
+                .ifPresent(rolePO -> {
+                    throw ServiceException.with(UserErrorCode.NAME_REPEATED).detailMessage("name is exist").build();
+                });
+
+        RolePO rolePO = new RolePO();
         rolePO.setId(SnowflakeUtil.nextId());
         rolePO.setName(name);
         rolePO.setDescription(createRoleRequest.getDescription());
@@ -122,70 +143,78 @@ public class RoleService {
         if (!StringUtils.hasText(name)) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("name is empty").build();
         }
+
         RolePO otherRolePO = roleRepository.findOne(filterable -> filterable.eq(RolePO.Fields.name, name)).orElse(null);
         if (otherRolePO != null && !Objects.equals(otherRolePO.getId(), roleId)) {
             throw ServiceException.with(UserErrorCode.NAME_REPEATED).detailMessage("name is exist").build();
         }
-        RolePO rolePO = roleRepository.findOne(filterable -> filterable.eq(RolePO.Fields.id, roleId)).orElse(null);
-        if (rolePO == null) {
-            throw ServiceException.with(UserErrorCode.ROLE_DOES_NOT_EXIT).detailMessage("role is not exist").build();
-        }
+
+        RolePO rolePO = roleRepository.findOne(filterable -> filterable.eq(RolePO.Fields.id, roleId))
+                .orElseThrow(() -> ServiceException.with(UserErrorCode.ROLE_DOES_NOT_EXIT).detailMessage("role is not exist").build());
         rolePO.setName(name);
         rolePO.setDescription(updateRoleRequest.getDescription());
         roleRepository.save(rolePO);
     }
 
-    @CacheEvict(cacheNames = {CacheKeyConstants.USER_MENUS_CACHE_NAME_PREFIX,
-            CacheKeyConstants.ENTITY_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.DEVICE_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.DASHBOARD_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.INTEGRATION_PERMISSION_CACHE_NAME_PREFIX}, allEntries = true)
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Throwable.class)
     public void deleteRole(Long roleId) {
         RolePO rolePO = roleRepository.findOne(filterable -> filterable.eq(RolePO.Fields.id, roleId)).orElse(null);
         if (rolePO == null) {
             throw ServiceException.with(UserErrorCode.ROLE_DOES_NOT_EXIT).detailMessage("role is not exist").build();
         }
+
         if (UserConstants.SUPER_ADMIN_ROLE_NAME.equals(rolePO.getName())) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("super admin not allowed to delete").build();
         }
-        List<UserRolePO> userRolePOs = userRoleRepository.findAll(filterable -> filterable.eq(UserRolePO.Fields.roleId, roleId));
-        if (!userRolePOs.isEmpty()) {
+
+        List<Long> userIds = self.getUserRolePOsByRoleId(roleId).stream()
+                .map(UserRolePO::getUserId)
+                .toList();
+        if (!userIds.isEmpty()) {
             throw ServiceException.with(UserErrorCode.ROLE_STILL_HAS_USER).detailMessage("role has been bound user").build();
         }
+
         roleRepository.deleteById(roleId);
-        userRoleRepository.deleteByRoleId(roleId);
+
+        self.deleteUserRoleByRoleId(roleId);
+
         roleMenuRepository.deleteByRoleId(roleId);
+        self.evictUserMenusCache(userIds);
+
         roleResourceRepository.deleteByRoleId(roleId);
+        self.evictRoleResourcesCache(List.of(roleId));
     }
 
     public Page<RoleResponse> getRoles(GenericQueryPageRequest roleListRequest) {
         if (roleListRequest.getSort().getOrders().isEmpty()) {
             roleListRequest.sort(new Sorts().desc(RolePO.Fields.id));
         }
+
         Page<RolePO> rolePages = roleRepository.findAll(filterable -> filterable.likeIgnoreCase(StringUtils.hasText(roleListRequest.getKeyword()), RolePO.Fields.name, roleListRequest.getKeyword())
                 , roleListRequest.toPageable());
         if (rolePages == null || rolePages.getContent().isEmpty()) {
             return Page.empty();
         }
+
         List<Long> roleIds = rolePages.getContent().stream().map(RolePO::getId).toList();
-        List<UserRolePO> userRolePOs = userRoleRepository.findAll(filterable -> filterable.in(UserRolePO.Fields.roleId, roleIds.toArray()));
-        List<RoleResourcePO> roleIntegrationPOs = roleResourceRepository.findAll(filterable -> filterable.in(RoleResourcePO.Fields.roleId, roleIds.toArray()).eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION));
-        Map<Long, Long> userRoleCountMap = new HashMap<>();
-        if (userRolePOs != null && !userRolePOs.isEmpty()) {
-            userRoleCountMap.putAll(userRolePOs.stream().collect(Collectors.groupingBy(UserRolePO::getRoleId, Collectors.counting())));
-        }
-        Map<Long, Long> roleIntegrationCountMap = new HashMap<>();
-        if (roleIntegrationPOs != null && !roleIntegrationPOs.isEmpty()) {
-            roleIntegrationCountMap.putAll(roleIntegrationPOs.stream().collect(Collectors.groupingBy(RoleResourcePO::getRoleId, Collectors.counting())));
-        }
+        List<UserRolePO> userRolePOs = getUserRolePOsByRoleIds(roleIds);
+        Map<Long, Long> userRoleCountMap = userRolePOs.stream().collect(Collectors.groupingBy(UserRolePO::getRoleId, Collectors.counting()));
+
+        List<RoleResourcePO> roleIntegrationPOs = self.getRoleResourcePOsByRoleIdsAndResourceTypes(roleIds, Set.of(ResourceType.INTEGRATION));
+        Map<Long, Long> roleIntegrationCountMap = roleIntegrationPOs.stream()
+                .collect(Collectors.groupingBy(RoleResourcePO::getRoleId, Collectors.counting()));
+
         return rolePages.map(rolePO -> {
             RoleResponse roleResponse = new RoleResponse();
             roleResponse.setRoleId(rolePO.getId().toString());
             roleResponse.setName(rolePO.getName());
             roleResponse.setCreatedAt(rolePO.getCreatedAt().toString());
-            roleResponse.setUserRoleCount(userRoleCountMap.get(rolePO.getId()) == null ? 0 : Integer.parseInt(userRoleCountMap.get(rolePO.getId()).toString()));
-            roleResponse.setRoleIntegrationCount(roleIntegrationCountMap.get(rolePO.getId()) == null ? 0 : Integer.parseInt(roleIntegrationCountMap.get(rolePO.getId()).toString()));
+
+            Long userRoleCount = userRoleCountMap.get(rolePO.getId());
+            roleResponse.setUserRoleCount(userRoleCount == null ? 0 : userRoleCount.intValue());
+
+            Long roleIntegrationCount = roleIntegrationCountMap.get(rolePO.getId());
+            roleResponse.setRoleIntegrationCount(roleIntegrationCount == null ? 0 : roleIntegrationCount.intValue());
             return roleResponse;
         });
     }
@@ -202,59 +231,37 @@ public class RoleService {
                 return Page.empty();
             }
         }
-        Page<UserRolePO> userRolePOS = userRoleRepository.findAll(filterable -> filterable.eq(UserRolePO.Fields.roleId, roleId)
+
+        Page<UserRolePO> userRolePOs = userRoleRepository.findAll(filterable -> filterable.eq(UserRolePO.Fields.roleId, roleId)
                         .in(!searchUserIds.isEmpty(), UserRolePO.Fields.userId, searchUserIds.toArray())
                 , userRolePageRequest.toPageable());
-        if (userRolePOS == null || userRolePOS.isEmpty()) {
+        if (userRolePOs == null || userRolePOs.isEmpty()) {
             return Page.empty();
         }
-        List<Long> userIds = userRolePOS.stream().map(UserRolePO::getUserId).toList();
-        Map<Long, UserPO> userMap = new HashMap<>();
-        if (!userIds.isEmpty()) {
-            List<UserPO> userPOS = userRepository.findAll(filterable -> filterable.in(UserPO.Fields.id, userIds.toArray()));
-            userMap.putAll(userPOS.stream().collect(Collectors.toMap(UserPO::getId, Function.identity())));
-        }
-        return userRolePOS.map(userRolePO -> {
+
+        List<Long> userIds = userRolePOs.stream().map(UserRolePO::getUserId).toList();
+        Map<Long, UserPO> userIdToPO = mapUserIdToPO(userIds);
+
+        return userRolePOs.map(userRolePO -> {
             UserRoleResponse userRoleResponse = new UserRoleResponse();
             userRoleResponse.setRoleId(userRolePO.getRoleId().toString());
             userRoleResponse.setUserId(userRolePO.getUserId().toString());
-            userRoleResponse.setUserNickname(!userMap.containsKey(userRolePO.getUserId()) ? null : userMap.get(userRolePO.getUserId()).getNickname());
-            userRoleResponse.setUserEmail(!userMap.containsKey(userRolePO.getUserId()) ? null : userMap.get(userRolePO.getUserId()).getEmail());
+            UserPO userPO = userIdToPO.get(userRolePO.getUserId());
+            userRoleResponse.setUserNickname(userPO == null ? null : userPO.getNickname());
+            userRoleResponse.setUserEmail(userPO == null ? null : userPO.getEmail());
             return userRoleResponse;
         });
     }
 
-    public List<RoleMenuResponse> getMenusByRoleId(Long roleId) {
-        List<RoleMenuPO> roleMenuPOS = roleMenuRepository.findAll(filterable -> filterable.eq(RoleMenuPO.Fields.roleId, roleId));
-        if (roleMenuPOS == null || roleMenuPOS.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<Long> menuIds = roleMenuPOS.stream().map(RoleMenuPO::getMenuId).toList();
-        List<MenuPO> menuPOList = menuRepository.findAll(filterable -> filterable.in(MenuPO.Fields.id, menuIds.toArray()));
-        Map<Long, MenuPO> menuMap = menuPOList.stream().collect(Collectors.toMap(MenuPO::getId, Function.identity()));
-        return roleMenuPOS.stream().map(roleMenuPO -> {
-            if (!menuMap.containsKey(roleMenuPO.getMenuId())) {
-                return null;
-            }
-            RoleMenuResponse roleMenuResponse = new RoleMenuResponse();
-            roleMenuResponse.setMenuId(roleMenuPO.getMenuId().toString());
-            roleMenuResponse.setCode(menuMap.get(roleMenuPO.getMenuId()).getCode());
-            roleMenuResponse.setName(menuMap.get(roleMenuPO.getMenuId()).getName());
-            roleMenuResponse.setType(menuMap.get(roleMenuPO.getMenuId()).getType());
-            roleMenuResponse.setParentId(menuMap.get(roleMenuPO.getMenuId()).getParentId() == null ? null : menuMap.get(roleMenuPO.getMenuId()).getParentId().toString());
-            return roleMenuResponse;
-        }).filter(Objects::nonNull).toList();
-    }
-
     public Page<RoleResourceResponse> getResourcesByRoleId(Long roleId, RoleResourceListRequest roleResourceListRequest) {
         ResourceType resourceType = roleResourceListRequest.getResourceType();
-        Page<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
+        Page<RoleResourcePO> roleResourcePOs = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
                         .eq(resourceType != null, RoleResourcePO.Fields.resourceType, resourceType == null ? null : resourceType.name()),
                 roleResourceListRequest.toPageable());
-        if (roleResourcePOS == null || roleResourcePOS.isEmpty()) {
+        if (roleResourcePOs == null || roleResourcePOs.isEmpty()) {
             return Page.empty();
         }
-        return roleResourcePOS.map(roleResourcePO -> {
+        return roleResourcePOs.map(roleResourcePO -> {
             RoleResourceResponse roleResourceResponse = new RoleResourceResponse();
             roleResourceResponse.setResourceId(roleResourcePO.getResourceId());
             roleResourceResponse.setResourceType(roleResourcePO.getResourceType());
@@ -273,20 +280,20 @@ public class RoleService {
                 return Page.empty();
             }
         }
-        Page<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
+        Page<RoleResourcePO> roleResourcePOs = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
                         .eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION.name())
                         .in(!searchIntegrationIds.isEmpty(), RoleResourcePO.Fields.resourceId, searchIntegrationIds.toArray()),
                 roleIntegrationRequest.toPageable());
-        if (roleResourcePOS == null || roleResourcePOS.isEmpty()) {
+        if (roleResourcePOs == null || roleResourcePOs.isEmpty()) {
             return Page.empty();
         }
-        List<String> integrationIds = roleResourcePOS.stream().map(RoleResourcePO::getResourceId).toList();
+        List<String> integrationIds = roleResourcePOs.stream().map(RoleResourcePO::getResourceId).toList();
         List<Integration> integrations = integrationServiceProvider.findIntegrations(f -> integrationIds.contains(f.getId()));
         Map<String, Integration> integrationMap = integrations.stream().collect(Collectors.toMap(Integration::getId, Function.identity()));
         List<DeviceNameDTO> deviceNameDTOList = deviceFacade.getDeviceNameByIntegrations(integrationIds);
         Map<String, List<DeviceNameDTO>> deviceIntegrationMap = deviceNameDTOList.stream().filter(t -> t.getIntegrationConfig() != null).collect(Collectors.groupingBy(t -> t.getIntegrationConfig().getId()));
         Map<String, Long> entityCountMap = entityFacade.countAllEntitiesByIntegrationIds(integrationIds);
-        return roleResourcePOS.map(roleResourcePO -> {
+        return roleResourcePOs.map(roleResourcePO -> {
             RoleIntegrationResponse roleIntegrationResponse = new RoleIntegrationResponse();
             roleIntegrationResponse.setIntegrationId(roleResourcePO.getResourceId());
             roleIntegrationResponse.setIntegrationName(integrationMap.get(roleResourcePO.getResourceId()) == null ? null : integrationMap.get(roleResourcePO.getResourceId()).getName());
@@ -359,36 +366,36 @@ public class RoleService {
         List<DeviceNameDTO> deviceNameDTOList = deviceFacade.getDeviceNameByIds(responseDeviceIds);
         Map<Long, DeviceNameDTO> deviceMap = deviceNameDTOList.stream().collect(Collectors.toMap(DeviceNameDTO::getId, Function.identity()));
         List<Long> userIds = deviceNameDTOList.stream().map(DeviceNameDTO::getUserId).filter(Objects::nonNull).toList();
-        Map<Long, UserPO> userMap = new HashMap<>();
-        if (!userIds.isEmpty()) {
-            List<UserPO> userPOList = userRepository.findAll(filterable -> filterable.in(UserPO.Fields.id, userIds.toArray()));
-            userMap.putAll(userPOList.stream().collect(Collectors.toMap(UserPO::getId, Function.identity())));
-        }
+        Map<Long, UserPO> userIdToPO = mapUserIdToPO(userIds);
 
-        List<RoleDeviceResponse> roleDeviceResponseList = responseDeviceIds.stream().distinct().map(deviceId -> {
-            RoleDeviceResponse roleDeviceResponse = new RoleDeviceResponse();
-            DeviceNameDTO device = deviceMap.get(deviceId);
-            roleDeviceResponse.setDeviceId(deviceId.toString());
-            roleDeviceResponse.setDeviceName(device == null ? null : device.getName());
-            roleDeviceResponse.setCreatedAt(device == null ? null : device.getCreatedAt().toString());
+        List<RoleDeviceResponse> roleDeviceResponseList = responseDeviceIds.stream()
+                .distinct()
+                .map(deviceId -> {
+                    RoleDeviceResponse roleDeviceResponse = new RoleDeviceResponse();
+                    DeviceNameDTO device = deviceMap.get(deviceId);
+                    roleDeviceResponse.setDeviceId(deviceId.toString());
+                    roleDeviceResponse.setDeviceName(device == null ? null : device.getName());
+                    roleDeviceResponse.setCreatedAt(device == null ? null : device.getCreatedAt().toString());
 
-            Long userId = device == null ? null : device.getUserId();
-            if (userId != null) {
-                UserPO user = userMap.get(userId);
-                roleDeviceResponse.setUserId(userId.toString());
-                roleDeviceResponse.setUserEmail(user == null ? null : user.getEmail());
-                roleDeviceResponse.setUserNickname(user == null ? null : user.getNickname());
-            }
+                    UserPO user = device == null || device.getUserId() == null
+                            ? null
+                            : userIdToPO.get(device.getUserId());
+                    if (user != null) {
+                        roleDeviceResponse.setUserId(user.getId().toString());
+                        roleDeviceResponse.setUserEmail(user.getEmail());
+                        roleDeviceResponse.setUserNickname(user.getNickname());
+                    }
 
-            Integration integrationConfig = device == null ? null : device.getIntegrationConfig();
-            if (integrationConfig != null) {
-                roleDeviceResponse.setIntegrationId(integrationConfig.getId());
-                roleDeviceResponse.setIntegrationName(integrationConfig.getName());
-            }
-            roleDeviceResponse.setRoleIntegration(responseIntegrationDeviceIds.contains(deviceId));
+                    Integration integrationConfig = device == null ? null : device.getIntegrationConfig();
+                    if (integrationConfig != null) {
+                        roleDeviceResponse.setIntegrationId(integrationConfig.getId());
+                        roleDeviceResponse.setIntegrationName(integrationConfig.getName());
+                    }
+                    roleDeviceResponse.setRoleIntegration(responseIntegrationDeviceIds.contains(deviceId));
 
-            return roleDeviceResponse;
-        }).toList();
+                    return roleDeviceResponse;
+                })
+                .toList();
 
         return PageConverter.convertToPage(roleDeviceResponseList, roleDeviceRequest.toPageable());
     }
@@ -396,42 +403,55 @@ public class RoleService {
     public Page<RoleDashboardResponse> getDashboardsByRoleId(Long roleId, GenericQueryPageRequest roleDashboardRequest) {
         List<Long> searchDashboardIds = new ArrayList<>();
         if (StringUtils.hasText(roleDashboardRequest.getKeyword())) {
-            List<DashboardDTO> dashboardPOS = dashboardFacade.getDashboardsLike(roleDashboardRequest.getKeyword(), Sort.unsorted());
-            if (dashboardPOS != null && !dashboardPOS.isEmpty()) {
-                searchDashboardIds.addAll(dashboardPOS.stream().map(DashboardDTO::getDashboardId).toList());
+            List<DashboardDTO> dashboardPOs = dashboardFacade.getDashboardsLike(roleDashboardRequest.getKeyword(), Sort.unsorted());
+            if (dashboardPOs != null && !dashboardPOs.isEmpty()) {
+                searchDashboardIds.addAll(dashboardPOs.stream().map(DashboardDTO::getDashboardId).toList());
             } else {
                 return Page.empty();
             }
         }
-        Page<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
+
+        Page<RoleResourcePO> roleResourcePOs = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
                         .eq(RoleResourcePO.Fields.resourceType, ResourceType.DASHBOARD.name())
                         .in(!searchDashboardIds.isEmpty(), RoleResourcePO.Fields.resourceId, searchDashboardIds.toArray()),
                 roleDashboardRequest.toPageable());
-        if (roleResourcePOS == null || roleResourcePOS.isEmpty()) {
+        if (roleResourcePOs == null || roleResourcePOs.isEmpty()) {
             return Page.empty();
         }
-        List<Long> dashboardIds = roleResourcePOS.stream().map(RoleResourcePO::getResourceId).map(Long::parseLong).distinct().toList();
+
+        List<Long> dashboardIds = roleResourcePOs.stream().map(RoleResourcePO::getResourceId).map(Long::parseLong).distinct().toList();
         List<DashboardDTO> dashboardDTOList = dashboardFacade.getDashboardsByIds(dashboardIds);
         Map<Long, DashboardDTO> dashboardMap = dashboardDTOList.stream().collect(Collectors.toMap(DashboardDTO::getDashboardId, Function.identity()));
         List<Long> userIds = dashboardDTOList.stream().map(DashboardDTO::getUserId).filter(Objects::nonNull).distinct().toList();
-        Map<Long, UserPO> userMap = new HashMap<>();
-        if (!userIds.isEmpty()) {
-            List<UserPO> userPOList = userRepository.findAll(filterable -> filterable.in(UserPO.Fields.id, userIds.toArray()));
-            userMap.putAll(userPOList.stream().collect(Collectors.toMap(UserPO::getId, Function.identity())));
-        }
-        return roleResourcePOS.map(roleResourcePO -> {
+        Map<Long, UserPO> userMap = mapUserIdToPO(userIds);
+        return roleResourcePOs.map(roleResourcePO -> {
             RoleDashboardResponse roleDashboardResponse = new RoleDashboardResponse();
             roleDashboardResponse.setDashboardId(roleResourcePO.getResourceId());
-            roleDashboardResponse.setDashboardName(dashboardMap.get(Long.parseLong(roleResourcePO.getResourceId())) != null ? dashboardMap.get(Long.parseLong(roleResourcePO.getResourceId())).getDashboardName() : null);
-            roleDashboardResponse.setCreatedAt(dashboardMap.get(Long.parseLong(roleResourcePO.getResourceId())) != null ? dashboardMap.get(Long.parseLong(roleResourcePO.getResourceId())).getCreatedAt().toString() : null);
-            Long userId = dashboardMap.get(Long.parseLong(roleResourcePO.getResourceId())) != null ? dashboardMap.get(Long.parseLong(roleResourcePO.getResourceId())).getUserId() : null;
-            roleDashboardResponse.setUserId(userId != null ? userId.toString() : null);
-            if (userId != null) {
-                roleDashboardResponse.setUserEmail(userMap.get(userId) != null ? userMap.get(userId).getEmail() : null);
-                roleDashboardResponse.setUserNickname(userMap.get(userId) != null ? userMap.get(userId).getNickname() : null);
+            long resourceId = Long.parseLong(roleResourcePO.getResourceId());
+            DashboardDTO dashboardDTO = dashboardMap.get(resourceId);
+            if (dashboardDTO != null) {
+                roleDashboardResponse.setDashboardName(dashboardDTO.getDashboardName());
+                roleDashboardResponse.setCreatedAt(dashboardDTO.getCreatedAt().toString());
+
+                Long userId = dashboardDTO.getUserId();
+                UserPO userPO = userId == null ? null : userMap.get(userId);
+                if (userPO != null) {
+                    roleDashboardResponse.setUserId(userPO.getId().toString());
+                    roleDashboardResponse.setUserEmail(userPO.getEmail());
+                    roleDashboardResponse.setUserNickname(userPO.getNickname());
+                }
             }
             return roleDashboardResponse;
         });
+    }
+
+    @NonNull
+    private Map<Long, UserPO> mapUserIdToPO(Collection<Long> userIds) {
+        if (CollectionUtils.isEmpty(userIds)) {
+            return Collections.emptyMap();
+        }
+        return userRepository.findAll(filterable -> filterable.in(UserPO.Fields.id, userIds.toArray())).stream()
+                .collect(Collectors.toMap(UserPO::getId, Function.identity(), (a, b) -> a));
     }
 
     public Page<DashboardUndistributedResponse> getUndistributedDashboards(Long roleId, GenericQueryPageRequest dashboardUndistributedRequest) {
@@ -439,26 +459,36 @@ public class RoleService {
         if (dashboardDTOList == null || dashboardDTOList.isEmpty()) {
             return Page.empty();
         }
-        List<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
+
+        List<RoleResourcePO> roleResourcePOs = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
                 .eq(RoleResourcePO.Fields.resourceType, ResourceType.DASHBOARD.name()));
-        List<Long> roleDashboardIds = roleResourcePOS.stream().map(RoleResourcePO::getResourceId).map(Long::parseLong).distinct().toList();
-        List<DashboardDTO> dashboardUndistributedList = dashboardDTOList.stream().filter(dashboardDTO -> !roleDashboardIds.contains(dashboardDTO.getDashboardId())).toList();
-        List<Long> userIds = dashboardUndistributedList.stream().map(DashboardDTO::getUserId).filter(Objects::nonNull).distinct().toList();
-        Map<Long, UserPO> userMap = new HashMap<>();
-        if (!userIds.isEmpty()) {
-            List<UserPO> userPOList = userRepository.findAll(filterable -> filterable.in(UserPO.Fields.id, userIds.toArray()));
-            userMap.putAll(userPOList.stream().collect(Collectors.toMap(UserPO::getId, Function.identity())));
-        }
-        List<DashboardUndistributedResponse> dashboardUndistributedResponseList = dashboardUndistributedList.stream().map(dashboardDTO -> {
-            DashboardUndistributedResponse dashboardListResponse = new DashboardUndistributedResponse();
-            dashboardListResponse.setDashboardId(dashboardDTO.getDashboardId().toString());
-            dashboardListResponse.setDashboardName(dashboardDTO.getDashboardName());
-            dashboardListResponse.setCreatedAt(dashboardDTO.getCreatedAt().toString());
-            dashboardListResponse.setUserId(dashboardDTO.getUserId().toString());
-            dashboardListResponse.setUserEmail(userMap.get(dashboardDTO.getUserId()) == null ? null : userMap.get(dashboardDTO.getUserId()).getEmail());
-            dashboardListResponse.setUserNickname(userMap.get(dashboardDTO.getUserId()) == null ? null : userMap.get(dashboardDTO.getUserId()).getNickname());
-            return dashboardListResponse;
-        }).collect(Collectors.toList());
+        Set<Long> roleDashboardIds = roleResourcePOs.stream()
+                .map(RoleResourcePO::getResourceId)
+                .map(Long::parseLong)
+                .collect(Collectors.toSet());
+
+        List<DashboardDTO> dashboardUndistributedList = dashboardDTOList.stream()
+                .filter(dashboardDTO -> !roleDashboardIds.contains(dashboardDTO.getDashboardId()))
+                .toList();
+        Set<Long> userIds = dashboardUndistributedList.stream()
+                .map(DashboardDTO::getUserId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, UserPO> userMap = mapUserIdToPO(userIds);
+
+        List<DashboardUndistributedResponse> dashboardUndistributedResponseList = dashboardUndistributedList.stream()
+                .map(dashboardDTO -> {
+                    DashboardUndistributedResponse dashboardListResponse = new DashboardUndistributedResponse();
+                    dashboardListResponse.setDashboardId(dashboardDTO.getDashboardId().toString());
+                    dashboardListResponse.setDashboardName(dashboardDTO.getDashboardName());
+                    dashboardListResponse.setCreatedAt(dashboardDTO.getCreatedAt().toString());
+                    dashboardListResponse.setUserId(dashboardDTO.getUserId().toString());
+                    UserPO userPO = userMap.get(dashboardDTO.getUserId());
+                    dashboardListResponse.setUserEmail(userPO == null ? null : userPO.getEmail());
+                    dashboardListResponse.setUserNickname(userPO == null ? null : userPO.getNickname());
+                    return dashboardListResponse;
+                })
+                .toList();
         return PageConverter.convertToPage(dashboardUndistributedResponseList, dashboardUndistributedRequest.toPageable());
     }
 
@@ -466,21 +496,27 @@ public class RoleService {
         if (userUndistributedRequest.getSort().getOrders().isEmpty()) {
             userUndistributedRequest.sort(new Sorts().desc(UserPO.Fields.createdAt));
         }
-        List<UserPO> userPOS = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(userUndistributedRequest.getKeyword()), UserPO.Fields.nickname, userUndistributedRequest.getKeyword())
-                .likeIgnoreCase(StringUtils.hasText(userUndistributedRequest.getKeyword()), UserPO.Fields.email, userUndistributedRequest.getKeyword())), userUndistributedRequest.getSort().toSort());
-        if (userPOS == null || userPOS.isEmpty()) {
+
+        final String keyword = userUndistributedRequest.getKeyword();
+        List<UserPO> userPOs = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.nickname, keyword)
+                .likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.email, keyword)), userUndistributedRequest.getSort().toSort());
+        if (userPOs == null || userPOs.isEmpty()) {
             return Page.empty();
         }
-        List<UserRolePO> userRolePOS = userRoleRepository.findAll(filterable -> filterable.eq(UserRolePO.Fields.roleId, roleId));
-        List<Long> userIds = userRolePOS.stream().map(UserRolePO::getUserId).distinct().toList();
-        List<UserUndistributedResponse> userUndistributedResponseList = userPOS.stream().filter(userPO -> !userIds.contains(userPO.getId())).map(userPO -> {
-            UserUndistributedResponse userUndistributedResponse = new UserUndistributedResponse();
-            userUndistributedResponse.setUserId(userPO.getId().toString());
-            userUndistributedResponse.setEmail(userPO.getEmail());
-            userUndistributedResponse.setNickname(userPO.getNickname());
-            userUndistributedResponse.setCreatedAt(userPO.getCreatedAt().toString());
-            return userUndistributedResponse;
-        }).collect(Collectors.toList());
+
+        List<UserRolePO> userRolePOs = userRoleRepository.findAll(filterable -> filterable.eq(UserRolePO.Fields.roleId, roleId));
+        Set<Long> userIds = userRolePOs.stream().map(UserRolePO::getUserId).collect(Collectors.toSet());
+        List<UserUndistributedResponse> userUndistributedResponseList = userPOs.stream()
+                .filter(userPO -> !userIds.contains(userPO.getId()))
+                .map(userPO -> {
+                    UserUndistributedResponse userUndistributedResponse = new UserUndistributedResponse();
+                    userUndistributedResponse.setUserId(userPO.getId().toString());
+                    userUndistributedResponse.setEmail(userPO.getEmail());
+                    userUndistributedResponse.setNickname(userPO.getNickname());
+                    userUndistributedResponse.setCreatedAt(userPO.getCreatedAt().toString());
+                    return userUndistributedResponse;
+                })
+                .toList();
         return PageConverter.convertToPage(userUndistributedResponseList, userUndistributedRequest.toPageable());
     }
 
@@ -494,9 +530,9 @@ public class RoleService {
         if (integrations.isEmpty()) {
             return Page.empty();
         }
-        List<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
+        List<RoleResourcePO> roleResourcePOs = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
                 .eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION.name()));
-        List<String> roleIntegrationIds = roleResourcePOS.stream().map(RoleResourcePO::getResourceId).toList();
+        List<String> roleIntegrationIds = roleResourcePOs.stream().map(RoleResourcePO::getResourceId).toList();
         List<IntegrationUndistributedResponse> integrationUndistributedResponseList = integrations.stream().filter(integration -> !roleIntegrationIds.contains(integration.getId())).map(integration -> {
             IntegrationUndistributedResponse integrationUndistributedResponse = new IntegrationUndistributedResponse();
             integrationUndistributedResponse.setIntegrationId(integration.getId());
@@ -519,161 +555,414 @@ public class RoleService {
                     return true;
                 }
                 Integration integration = deviceNameDTO.getIntegrationConfig();
-                if (integration != null) {
-                    if (integration.getName().toLowerCase().contains(deviceUndistributedRequest.getKeyword().toLowerCase())) {
-                        return true;
-                    }
-                }
-                return false;
+                return integration != null &&
+                        integration.getName().toLowerCase().contains(deviceUndistributedRequest.getKeyword().toLowerCase());
             }).toList();
         }
         if (deviceNameDTOList.isEmpty()) {
             return Page.empty();
         }
+
         List<Long> deviceUserIds = deviceNameDTOList.stream().map(DeviceNameDTO::getUserId).filter(Objects::nonNull).distinct().toList();
-        Map<Long, UserPO> userMap = new HashMap<>();
-        if (!deviceUserIds.isEmpty()) {
-            List<UserPO> userPOS = userRepository.findAll(filterable -> filterable.in(UserPO.Fields.id, deviceUserIds.toArray()));
-            userMap.putAll(userPOS.stream().collect(Collectors.toMap(UserPO::getId, Function.identity())));
-        }
+        Map<Long, UserPO> userMap = mapUserIdToPO(deviceUserIds);
         List<Long> roleDeviceIds = new ArrayList<>();
-        List<RoleResourcePO> roleIntegrationPOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
+        List<RoleResourcePO> roleIntegrationPOs = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
                 .eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION.name()));
-        List<String> roleIntegrationIds = roleIntegrationPOS.stream().map(RoleResourcePO::getResourceId).toList();
+        List<String> roleIntegrationIds = roleIntegrationPOs.stream().map(RoleResourcePO::getResourceId).toList();
         if (!roleIntegrationIds.isEmpty()) {
             List<DeviceNameDTO> deviceNameDTOListByIntegration = deviceFacade.getDeviceNameByIntegrations(roleIntegrationIds);
             roleDeviceIds.addAll(deviceNameDTOListByIntegration.stream().map(DeviceNameDTO::getId).toList());
         }
-        List<RoleResourcePO> roleDevicePOS = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
+
+        List<RoleResourcePO> roleDevicePOs = roleResourceRepository.findAll(filterable -> filterable.eq(RoleResourcePO.Fields.roleId, roleId)
                 .eq(RoleResourcePO.Fields.resourceType, ResourceType.DEVICE.name()));
-        List<Long> roleDeviceIdsByDevice = roleDevicePOS.stream().map(RoleResourcePO::getResourceId).map(Long::parseLong).toList();
+        List<Long> roleDeviceIdsByDevice = roleDevicePOs.stream().map(RoleResourcePO::getResourceId).map(Long::parseLong).toList();
         if (!roleDeviceIdsByDevice.isEmpty()) {
             roleDeviceIds.addAll(roleDeviceIdsByDevice);
         }
-        List<DeviceUndistributedResponse> deviceUndistributedResponseList = deviceNameDTOList.stream().filter(deviceNameDTO -> !roleDeviceIds.contains(deviceNameDTO.getId())).map(deviceNameDTO -> {
-            DeviceUndistributedResponse deviceUndistributedResponse = new DeviceUndistributedResponse();
-            deviceUndistributedResponse.setDeviceId(deviceNameDTO.getId().toString());
-            deviceUndistributedResponse.setDeviceName(deviceNameDTO.getName());
-            deviceUndistributedResponse.setCreatedAt(deviceNameDTO.getCreatedAt().toString());
-            Long userId = deviceNameDTO.getUserId() == null ? null : deviceNameDTO.getUserId();
-            if (userId != null) {
-                deviceUndistributedResponse.setUserId(userId.toString());
-                deviceUndistributedResponse.setUserEmail(userMap.get(userId) == null ? null : userMap.get(userId).getEmail());
-                deviceUndistributedResponse.setUserNickname(userMap.get(userId) == null ? null : userMap.get(userId).getNickname());
-            }
 
-            deviceUndistributedResponse.setIntegrationId(deviceNameDTO.getIntegrationId());
-            Integration integrationConfig = deviceNameDTO.getIntegrationConfig();
-            if (integrationConfig != null) {
-                deviceUndistributedResponse.setIntegrationName(integrationConfig.getName());
-            }
-            return deviceUndistributedResponse;
-        }).toList();
+        List<DeviceUndistributedResponse> deviceUndistributedResponseList = deviceNameDTOList.stream()
+                .filter(deviceNameDTO -> !roleDeviceIds.contains(deviceNameDTO.getId()))
+                .map(deviceNameDTO -> {
+                    DeviceUndistributedResponse deviceUndistributedResponse = new DeviceUndistributedResponse();
+                    deviceUndistributedResponse.setDeviceId(deviceNameDTO.getId().toString());
+                    deviceUndistributedResponse.setDeviceName(deviceNameDTO.getName());
+                    deviceUndistributedResponse.setCreatedAt(deviceNameDTO.getCreatedAt().toString());
+                    Long userId = deviceNameDTO.getUserId() == null ? null : deviceNameDTO.getUserId();
+                    if (userId != null) {
+                        deviceUndistributedResponse.setUserId(userId.toString());
+                        deviceUndistributedResponse.setUserEmail(userMap.get(userId) == null ? null : userMap.get(userId).getEmail());
+                        deviceUndistributedResponse.setUserNickname(userMap.get(userId) == null ? null : userMap.get(userId).getNickname());
+                    }
+
+                    deviceUndistributedResponse.setIntegrationId(deviceNameDTO.getIntegrationId());
+                    Integration integrationConfig = deviceNameDTO.getIntegrationConfig();
+                    if (integrationConfig != null) {
+                        deviceUndistributedResponse.setIntegrationName(integrationConfig.getName());
+                    }
+                    return deviceUndistributedResponse;
+                })
+                .toList();
         return PageConverter.convertToPage(deviceUndistributedResponseList, deviceUndistributedRequest.toPageable());
     }
 
-    @CacheEvict(cacheNames = {CacheKeyConstants.USER_MENUS_CACHE_NAME_PREFIX,
-            CacheKeyConstants.ENTITY_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.DEVICE_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.DASHBOARD_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.INTEGRATION_PERMISSION_CACHE_NAME_PREFIX}, allEntries = true)
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Throwable.class)
     public void associateUser(Long roleId, UserRoleRequest userRoleRequest) {
         List<Long> userIds = userRoleRequest.getUserIds();
-        if (userIds != null && !userIds.isEmpty()) {
-            List<Long> finalUserIds = userIds;
-            List<UserPO> userPOS = userRepository.findAll(filterable -> filterable.in(UserPO.Fields.id, finalUserIds.toArray()));
-            if (userPOS != null && !userPOS.isEmpty()) {
-                userIds = userPOS.stream().map(UserPO::getId).toList();
-                List<UserRolePO> userRolePOS = userIds.stream().map(userId -> {
-                    UserRolePO userRolePO = new UserRolePO();
-                    userRolePO.setId(SnowflakeUtil.nextId());
-                    userRolePO.setRoleId(roleId);
-                    userRolePO.setUserId(userId);
-                    return userRolePO;
-                }).toList();
-                userRoleRepository.saveAll(userRolePOS);
-            }
+        if (userIds == null || userIds.isEmpty()) {
+            return;
         }
+
+        List<UserRolePO> userRolePOs = userRepository.findAll(filterable -> filterable.in(UserPO.Fields.id, userIds.toArray()))
+                .stream()
+                .map(UserPO::getId)
+                .map(userId -> buildUserRolePO(userId, roleId))
+                .toList();
+        userRoleRepository.saveAll(userRolePOs);
+
+        self.evictRoleUsersCache(List.of(roleId));
+        self.evictUserRolesCache(userIds);
+        self.evictUserMenusCache(userIds);
     }
 
-    @CacheEvict(cacheNames = {CacheKeyConstants.USER_MENUS_CACHE_NAME_PREFIX,
-            CacheKeyConstants.ENTITY_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.DEVICE_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.DASHBOARD_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.INTEGRATION_PERMISSION_CACHE_NAME_PREFIX}, allEntries = true)
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Throwable.class)
     public void disassociateUser(Long roleId, UserRoleRequest userRoleRequest) {
-        List<Long> userIds = userRoleRequest.getUserIds();
-        if (userIds != null && !userIds.isEmpty()) {
-            List<UserRolePO> userRolePOS = userRoleRepository.findAll(filterable -> filterable.in(UserRolePO.Fields.userId, userIds.toArray()).eq(UserRolePO.Fields.roleId, roleId));
-            if (userRolePOS != null && !userRolePOS.isEmpty()) {
-                userRoleRepository.deleteAll(userRolePOS);
-            }
+        if (CollectionUtils.isEmpty(userRoleRequest.getUserIds())) {
+            return;
         }
+        Set<Long> userIds = new HashSet<>(userRoleRequest.getUserIds());
+
+        List<UserRolePO> userRolePOs = self.getUserRolePOsByRoleId(roleId).stream()
+                .filter(userRolePO -> userIds.contains(userRolePO.getUserId()))
+                .toList();
+        if (CollectionUtils.isEmpty(userRolePOs)) {
+            return;
+        }
+        userRoleRepository.deleteAll(userRolePOs);
+        self.evictRoleUsersCache(List.of(roleId));
+        self.evictUserRolesCache(userIds);
+        self.evictUserMenusCache(userIds);
     }
 
-    @CacheEvict(cacheNames = {CacheKeyConstants.ENTITY_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.DEVICE_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.DASHBOARD_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.INTEGRATION_PERMISSION_CACHE_NAME_PREFIX}, allEntries = true)
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Throwable.class)
     public void associateResource(Long roleId, RoleResourceRequest roleResourceRequest) {
         List<RoleResourceRequest.Resource> resources = roleResourceRequest.getResources();
         if (resources == null || resources.isEmpty()) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("resources is empty").build();
         }
-        List<RoleResourcePO> roleResourcePOS = resources.stream().map(resource -> {
-            RoleResourcePO roleResourcePO = new RoleResourcePO();
-            roleResourcePO.setId(SnowflakeUtil.nextId());
-            roleResourcePO.setRoleId(roleId);
-            roleResourcePO.setResourceId(resource.getId());
-            roleResourcePO.setResourceType(resource.getType());
-            return roleResourcePO;
-        }).toList();
-        roleResourceRepository.saveAll(roleResourcePOS);
+
+        List<RoleResourcePO> roleResourcePOs = resources.stream()
+                .map(resource -> {
+                    RoleResourcePO roleResourcePO = new RoleResourcePO();
+                    roleResourcePO.setId(SnowflakeUtil.nextId());
+                    roleResourcePO.setRoleId(roleId);
+                    KeyValidator.validate(resource.getId());
+                    roleResourcePO.setResourceId(resource.getId());
+                    roleResourcePO.setResourceType(resource.getType());
+                    return roleResourcePO;
+                }).toList();
+        roleResourceRepository.saveAll(roleResourcePOs);
+
+        self.evictRoleResourcesCache(List.of(roleId));
     }
 
-    @CacheEvict(cacheNames = {CacheKeyConstants.ENTITY_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.DEVICE_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.DASHBOARD_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.INTEGRATION_PERMISSION_CACHE_NAME_PREFIX}, allEntries = true)
-    @Transactional(rollbackFor = Exception.class)
+    public void associateResource(Long userId, ResourceType resourceType, List<Long> resourceIds) {
+        if (resourceIds == null || resourceIds.isEmpty()) {
+            return;
+        }
+
+        List<UserRolePO> userRolePOList = userRoleRepository.findAll(filterable -> filterable.eq(UserRolePO.Fields.userId, userId));
+        if (userRolePOList == null || userRolePOList.isEmpty()) {
+            return;
+        }
+
+        List<RoleResourcePO> roleResourcePOs = new ArrayList<>();
+        userRolePOList.forEach(userRolePO -> {
+            Long roleId = userRolePO.getRoleId();
+            resourceIds.forEach(resourceId -> {
+                RoleResourcePO roleResourcePO = new RoleResourcePO();
+                roleResourcePO.setId(SnowflakeUtil.nextId());
+                roleResourcePO.setRoleId(roleId);
+                roleResourcePO.setResourceId(resourceId.toString());
+                roleResourcePO.setResourceType(resourceType);
+                roleResourcePOs.add(roleResourcePO);
+            });
+        });
+        roleResourceRepository.saveAll(roleResourcePOs);
+
+        Set<Long> roleIds = roleResourcePOs.stream().map(RoleResourcePO::getRoleId).collect(Collectors.toSet());
+        self.evictRoleResourcesCache(roleIds);
+    }
+
+    @Transactional(rollbackFor = Throwable.class)
     public void disassociateResource(Long roleId, RoleResourceRequest roleResourceRequest) {
         List<RoleResourceRequest.Resource> resources = roleResourceRequest.getResources();
         if (resources == null || resources.isEmpty()) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("resources is empty").build();
         }
-        Map<ResourceType, List<RoleResourceRequest.Resource>> resourceMap = resources.stream().collect(Collectors.groupingBy(RoleResourceRequest.Resource::getType));
-        resourceMap.forEach((resourceType, resourceList) -> {
-            List<String> resourceIds = resourceList.stream().map(RoleResourceRequest.Resource::getId).toList();
-            List<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filterable -> filterable.in(RoleResourcePO.Fields.resourceId, resourceIds.toArray()).eq(RoleResourcePO.Fields.roleId, roleId));
-            if (roleResourcePOS != null && !roleResourcePOS.isEmpty()) {
-                roleResourceRepository.deleteAll(roleResourcePOS);
-            }
-        });
+
+        Map<String, RoleResourceRequest.Resource> keyToResource = resources.stream()
+                .collect(Collectors.toMap(v -> getResourceKey(v.getType(), v.getId()), Function.identity(), (a, b) -> a));
+        List<RoleResourcePO> roleResourcePOs = getRoleResourcePOsByRoleId(roleId);
+        List<RoleResourcePO> matchedResources = roleResourcePOs
+                .stream()
+                .filter(r -> keyToResource.containsKey(getResourceKey(r.getResourceType(), r.getResourceId())))
+                .toList();
+
+        if (!matchedResources.isEmpty()) {
+            roleResourceRepository.deleteAll(matchedResources);
+        }
+        self.evictRoleResourcesCache(List.of(roleId));
     }
 
-    @CacheEvict(cacheNames = CacheKeyConstants.USER_MENUS_CACHE_NAME_PREFIX, allEntries = true)
-    @Transactional(rollbackFor = Exception.class)
+    public void deleteResource(ResourceType resourceType, List<Long> resourceIds) {
+        if (resourceIds == null || resourceIds.isEmpty()) {
+            return;
+        }
+
+        List<RoleResourcePO> roleResourcePOs = roleResourceRepository.findAll(filterable -> filterable.in(RoleResourcePO.Fields.resourceId, resourceIds.toArray()).eq(RoleResourcePO.Fields.resourceType, resourceType));
+        if (roleResourcePOs != null && !roleResourcePOs.isEmpty()) {
+            Set<Long> roleIds = roleResourcePOs.stream().map(RoleResourcePO::getRoleId).collect(Collectors.toSet());
+            self.evictRoleResourcesCache(roleIds);
+
+            roleResourceRepository.deleteAll(roleResourcePOs);
+        }
+    }
+
+    @NonNull
+    private static String getResourceKey(ResourceType resourceType, String resourceId) {
+        return resourceType.name() + ":" + resourceId;
+    }
+
+    @Transactional(rollbackFor = Throwable.class)
     public void associateMenu(Long roleId, RoleMenuRequest roleMenuRequest) {
         List<Long> menuIds = roleMenuRequest.getMenuIds();
+        if (menuIds == null || menuIds.isEmpty()) {
+            return;
+        }
+
         roleMenuRepository.deleteByRoleId(roleId);
-        if (menuIds != null && !menuIds.isEmpty()) {
-            List<Long> finalMenuIds = menuIds;
-            List<MenuPO> menuPOS = menuRepository.findAll(filterable -> filterable.in(MenuPO.Fields.id, finalMenuIds.toArray()));
-            if (menuPOS != null && !menuPOS.isEmpty()) {
-                menuIds = menuPOS.stream().map(MenuPO::getId).toList();
-                List<RoleMenuPO> roleMenuPOS = menuIds.stream().map(menuId -> {
+        List<Long> userIds = getUserRolePOsByRoleId(roleId).stream()
+                .map(UserRolePO::getUserId)
+                .toList();
+        self.evictUserMenusCache(userIds);
+
+        List<RoleMenuPO> roleMenuPOs = menuRepository.findAll(filterable -> filterable.in(MenuPO.Fields.id, menuIds.toArray()))
+                .stream()
+                .map(MenuPO::getId)
+                .map(menuId -> {
                     RoleMenuPO roleMenuPO = new RoleMenuPO();
                     roleMenuPO.setId(SnowflakeUtil.nextId());
                     roleMenuPO.setRoleId(roleId);
                     roleMenuPO.setMenuId(menuId);
                     return roleMenuPO;
                 }).toList();
-                roleMenuRepository.saveAll(roleMenuPOS);
-            }
+
+        if (!roleMenuPOs.isEmpty()) {
+            roleMenuRepository.saveAll(roleMenuPOs);
         }
+    }
+
+    @BatchCacheEvict(cacheNames = CacheKeyConstants.USER_ID_TO_MENUS, keyPrefix = TENANT_PREFIX)
+    public void evictUserMenusCache(@CacheKeys Collection<Long> userIds) {
+        // do nothing
+    }
+
+
+    public List<RolePO> getRoleByRoleIds(List<Long> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return roleRepository.findAll(filter -> filter.in(RolePO.Fields.id, roleIds.toArray()));
+    }
+
+    public List<RoleMenuResponse> getMenusByRoleId(Long roleId) {
+        List<RoleMenuPO> roleMenuPOs = getRoleMenuPOsByRoleId(roleId);
+        if (roleMenuPOs == null || roleMenuPOs.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> menuIds = roleMenuPOs.stream().map(RoleMenuPO::getMenuId).toList();
+        Map<Long, MenuPO> menuMap = menuRepository.findAll(filterable -> filterable.in(MenuPO.Fields.id, menuIds.toArray())).stream()
+                .collect(Collectors.toMap(MenuPO::getId, Function.identity(), (a, b) -> a));
+
+        return roleMenuPOs.stream()
+                .map(roleMenuPO -> {
+                    MenuPO menuPO = menuMap.get(roleMenuPO.getMenuId());
+                    if (menuPO == null) {
+                        return null;
+                    }
+
+                    RoleMenuResponse roleMenuResponse = new RoleMenuResponse();
+                    roleMenuResponse.setMenuId(roleMenuPO.getMenuId().toString());
+                    roleMenuResponse.setCode(menuPO.getCode());
+                    roleMenuResponse.setName(menuPO.getName());
+                    roleMenuResponse.setType(menuPO.getType());
+                    roleMenuResponse.setParentId(menuPO.getParentId() == null ? null : menuPO.getParentId().toString());
+                    return roleMenuResponse;
+                })
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    public List<RoleMenuPO> getRoleMenuPOsByRoleId(Long roleId) {
+        return self.getRoleMenuPOsByRoleIds(List.of(roleId));
+    }
+
+    public List<RoleMenuPO> getRoleMenuPOsByRoleIds(Collection<Long> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return roleMenuRepository.findAll(filter -> filter.in(RoleMenuPO.Fields.roleId, roleIds.toArray()));
+    }
+
+    @NonNull
+    private static UserRolePO buildUserRolePO(Long userId, Long roleId) {
+        UserRolePO userRolePO = new UserRolePO();
+        userRolePO.setId(SnowflakeUtil.nextId());
+        userRolePO.setRoleId(roleId);
+        userRolePO.setUserId(userId);
+        return userRolePO;
+    }
+
+    @Transactional(rollbackFor = Throwable.class)
+    public UserRolePO createUserRole(Long userId, Long roleId) {
+        return userRoleRepository.save(buildUserRolePO(userId, roleId));
+    }
+
+    public List<UserRolePO> getUserRolePOsByRoleId(Long roleId) {
+        return getUserRolePOsByRoleIds(List.of(roleId));
+    }
+
+
+    public List<UserRolePO> getUserRolePOsByRoleIds(Collection<Long> roleIds) {
+        return self.mapRoleIdToUserRolePOs(roleIds)
+                .values()
+                .stream()
+                .flatMap(Collection::stream)
+                .toList();
+    }
+
+    @BatchCacheable(cacheNames = CacheKeyConstants.ROLE_ID_TO_USERS, keyPrefix = TENANT_PREFIX)
+    public Map<Long, List<UserRolePO>> mapRoleIdToUserRolePOs(@CacheKeys Collection<Long> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return userRoleRepository.findAll(filterable -> filterable.in(UserRolePO.Fields.roleId, roleIds.toArray()))
+                .stream()
+                .collect(Collectors.groupingBy(UserRolePO::getRoleId));
+    }
+
+    public List<UserRolePO> getUserRolePOsByUserId(Long userId) {
+        return getUserRolePOsByUserIds(List.of(userId));
+    }
+
+    public List<UserRolePO> getUserRolePOsByUserIds(Collection<Long> userIds) {
+        return self.mapUserIdToUserRolePOs(userIds)
+                .values()
+                .stream()
+                .flatMap(Collection::stream)
+                .toList();
+    }
+
+    @BatchCacheable(cacheNames = CacheKeyConstants.USER_ID_TO_ROLES, keyPrefix = TENANT_PREFIX)
+    public Map<Long, List<UserRolePO>> mapUserIdToUserRolePOs(@CacheKeys Collection<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return userRoleRepository.findAll(filterable -> filterable.in(UserRolePO.Fields.userId, userIds.toArray()))
+                .stream()
+                .collect(Collectors.groupingBy(UserRolePO::getUserId));
+    }
+
+    @BatchCacheEvict(cacheNames = CacheKeyConstants.USER_ID_TO_ROLES, keyPrefix = TENANT_PREFIX)
+    public void evictUserRolesCache(@CacheKeys Collection<Long> userIds) {
+        // do nothing
+    }
+
+    @BatchCacheEvict(cacheNames = CacheKeyConstants.ROLE_ID_TO_USERS, keyPrefix = TENANT_PREFIX)
+    public void evictRoleUsersCache(@CacheKeys Collection<Long> roleIds) {
+        // do nothing
+    }
+
+    @Transactional(rollbackFor = Throwable.class)
+    public void deleteUserRoleByUserId(Long userId) {
+        self.deleteUserRoleByUserIds(List.of(userId));
+    }
+
+    @Transactional(rollbackFor = Throwable.class)
+    public void deleteUserRoleByUserIds(Collection<Long> userIds) {
+        if (CollectionUtils.isEmpty(userIds)) {
+            return;
+        }
+
+        List<Long> roleIds = userRoleRepository.findAll(filterable -> filterable.in(UserRolePO.Fields.userId, userIds.toArray()))
+                .stream()
+                .map(UserRolePO::getRoleId)
+                .toList();
+        self.evictRoleUsersCache(roleIds);
+
+        userRoleRepository.deleteByUserIds(userIds);
+        self.evictUserRolesCache(userIds);
+    }
+
+    @Transactional(rollbackFor = Throwable.class)
+    public void deleteUserRoleByRoleId(Long roleId) {
+        userRoleRepository.deleteByRoleId(roleId);
+        self.evictUserRolesCacheByRoleId(roleId);
+    }
+
+    @CacheEvict(cacheNames = CacheKeyConstants.ROLE_ID_TO_USERS, key = "T(com.milesight.beaveriot.context.security.TenantContext).getTenantId()+':'+#p0")
+    public void evictUserRolesCacheByRoleId(Long roleId) {
+        // do nothing
+    }
+
+    public List<RoleResourcePO> getRoleResourcePOsByRoleId(Long roleId) {
+        return getRoleResourcePOsByRoleIds(List.of(roleId));
+    }
+
+    public List<RoleResourcePO> getRoleResourcePOsByRoleIdsAndResourceTypeAndResourceId(Collection<Long> roleIds, ResourceType resourceType, String resourceId) {
+        List<RoleResourcePO> roleResourcePOs = getRoleResourcePOsByRoleIds(roleIds);
+        return roleResourcePOs.stream()
+                .filter(roleResourcePO -> Objects.equals(resourceType, roleResourcePO.getResourceType())
+                        && Objects.equals(resourceId, roleResourcePO.getResourceId()))
+                .toList();
+    }
+
+    public List<RoleResourcePO> getRoleResourcePOsByRoleIdsAndResourceTypes(List<Long> roleIds, Collection<ResourceType> resourceTypes) {
+        List<RoleResourcePO> roleResourcePOs = getRoleResourcePOsByRoleIds(roleIds);
+        return roleResourcePOs.stream()
+                .filter(roleResourcePO -> resourceTypes.contains(roleResourcePO.getResourceType()))
+                .toList();
+    }
+
+    public List<RoleResourcePO> getRoleResourcePOsByRoleIds(Collection<Long> roleIds) {
+        return self.mapRoleIdToRoleResourcePOs(roleIds)
+                .values()
+                .stream()
+                .flatMap(Collection::stream)
+                .toList();
+    }
+
+    @BatchCacheable(cacheNames = CacheKeyConstants.ROLE_ID_TO_RESOURCES, keyPrefix = TENANT_PREFIX)
+    public Map<Long, List<RoleResourcePO>> mapRoleIdToRoleResourcePOs(@CacheKeys Collection<Long> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return roleResourceRepository.findAll(filter -> filter.in(RoleResourcePO.Fields.roleId, roleIds.toArray()))
+                .stream()
+                .collect(Collectors.groupingBy(RoleResourcePO::getRoleId));
+    }
+
+    @BatchCacheEvict(cacheNames = CacheKeyConstants.ROLE_ID_TO_RESOURCES, keyPrefix = TENANT_PREFIX)
+    public void evictRoleResourcesCache(@CacheKeys Collection<Long> roleIds) {
+        // do nothing
+    }
+
+    public Long getSuperAdminRoleId() {
+        String roleName = UserConstants.SUPER_ADMIN_ROLE_NAME;
+        RolePO rolePO = roleRepository.findOne(filter -> filter.eq(RolePO.Fields.name, roleName)).orElseThrow(() -> ServiceException.with(UserErrorCode.ROLE_DOES_NOT_EXIT).detailMessage("role is not exist").build());
+        return rolePO.getId();
     }
 
 }

@@ -1,6 +1,9 @@
 package com.milesight.beaveriot.entity.facade;
 
+import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheable;
+import com.milesight.beaveriot.base.annotations.cacheable.CacheKeys;
 import com.milesight.beaveriot.context.api.DeviceServiceProvider;
+import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
@@ -16,13 +19,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
+
+import static com.milesight.beaveriot.context.constants.CacheKeyConstants.TENANT_PREFIX;
 
 /**
  * @author loong
@@ -47,8 +55,10 @@ public class EntityFacade implements IEntityFacade {
     }
 
     public List<EntityDTO> getUserOrTargetEntities(Long userId, List<String> targetIds) {
-        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.or(filter1 -> filter1.eq(EntityPO.Fields.userId, userId)
-                        .in(!targetIds.isEmpty(), EntityPO.Fields.attachTargetId, targetIds.toArray())
+        List<EntityPO> entityPOList = entityRepository.findAll(filter ->
+                filter.or(
+                        filter1 -> filter1.eq(EntityPO.Fields.userId, userId)
+                                .in(!targetIds.isEmpty(), EntityPO.Fields.attachTargetId, targetIds.toArray())
                 ));
         return EntityConverter.INSTANCE.convertDTOList(entityPOList);
     }
@@ -57,6 +67,16 @@ public class EntityFacade implements IEntityFacade {
         List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(!targetIds.isEmpty(), EntityPO.Fields.attachTargetId, targetIds.toArray())
         );
         return EntityConverter.INSTANCE.convertDTOList(entityPOList);
+    }
+
+    @Override
+    @BatchCacheable(cacheNames = CacheKeyConstants.ENTITY_ID_TO_KEY, keyPrefix = TENANT_PREFIX)
+    public Map<Long, String> mapEntityIdToAttachTargetId(@CacheKeys Collection<Long> entityIds) {
+        if (CollectionUtils.isEmpty(entityIds)) {
+            return Collections.emptyMap();
+        }
+        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.id, entityIds.toArray()));
+        return entityPOList.stream().collect(Collectors.toMap(EntityPO::getId, EntityPO::getAttachTargetId, (a, b) -> a));
     }
 
     /**
@@ -74,9 +94,11 @@ public class EntityFacade implements IEntityFacade {
         if (!StringUtils.hasText(integrationId)) {
             return 0L;
         }
+
         long allEntityCount = 0L;
         long integrationEntityCount = countIntegrationEntitiesByIntegrationId(integrationId);
         allEntityCount += integrationEntityCount;
+
         List<Device> integrationDevices = deviceServiceProvider.findAll(integrationId);
         if (integrationDevices != null && !integrationDevices.isEmpty()) {
             List<String> deviceIds = integrationDevices.stream().map(t -> String.valueOf(t.getId())).toList();
@@ -85,40 +107,50 @@ public class EntityFacade implements IEntityFacade {
                 allEntityCount += deviceEntityPOList.size();
             }
         }
+
         return allEntityCount;
     }
 
     @Override
     public Map<String, Long> countAllEntitiesByIntegrationIds(List<String> integrationIds) {
-        if (integrationIds == null || integrationIds.isEmpty()) {
+        if (CollectionUtils.isEmpty(integrationIds)) {
             return new HashMap<>();
         }
-        Map<String, Long> allEntityCountMap = new HashMap<>();
-        allEntityCountMap.putAll(countIntegrationEntitiesByIntegrationIds(integrationIds));
+
+        Map<String, Long> allEntityCountMap = new HashMap<>(countIntegrationEntitiesByIntegrationIds(integrationIds));
         List<DeviceNameDTO> integrationDevices = deviceFacade.getDeviceNameByIntegrations(integrationIds);
-        if (integrationDevices != null && !integrationDevices.isEmpty()) {
-            Map<String, List<DeviceNameDTO>> integrationDeviceMap = integrationDevices.stream().filter(t -> t.getIntegrationConfig() != null).collect(Collectors.groupingBy(t -> t.getIntegrationConfig().getId()));
-            List<String> deviceIds = integrationDevices.stream().map(DeviceNameDTO::getId).map(String::valueOf).toList();
-            List<EntityPO> deviceEntityPOList = entityRepository.findAll(filter -> filter.eq(EntityPO.Fields.attachTarget, AttachTargetType.DEVICE).in(EntityPO.Fields.attachTargetId, deviceIds.toArray()));
-            if (deviceEntityPOList != null && !deviceEntityPOList.isEmpty()) {
-                Map<String, Long> deviceEntityCountMap = deviceEntityPOList.stream().collect(Collectors.groupingBy(EntityPO::getAttachTargetId, Collectors.counting()));
-                integrationDeviceMap.forEach((integrationId, deviceList) -> {
-                    if (deviceList == null || deviceList.isEmpty()) {
-                        return;
-                    }
-                    List<String> deviceIdList = deviceList.stream().map(DeviceNameDTO::getId).map(String::valueOf).toList();
-                    Long integrationDeviceCount = 0L;
-                    for (String deviceId : deviceIdList) {
-                        Long deviceCount = deviceEntityCountMap.get(deviceId);
-                        if (deviceCount != null) {
-                            integrationDeviceCount += deviceCount;
-                        }
-                    }
-                    Long entityCount = allEntityCountMap.get(integrationId) == null ? 0L : allEntityCountMap.get(integrationId);
-                    allEntityCountMap.put(integrationId, entityCount + integrationDeviceCount);
-                });
-            }
+        if (CollectionUtils.isEmpty(integrationDevices)) {
+            return allEntityCountMap;
         }
+
+        Map<String, List<DeviceNameDTO>> integrationDeviceMap = integrationDevices.stream()
+                .filter(t -> t.getIntegrationConfig() != null)
+                .collect(Collectors.groupingBy(t -> t.getIntegrationConfig().getId()));
+        if (integrationDeviceMap.isEmpty()) {
+            return allEntityCountMap;
+        }
+
+        String[] deviceIds = integrationDevices.stream()
+                .map(DeviceNameDTO::getId)
+                .map(String::valueOf)
+                .toArray(String[]::new);
+        Map<String, Long> deviceEntityCountMap = entityRepository.findAll(filter ->
+                        filter.eq(EntityPO.Fields.attachTarget, AttachTargetType.DEVICE)
+                                .in(EntityPO.Fields.attachTargetId, deviceIds))
+                .stream()
+                .collect(Collectors.groupingBy(EntityPO::getAttachTargetId, Collectors.counting()));
+
+        integrationDeviceMap.forEach((integrationId, deviceList) -> {
+            Long entityCount = allEntityCountMap.getOrDefault(integrationId, 0L);
+            long entityAndIntegrationDeviceTotalCount = deviceList.stream()
+                    .map(DeviceNameDTO::getId)
+                    .map(String::valueOf)
+                    .map(deviceEntityCountMap::get)
+                    .filter(Objects::nonNull)
+                    .reduce(entityCount, Long::sum);
+            allEntityCountMap.put(integrationId, entityAndIntegrationDeviceTotalCount);
+        });
+
         return allEntityCountMap;
     }
 
@@ -127,10 +159,14 @@ public class EntityFacade implements IEntityFacade {
         if (!StringUtils.hasText(integrationId)) {
             return 0L;
         }
-        List<EntityPO> integrationEntityPOList = entityRepository.findAll(filter -> filter.eq(EntityPO.Fields.attachTarget, AttachTargetType.INTEGRATION).eq(EntityPO.Fields.attachTargetId, integrationId));
+
+        List<EntityPO> integrationEntityPOList = entityRepository.findAll(filter ->
+                filter.eq(EntityPO.Fields.attachTarget, AttachTargetType.INTEGRATION)
+                        .eq(EntityPO.Fields.attachTargetId, integrationId));
         if (integrationEntityPOList == null || integrationEntityPOList.isEmpty()) {
             return 0L;
         }
+
         return integrationEntityPOList.size();
     }
 
@@ -139,10 +175,14 @@ public class EntityFacade implements IEntityFacade {
         if (integrationIds == null || integrationIds.isEmpty()) {
             return Collections.emptyMap();
         }
-        List<EntityPO> integrationEntityPOList = entityRepository.findAll(filter -> filter.eq(EntityPO.Fields.attachTarget, AttachTargetType.INTEGRATION).in(EntityPO.Fields.attachTargetId, integrationIds.toArray()));
+
+        List<EntityPO> integrationEntityPOList = entityRepository.findAll(filter ->
+                filter.eq(EntityPO.Fields.attachTarget, AttachTargetType.INTEGRATION)
+                        .in(EntityPO.Fields.attachTargetId, integrationIds.toArray()));
         if (integrationEntityPOList == null || integrationEntityPOList.isEmpty()) {
             return Collections.emptyMap();
         }
+
         return integrationEntityPOList.stream().collect(Collectors.groupingBy(EntityPO::getAttachTargetId, Collectors.counting()));
     }
 
