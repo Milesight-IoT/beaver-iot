@@ -9,9 +9,11 @@ import org.springframework.boot.autoconfigure.cache.CacheAutoConfiguration;
 import org.springframework.boot.autoconfigure.cache.CacheProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.interceptor.BatchCacheAspect;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -92,5 +94,11 @@ public class CustomizeCacheAutoConfiguration {
         }else{
             throw new UnsupportedOperationException("class "+clazz+" is not RedisSerializer");
         }
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public BatchCacheAspect batchCacheAspect() {
+        return new BatchCacheAspect();
     }
 }
