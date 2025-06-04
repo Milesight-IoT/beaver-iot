@@ -17,6 +17,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriParam;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -77,22 +78,24 @@ public class EmailComponent implements ProcessorNode<Exchange> {
             if (emailChannel != null) {
                 return;
             }
+
+            EmailConfig.SmtpConfig smtpConfig = null;
             if (EmailProvider.SMTP.equals(emailConfig.getProvider())
                     && emailConfig.getSmtpConfig() != null) {
-
-                var smtpConfig = emailConfig.getSmtpConfig();
-                if (Boolean.TRUE.equals(emailConfig.getUseSystemSettings())) {
-                    val credentials = credentialsServiceProvider.getCredentials(CredentialsType.SMTP)
-                            .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND, "credentials not found"));
-                    smtpConfig = JsonUtils.fromJSON(credentials.getAdditionalData(), EmailConfig.SmtpConfig.class);
-                    if (smtpConfig == null) {
-                        throw new ServiceException(ErrorCode.DATA_NO_FOUND, "smtp config not found");
-                    }
-                    if (smtpConfig.getPassword() == null) {
-                        smtpConfig.setPassword(credentials.getAccessSecret());
-                    }
+                smtpConfig = emailConfig.getSmtpConfig();
+            } else if (Boolean.TRUE.equals(emailConfig.getUseSystemSettings())) {
+                val credentials = credentialsServiceProvider.getCredentials(CredentialsType.SMTP)
+                        .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND, "credentials not found"));
+                smtpConfig = JsonUtils.fromJSON(credentials.getAdditionalData(), EmailConfig.SmtpConfig.class);
+                if (smtpConfig == null || !StringUtils.hasText(smtpConfig.getUsername())) {
+                    throw new ServiceException(ErrorCode.DATA_NO_FOUND, "system smtp config not found");
                 }
+                if (smtpConfig.getPassword() == null) {
+                    smtpConfig.setPassword(credentials.getAccessSecret());
+                }
+            }
 
+            if (smtpConfig != null) {
                 emailChannel = new SmtpChannel(smtpConfig, SHARED_SMTP_EXECUTOR);
             } else {
                 throw new IllegalArgumentException("Email provider is not supported or config is null: " + emailConfig.getProvider());
