@@ -24,7 +24,7 @@ public class EntityDataFieldConstants {
 
     public static final int CUSTOM_ENTITY_UNIT_STRING_MAX_LENGTH = 15;
 
-    public static final String CUSTOM_ENTITY_ATTRIBUTE_IS_ENUM = "isEnum";
+    public static final String CUSTOM_ENTITY_ATTRIBUTE_IS_ENUM = "is_enum";
 
     public static final Set<String> CUSTOM_ENTITY_ALLOWED_ATTRIBUTES = Set.of(
             AttributeBuilder.ATTRIBUTE_ENUM,

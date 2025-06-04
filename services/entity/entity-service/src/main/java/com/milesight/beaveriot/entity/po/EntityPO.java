@@ -23,6 +23,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -94,14 +95,24 @@ public class EntityPO {
         return IntegrationConstants.SYSTEM_INTEGRATION_ID.equals(attachTargetId);
     }
 
-    private boolean isPositiveNumberOrString(Object input) {
+    private Integer getIntValue(Object input) {
         if (input instanceof Number num) {
-            return num.doubleValue() >= 0;
+            return num.intValue();
         } else if (input instanceof String str) {
-            return Double.parseDouble(str) >= 0;
+            return Integer.parseInt(str);
         }
 
-        return false;
+        return null;
+    }
+
+    private float getFloatValue(Object input) {
+        if (input instanceof Number num) {
+            return num.floatValue();
+        } else if (input instanceof String str) {
+            return Float.parseFloat(str);
+        }
+
+        return Float.NaN;
     }
 
     public boolean validateUserModifiedCustomEntity() {
@@ -145,17 +156,34 @@ public class EntityPO {
             return false;
         }
 
-        if (Stream.of(
-                AttributeBuilder.ATTRIBUTE_MIN_LENGTH,
-                AttributeBuilder.ATTRIBUTE_MAX_LENGTH,
-                AttributeBuilder.ATTRIBUTE_MIN,
-                AttributeBuilder.ATTRIBUTE_MAX
-        ).anyMatch(o -> {
-            Object v = attribute.get(o);
-            return v != null && !isPositiveNumberOrString(v);
-        })) {
-            log.warn("Number error.");
-            return false;
+        for (String attrName : List.of(AttributeBuilder.ATTRIBUTE_MIN_LENGTH, AttributeBuilder.ATTRIBUTE_MAX_LENGTH)) {
+            Object v = attribute.get(attrName);
+            if (v == null) {
+                continue;
+            }
+
+            Integer intValue = getIntValue(v);
+            if (intValue == null || intValue < 0) {
+                log.warn("MinLength or MaxLength Number error.");
+                return false;
+            }
+
+            attribute.put(attrName, intValue);
+        }
+
+        for (String attrName : List.of(AttributeBuilder.ATTRIBUTE_MIN, AttributeBuilder.ATTRIBUTE_MAX)) {
+            Object v = attribute.get(attrName);
+            if (v == null) {
+                continue;
+            }
+
+            float floatValue = getFloatValue(v);
+            if (Float.isNaN(getFloatValue(floatValue))) {
+                log.warn("MIN / MAX Number error.");
+                return false;
+            }
+
+            attribute.put(attrName, floatValue);
         }
 
         return true;
