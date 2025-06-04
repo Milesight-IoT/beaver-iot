@@ -12,7 +12,10 @@ import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
-import com.milesight.beaveriot.context.integration.model.*;
+import com.milesight.beaveriot.context.integration.model.Entity;
+import com.milesight.beaveriot.context.integration.model.EntityBuilder;
+import com.milesight.beaveriot.context.integration.model.ExchangePayload;
+import com.milesight.beaveriot.context.integration.model.Integration;
 import com.milesight.beaveriot.context.integration.model.event.EntityEvent;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.context.security.TenantContext;
@@ -20,13 +23,13 @@ import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.data.util.PageConverter;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
+import com.milesight.beaveriot.entity.dto.EntityQuery;
+import com.milesight.beaveriot.entity.dto.EntityResponse;
 import com.milesight.beaveriot.entity.model.request.EntityCreateRequest;
 import com.milesight.beaveriot.entity.model.request.EntityModifyRequest;
-import com.milesight.beaveriot.entity.model.request.EntityQuery;
 import com.milesight.beaveriot.entity.model.request.ServiceCallRequest;
 import com.milesight.beaveriot.entity.model.request.UpdatePropertyEntityRequest;
 import com.milesight.beaveriot.entity.model.response.EntityMetaResponse;
-import com.milesight.beaveriot.entity.model.response.EntityResponse;
 import com.milesight.beaveriot.entity.po.EntityPO;
 import com.milesight.beaveriot.entity.repository.EntityHistoryRepository;
 import com.milesight.beaveriot.entity.repository.EntityLatestRepository;
@@ -37,8 +40,8 @@ import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.user.dto.MenuDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
+import lombok.*;
+import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -48,7 +51,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -491,7 +501,8 @@ public class EntityService implements EntityServiceProvider {
             try {
                 entityPOList = entityRepository.findAllWithDataPermission(filterable);
             } catch (Exception e) {
-                if (e instanceof ServiceException && Objects.equals(((ServiceException) e).getErrorCode(), ErrorCode.FORBIDDEN_PERMISSION.getErrorCode())) {
+                if (e instanceof ServiceException serviceException
+                        && Objects.equals(serviceException.getErrorCode(), ErrorCode.FORBIDDEN_PERMISSION.getErrorCode())) {
                     entityPOList = new ArrayList<>();
                 } else {
                     throw e;
@@ -729,8 +740,7 @@ public class EntityService implements EntityServiceProvider {
                 .toList();
         List<EntityPO> childrenEntityPOList = List.of();
         if (!parentEntityKeys.isEmpty()) {
-            childrenEntityPOList = entityRepository.findAll(
-                    filter -> filter.in(EntityPO.Fields.parent, parentEntityKeys.toArray()));
+            childrenEntityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.parent, parentEntityKeys.toArray()));
         }
         return childrenEntityPOList;
     }

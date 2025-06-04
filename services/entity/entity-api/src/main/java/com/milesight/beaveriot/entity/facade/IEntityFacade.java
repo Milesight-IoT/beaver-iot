@@ -1,6 +1,9 @@
 package com.milesight.beaveriot.entity.facade;
 
 import com.milesight.beaveriot.entity.dto.EntityDTO;
+import com.milesight.beaveriot.entity.dto.EntityQuery;
+import com.milesight.beaveriot.entity.dto.EntityResponse;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 import java.util.Map;
@@ -10,6 +13,8 @@ import java.util.Map;
  * @date 2024/11/25 16:46
  */
 public interface IEntityFacade {
+
+    Page<EntityResponse> search(EntityQuery entityQuery);
 
     List<EntityDTO> getUserOrTargetEntities(Long userId, List<String> targetIds);
 

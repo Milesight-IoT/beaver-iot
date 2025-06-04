@@ -1,7 +1,8 @@
 package com.milesight.beaveriot.dashboard.model.response;
 
 import com.milesight.beaveriot.dashboard.model.dto.DashboardWidgetDTO;
-import lombok.Data;
+import com.milesight.beaveriot.entity.dto.EntityResponse;
+import lombok.*;
 
 import java.util.List;
 
@@ -16,7 +17,9 @@ public class DashboardResponse {
     private String userId;
     private String name;
     private Boolean home;
-    private List<DashboardWidgetDTO> widgets;
     private String createdAt;
+    private List<DashboardWidgetDTO> widgets;
+    private List<String> entityIds;
+    private List<EntityResponse> entities;
 
 }
