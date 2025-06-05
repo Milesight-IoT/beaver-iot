@@ -88,9 +88,11 @@ public class WorkflowLogService {
     }
 
     public void cleanFlowLogs(List<Long> flowIds) {
-        List<WorkflowLogPO> workflowLogPOList = workflowLogRepository.findAll(f -> f.in(WorkflowLogPO.Fields.flowId, flowIds.toArray()));
-        workflowLogRepository.deleteAllInBatch(workflowLogPOList);
-        workflowLogDataRepository.deleteAllByIdInBatch(workflowLogPOList.stream().map(WorkflowLogPO::getId).toList());
+        List<Long> workflowIdList = workflowLogRepository
+                .findAll(f -> f.in(WorkflowLogPO.Fields.flowId, flowIds.toArray()))
+                .stream().map(WorkflowLogPO::getId).toList();
+        workflowLogRepository.deleteAllByIdInBatch(workflowIdList);
+        workflowLogDataRepository.deleteAllByIdInBatch(workflowIdList);
     }
 
     @EventListener
