@@ -54,6 +54,9 @@ public class RuleEngineTracer extends DefaultTracer {
             FromDefinition input = routeDefinition.getInput();
             NodeTraceInfo nodeTraceInfo = createNodeTraceInfo(input.getId(), input.getLabel(), routeDefinition.getDescriptionText(), exchange);
             nodeTraceInfo.setOutput(RuleNodeLogVariablesSupport.getExchangeOutputBody(exchange, nodeTraceInfo.getNodeId()));
+            if (exchange.getException() != null) {
+                nodeTraceInfo.causeException(exchange.getException());
+            }
             flowTraceInfo.getTraceInfos().add(nodeTraceInfo);
         }
     }
