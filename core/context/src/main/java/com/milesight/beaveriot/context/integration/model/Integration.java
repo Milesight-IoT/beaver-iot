@@ -36,6 +36,12 @@ public class Integration {
 
     private String entityIdentifierDeleteDevice;
 
+    private String entityIdentifierAddDeviceTemplate;
+
+    private String entityIdentifierUpdateDeviceTemplate;
+
+    private String entityIdentifierDeleteDeviceTemplate;
+
     private boolean visible = true;
 
     private List<Device> initialDevices = new ArrayList<>();
@@ -142,4 +148,12 @@ public class Integration {
         return IntegrationConstants.formatIntegrationEntityKey(this.getId(), deleteDeviceServiceIdentifier);
     }
 
+    public String getEntityKeyDeleteDeviceTemplate() {
+        String deleteDeviceTemplateServiceIdentifier = this.getEntityIdentifierDeleteDeviceTemplate();
+        if (deleteDeviceTemplateServiceIdentifier == null) {
+            return null;
+        }
+
+        return IntegrationConstants.formatIntegrationEntityKey(this.getId(), deleteDeviceTemplateServiceIdentifier);
+    }
 }

@@ -26,6 +26,12 @@ public class IntegrationConfig {
 
     private String entityIdentifierDeleteDevice;
 
+    private String entityIdentifierAddDeviceTemplate;
+
+    private String entityIdentifierUpdateDeviceTemplate;
+
+    private String entityIdentifierDeleteDeviceTemplate;
+
     private List<DeviceConfig> initialDevices = new ArrayList<>();
 
     private List<EntityConfig> initialEntities = new ArrayList<>();
@@ -50,6 +56,9 @@ public class IntegrationConfig {
                 .enabled(enabled)
                 .entityIdentifierAddDevice(entityIdentifierAddDevice)
                 .entityIdentifierDeleteDevice(entityIdentifierDeleteDevice)
+                .entityIdentifierAddDeviceTemplate(entityIdentifierAddDeviceTemplate)
+                .entityIdentifierUpdateDeviceTemplate(entityIdentifierUpdateDeviceTemplate)
+                .entityIdentifierDeleteDeviceTemplate(entityIdentifierDeleteDeviceTemplate)
                 .end()
                 .initialEntities(()-> initialEntities.stream().map(entityConfig -> entityConfig.toEntity()).toList())
                 .initialDevices(devices)
