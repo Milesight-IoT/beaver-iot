@@ -380,6 +380,20 @@ public class EntityService implements EntityServiceProvider {
         deleteEntitiesByPOList(entityPOList);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
+    @Override
+    public void deleteByKey(String entityKey) {
+        if (!StringUtils.hasText(entityKey)) {
+            return;
+        }
+        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.or(filter1 -> filter1.eq(EntityPO.Fields.key, entityKey).eq(EntityPO.Fields.parent, entityKey)));
+        if (entityPOList == null || entityPOList.isEmpty()) {
+            return;
+        }
+
+        deleteEntitiesByPOList(entityPOList);
+    }
+
     private void deleteEntitiesByPOList(List<EntityPO> entityPOList) {
         if (entityPOList.isEmpty()) {
             return;
