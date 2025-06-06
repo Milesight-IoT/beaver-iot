@@ -8,6 +8,7 @@ import org.springframework.expression.common.CompositeStringExpression;
 import org.springframework.expression.common.TemplateParserContext;
 import org.springframework.expression.spel.standard.SpelExpression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.lang.Nullable;
 import org.springframework.util.ObjectUtils;
 
 import java.util.Arrays;
@@ -61,25 +62,36 @@ public class SpELExpressionHelper {
         return stringValue instanceof String value && value.contains(SPEL_EXPRESSION_PREFIX);
     }
 
-    public static SpelExpression[] extractSpELExpression(Object value) {
+    public static SpelExpression[] extractIfSpELExpression(Object value) {
         if (ObjectUtils.isEmpty(value)) {
             return new SpelExpression[0];
         }
         String stringValue = value instanceof String ? (String) value : value.toString();
         if (containSpELExpression(stringValue)) {
-            ParserContext parserContext = new TemplateParserContext();
-            SpelExpressionParser expressionParser = new SpelExpressionParser();
-            org.springframework.expression.Expression expression = expressionParser.parseExpression(stringValue, parserContext);
-            if (expression instanceof SpelExpression spelExpression) {
-                return new SpelExpression[]{spelExpression};
-            } else if (expression instanceof CompositeStringExpression compositeStringExpression) {
-                return Arrays.stream(compositeStringExpression.getExpressions())
-                        .filter(SpelExpression.class::isInstance)
-                        .toArray(SpelExpression[]::new);
-            } else {
-                return new SpelExpression[0];
-            }
+            return extractSpELExpression(stringValue, new TemplateParserContext());
         }
         return new SpelExpression[0];
+    }
+
+    private static SpelExpression[] extractSpELExpression(String spelExpressionStr, @Nullable ParserContext parserContext) {
+        SpelExpressionParser spelExpressionParser = new SpelExpressionParser();
+        org.springframework.expression.Expression expression = parserContext == null ? spelExpressionParser.parseExpression(spelExpressionStr) : spelExpressionParser.parseExpression(spelExpressionStr, parserContext);
+        if (expression instanceof SpelExpression spelExpression) {
+            return new SpelExpression[]{spelExpression};
+        } else if (expression instanceof CompositeStringExpression compositeStringExpression) {
+            return Arrays.stream(compositeStringExpression.getExpressions())
+                    .filter(SpelExpression.class::isInstance)
+                    .toArray(SpelExpression[]::new);
+        } else {
+            return new SpelExpression[0];
+        }
+    }
+
+    public static SpelExpression[] extractSpELExpression(String spelExpressionStr) {
+        return extractSpELExpression(spelExpressionStr, null);
+    }
+
+    public static String wrapTemplateIfNeeded(String expression) {
+        return containSpELExpression(expression) ? expression : SPEL_EXPRESSION_PREFIX + expression + SPEL_EXPRESSION_SUFFIX;
     }
 }
