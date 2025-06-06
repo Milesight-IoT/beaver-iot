@@ -4,9 +4,11 @@ import com.milesight.beaveriot.rule.enums.ExpressionLanguage;
 import com.milesight.beaveriot.rule.enums.LogicOperator;
 import com.milesight.beaveriot.rule.model.flow.config.RuleChoiceConfig;
 import com.milesight.beaveriot.rule.support.ExpressionGenerator;
+import com.milesight.beaveriot.rule.support.SpELExpressionHelper;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.expression.common.TemplateParserContext;
 import org.springframework.util.ObjectUtils;
 
 @Data
@@ -32,4 +34,13 @@ public class ExpressionNode {
     public boolean validate() {
         return !ObjectUtils.isEmpty(language) && !ObjectUtils.isEmpty(expression);
     }
+
+    @Override
+    public String toString() {
+        return "ExpressionNode{" +
+                    "language=" + language +
+                    ", expression=" + SpELExpressionHelper.wrapTemplateIfNeeded(expression) +
+                "}";
+    }
+
 }

@@ -8,7 +8,11 @@ import com.milesight.beaveriot.rule.support.SpELExpressionHelper;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
-import org.apache.commons.lang3.StringUtils;
+import org.springframework.expression.spel.SpelNode;
+import org.springframework.expression.spel.ast.CompoundExpression;
+import org.springframework.expression.spel.ast.Indexer;
+import org.springframework.expression.spel.ast.PropertyOrFieldReference;
+import org.springframework.expression.spel.standard.SpelExpression;
 import org.springframework.util.ObjectUtils;
 
 import java.util.*;
@@ -56,21 +60,49 @@ public class RuleNodeLogVariablesSupport {
             if (logVariables == null || ObjectUtils.isEmpty(logVariables.getInputVariables())) {
                 return null;
             }
-            Map<String, Object> inputVariables = new LinkedHashMap<>();
+            List<SpelNode> spelNodeList = new ArrayList<>();
             for (String inputVariable : logVariables.getInputVariables()) {
-                //fixme:  parser SpEL variable ,like : properties.node_xxx['abc']
-                String variableNodeId = StringUtils.substringBetween(inputVariable, "properties.","[");
-                String variableName = StringUtils.substringBetween(inputVariable, "['", "']");
-                if (StringUtils.isEmpty(variableNodeId) || StringUtils.isEmpty(variableName)) {
-                    continue;
+                // parser SpEL variable ,like : properties.node_xxx['abc']， properties['node_xxx']['abc'], properties['node_xxx']['abc']==properties['node_xxx']['abc2'] and so on..
+                for (SpelExpression spelExpression : SpELExpressionHelper.extractSpELExpression(inputVariable)) {
+                    visitPropertiesExpression(spelExpression.getAST(), spelNodeList);
                 }
-                inputVariables.put(variableName, SpELExpressionHelper.SPEL_EXPRESSION_PREFIX + inputVariable + SpELExpressionHelper.SPEL_EXPRESSION_SUFFIX);
+            }
+            Map<String, Object> inputVariables = new LinkedHashMap<>();
+            for (SpelNode spelNode : spelNodeList) {
+                SpelNode spelNodeChild = spelNode.getChild(spelNode.getChildCount() - 1);
+                if (spelNodeChild instanceof PropertyOrFieldReference || spelNodeChild instanceof Indexer) {
+                    String variableNameOri = spelNodeChild instanceof Indexer indexer ? indexer.getChild(0).toStringAST() : spelNodeChild.toStringAST();
+                    String variableName = variableNameOri.replaceAll("'", "").replaceAll("\"", ""); // remove quotes
+                    inputVariables.put(variableName, SpELExpressionHelper.SPEL_EXPRESSION_PREFIX + spelNode.toStringAST() + SpELExpressionHelper.SPEL_EXPRESSION_SUFFIX);
+                }else {
+                    log.warn("Unsupported SpEL node type: {}", spelNodeChild.getClass().getSimpleName());
+                }
             }
             return toJSON(SpELExpressionHelper.resolveExpression(exchange, inputVariables));
         } catch (Exception ex) {
             return  causeException(ex);
         }
     }
+
+    private static void visitPropertiesExpression(SpelNode spelNode, List<SpelNode> spelNodeList) {
+        boolean isPropertiesExpression = isPropertiesExpression(spelNode);
+        if (isPropertiesExpression) {
+            spelNodeList.add(spelNode);
+            return;
+        }
+
+        for (int i = 0; i < spelNode.getChildCount(); i++) {
+            SpelNode child = spelNode.getChild(i);
+            visitPropertiesExpression(child, spelNodeList);
+        }
+    }
+
+    private static boolean isPropertiesExpression(SpelNode spelNode) {
+        return spelNode instanceof CompoundExpression && spelNode.getChildCount() >= 3 &&
+                spelNode.getChild(0) instanceof PropertyOrFieldReference &&
+                ((PropertyOrFieldReference)spelNode.getChild(0)).getName().equals("properties");
+    }
+
 
     public static String getExchangeOutputBody(Exchange exchange, String nodeId) {
         if (ExchangeHeaders.containsMapProperty(exchange, EXCHANGE_CUSTOM_OUTPUT_LOG_VARIABLES, nodeId)) {

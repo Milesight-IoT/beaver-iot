@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.metrics.camel;
 
+import com.milesight.beaveriot.base.exception.CyclicCallException;
 import com.milesight.beaveriot.context.integration.model.event.MetricsEvent;
 import com.milesight.beaveriot.metrics.autoconfigure.CamelMetricsConfiguration;
 import com.milesight.beaveriot.base.constants.MetricsConstants;
@@ -119,7 +120,7 @@ public final class MetricsStatistics {
             if (repeatCount.get() >= camelMetricsConfiguration.getThresholdConfig().getExchangeRepeatMax()) {
                 exchangesTotal.increment();
                 exchangesFailed.increment();
-                applicationEventPublisher.publishEvent(MetricsEvent.of(MetricsConstants.METRICS_EXCHANGE_EXECUTION_REPEAT_MAX, Double.valueOf(repeatCount.get()), TagUtils.toMap(tags)));
+                exchange.setException(new CyclicCallException("The number of exchanges exceeds the maximum number of times, check whether there are loop calls in the flow" ));
             }
         }
     }

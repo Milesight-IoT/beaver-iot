@@ -18,6 +18,7 @@ public enum ErrorCode implements ErrorCodeSpec {
     TOKEN_INVALID(HttpStatus.UNAUTHORIZED.value(), "token_invalid"),
     AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED.value(), "authentication_failed"),
     DATA_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE.value(), "data_too_large"),
+    EVENTBUS_EXECUTION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), "eventbus_execution_error"),
     ;
 
     private String errorCode;
