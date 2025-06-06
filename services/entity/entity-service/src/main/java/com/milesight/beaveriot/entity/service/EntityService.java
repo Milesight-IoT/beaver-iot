@@ -112,6 +112,7 @@ public class EntityService implements EntityServiceProvider {
                 .identifier(entityPO.getKey().substring(entityPO.getKey().lastIndexOf(".") + 1))
                 .valueType(entityPO.getValueType())
                 .visible(entityPO.getVisible())
+                .description(entityPO.getDescription())
                 .attributes(entityPO.getValueAttribute());
 
         String parentKey = entityPO.getParent();
