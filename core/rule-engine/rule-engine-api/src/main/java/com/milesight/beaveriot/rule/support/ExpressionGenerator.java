@@ -48,8 +48,11 @@ public class ExpressionGenerator {
     }
 
     public static String[] reverseExpressionParameter(String conditionExpression) {
+        if (ObjectUtils.isEmpty(conditionExpression)) {
+            return new String[0];
+        }
         //reverse spel expression ,eg: #{T(com.milesight.beaveriot.rule.enums.ExpressionOperator).contains('a','b')} -> String[]{'a','b'}
-        if (!ObjectUtils.isEmpty(conditionExpression) && conditionExpression.contains(ExpressionOperator.EXPRESSION_PREFIX)) {
+        if (conditionExpression.contains(ExpressionOperator.EXPRESSION_PREFIX)) {
             String[] splitExpressions;
             if (conditionExpression.contains(EXPRESSION_AND_SPLIT)) {
                 splitExpressions = StringUtils.split(conditionExpression,EXPRESSION_AND_SPLIT);
@@ -61,8 +64,9 @@ public class ExpressionGenerator {
             return Arrays.stream(splitExpressions)
                     .flatMap(exp -> Arrays.stream(StringUtils.substringBeforeLast(StringUtils.substringAfterLast(exp, "("), ")").split(",")))
                     .toArray(String[]::new);
+        } else {
+            return new String[]{conditionExpression};
         }
-        return new String[0];
     }
 
 

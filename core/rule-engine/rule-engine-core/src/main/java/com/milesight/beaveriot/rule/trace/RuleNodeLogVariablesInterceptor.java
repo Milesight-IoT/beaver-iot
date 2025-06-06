@@ -85,11 +85,11 @@ public class RuleNodeLogVariablesInterceptor implements RuleNodeDefinitionInterc
             return entry.getValue() != null && (properties.containsKey(key) && properties.get(key).isLoggable()) || isChoiceComponent(componentDefinition);
         }).flatMap(entry -> {
             List<String> expressionList = new ArrayList<>();
-            SpelExpression[] spELExpressions = SpELExpressionHelper.extractSpELExpression(entry.getValue());
+            SpelExpression[] spELExpressions = SpELExpressionHelper.extractIfSpELExpression(entry.getValue());
             for (SpelExpression spELExpression : spELExpressions) {
                 String expression = spELExpression.getExpressionString();
                 String[] expressions = (isChoiceComponent(componentDefinition)) ? ExpressionGenerator.reverseExpressionParameter(expression) : new String[]{expression};
-                expressionList.addAll(Arrays.stream(expressions).filter(exp->StringUtils.startsWith(exp, "properties.")).toList());
+                expressionList.addAll(Arrays.stream(expressions).filter(exp->StringUtils.startsWith(exp, "properties.") || StringUtils.startsWith(exp, "properties[")).toList());
             }
             return expressionList.stream().distinct();
         }).collect(Collectors.toSet());
