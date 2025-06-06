@@ -13,6 +13,7 @@ import com.milesight.beaveriot.rule.support.SpELExpressionHelper;
 import lombok.Data;
 import org.apache.camel.Exchange;
 import org.apache.camel.spi.UriParam;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -45,10 +46,12 @@ public class ScriptCodeComponent implements ProcessorNode<Exchange> {
 
         Object result = ExpressionEvaluator.evaluate(expression, exchange, inputVariables, Object.class);
 
-        OutputVariablesSettings.validate(result, payload);
-
-        exchange.getIn().setBody(result);
-
+        if (!ObjectUtils.isEmpty(payload) && !(result instanceof Map)) {
+            exchange.getIn().setBody(Map.of());
+        } else {
+            OutputVariablesSettings.validate(result, payload);
+            exchange.getIn().setBody(result);
+        }
     }
 
     public void setPayload(String payloadStr) {

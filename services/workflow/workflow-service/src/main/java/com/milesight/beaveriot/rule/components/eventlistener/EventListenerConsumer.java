@@ -2,6 +2,7 @@ package com.milesight.beaveriot.rule.components.eventlistener;
 
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
+import com.milesight.beaveriot.context.util.ExchangeContextHelper;
 import com.milesight.beaveriot.entity.rule.GenericExchangeValidator;
 import com.milesight.beaveriot.eventbus.EventBusDispatcher;
 import com.milesight.beaveriot.eventbus.UniqueListenerCacheKey;
@@ -81,7 +82,7 @@ public class EventListenerConsumer extends DefaultConsumer {
             if (endpoint.isVerifyEntitiesValidation()) {
                 genericExchangeValidator.matches(payload);
             }
-
+            exchange.getProperties().putAll(ExchangeContextHelper.getTransmitCamelContext(exchangeEvent.getPayload().getContext()));
             exchange.getIn().setBody(payload);
             try {
                 getProcessor().process(exchange);

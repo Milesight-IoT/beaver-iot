@@ -110,7 +110,7 @@ public class DefaultExceptionHandler {
             if (cause instanceof ServiceException serviceException) {
                 return ResponseEntity.status(serviceException.getStatus()).body(ResponseBuilder.fail(serviceException));
             } else if (cause instanceof EventBusExecutionException eventBusExecutionException) {
-                return ResponseEntity.status(ErrorCode.SERVER_ERROR.getStatus()).body(ResponseBuilder.fail(ErrorCode.SERVER_ERROR.getErrorCode(), cause.getMessage(), null, ErrorHolder.of(eventBusExecutionException.getCauses())));
+                return ResponseEntity.status(ErrorCode.SERVER_ERROR.getStatus()).body(ResponseBuilder.fail(ErrorCode.EVENTBUS_EXECUTION_ERROR.getErrorCode(), cause.getMessage(), null, ErrorHolder.of(eventBusExecutionException.getCauses())));
             } else if (cause instanceof BaseException) {
                 return ResponseEntity.status(ErrorCode.SERVER_ERROR.getStatus()).body(ResponseBuilder.fail(ErrorCode.SERVER_ERROR.getErrorCode(), cause.getMessage()));
             }
