@@ -25,6 +25,8 @@ public interface EntityServiceProvider {
 
     void deleteByTargetId(String targetId);
 
+    void deleteByKey(String entityKey);
+
     Entity findByKey(String entityKey);
 
     Map<String, Entity> findByKeys(Collection<String> entityKeys);
