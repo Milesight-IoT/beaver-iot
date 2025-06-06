@@ -1,7 +1,9 @@
 package com.milesight.beaveriot.dashboard.model.request;
 
+import com.milesight.beaveriot.dashboard.constants.DashboardDataFieldConstants;
 import com.milesight.beaveriot.dashboard.model.dto.DashboardWidgetDTO;
-import lombok.Data;
+import jakarta.validation.constraints.Size;
+import lombok.*;
 
 import java.util.List;
 
@@ -13,6 +15,11 @@ import java.util.List;
 public class UpdateDashboardRequest {
 
     private String name;
+
+    @Size(max = DashboardDataFieldConstants.WIDGET_MAX_COUNT_PER_DASHBOARD)
     private List<DashboardWidgetDTO> widgets;
+
+    @Size(max = DashboardDataFieldConstants.ENTITY_MAX_COUNT_PER_DASHBOARD)
+    private List<Long> entityIds;
 
 }

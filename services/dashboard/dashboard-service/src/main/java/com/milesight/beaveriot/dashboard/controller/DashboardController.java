@@ -5,10 +5,12 @@ import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.dashboard.model.request.CreateDashboardRequest;
 import com.milesight.beaveriot.dashboard.model.request.UpdateDashboardRequest;
 import com.milesight.beaveriot.dashboard.model.response.CreateDashboardResponse;
+import com.milesight.beaveriot.dashboard.model.response.DashboardListItemResponse;
 import com.milesight.beaveriot.dashboard.model.response.DashboardResponse;
 import com.milesight.beaveriot.dashboard.service.DashboardService;
 import com.milesight.beaveriot.permission.aspect.OperationPermission;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,14 +36,14 @@ public class DashboardController {
 
     @OperationPermission(codes = OperationPermissionCode.DASHBOARD_ADD)
     @PostMapping("")
-    public ResponseBody<CreateDashboardResponse> createDashboard(@RequestBody CreateDashboardRequest createDashboardRequest) {
+    public ResponseBody<CreateDashboardResponse> createDashboard(@RequestBody @Valid CreateDashboardRequest createDashboardRequest) {
         CreateDashboardResponse createDashboardResponse = dashboardService.createDashboard(createDashboardRequest);
         return ResponseBuilder.success(createDashboardResponse);
     }
 
     @OperationPermission(codes = OperationPermissionCode.DASHBOARD_EDIT)
     @PutMapping("/{dashboardId}")
-    public ResponseBody<Void> updateDashboard(@PathVariable("dashboardId") Long dashboardId, @RequestBody UpdateDashboardRequest updateDashboardRequest) {
+    public ResponseBody<Void> updateDashboard(@PathVariable("dashboardId") Long dashboardId, @RequestBody @Valid UpdateDashboardRequest updateDashboardRequest) {
         dashboardService.updateDashboard(dashboardId, updateDashboardRequest);
         return ResponseBuilder.success();
     }
@@ -55,9 +57,15 @@ public class DashboardController {
 
     @OperationPermission(codes = OperationPermissionCode.DASHBOARD_VIEW)
     @GetMapping("/dashboards")
-    public ResponseBody<List<DashboardResponse>> getDashboards() {
-        List<DashboardResponse> dashboardResponseList = dashboardService.getDashboards();
+    public ResponseBody<List<DashboardListItemResponse>> getDashboards() {
+        List<DashboardListItemResponse> dashboardResponseList = dashboardService.getDashboards();
         return ResponseBuilder.success(dashboardResponseList);
+    }
+
+    @OperationPermission(codes = OperationPermissionCode.DASHBOARD_VIEW)
+    @GetMapping("/{dashboardId}")
+    public ResponseBody<DashboardResponse> getDashboard(@PathVariable("dashboardId") Long dashboardId) {
+        return ResponseBuilder.success(dashboardService.getDashboard(dashboardId));
     }
 
     @PostMapping("/{dashboardId}/home")

@@ -11,3 +11,9 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: db/scheduler/h2/changelog.yaml
+  - includeAll:
+      path: sql/v1.2.1
+      relativeToChangelogFile: true
+  - includeAll:
+      path: sql/v1.3.0
+      relativeToChangelogFile: true

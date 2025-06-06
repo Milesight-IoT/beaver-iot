@@ -5,14 +5,12 @@ import org.apache.camel.Exchange;
 import org.apache.camel.ExpressionIllegalSyntaxException;
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.language.python.PythonExpression;
-import org.python.core.PyBoolean;
-import org.python.core.PyObject;
-import org.python.core.PySingleton;
-import org.python.core.PyUnicode;
+import org.python.core.*;
 import org.python.util.PythonInterpreter;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -74,6 +72,8 @@ public class CustomizedPythonExpression extends PythonExpression {
             result = out.__tojava__(Map.class);
         } else if (out.isSequenceType()) {
             result = out.__tojava__(List.class);
+        } else if (out instanceof PyNone) {
+            result = new HashMap<>();
         } else {
             result = out.toString();
         }

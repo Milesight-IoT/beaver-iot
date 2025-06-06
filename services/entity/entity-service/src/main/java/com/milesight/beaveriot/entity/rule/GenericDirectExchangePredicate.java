@@ -57,14 +57,11 @@ public class GenericDirectExchangePredicate implements PredicateNode<Exchange> {
             return null;
         }
         List<Entity> customEntities = exchangeEntities.values().stream()
-                .filter(entity -> entity.getIntegrationId().equals(IntegrationConstants.SYSTEM_INTEGRATION_ID))
+                .filter(entity -> entity.getIntegrationId().equals(IntegrationConstants.SYSTEM_INTEGRATION_ID)
+                        && entity.getType() == EntityType.SERVICE)
                 .toList();
         if (ObjectUtils.isEmpty(customEntities)) {
             return null;
-        }
-
-        if (customEntities.size() != exchangeEntities.size()) {
-            throw new ServiceException(ErrorCode.SERVER_ERROR, "Contains both custom and non-custom entities.");
         }
 
         //find parent entity

@@ -23,6 +23,7 @@ import com.milesight.beaveriot.rule.manager.service.WorkflowService;
 import com.milesight.beaveriot.rule.model.RuleLanguage;
 import com.milesight.beaveriot.rule.model.trace.FlowTraceInfo;
 import com.milesight.beaveriot.rule.model.trace.NodeTraceInfo;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -55,7 +56,7 @@ public class WorkflowController {
 
     @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT})
     @PutMapping("/flows/{flowId}")
-    public ResponseBody<Void> updateWorkflowBasicInfo(@PathVariable("flowId") Long flowId, @RequestBody WorkflowBasicInfoRequest request) {
+    public ResponseBody<Void> updateWorkflowBasicInfo(@PathVariable("flowId") Long flowId, @RequestBody @Valid WorkflowBasicInfoRequest request) {
         workflowService.updateBasicInfo(flowId, request.getName(), request.getRemark());
         return ResponseBuilder.success();
     }
@@ -107,12 +108,12 @@ public class WorkflowController {
 
     @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT, OperationPermissionCode.WORKFLOW_ADD})
     @PostMapping("/flows/design/validate")
-    public ResponseBody<Boolean> validateWorkflow(@RequestBody ValidateWorkflowRequest request) {
+    public ResponseBody<Boolean> validateWorkflow(@RequestBody @Valid ValidateWorkflowRequest request) {
         return ResponseBuilder.success(workflowService.validateWorkflow(request));
     }
 
     @PostMapping("/flows/design")
-    public ResponseBody<SaveWorkflowResponse> saveWorkflow(@RequestBody SaveWorkflowRequest request) {
+    public ResponseBody<SaveWorkflowResponse> saveWorkflow(@RequestBody @Valid SaveWorkflowRequest request) {
         boolean isCreate = request.getId() == null || request.getId().isEmpty();
         if (isCreate) {
             return ResponseBuilder.success(workflowService.createWorkflow(request));
@@ -123,13 +124,13 @@ public class WorkflowController {
 
     @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT, OperationPermissionCode.WORKFLOW_ADD})
     @PostMapping("/flows/design/test")
-    public ResponseBody<FlowTraceInfo> testWorkflow(@RequestBody TestWorkflowRequest request) {
+    public ResponseBody<FlowTraceInfo> testWorkflow(@RequestBody @Valid TestWorkflowRequest request) {
         return ResponseBuilder.success(workflowService.testWorkflow(request));
     }
 
     @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_EDIT, OperationPermissionCode.WORKFLOW_ADD})
     @PostMapping("/flows/node/test")
-    public ResponseBody<NodeTraceInfo> testWorkflow(@RequestBody TestWorkflowNodeRequest request) {
+    public ResponseBody<NodeTraceInfo> testWorkflowNode(@RequestBody @Valid TestWorkflowNodeRequest request) {
         return ResponseBuilder.success(workflowService.testWorkflowNode((request)));
     }
 

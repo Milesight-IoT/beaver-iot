@@ -23,13 +23,13 @@ import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.data.util.PageConverter;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
+import com.milesight.beaveriot.entity.dto.EntityQuery;
+import com.milesight.beaveriot.entity.dto.EntityResponse;
 import com.milesight.beaveriot.entity.model.request.EntityCreateRequest;
 import com.milesight.beaveriot.entity.model.request.EntityModifyRequest;
-import com.milesight.beaveriot.entity.model.request.EntityQuery;
 import com.milesight.beaveriot.entity.model.request.ServiceCallRequest;
 import com.milesight.beaveriot.entity.model.request.UpdatePropertyEntityRequest;
 import com.milesight.beaveriot.entity.model.response.EntityMetaResponse;
-import com.milesight.beaveriot.entity.model.response.EntityResponse;
 import com.milesight.beaveriot.entity.po.EntityPO;
 import com.milesight.beaveriot.entity.repository.EntityHistoryRepository;
 import com.milesight.beaveriot.entity.repository.EntityLatestRepository;
@@ -40,8 +40,8 @@ import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.user.dto.MenuDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
+import lombok.*;
+import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -51,7 +51,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -112,6 +119,7 @@ public class EntityService implements EntityServiceProvider {
                 .identifier(entityPO.getKey().substring(entityPO.getKey().lastIndexOf(".") + 1))
                 .valueType(entityPO.getValueType())
                 .visible(entityPO.getVisible())
+                .description(entityPO.getDescription())
                 .attributes(entityPO.getValueAttribute());
 
         String parentKey = entityPO.getParent();
@@ -143,7 +151,7 @@ public class EntityService implements EntityServiceProvider {
         response.setAccessMod(entityPO.getAccessMod());
         response.setValueAttribute(entityPO.getValueAttribute());
         response.setValueType(entityPO.getValueType());
-        response.setCustomized(isCustomizedEntity(entityPO.getAttachTargetId()));
+        response.setCustomized(entityPO.checkIsCustomizedEntity());
         response.setCreatedAt(entityPO.getCreatedAt());
         response.setUpdatedAt(entityPO.getUpdatedAt());
         response.setDescription(entityPO.getDescription());
@@ -494,7 +502,8 @@ public class EntityService implements EntityServiceProvider {
             try {
                 entityPOList = entityRepository.findAllWithDataPermission(filterable);
             } catch (Exception e) {
-                if (e instanceof ServiceException && Objects.equals(((ServiceException) e).getErrorCode(), ErrorCode.FORBIDDEN_PERMISSION.getErrorCode())) {
+                if (e instanceof ServiceException serviceException
+                        && Objects.equals(serviceException.getErrorCode(), ErrorCode.FORBIDDEN_PERMISSION.getErrorCode())) {
                     entityPOList = new ArrayList<>();
                 } else {
                     throw e;
@@ -551,7 +560,7 @@ public class EntityService implements EntityServiceProvider {
         response.setEntityParentName(entityPO.getParent() == null ? null : parentKeyMap.get(entityPO.getParent()) == null? null : parentKeyMap.get(entityPO.getParent()).getName());
         response.setEntityValueAttribute(entityPO.getValueAttribute());
         response.setEntityValueType(entityPO.getValueType());
-        response.setEntityIsCustomized(isCustomizedEntity(entityPO.getAttachTargetId()));
+        response.setEntityIsCustomized(entityPO.checkIsCustomizedEntity());
         response.setEntityCreatedAt(entityPO.getCreatedAt());
         response.setEntityUpdatedAt(entityPO.getUpdatedAt());
         response.setEntityDescription(entityPO.getDescription());
@@ -705,7 +714,7 @@ public class EntityService implements EntityServiceProvider {
         List<EntityPO> entityPOList = findEntityPOListAndTheirChildrenByIds(entityIds)
                 .stream()
                 // only customized entities allowed to be deleted
-                .filter(entityPO -> isCustomizedEntity(entityPO.getAttachTargetId()))
+                .filter(EntityPO::checkIsCustomizedEntity)
                 .toList();
         deleteEntitiesByPOList(entityPOList);
     }
@@ -732,8 +741,7 @@ public class EntityService implements EntityServiceProvider {
                 .toList();
         List<EntityPO> childrenEntityPOList = List.of();
         if (!parentEntityKeys.isEmpty()) {
-            childrenEntityPOList = entityRepository.findAll(
-                    filter -> filter.in(EntityPO.Fields.parent, parentEntityKeys.toArray()));
+            childrenEntityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.parent, parentEntityKeys.toArray()));
         }
         return childrenEntityPOList;
     }
@@ -782,9 +790,15 @@ public class EntityService implements EntityServiceProvider {
         if (entityModifyRequest.getName() != null) {
             entityPO.setName(entityModifyRequest.getName());
         }
-        if (!CollectionUtils.isEmpty(entityModifyRequest.getValueAttribute())) {
+
+        // Only custom entity can update attribute
+        if (!CollectionUtils.isEmpty(entityModifyRequest.getValueAttribute()) && entityPO.checkIsCustomizedEntity()) {
             entityPO.setValueAttribute(entityModifyRequest.getValueAttribute());
+            if (!entityPO.validateUserModifiedCustomEntity()) {
+                throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Invalid custom entity update data").build();
+            }
         }
+
         entityRepository.save(entityPO);
 
         return convertEntityPOToEntityMetaResponse(entityPO);
@@ -816,6 +830,10 @@ public class EntityService implements EntityServiceProvider {
         entityPO.setUserId(SecurityUserContext.getUserId());
         entityPO.setAttachTarget(AttachTargetType.INTEGRATION);
         entityPO.setAttachTargetId(IntegrationConstants.SYSTEM_INTEGRATION_ID);
+        if (!entityPO.validateUserModifiedCustomEntity()) {
+            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Invalid custom entity create data").build();
+        }
+
         entityPO = entityRepository.save(entityPO);
         return convertEntityPOToEntityMetaResponse(entityPO);
     }
@@ -833,9 +851,4 @@ public class EntityService implements EntityServiceProvider {
         }
         return String.format("%s.%s", parent, identifier);
     }
-
-    private static boolean isCustomizedEntity(String integrationId) {
-        return IntegrationConstants.SYSTEM_INTEGRATION_ID.equals(integrationId);
-    }
-
 }

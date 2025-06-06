@@ -1,16 +1,20 @@
 package com.milesight.beaveriot.device.service;
 
+import com.milesight.beaveriot.base.enums.ErrorCode;
+import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.event.DeviceEvent;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.device.constants.DeviceDataFieldConstants;
 import com.milesight.beaveriot.device.po.DevicePO;
 import com.milesight.beaveriot.device.repository.DeviceRepository;
 import com.milesight.beaveriot.device.support.DeviceConverter;
 import com.milesight.beaveriot.eventbus.EventBus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
@@ -43,6 +47,13 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
         Assert.notNull(device.getName(), "Device Name must be provided!");
         Assert.notNull(device.getIdentifier(), "Device identifier must be provided!");
         Assert.notNull(device.getIntegrationId(), "Integration must be provided!");
+
+        if (device.getName().length() > DeviceDataFieldConstants.DEVICE_NAME_MAX_LENGTH) {
+            throw ServiceException
+                    .with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "Device name over-length " + DeviceDataFieldConstants.DEVICE_NAME_MAX_LENGTH)
+                    .status(HttpStatus.BAD_REQUEST.value())
+                    .build();
+        }
 
         boolean shouldCreate = false;
         boolean shouldUpdate = false;

@@ -2,27 +2,28 @@ package com.milesight.beaveriot.entity.controller;
 
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
+import com.milesight.beaveriot.entity.dto.EntityQuery;
+import com.milesight.beaveriot.entity.dto.EntityResponse;
 import com.milesight.beaveriot.entity.model.request.EntityAggregateQuery;
 import com.milesight.beaveriot.entity.model.request.EntityCreateRequest;
 import com.milesight.beaveriot.entity.model.request.EntityDeleteRequest;
 import com.milesight.beaveriot.entity.model.request.EntityExportRequest;
 import com.milesight.beaveriot.entity.model.request.EntityHistoryQuery;
 import com.milesight.beaveriot.entity.model.request.EntityModifyRequest;
-import com.milesight.beaveriot.entity.model.request.EntityQuery;
 import com.milesight.beaveriot.entity.model.request.ServiceCallRequest;
 import com.milesight.beaveriot.entity.model.request.UpdatePropertyEntityRequest;
 import com.milesight.beaveriot.entity.model.response.EntityAggregateResponse;
 import com.milesight.beaveriot.entity.model.response.EntityHistoryResponse;
 import com.milesight.beaveriot.entity.model.response.EntityLatestResponse;
 import com.milesight.beaveriot.entity.model.response.EntityMetaResponse;
-import com.milesight.beaveriot.entity.model.response.EntityResponse;
 import com.milesight.beaveriot.entity.service.EntityExportService;
 import com.milesight.beaveriot.entity.service.EntityService;
 import com.milesight.beaveriot.entity.service.EntityValueService;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
-import jakarta.servlet.http.HttpServletResponse;
 import com.milesight.beaveriot.permission.aspect.OperationPermission;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -113,7 +114,7 @@ public class EntityController {
      */
     @OperationPermission(codes = {OperationPermissionCode.ENTITY_CUSTOM_ADD})
     @PostMapping
-    public ResponseBody<EntityMetaResponse> createCustomEntity(@RequestBody EntityCreateRequest entityCreateRequest) {
+    public ResponseBody<EntityMetaResponse> createCustomEntity(@RequestBody @Valid EntityCreateRequest entityCreateRequest) {
         return ResponseBuilder.success(entityService.createCustomEntity(entityCreateRequest));
     }
 
@@ -125,7 +126,7 @@ public class EntityController {
      */
     @OperationPermission(codes = {OperationPermissionCode.ENTITY_DATA_EDIT, OperationPermissionCode.ENTITY_CUSTOM_EDIT})
     @PutMapping("/{entityId}")
-    public ResponseBody<EntityMetaResponse> update(@PathVariable("entityId") Long entityId, @RequestBody EntityModifyRequest entityModifyRequest) {
+    public ResponseBody<EntityMetaResponse> update(@PathVariable("entityId") Long entityId, @RequestBody @Valid EntityModifyRequest entityModifyRequest) {
         return ResponseBuilder.success(entityService.updateEntityBasicInfo(entityId, entityModifyRequest));
     }
 
