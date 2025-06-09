@@ -6,6 +6,7 @@ import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.DeviceBuilder;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.config.EntityConfig;
+import com.milesight.beaveriot.context.model.response.DeviceTemplateDiscoverResponse;
 import com.milesight.beaveriot.devicetemplate.facade.IDeviceTemplateParserFacade;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +26,7 @@ abstract public class DeviceTemplateParser implements IDeviceTemplateParserFacad
     private EntityServiceProvider entityServiceProvider;
     abstract public boolean validate(String deviceTemplateContent);
     @Transactional(rollbackFor = Exception.class)
-    abstract public void discover(String integration, Object data, Long deviceTemplateId, String deviceTemplateContent);
+    abstract public DeviceTemplateDiscoverResponse discover(String integration, Object data, Long deviceTemplateId, String deviceTemplateContent);
 
     protected Device saveDevice(String integration, String deviceId, String deviceName, Long deviceTemplateId) {
         Device device = new DeviceBuilder(integration)

@@ -12,6 +12,7 @@ import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.model.DeviceTemplateType;
+import com.milesight.beaveriot.context.model.response.DeviceTemplateDiscoverResponse;
 import com.milesight.beaveriot.devicetemplate.parser.model.json.JsonDeviceTemplate;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
@@ -76,7 +77,7 @@ public class JsonDeviceTemplateParser extends DeviceTemplateParser {
     }
 
     @Override
-    public void discover(String integration, Object data, Long deviceTemplateId, String deviceTemplateContent) {
+    public DeviceTemplateDiscoverResponse discover(String integration, Object data, Long deviceTemplateId, String deviceTemplateContent) {
         try {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode jsonData = mapper.readTree(data.toString());
@@ -105,16 +106,17 @@ public class JsonDeviceTemplateParser extends DeviceTemplateParser {
             flattenDeviceEntities(deviceEntities, flatDeviceEntityMap, "");
 
             // Save device entity values
-            saveDeviceEntityValues(flatJsonDataMap, flatJsonInputDescriptionMap, flatDeviceEntityMap);
+            return saveDeviceEntityValues(flatJsonDataMap, flatJsonInputDescriptionMap, flatDeviceEntityMap);
         } catch (Exception e) {
             log.error(e.getMessage());
             throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
         }
     }
 
-    private void saveDeviceEntityValues(Map<String, JsonNode> flatJsonDataMap,
+    private DeviceTemplateDiscoverResponse saveDeviceEntityValues(Map<String, JsonNode> flatJsonDataMap,
                                         Map<String, JsonDeviceTemplate.Definition.InputJsonObject> flatJsonInputDescriptionMap,
                                         Map<String, Entity> flatDeviceEntityMap) {
+        DeviceTemplateDiscoverResponse response = new DeviceTemplateDiscoverResponse();
         ExchangePayload payload = new ExchangePayload();
         for (String key : flatJsonDataMap.keySet()) {
             JsonNode jsonNode = flatJsonDataMap.get(key);
@@ -131,11 +133,13 @@ public class JsonDeviceTemplateParser extends DeviceTemplateParser {
             if (entity == null) {
                 continue;
             }
+            response.addEntity(entity.getName(), value);
             payload.put(entity.getKey(), value);
         }
         if (!payload.isEmpty()) {
             entityValueServiceProvider.saveValuesAndPublishSync(payload);
         }
+        return response;
     }
 
     private Object getJsonValue(JsonNode jsonNode, JsonDeviceTemplate.JsonType jsonType) {

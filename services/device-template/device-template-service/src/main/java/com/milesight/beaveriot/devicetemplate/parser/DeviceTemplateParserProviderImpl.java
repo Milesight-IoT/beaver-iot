@@ -4,6 +4,7 @@ import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.api.DeviceTemplateParserProvider;
 import com.milesight.beaveriot.context.model.DeviceTemplateType;
+import com.milesight.beaveriot.context.model.response.DeviceTemplateDiscoverResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -50,12 +51,12 @@ public class DeviceTemplateParserProviderImpl implements DeviceTemplateParserPro
     }
 
     @Override
-    public void discover(String integration, Object data, Long deviceTemplateId, String deviceTemplateContent) {
+    public DeviceTemplateDiscoverResponse discover(String integration, Object data, Long deviceTemplateId, String deviceTemplateContent) {
         String templateType = commonDeviceTemplateParser.getTemplateType(deviceTemplateContent);
         DeviceTemplateParser parser = registerParserMap.get(templateType);
         if (!parser.validate(deviceTemplateContent)) {
-            return;
+            return null;
         }
-        parser.discover(integration, data, deviceTemplateId, deviceTemplateContent);
+        return parser.discover(integration, data, deviceTemplateId, deviceTemplateContent);
     }
 }
