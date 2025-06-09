@@ -1,36 +1,30 @@
 package com.milesight.beaveriot.rule.components.code.language;
 
 import com.milesight.beaveriot.rule.components.code.ExpressionEvaluator;
-import com.milesight.beaveriot.rule.support.JsonHelper;
 import org.apache.camel.Exchange;
-import org.apache.camel.language.js.JavaScriptExpression;
-import org.apache.camel.language.js.JavaScriptHelper;
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Source;
-import org.graalvm.polyglot.Value;
+import org.apache.camel.support.ExpressionSupport;
+import org.graalvm.polyglot.*;
 import org.springframework.util.ObjectUtils;
 
-import java.util.List;
 import java.util.Map;
-
-import static org.graalvm.polyglot.Source.newBuilder;
 
 /**
  * @author leon
  */
-public class CustomizedJavaScriptExpression extends JavaScriptExpression {
+public class CustomizedJavaScriptExpression extends ExpressionSupport {
 
     private final String expressionString;
 
-    public CustomizedJavaScriptExpression(String expressionString, Class<?> type) {
-        super(expressionString, type);
+    public CustomizedJavaScriptExpression(String expressionString) {
         this.expressionString = expressionString;
     }
 
+    public static final String LANG_ID = "js";
+
     @Override
     public <T> T evaluate(Exchange exchange, Class<T> type) {
-        try (Context cx = JavaScriptHelper.newContext()) {
-            Value b = cx.getBindings("js");
+        try (Context cx = LanguageHelper.newContext(LANG_ID)) {
+            Value b = cx.getBindings(LANG_ID);
 
             b.putMember("exchange", exchange);
             b.putMember("context", exchange.getContext());
@@ -48,32 +42,19 @@ public class CustomizedJavaScriptExpression extends JavaScriptExpression {
                 exchange.getIn().removeHeader(ExpressionEvaluator.HEADER_INPUT_VARIABLES);
             }
 
-            Source source = newBuilder("js", expressionString, "Unnamed")
-                    .mimeType("application/javascript+module").buildLiteral();
-            Value o = cx.eval(source);
+            Value o = cx.eval(LANG_ID, expressionString);
 
-            return (T) convertValue(o, exchange, type);
+            return (T) LanguageHelper.convertResultValue(o, exchange, type);
         }
     }
 
-    private Object convertValue(Value value, Exchange exchange, Class<?> type) {
-        if (value == null) {
-            return null;
-        }
-        if (value.isNumber()) {
-            return value.as(Number.class);
-        } else if (value.isBoolean()) {
-            return value.as(Boolean.class);
-        } else {
-            Object out = value != null ? value.as(Object.class) : null;
-            if (out instanceof List<?>) {
-                return JsonHelper.cast(out, List.class);
-            } else if (out instanceof Map) {
-                return JsonHelper.cast(out, Map.class);
-            } else {
-                return exchange.getContext().getTypeConverter().convertTo(type, exchange, out);
-            }
-        }
+    @Override
+    protected String assertionFailureMessage(Exchange exchange) {
+        return this.expressionString;
     }
 
+    @Override
+    public String toString() {
+        return "JavaScript[" + this.expressionString + "]";
+    }
 }

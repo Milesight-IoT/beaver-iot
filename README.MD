@@ -5,6 +5,8 @@
 
 [![Discord](https://img.shields.io/discord/1270281746687983626.svg?label=Discord&logo=discord&colorB=7289da)](https://discord.gg/vNFxbwfErm)
 [![Maven Central](https://img.shields.io/maven-central/v/com.milesight.beaveriot/beaver-iot.svg)](https://central.sonatype.com/search?q=beaver-iot&smo=true)
+[![Publish Snapshot Package](https://github.com/Milesight-IoT/beaver-iot/actions/workflows/snapshot-publish.yml/badge.svg)](https://github.com/Milesight-IoT/beaver-iot/actions/workflows/snapshot-publish.yml)
+[![Publish Release Package](https://github.com/Milesight-IoT/beaver-iot/actions/workflows/release-publish.yml/badge.svg)](https://github.com/Milesight-IoT/beaver-iot/actions/workflows/release-publish.yml)
 
 # What is Beaver IoT?
 

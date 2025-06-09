@@ -55,12 +55,12 @@
         <lombok-mapstruct.version>0.2.0</lombok-mapstruct.version>
         <jsqlparser.version>4.9</jsqlparser.version>
         <moquette.version>v0.18.0</moquette.version>
-        <jython-standalone-version>2.7.4</jython-standalone-version>
         <transmittable-thread-local.version>2.14.5</transmittable-thread-local.version>
         <shedlock.version>6.3.0</shedlock.version>
         <redisson.version>3.44.0</redisson.version>
         <minio-client.version>8.5.17</minio-client.version>
         <aws-sdk.version>2.31.14</aws-sdk.version>
+        <graalvm.version>24.1.2</graalvm.version>
 
         <deploy.skip>false</deploy.skip>
     </properties>
@@ -127,11 +127,6 @@
                 <version>${spring-boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.python</groupId>
-                <artifactId>jython-standalone</artifactId>
-                <version>${jython-standalone-version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.camel</groupId>
@@ -220,6 +215,25 @@
                 <groupId>net.javacrumbs.shedlock</groupId>
                 <artifactId>shedlock-provider-inmemory</artifactId>
                 <version>${shedlock.version}</version>
+            </dependency>
+
+            <!-- reusable dependencies -->
+            <dependency>
+                <groupId>org.graalvm.polyglot</groupId>
+                <artifactId>polyglot</artifactId>
+                <version>${graalvm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.polyglot</groupId>
+                <artifactId>js-community</artifactId>
+                <version>${graalvm.version}</version>
+                <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.polyglot</groupId>
+                <artifactId>python-community</artifactId>
+                <version>${graalvm.version}</version>
+                <type>pom</type>
             </dependency>
 
             <!-- test dependencies -->
