@@ -3,6 +3,7 @@ package com.milesight.beaveriot.devicetemplate.service;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.Sorts;
+import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
@@ -44,6 +45,10 @@ public class DeviceTemplateService implements IDeviceTemplateFacade {
 
     @Lazy
     @Autowired
+    DeviceServiceProvider deviceServiceProvider;
+
+    @Lazy
+    @Autowired
     EntityServiceProvider entityServiceProvider;
 
     @Autowired
@@ -66,6 +71,8 @@ public class DeviceTemplateService implements IDeviceTemplateFacade {
         deviceTemplateResponseData.setAdditionalData(deviceTemplatePO.getAdditionalData());
         deviceTemplateResponseData.setCreatedAt(deviceTemplatePO.getCreatedAt());
         deviceTemplateResponseData.setUpdatedAt(deviceTemplatePO.getUpdatedAt());
+
+        deviceTemplateResponseData.setDeviceCount(deviceServiceProvider.countByDeviceTemplateId(deviceTemplatePO.getId()));
 
         return deviceTemplateResponseData;
     }

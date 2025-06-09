@@ -23,4 +23,6 @@ public interface DeviceServiceProvider {
     List<Device> findByIdentifiers(List<String> identifier, String integrationId);
 
     List<Device> findAll(String integrationId);
+
+    long countByDeviceTemplateId(long deviceTemplateId);
 }

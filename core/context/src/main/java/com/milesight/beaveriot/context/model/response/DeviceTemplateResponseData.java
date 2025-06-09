@@ -13,6 +13,7 @@ public class DeviceTemplateResponseData {
     private String description;
     private String integration;
     private Map<String, Object> additionalData;
+    private Long deviceCount;
     private Long createdAt;
     private Long updatedAt;
 

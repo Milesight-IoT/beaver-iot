@@ -190,4 +190,10 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
 
         return arg1.equals(arg2);
     }
+
+    @Override
+    public long countByDeviceTemplateId(long deviceTemplateId) {
+        return deviceRepository.count(f -> f.eq(DevicePO.Fields.templateId, deviceTemplateId));
+    }
+
 }
