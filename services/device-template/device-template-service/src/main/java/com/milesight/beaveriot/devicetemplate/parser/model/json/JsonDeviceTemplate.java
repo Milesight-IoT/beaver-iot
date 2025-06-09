@@ -62,9 +62,6 @@ public class JsonDeviceTemplate {
             private String entityMapping;
             private boolean required;
             private List<InputJsonObject> properties;
-            public void setRequired(Boolean required) {
-                this.required = (required != null && required);
-            }
         }
 
         @Data
