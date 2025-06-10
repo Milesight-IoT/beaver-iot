@@ -116,6 +116,13 @@ public class DeviceTemplateServiceProviderImpl implements DeviceTemplateServiceP
         deviceTemplateService.deleteDeviceTemplate(deviceTemplate);
     }
 
+    @Override
+    public void deleteByKey(String key) {
+        DeviceTemplate deviceTemplate = findByKey(key);
+        Assert.notNull(deviceTemplate, "Delete failed. Cannot find device template " + key);
+        deviceTemplateService.deleteDeviceTemplate(deviceTemplate);
+    }
+
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void batchDelete(List<Long> ids) {

@@ -15,6 +15,8 @@ public interface DeviceTemplateServiceProvider {
 
     void deleteById(Long id);
 
+    void deleteByKey(String key);
+
     DeviceTemplate findById(Long id);
     List<DeviceTemplate> findByIds(List<Long> ids);
 

@@ -14,5 +14,5 @@ alter table t_device add constraint uk_device_integration_identifier unique(inte
 
 --changeset pandalxb:device_v1.2.0_20250514_083900
 ALTER TABLE t_device
-    ADD COLUMN template_id BIGINT;
-CREATE INDEX idx_device_template_id ON t_device (template_id);
+    ADD COLUMN template VARCHAR(512);
+CREATE INDEX idx_device_template ON t_device (template);

@@ -39,10 +39,10 @@ public class DeviceTemplateParserProviderImpl implements DeviceTemplateParserPro
     }
 
     @Override
-    public DeviceTemplateDiscoverResponse discover(String integration, Object data, Long deviceTemplateId, String deviceTemplateContent) {
+    public DeviceTemplateDiscoverResponse discover(String integration, Object data, String deviceTemplateKey, String deviceTemplateContent) {
         if (!deviceTemplateParser.validate(deviceTemplateContent)) {
             return null;
         }
-        return deviceTemplateParser.discover(integration, data, deviceTemplateId, deviceTemplateContent);
+        return deviceTemplateParser.discover(integration, data, deviceTemplateKey, deviceTemplateContent);
     }
 }

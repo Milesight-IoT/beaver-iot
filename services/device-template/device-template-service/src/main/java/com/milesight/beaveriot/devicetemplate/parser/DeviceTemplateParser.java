@@ -88,7 +88,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public DeviceTemplateDiscoverResponse discover(String integration, Object data, Long deviceTemplateId, String deviceTemplateContent) {
+    public DeviceTemplateDiscoverResponse discover(String integration, Object data, String deviceTemplateKey, String deviceTemplateContent) {
         try {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode jsonData = mapper.readTree(data.toString());
@@ -109,7 +109,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
 
             // Save device
             String deviceId = jsonData.get(DEVICE_ID_KEY).asText();
-            Device device = saveDevice(integration, deviceId, deviceTemplateId);
+            Device device = saveDevice(integration, deviceId, deviceTemplateKey);
 
             // Save device entities
             List<Entity> deviceEntities = saveDeviceEntities(integration, device.getKey(), deviceTemplateModel.getInitialEntities());
@@ -238,10 +238,10 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         }
     }
 
-    protected Device saveDevice(String integration, String deviceId, Long deviceTemplateId) {
+    protected Device saveDevice(String integration, String deviceId, String deviceTemplateKey) {
         Device device = new DeviceBuilder(integration)
                 .name(deviceId)
-                .templateId(deviceTemplateId)
+                .template(deviceTemplateKey)
                 .identifier(deviceId)
                 .additional(Map.of("deviceId", deviceId))
                 .build();

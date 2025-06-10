@@ -53,7 +53,7 @@ public class DeviceTemplateService implements IDeviceTemplateFacade {
         deviceTemplateResponseData.setCreatedAt(deviceTemplatePO.getCreatedAt());
         deviceTemplateResponseData.setUpdatedAt(deviceTemplatePO.getUpdatedAt());
 
-        deviceTemplateResponseData.setDeviceCount(deviceServiceProvider.countByDeviceTemplateId(deviceTemplatePO.getId()));
+        deviceTemplateResponseData.setDeviceCount(deviceServiceProvider.countByDeviceTemplateKey(deviceTemplatePO.getKey()));
 
         return deviceTemplateResponseData;
     }
@@ -117,11 +117,11 @@ public class DeviceTemplateService implements IDeviceTemplateFacade {
     }
 
     @Override
-    public List<DeviceTemplateDTO> getDeviceTemplateByIds(List<Long> deviceTemplateIds) {
-        if (deviceTemplateIds == null || deviceTemplateIds.isEmpty()) {
+    public List<DeviceTemplateDTO> getDeviceTemplateByKeys(List<String> deviceTemplateKeys) {
+        if (deviceTemplateKeys == null || deviceTemplateKeys.isEmpty()) {
             return new ArrayList<>();
         }
-        return convertDeviceTemplatePOList(deviceTemplateRepository.findByIdIn(deviceTemplateIds)
+        return convertDeviceTemplatePOList(deviceTemplateRepository.findAll(f -> f.in(DeviceTemplatePO.Fields.key, deviceTemplateKeys.toArray()))
                 .stream()
                 .toList());
     }
@@ -130,5 +130,7 @@ public class DeviceTemplateService implements IDeviceTemplateFacade {
         entityServiceProvider.deleteByTargetId(deviceTemplate.getId().toString());
 
         deviceTemplateRepository.deleteById(deviceTemplate.getId());
+
+        deviceServiceProvider.clearTemplate(deviceTemplate.getKey());
     }
 }

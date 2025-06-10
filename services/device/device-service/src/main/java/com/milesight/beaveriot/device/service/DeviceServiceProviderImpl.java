@@ -96,7 +96,7 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
             // integration / identifier / key would not be updated
             devicePO.setIntegration(device.getIntegrationId());
             devicePO.setIdentifier(device.getIdentifier());
-            devicePO.setTemplateId(device.getTemplateId());
+            devicePO.setTemplate(device.getTemplate());
             devicePO.setKey(device.getKey());
             devicePO = deviceRepository.save(devicePO);
             eventBus.publish(DeviceEvent.of(DeviceEvent.EventType.CREATED, device));
@@ -192,8 +192,17 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
     }
 
     @Override
-    public long countByDeviceTemplateId(long deviceTemplateId) {
-        return deviceRepository.count(f -> f.eq(DevicePO.Fields.templateId, deviceTemplateId));
+    public long countByDeviceTemplateKey(String deviceTemplateKey) {
+        return deviceRepository.count(f -> f.eq(DevicePO.Fields.template, deviceTemplateKey));
     }
 
+    @Override
+    public void clearTemplate(String deviceTemplateKey) {
+        deviceRepository.findAll(f -> f.eq(DevicePO.Fields.template, deviceTemplateKey)).forEach(
+                devicePO -> {
+                    devicePO.setTemplate(null);
+                    deviceRepository.save(devicePO);
+                }
+        );
+    }
 }

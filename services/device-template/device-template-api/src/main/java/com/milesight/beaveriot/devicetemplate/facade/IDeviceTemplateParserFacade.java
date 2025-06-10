@@ -4,5 +4,5 @@ import com.milesight.beaveriot.context.model.response.DeviceTemplateDiscoverResp
 
 public interface IDeviceTemplateParserFacade {
     boolean validate(String deviceTemplateContent);
-    DeviceTemplateDiscoverResponse discover(String integration, Object data, Long deviceTemplateId, String deviceTemplateContent);
+    DeviceTemplateDiscoverResponse discover(String integration, Object data, String deviceTemplateKey, String deviceTemplateContent);
 }

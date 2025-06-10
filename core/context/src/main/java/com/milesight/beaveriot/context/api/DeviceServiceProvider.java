@@ -24,5 +24,7 @@ public interface DeviceServiceProvider {
 
     List<Device> findAll(String integrationId);
 
-    long countByDeviceTemplateId(long deviceTemplateId);
+    long countByDeviceTemplateKey(String deviceTemplateKey);
+
+    void clearTemplate(String deviceTemplateKey);
 }

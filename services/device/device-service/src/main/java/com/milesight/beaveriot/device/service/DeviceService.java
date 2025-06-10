@@ -42,15 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.*;
@@ -114,7 +106,7 @@ public class DeviceService implements IDeviceFacade {
         // call service for adding
         ExchangePayload payload = createDeviceRequest.getParamEntities();
         payload.putContext(DEVICE_NAME_ON_ADD, createDeviceRequest.getName());
-        payload.putContext(DEVICE_TEMPLATE_ID_ON_ADD, createDeviceRequest.getTemplateId());
+        payload.putContext(DEVICE_TEMPLATE_KEY_ON_ADD, createDeviceRequest.getTemplate());
 
         // Must return a device
         try {
@@ -276,8 +268,8 @@ public class DeviceService implements IDeviceFacade {
             }
         }
 
-        if (findResult.get().getTemplateId() != null) {
-            List<DeviceTemplateDTO> deviceTemplateDTOList = deviceTemplateFacade.getDeviceTemplateByIds(List.of(findResult.get().getTemplateId()));
+        if (findResult.get().getTemplate() != null) {
+            List<DeviceTemplateDTO> deviceTemplateDTOList = deviceTemplateFacade.getDeviceTemplateByKeys(List.of(findResult.get().getTemplate()));
             if (!CollectionUtils.isEmpty(deviceTemplateDTOList)) {
                 DeviceTemplateDTO deviceTemplate = deviceTemplateDTOList.get(0);
                 deviceDetailResponse.setTemplateName(deviceTemplate.getName());
@@ -319,6 +311,7 @@ public class DeviceService implements IDeviceFacade {
                 .name(devicePO.getName())
                 .key(devicePO.getKey())
                 .userId(devicePO.getUserId())
+                .template(devicePO.getTemplate())
                 .createdAt(devicePO.getCreatedAt())
                 .integrationId(devicePO.getIntegration())
                 .integrationConfig(integrationMap.get(devicePO.getIntegration()))

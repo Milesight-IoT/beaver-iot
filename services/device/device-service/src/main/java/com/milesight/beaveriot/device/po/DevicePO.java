@@ -39,8 +39,8 @@ public class DevicePO {
     @Column(name = "identifier")
     private String identifier;
 
-    @Column(name = "template_id")
-    private Long templateId;
+    @Column(name = "template")
+    private String template;
 
     @Column(name = "additional_data", length = 1024)
     @Convert(converter = MapJsonConverter.class)

@@ -9,5 +9,5 @@ import com.milesight.beaveriot.context.model.response.DeviceTemplateDiscoverResp
 public interface DeviceTemplateParserProvider {
     boolean validate(String deviceTemplateContent);
     String getDefaultDeviceTemplateContent();
-    DeviceTemplateDiscoverResponse discover(String integration, Object data, Long deviceTemplateId, String deviceTemplateContent);
+    DeviceTemplateDiscoverResponse discover(String integration, Object data, String deviceTemplateKey, String deviceTemplateContent);
 }
