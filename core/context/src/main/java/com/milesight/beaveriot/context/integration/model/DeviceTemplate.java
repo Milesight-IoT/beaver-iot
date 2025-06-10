@@ -6,7 +6,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.util.Assert;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -37,17 +36,9 @@ public class DeviceTemplate implements IdentityKey {
     protected DeviceTemplate() {
     }
 
-    protected DeviceTemplate(String name, String content, String description, Map<String, Object> additional, String identifier, List<Entity> entityConfigs) {
-        this.name = name;
-        this.content = content;
-        this.description = description;
-        this.additional = additional;
-        this.identifier = identifier;
-    }
-
     @Override
     public String getKey() {
-        return IntegrationConstants.formatIntegrationDeviceKey(integrationId, identifier);
+        return IntegrationConstants.formatIntegrationDeviceTemplateKey(integrationId, identifier);
     }
 
     protected void initializeProperties(String integrationId) {

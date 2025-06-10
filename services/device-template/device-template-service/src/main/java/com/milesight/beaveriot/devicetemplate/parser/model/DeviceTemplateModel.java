@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.devicetemplate.parser.model.json;
+package com.milesight.beaveriot.devicetemplate.parser.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.milesight.beaveriot.context.integration.model.config.EntityConfig;
@@ -13,7 +13,7 @@ import java.util.List;
  * create: 2025/5/15 13:29
  **/
 @Data
-public class JsonDeviceTemplate {
+public class DeviceTemplateModel {
     private String templateType;
     private Definition definition;
     private List<EntityConfig> initialEntities;

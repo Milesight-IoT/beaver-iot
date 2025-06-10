@@ -1,4 +1,3 @@
-template_type: JSON
 definition:
   input:
     type: object

@@ -1,11 +1,7 @@
 {
   "type": "object",
-  "required": ["template_type", "definition"],
+  "required": ["definition"],
   "properties": {
-    "template_type": {
-      "type": "string",
-      "const": "JSON"
-    },
     "definition": {
       "type": "object",
       "required": ["input"],

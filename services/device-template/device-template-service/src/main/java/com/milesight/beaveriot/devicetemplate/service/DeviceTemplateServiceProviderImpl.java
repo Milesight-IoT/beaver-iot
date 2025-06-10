@@ -6,15 +6,12 @@ import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.DeviceTemplateServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.integration.model.DeviceTemplate;
-import com.milesight.beaveriot.context.integration.model.event.DeviceTemplateEvent;
 import com.milesight.beaveriot.context.model.request.SearchDeviceTemplateRequest;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateResponseData;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.devicetemplate.po.DeviceTemplatePO;
 import com.milesight.beaveriot.devicetemplate.repository.DeviceTemplateRepository;
 import com.milesight.beaveriot.devicetemplate.support.DeviceTemplateConverter;
-import com.milesight.beaveriot.eventbus.EventBus;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,20 +26,20 @@ import java.util.stream.Collectors;
 
 @Service
 public class DeviceTemplateServiceProviderImpl implements DeviceTemplateServiceProvider {
-    @Autowired
-    DeviceTemplateRepository deviceTemplateRepository;
+    private final DeviceTemplateRepository deviceTemplateRepository;
 
-    @Autowired
-    DeviceTemplateConverter deviceTemplateConverter;
+    private final DeviceTemplateConverter deviceTemplateConverter;
 
-    @Autowired
-    EntityServiceProvider entityServiceProvider;
+    private final EntityServiceProvider entityServiceProvider;
 
-    @Autowired
-    EventBus eventBus;
+    private final DeviceTemplateService deviceTemplateService;
 
-    @Autowired
-    DeviceTemplateService deviceTemplateService;
+    public DeviceTemplateServiceProviderImpl(DeviceTemplateRepository deviceTemplateRepository, DeviceTemplateConverter deviceTemplateConverter, EntityServiceProvider entityServiceProvider, DeviceTemplateService deviceTemplateService) {
+        this.deviceTemplateRepository = deviceTemplateRepository;
+        this.deviceTemplateConverter = deviceTemplateConverter;
+        this.entityServiceProvider = entityServiceProvider;
+        this.deviceTemplateService = deviceTemplateService;
+    }
 
     @Override
     public void save(DeviceTemplate deviceTemplate) {
@@ -105,10 +102,8 @@ public class DeviceTemplateServiceProviderImpl implements DeviceTemplateServiceP
             deviceTemplatePO.setIdentifier(deviceTemplate.getIdentifier());
             deviceTemplatePO.setKey(deviceTemplate.getKey());
             deviceTemplatePO = deviceTemplateRepository.save(deviceTemplatePO);
-            eventBus.publish(DeviceTemplateEvent.of(DeviceTemplateEvent.EventType.CREATED, deviceTemplate));
         } else if (shouldUpdate) {
             deviceTemplatePO = deviceTemplateRepository.save(deviceTemplatePO);
-            eventBus.publish(DeviceTemplateEvent.of(DeviceTemplateEvent.EventType.UPDATED, deviceTemplate));
         }
 
         deviceTemplate.setId(deviceTemplatePO.getId());
@@ -148,8 +143,6 @@ public class DeviceTemplateServiceProviderImpl implements DeviceTemplateServiceP
         entityServiceProvider.deleteByTargetId(deviceTemplate.getId().toString());
 
         deviceTemplateRepository.deleteById(deviceTemplate.getId());
-
-        eventBus.publish(DeviceTemplateEvent.of(DeviceTemplateEvent.EventType.DELETED, deviceTemplate));
     }
 
     @Override

@@ -5,22 +5,16 @@ import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
-import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
 import com.milesight.beaveriot.context.integration.model.DeviceTemplate;
 import com.milesight.beaveriot.context.integration.model.Integration;
-import com.milesight.beaveriot.context.integration.model.event.DeviceTemplateEvent;
 import com.milesight.beaveriot.context.model.request.SearchDeviceTemplateRequest;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateResponseData;
 import com.milesight.beaveriot.devicetemplate.dto.DeviceTemplateDTO;
 import com.milesight.beaveriot.devicetemplate.facade.IDeviceTemplateFacade;
 import com.milesight.beaveriot.devicetemplate.po.DeviceTemplatePO;
 import com.milesight.beaveriot.devicetemplate.repository.DeviceTemplateRepository;
-import com.milesight.beaveriot.devicetemplate.support.DeviceTemplateConverter;
-import com.milesight.beaveriot.eventbus.EventBus;
-import com.milesight.beaveriot.user.facade.IUserFacade;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -32,33 +26,20 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class DeviceTemplateService implements IDeviceTemplateFacade {
-    @Autowired
-    DeviceTemplateRepository deviceTemplateRepository;
+    private final DeviceTemplateRepository deviceTemplateRepository;
 
-    @Lazy
-    @Autowired
-    IntegrationServiceProvider integrationServiceProvider;
+    private final IntegrationServiceProvider integrationServiceProvider;
 
-    @Lazy
-    @Autowired
-    DeviceTemplateConverter deviceTemplateConverter;
+    private final DeviceServiceProvider deviceServiceProvider;
 
-    @Lazy
-    @Autowired
-    DeviceServiceProvider deviceServiceProvider;
+    private final EntityServiceProvider entityServiceProvider;
 
-    @Lazy
-    @Autowired
-    EntityServiceProvider entityServiceProvider;
-
-    @Autowired
-    IUserFacade userFacade;
-
-    @Autowired
-    EventBus<DeviceTemplateEvent> eventBus;
-
-    @Autowired
-    EntityValueServiceProvider entityValueServiceProvider;
+    public DeviceTemplateService(DeviceTemplateRepository deviceTemplateRepository, @Lazy IntegrationServiceProvider integrationServiceProvider, @Lazy DeviceServiceProvider deviceServiceProvider, @Lazy EntityServiceProvider entityServiceProvider) {
+        this.deviceTemplateRepository = deviceTemplateRepository;
+        this.integrationServiceProvider = integrationServiceProvider;
+        this.deviceServiceProvider = deviceServiceProvider;
+        this.entityServiceProvider = entityServiceProvider;
+    }
 
     private DeviceTemplateResponseData convertPOToResponseData(DeviceTemplatePO deviceTemplatePO) {
         DeviceTemplateResponseData deviceTemplateResponseData = new DeviceTemplateResponseData();
@@ -149,7 +130,5 @@ public class DeviceTemplateService implements IDeviceTemplateFacade {
         entityServiceProvider.deleteByTargetId(deviceTemplate.getId().toString());
 
         deviceTemplateRepository.deleteById(deviceTemplate.getId());
-
-        eventBus.publish(DeviceTemplateEvent.of(DeviceTemplateEvent.EventType.DELETED, deviceTemplate));
     }
 }

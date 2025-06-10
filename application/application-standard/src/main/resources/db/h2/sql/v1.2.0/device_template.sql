@@ -16,8 +16,7 @@ CREATE TABLE `t_device_template`
     created_at              BIGINT       NOT NULL,
     updated_at              BIGINT       NOT NULL,
     PRIMARY KEY (id),
-    UNIQUE ("key"),
-    CONSTRAINT uk_device_template_integration_identifier UNIQUE (integration, identifier, tenant_id)
+    CONSTRAINT uk_device_template_key_tenant_id UNIQUE ("key", tenant_id)
 );
 
 CREATE INDEX idx_device_template_integration ON `t_device_template` (integration);

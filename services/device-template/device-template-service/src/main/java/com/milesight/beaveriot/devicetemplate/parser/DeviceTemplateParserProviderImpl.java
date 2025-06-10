@@ -3,7 +3,6 @@ package com.milesight.beaveriot.devicetemplate.parser;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.api.DeviceTemplateParserProvider;
-import com.milesight.beaveriot.context.model.DeviceTemplateType;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateDiscoverResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -11,8 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 
 import java.nio.charset.StandardCharsets;
-import java.text.MessageFormat;
-import java.util.Map;
 
 /**
  * author: Luxb
@@ -21,24 +18,15 @@ import java.util.Map;
 @Slf4j
 @Service
 public class DeviceTemplateParserProviderImpl implements DeviceTemplateParserProvider {
-    private final CommonDeviceTemplateParser commonDeviceTemplateParser;
-    private final Map<String, DeviceTemplateParser> registerParserMap;
+    private final DeviceTemplateParser deviceTemplateParser;
 
-    public DeviceTemplateParserProviderImpl(CommonDeviceTemplateParser commonDeviceTemplateParser, JsonDeviceTemplateParser jsonDeviceTemplateParser) {
-        this.commonDeviceTemplateParser = commonDeviceTemplateParser;
-        registerParserMap = Map.of(
-                DeviceTemplateType.JSON.toString(), jsonDeviceTemplateParser
-        );
+    public DeviceTemplateParserProviderImpl(DeviceTemplateParser deviceTemplateParser) {
+        this.deviceTemplateParser = deviceTemplateParser;
     }
 
     @Override
     public boolean validate(String deviceTemplateContent) {
-        String templateType = commonDeviceTemplateParser.getTemplateType(deviceTemplateContent);
-        DeviceTemplateParser parser = registerParserMap.get(templateType);
-        if (parser == null) {
-            throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), MessageFormat.format("template type:{0} parser not found", templateType)).build();
-        }
-        return parser.validate(deviceTemplateContent);
+        return deviceTemplateParser.validate(deviceTemplateContent);
     }
 
     @Override
@@ -52,11 +40,9 @@ public class DeviceTemplateParserProviderImpl implements DeviceTemplateParserPro
 
     @Override
     public DeviceTemplateDiscoverResponse discover(String integration, Object data, Long deviceTemplateId, String deviceTemplateContent) {
-        String templateType = commonDeviceTemplateParser.getTemplateType(deviceTemplateContent);
-        DeviceTemplateParser parser = registerParserMap.get(templateType);
-        if (!parser.validate(deviceTemplateContent)) {
+        if (!deviceTemplateParser.validate(deviceTemplateContent)) {
             return null;
         }
-        return parser.discover(integration, data, deviceTemplateId, deviceTemplateContent);
+        return deviceTemplateParser.discover(integration, data, deviceTemplateId, deviceTemplateContent);
     }
 }
