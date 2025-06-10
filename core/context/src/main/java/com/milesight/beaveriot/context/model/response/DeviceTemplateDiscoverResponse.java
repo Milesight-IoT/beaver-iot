@@ -1,9 +1,8 @@
 package com.milesight.beaveriot.context.model.response;
 
+import com.milesight.beaveriot.context.integration.model.Device;
+import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import lombok.Data;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * author: Luxb
@@ -11,18 +10,6 @@ import java.util.List;
  **/
 @Data
 public class DeviceTemplateDiscoverResponse {
-    private List<EntityData> entities = new ArrayList<>();
-
-    public void addEntity(String entityName, Object value) {
-        EntityData entityData = new EntityData();
-        entityData.setEntityName(entityName);
-        entityData.setValue(value);
-        entities.add(entityData);
-    }
-
-    @Data
-    public static class EntityData {
-        private String entityName;
-        private Object value;
-    }
+    private Device device;
+    private ExchangePayload payload;
 }

@@ -7,9 +7,6 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
-import com.milesight.beaveriot.context.api.DeviceServiceProvider;
-import com.milesight.beaveriot.context.api.EntityServiceProvider;
-import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.DeviceBuilder;
 import com.milesight.beaveriot.context.integration.model.Entity;
@@ -40,16 +37,6 @@ import java.util.*;
 @Service
 public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     private final static String DEVICE_ID_KEY = "device_id";
-    private final DeviceServiceProvider deviceServiceProvider;
-    private final EntityServiceProvider entityServiceProvider;
-    private final EntityValueServiceProvider entityValueServiceProvider;
-
-    public DeviceTemplateParser(DeviceServiceProvider deviceServiceProvider, EntityServiceProvider entityServiceProvider, EntityValueServiceProvider entityValueServiceProvider) {
-        this.deviceServiceProvider = deviceServiceProvider;
-        this.entityServiceProvider = entityServiceProvider;
-        this.entityValueServiceProvider = entityValueServiceProvider;
-    }
-
 
     public boolean validate(String deviceTemplateContent) {
         try {
@@ -89,6 +76,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
 
     @Transactional(rollbackFor = Exception.class)
     public DeviceTemplateDiscoverResponse discover(String integration, Object data, String deviceTemplateKey, String deviceTemplateContent) {
+        DeviceTemplateDiscoverResponse response = new DeviceTemplateDiscoverResponse();
         try {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode jsonData = mapper.readTree(data.toString());
@@ -107,27 +95,31 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             // Validate json data
             validateJsonData(flatJsonDataMap, flatJsonInputDescriptionMap);
 
-            // Save device
+            // Build device
             String deviceId = jsonData.get(DEVICE_ID_KEY).asText();
-            Device device = saveDevice(integration, deviceId, deviceTemplateKey);
+            Device device = buildDevice(integration, deviceId, deviceTemplateKey);
 
-            // Save device entities
-            List<Entity> deviceEntities = saveDeviceEntities(integration, device.getKey(), deviceTemplateModel.getInitialEntities());
+            // Build device entities
+            List<Entity> deviceEntities = buildDeviceEntities(integration, device.getKey(), deviceTemplateModel.getInitialEntities());
+            device.setEntities(deviceEntities);
             Map<String, Entity> flatDeviceEntityMap = new HashMap<>();
             flattenDeviceEntities(deviceEntities, flatDeviceEntityMap, "");
 
-            // Save device entity values
-            return saveDeviceEntityValues(flatJsonDataMap, flatJsonInputDescriptionMap, flatDeviceEntityMap);
+            // Build device entity values payload
+            ExchangePayload payload = buildDeviceEntityValuesPayload(flatJsonDataMap, flatJsonInputDescriptionMap, flatDeviceEntityMap);
+
+            response.setDevice(device);
+            response.setPayload(payload);
+            return response;
         } catch (Exception e) {
             log.error(e.getMessage());
             throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
         }
     }
 
-    private DeviceTemplateDiscoverResponse saveDeviceEntityValues(Map<String, JsonNode> flatJsonDataMap,
+    private ExchangePayload buildDeviceEntityValuesPayload(Map<String, JsonNode> flatJsonDataMap,
                                                                   Map<String, DeviceTemplateModel.Definition.InputJsonObject> flatJsonInputDescriptionMap,
                                                                   Map<String, Entity> flatDeviceEntityMap) {
-        DeviceTemplateDiscoverResponse response = new DeviceTemplateDiscoverResponse();
         ExchangePayload payload = new ExchangePayload();
         for (String key : flatJsonDataMap.keySet()) {
             JsonNode jsonNode = flatJsonDataMap.get(key);
@@ -144,13 +136,9 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             if (entity == null) {
                 continue;
             }
-            response.addEntity(entity.getName(), value);
             payload.put(entity.getKey(), value);
         }
-        if (!payload.isEmpty()) {
-            entityValueServiceProvider.saveValuesAndPublishSync(payload);
-        }
-        return response;
+        return payload;
     }
 
     private Object getJsonValue(JsonNode jsonNode, DeviceTemplateModel.JsonType jsonType) {
@@ -238,18 +226,16 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         }
     }
 
-    protected Device saveDevice(String integration, String deviceId, String deviceTemplateKey) {
-        Device device = new DeviceBuilder(integration)
+    protected Device buildDevice(String integration, String deviceId, String deviceTemplateKey) {
+        return new DeviceBuilder(integration)
                 .name(deviceId)
                 .template(deviceTemplateKey)
                 .identifier(deviceId)
                 .additional(Map.of("deviceId", deviceId))
                 .build();
-        deviceServiceProvider.save(device);
-        return device;
     }
 
-    protected List<Entity> saveDeviceEntities(String integration, String deviceKey, List<EntityConfig> initialEntities) {
+    protected List<Entity> buildDeviceEntities(String integration, String deviceKey, List<EntityConfig> initialEntities) {
         if (CollectionUtils.isEmpty(initialEntities)) {
             return null;
         }
@@ -260,7 +246,6 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             return entity;
         }).toList();
         entities.forEach(entity -> entity.initializeProperties(integration, deviceKey));
-        entityServiceProvider.batchSave(entities);
         return entities;
     }
 }
