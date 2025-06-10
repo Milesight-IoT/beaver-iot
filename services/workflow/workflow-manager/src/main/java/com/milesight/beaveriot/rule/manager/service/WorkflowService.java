@@ -496,6 +496,10 @@ public class WorkflowService {
 
         WorkflowPO workflowPO = workflowEntityRelationService.getFlowByEntityId(entity.getId());
 
+        if (workflowPO == null) {
+            return;
+        }
+
         if (workflowEntityRelationService.getTriggerNode(parseRuleFlowConfig(workflowPO.getId().toString(), workflowPO.getDesignData())) != null) {
             ((WorkflowService) AopContext.currentProxy()).batchDelete(List.of(workflowPO.getId()));
         }
