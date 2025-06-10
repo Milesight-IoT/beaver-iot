@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-import static com.milesight.beaveriot.rule.constants.RuleNodeNames.CAMEL_DIRECT;
 import static com.milesight.beaveriot.rule.constants.RuleNodeNames.CAMEL_OUTPUT;
 
 /**
@@ -94,6 +93,7 @@ public class FlowGraph {
 
             FromNodeDefinition fromNodeDefinition = populateGraphFromNodeDefinitions();
 
+            ruleFlowConfig.setFromNodeId(fromNodeDefinition.getId());
             ruleFlowConfig.getInitializedNodes().forEach(this::populateGraphNodeDefinitions);
 
             FromDefinition fromDefinition = RouteDefinitionConverter.convertFromDefinition(ruleFlowConfig.getFlowId(), fromNodeDefinition);
