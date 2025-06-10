@@ -30,8 +30,9 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+
+import static com.milesight.beaveriot.rule.constants.ExchangeHeaders.EXCHANGE_CUSTOM_OUTPUT_LOG_VARIABLES;
 
 /**
  * @author leon
@@ -143,6 +144,7 @@ public class DefaultRuleEngineLifecycleManager implements RuleEngineLifecycleMan
 
         return executeWithRollback(ruleFlowConfig, ruleNodeDefinitionInterceptor, () -> {
             String endpointUri = camelContext.getRoute(newFlowId).getEndpoint().getEndpointUri();
+            ExchangeHeaders.putMapProperty(exchange, EXCHANGE_CUSTOM_OUTPUT_LOG_VARIABLES, ruleFlowConfig.getFromNodeId(), exchange.getIn().getBody());
             ruleEngineExecutor.execute(endpointUri, exchange);
             return exchange.getProperty(ExchangeHeaders.TRACE_RESPONSE, FlowTraceInfo.class);
         });

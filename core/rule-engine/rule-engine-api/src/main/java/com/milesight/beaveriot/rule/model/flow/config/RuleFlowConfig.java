@@ -16,6 +16,8 @@ public class RuleFlowConfig {
 
     private String name;
 
+    private String fromNodeId;
+
     private List<RuleNodeConfig> nodes;
 
     private List<RuleEdgeConfig> edges;
