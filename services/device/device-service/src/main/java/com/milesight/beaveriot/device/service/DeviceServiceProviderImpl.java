@@ -90,6 +90,11 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
             shouldUpdate = true;
         }
 
+        if (!device.getTemplate().equals(devicePO.getTemplate())) {
+            devicePO.setTemplate(device.getTemplate());
+            shouldUpdate = true;
+        }
+
         // create or update
         if (shouldCreate) {
             devicePO.setUserId(userId);
