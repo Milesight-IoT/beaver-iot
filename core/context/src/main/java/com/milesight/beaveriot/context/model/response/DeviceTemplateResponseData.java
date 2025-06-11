@@ -6,7 +6,7 @@ import java.util.Map;
 
 @Data
 public class DeviceTemplateResponseData {
-    private String id;
+    private Long id;
     private String key;
     private String name;
     private String content;

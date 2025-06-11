@@ -7,10 +7,8 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
-import com.milesight.beaveriot.context.integration.model.Device;
-import com.milesight.beaveriot.context.integration.model.DeviceBuilder;
-import com.milesight.beaveriot.context.integration.model.Entity;
-import com.milesight.beaveriot.context.integration.model.ExchangePayload;
+import com.milesight.beaveriot.context.api.DeviceTemplateServiceProvider;
+import com.milesight.beaveriot.context.integration.model.*;
 import com.milesight.beaveriot.context.integration.model.config.EntityConfig;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateDiscoverResponse;
 import com.milesight.beaveriot.devicetemplate.facade.IDeviceTemplateParserFacade;
@@ -37,6 +35,11 @@ import java.util.*;
 @Service
 public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     private final static String DEVICE_ID_KEY = "device_id";
+    private final DeviceTemplateServiceProvider deviceTemplateServiceProvider;
+
+    public DeviceTemplateParser(DeviceTemplateServiceProvider deviceTemplateServiceProvider) {
+        this.deviceTemplateServiceProvider = deviceTemplateServiceProvider;
+    }
 
     public boolean validate(String deviceTemplateContent) {
         try {
@@ -75,7 +78,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public DeviceTemplateDiscoverResponse discover(String integration, Object data, String deviceTemplateKey, String deviceTemplateContent) {
+    public DeviceTemplateDiscoverResponse discover(String integration, Object data, Long deviceTemplateId, String deviceTemplateContent) {
         DeviceTemplateDiscoverResponse response = new DeviceTemplateDiscoverResponse();
         try {
             ObjectMapper mapper = new ObjectMapper();
@@ -97,7 +100,8 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
 
             // Build device
             String deviceId = jsonData.get(DEVICE_ID_KEY).asText();
-            Device device = buildDevice(integration, deviceId, deviceTemplateKey);
+            DeviceTemplate deviceTemplate = deviceTemplateServiceProvider.findById(deviceTemplateId);
+            Device device = buildDevice(integration, deviceId, deviceTemplate.getKey());
 
             // Build device entities
             List<Entity> deviceEntities = buildDeviceEntities(integration, device.getKey(), deviceTemplateModel.getInitialEntities());

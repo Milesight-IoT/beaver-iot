@@ -43,7 +43,7 @@ public class DeviceTemplateService implements IDeviceTemplateFacade {
 
     private DeviceTemplateResponseData convertPOToResponseData(DeviceTemplatePO deviceTemplatePO) {
         DeviceTemplateResponseData deviceTemplateResponseData = new DeviceTemplateResponseData();
-        deviceTemplateResponseData.setId(deviceTemplatePO.getId().toString());
+        deviceTemplateResponseData.setId(deviceTemplatePO.getId());
         deviceTemplateResponseData.setKey(deviceTemplatePO.getKey());
         deviceTemplateResponseData.setName(deviceTemplatePO.getName());
         deviceTemplateResponseData.setContent(deviceTemplatePO.getContent());
