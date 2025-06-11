@@ -4,7 +4,6 @@ import com.milesight.beaveriot.data.support.MapJsonConverter;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
-import org.hibernate.annotations.DynamicInsert;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -39,6 +38,9 @@ public class DevicePO {
 
     @Column(name = "identifier")
     private String identifier;
+
+    @Column(name = "template")
+    private String template;
 
     @Column(name = "additional_data", length = 1024)
     @Convert(converter = MapJsonConverter.class)

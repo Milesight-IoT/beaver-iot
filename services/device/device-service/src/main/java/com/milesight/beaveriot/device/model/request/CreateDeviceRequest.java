@@ -15,5 +15,7 @@ public class CreateDeviceRequest {
     @NotBlank
     private String integration;
 
+    private String template;
+
     private ExchangePayload paramEntities;
 }

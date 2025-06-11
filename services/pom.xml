@@ -47,6 +47,7 @@
         <module>credentials</module>
         <module>mqtt</module>
         <module>resource-manager</module>
+        <module>device-template</module>
     </modules>
 
     <properties>
