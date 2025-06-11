@@ -167,7 +167,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode rootNode = mapper.createObjectNode();
             deviceTemplateModel.getDefinition().getOutput().getProperties().forEach(outputJsonObject -> {
-                JsonNode jsonNode = parseJsonNode(outputJsonObject, deviceKey, payload);
+                JsonNode jsonNode = parseJsonNode(outputJsonObject, deviceKey, payload, "");
                 if (jsonNode != null) {
                     rootNode.set(outputJsonObject.getKey(), jsonNode);
                 }
@@ -181,13 +181,14 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         }
     }
 
-    private JsonNode parseJsonNode(DeviceTemplateModel.Definition.OutputJsonObject outputJsonObject, String deviceKey, ExchangePayload payload) {
+    private JsonNode parseJsonNode(DeviceTemplateModel.Definition.OutputJsonObject outputJsonObject, String deviceKey, ExchangePayload payload, String parentKey) {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode jsonNode = mapper.createObjectNode();
+        String currentKey = parentKey + outputJsonObject.getKey();
         if (DeviceTemplateModel.JsonType.OBJECT.equals(outputJsonObject.getType())) {
             if (outputJsonObject.getProperties() != null) {
                 for (DeviceTemplateModel.Definition.OutputJsonObject child : outputJsonObject.getProperties()) {
-                    JsonNode childJsonNode = parseJsonNode(child, deviceKey, payload);
+                    JsonNode childJsonNode = parseJsonNode(child, deviceKey, payload, currentKey + ".");
                     if (childJsonNode != null) {
                         jsonNode.set(child.getKey(), childJsonNode);
                     }
@@ -205,10 +206,31 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                     return null;
                 }
                 Object value = payload.get(entityKey);
+                validateValue(currentKey, entityKey, outputJsonObject.getType(), value);
                 return mapper.valueToTree(value);
             }
         }
         return jsonNode;
+    }
+
+    private void validateValue(String currentKey, String entityKey, DeviceTemplateModel.JsonType definitionType, Object value) {
+        DeviceTemplateModel.JsonType targetType = DeviceTemplateModel.JsonType.STRING;
+        if (value instanceof Boolean) {
+            targetType = DeviceTemplateModel.JsonType.BOOLEAN;
+        } else if (value instanceof Double || value instanceof Float) {
+            targetType = DeviceTemplateModel.JsonType.DOUBLE;
+        } else if (value instanceof Long || value instanceof Integer) {
+            targetType = DeviceTemplateModel.JsonType.LONG;
+        }
+        if (!definitionType.equals(targetType)) {
+            throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(),
+                    MessageFormat.format("Invalid value type for json key ''{0}'': requires type {1}, but entity key ''{2}'' provides type {3} with value {4}",
+                            currentKey,
+                            definitionType.getTypeName(),
+                            entityKey,
+                            targetType.getTypeName(),
+                            targetType.equals(DeviceTemplateModel.JsonType.STRING) ? "'" + value + "'" : value)).build();
+        }
     }
 
     private ExchangePayload buildDeviceEntityValuesPayload(Map<String, JsonNode> flatJsonDataMap,

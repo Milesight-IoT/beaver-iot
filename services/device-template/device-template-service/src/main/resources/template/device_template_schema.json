@@ -44,7 +44,6 @@
     },
     "initial_entities": {
       "type": "array",
-      "optional": true,
       "items": {
         "type": "object",
         "required": ["identifier", "value_type"],
@@ -53,8 +52,7 @@
             "type": "string"
           },
           "name": {
-            "type": "string",
-            "optional": true
+            "type": "string"
           },
           "value_type": {
             "type": "string",
@@ -62,7 +60,6 @@
           },
           "children": {
             "type": "array",
-            "optional": true,
             "items": {
               "type": "object",
               "required": ["identifier", "value_type"],
@@ -74,8 +71,7 @@
                   "enum": ["object", "string", "long", "double", "boolean"]
                 },
                 "attributes": {
-                  "type": "object",
-                  "optional": true
+                  "type": "object"
                 }
               }
             }
@@ -113,24 +109,93 @@
         },
         "type": {
           "type": "string",
-          "enum": ["object", "string", "long", "double"]
+          "enum": ["object", "string", "long", "double", "boolean"]
         },
         "required": {
-          "type": "boolean",
-          "optional": true
+          "type": "boolean"
         },
         "entity_mapping": {
-          "type": "string",
-          "optional": true
+          "type": "string"
         },
         "properties": {
           "type": "array",
-          "optional": true,
           "items": {
             "$ref": "#/definitions/Property"
           }
+        },
+        "value": {}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": { "const": "object" }
+            },
+            "required": ["type"]
+          },
+          "then": {
+            "not": {
+              "required": ["value"]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": { "const": "boolean" },
+              "value": {}
+            },
+            "required": ["type", "value"]
+          },
+          "then": {
+            "properties": {
+              "value": { "type": "boolean" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": { "const": "string" },
+              "value": {}
+            },
+            "required": ["type", "value"]
+          },
+          "then": {
+            "properties": {
+              "value": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": { "const": "long" },
+              "value": {}
+            },
+            "required": ["type", "value"]
+          },
+          "then": {
+            "properties": {
+              "value": { "type": "integer" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": { "const": "double" },
+              "value": {}
+            },
+            "required": ["type", "value"]
+          },
+          "then": {
+            "properties": {
+              "value": { "type": "number" }
+            }
+          }
         }
-      }
+      ]
     }
   }
 }
