@@ -1,7 +1,8 @@
 package com.milesight.beaveriot.context.api;
 
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
-import com.milesight.beaveriot.context.model.response.DeviceTemplateDiscoverResponse;
+import com.milesight.beaveriot.context.model.response.DeviceTemplateInputResult;
+import com.milesight.beaveriot.context.model.response.DeviceTemplateOutputResult;
 
 /**
  * author: Luxb
@@ -10,6 +11,6 @@ import com.milesight.beaveriot.context.model.response.DeviceTemplateDiscoverResp
 public interface DeviceTemplateParserProvider {
     boolean validate(String deviceTemplateContent);
     String defaultContent();
-    DeviceTemplateDiscoverResponse discover(String integration, String jsonData, Long deviceTemplateId, String deviceTemplateContent);
-    String output(String deviceKey, ExchangePayload payload);
+    DeviceTemplateInputResult input(String integration, Long deviceTemplateId, String jsonData);
+    DeviceTemplateOutputResult output(String deviceKey, ExchangePayload payload);
 }

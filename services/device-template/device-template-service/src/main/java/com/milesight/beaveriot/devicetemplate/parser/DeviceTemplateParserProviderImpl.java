@@ -1,16 +1,11 @@
 package com.milesight.beaveriot.devicetemplate.parser;
 
-import com.milesight.beaveriot.base.enums.ErrorCode;
-import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.api.DeviceTemplateParserProvider;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
-import com.milesight.beaveriot.context.model.response.DeviceTemplateDiscoverResponse;
+import com.milesight.beaveriot.context.model.response.DeviceTemplateInputResult;
+import com.milesight.beaveriot.context.model.response.DeviceTemplateOutputResult;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StreamUtils;
-
-import java.nio.charset.StandardCharsets;
 
 /**
  * author: Luxb
@@ -32,23 +27,16 @@ public class DeviceTemplateParserProviderImpl implements DeviceTemplateParserPro
 
     @Override
     public String defaultContent() {
-        try {
-            return StreamUtils.copyToString(new ClassPathResource("template/default_device_template.yaml").getInputStream(), StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
-        }
+        return deviceTemplateParser.defaultContent();
     }
 
     @Override
-    public DeviceTemplateDiscoverResponse discover(String integration, String jsonData, Long deviceTemplateId, String deviceTemplateContent) {
-        if (!deviceTemplateParser.validate(deviceTemplateContent)) {
-            return null;
-        }
-        return deviceTemplateParser.discover(integration, jsonData, deviceTemplateId, deviceTemplateContent);
+    public DeviceTemplateInputResult input(String integration, Long deviceTemplateId, String jsonData) {
+        return deviceTemplateParser.input(integration, deviceTemplateId, jsonData);
     }
 
     @Override
-    public String output(String deviceKey, ExchangePayload payload) {
+    public DeviceTemplateOutputResult output(String deviceKey, ExchangePayload payload) {
         return deviceTemplateParser.output(deviceKey, payload);
     }
 }

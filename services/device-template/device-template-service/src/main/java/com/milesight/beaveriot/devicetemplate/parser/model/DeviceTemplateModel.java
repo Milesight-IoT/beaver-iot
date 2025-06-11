@@ -46,12 +46,18 @@ public class DeviceTemplateModel {
     @Data
     public static class Definition {
         private Input input;
-        private List<OutputJsonObject> output;
+        private Output output;
 
         @Data
         public static class Input {
             private JsonType type;
             private List<InputJsonObject> properties;
+        }
+
+        @Data
+        public static class Output {
+            private JsonType type;
+            private List<OutputJsonObject> properties;
         }
 
         @Data

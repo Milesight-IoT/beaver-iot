@@ -22,27 +22,20 @@ definition:
         type: string                 # json type
         entity_mapping: 'timestamp'  # entity identifier
   output:
-    - type: object
-      properties:
-        - key: serviceId                # json key
-          type: string                  # json type
-          entity_mapping: 'service_id'  # entity identifier
-        - key: inputs               # json key
-          type: object              # json type
-    - type: object
-      properties:
-        - key: serviceId               # json key
-          type: string                 # json type
-          value: 'set_delay_work'
-        - key: inputs               # json key
-          type: object              # json type
-          properties:
-            - key: delay_time
-              type: long
-              entity_mapping: 'set_delay_work.delay_time'
-            - key: ctrl_status1
-              type: long
-              entity_mapping: 'set_delay_work.ctrl_status1'
+    type: object
+    properties:
+      - key: serviceId               # json key
+        type: string                 # json type
+        value: 'set_delay_work'
+      - key: inputs               # json key
+        type: object              # json type
+        properties:
+          - key: delay_time
+            type: long
+            entity_mapping: 'set_delay_work.delay_time'
+          - key: ctrl_status1
+            type: long
+            entity_mapping: 'set_delay_work.ctrl_status1'
 initial_entities:
   - identifier: 'device_id'  # entity identifier
     name: 'device_id'        # entity name

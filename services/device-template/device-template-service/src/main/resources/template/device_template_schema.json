@@ -24,20 +24,18 @@
           }
         },
         "output": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["type"],
+          "type": "object",
+          "required": ["type", "properties"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["object"]
+            },
             "properties": {
-              "type": {
-                "type": "string",
-                "enum": ["object"]
-              },
-              "properties": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/definitions/Property"
-                }
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/definitions/Property"
               }
             }
           }

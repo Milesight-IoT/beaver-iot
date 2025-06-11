@@ -9,7 +9,7 @@ import lombok.Data;
  * create: 2025/6/9 14:58
  **/
 @Data
-public class DeviceTemplateDiscoverResponse {
+public class DeviceTemplateInputResult {
     private Device device;
     private ExchangePayload payload;
 }
