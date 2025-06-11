@@ -17,6 +17,7 @@ import lombok.extern.slf4j.*;
 import lombok.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -50,11 +51,11 @@ public class EntityExportService {
     @Autowired
     private EntityValueService entityValueService;
 
-    private static String getDateTime(EntityHistoryResponse historyResponse) {
+    private static String getDateTime(EntityHistoryResponse historyResponse, ZoneId zoneId) {
         val milliseconds = Long.parseLong(historyResponse.getTimestamp());
         val epochSecond = TimeUnit.MILLISECONDS.toSeconds(milliseconds);
         val instant = Instant.ofEpochSecond(epochSecond);
-        val zonedDateTime = ZonedDateTime.ofInstant(instant, ZoneId.systemDefault());
+        val zonedDateTime = ZonedDateTime.ofInstant(instant, zoneId);
         return zonedDateTime.format(DEFAULT_DATETIME_FORMATTER);
     }
 
@@ -78,6 +79,7 @@ public class EntityExportService {
 
         val startTime = entityExportRequest.getStartTimestamp() == null ? 0 : entityExportRequest.getStartTimestamp();
         val endTime = entityExportRequest.getEndTimestamp() == null ? System.currentTimeMillis() : entityExportRequest.getEndTimestamp();
+        val zoneId = StringUtils.hasText(entityExportRequest.getTimeZone()) ? ZoneId.of(entityExportRequest.getTimeZone()) : ZoneId.systemDefault();
         val outputStream = httpServletResponse.getOutputStream();
         exporter.export(outputStream, i -> {
             val query = new EntityHistoryQuery();
@@ -95,7 +97,7 @@ public class EntityExportService {
                             return null;
                         }
 
-                        val dateTime = getDateTime(historyResponse);
+                        val dateTime = getDateTime(historyResponse, zoneId);
                         val entityExportData = new EntityExportData();
                         entityExportData.setUpdateTime(dateTime);
                         entityExportData.setEntityName(entityResponse.getEntityName());
