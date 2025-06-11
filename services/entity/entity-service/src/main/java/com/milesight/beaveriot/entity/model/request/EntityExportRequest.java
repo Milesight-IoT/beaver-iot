@@ -32,4 +32,10 @@ public class EntityExportRequest {
      */
     private Long endTimestamp;
 
+    /**
+     * The time zone identifier of the data to be exported. <br>
+     * Default value is the time zone of the server.
+     */
+    private String timeZone;
+
 }
