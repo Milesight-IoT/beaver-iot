@@ -3,6 +3,7 @@ package com.milesight.beaveriot.devicetemplate.parser;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.api.DeviceTemplateParserProvider;
+import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateDiscoverResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -30,7 +31,7 @@ public class DeviceTemplateParserProviderImpl implements DeviceTemplateParserPro
     }
 
     @Override
-    public String getDefaultDeviceTemplateContent() {
+    public String defaultContent() {
         try {
             return StreamUtils.copyToString(new ClassPathResource("template/default_device_template.yaml").getInputStream(), StandardCharsets.UTF_8);
         } catch (Exception e) {
@@ -39,10 +40,15 @@ public class DeviceTemplateParserProviderImpl implements DeviceTemplateParserPro
     }
 
     @Override
-    public DeviceTemplateDiscoverResponse discover(String integration, Object data, Long deviceTemplateId, String deviceTemplateContent) {
+    public DeviceTemplateDiscoverResponse discover(String integration, String jsonData, Long deviceTemplateId, String deviceTemplateContent) {
         if (!deviceTemplateParser.validate(deviceTemplateContent)) {
             return null;
         }
-        return deviceTemplateParser.discover(integration, data, deviceTemplateId, deviceTemplateContent);
+        return deviceTemplateParser.discover(integration, jsonData, deviceTemplateId, deviceTemplateContent);
+    }
+
+    @Override
+    public String output(String deviceKey, ExchangePayload payload) {
+        return deviceTemplateParser.output(deviceKey, payload);
     }
 }

@@ -4,9 +4,12 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.DeviceTemplateServiceProvider;
 import com.milesight.beaveriot.context.integration.model.*;
 import com.milesight.beaveriot.context.integration.model.config.EntityConfig;
@@ -35,9 +38,11 @@ import java.util.*;
 @Service
 public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     private final static String DEVICE_ID_KEY = "device_id";
+    private final DeviceServiceProvider deviceServiceProvider;
     private final DeviceTemplateServiceProvider deviceTemplateServiceProvider;
 
-    public DeviceTemplateParser(DeviceTemplateServiceProvider deviceTemplateServiceProvider) {
+    public DeviceTemplateParser(DeviceServiceProvider deviceServiceProvider, DeviceTemplateServiceProvider deviceTemplateServiceProvider) {
+        this.deviceServiceProvider = deviceServiceProvider;
         this.deviceTemplateServiceProvider = deviceTemplateServiceProvider;
     }
 
@@ -119,6 +124,95 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             log.error(e.getMessage());
             throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
         }
+    }
+
+    public String output(String deviceKey, ExchangePayload payload) {
+        try {
+            Device device = deviceServiceProvider.findByKey(deviceKey);
+            if (device == null) {
+                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), "device not found.").build();
+            }
+
+            DeviceTemplate deviceTemplate = deviceTemplateServiceProvider.findByKey(device.getTemplate());
+            if (deviceTemplate == null) {
+                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), "device template not found.").build();
+            }
+
+            DeviceTemplateModel deviceTemplateModel = parseDeviceTemplate(deviceTemplate.getContent());
+            if (CollectionUtils.isEmpty(deviceTemplateModel.getDefinition().getOutput())) {
+                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), "device template definition of output not found.").build();
+            }
+
+            ObjectMapper mapper = new ObjectMapper();
+            ArrayNode result = mapper.createArrayNode();
+            deviceTemplateModel.getDefinition().getOutput().forEach(outputJsonObject -> {
+                JsonNode output = toJsonNode(outputJsonObject, deviceKey, payload);
+                if (output != null) {
+                    result.add(output);
+                }
+            });
+            return mapper.writeValueAsString(result);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+        }
+    }
+
+    private JsonNode toJsonNode(DeviceTemplateModel.Definition.OutputJsonObject outputJsonObject, String deviceKey, ExchangePayload payload) {
+        if (isMatchDeviceEntity(outputJsonObject, deviceKey, payload)) {
+            return parseJsonNode(outputJsonObject, deviceKey, payload);
+        }
+        return null;
+    }
+
+    private boolean isMatchDeviceEntity(DeviceTemplateModel.Definition.OutputJsonObject outputJsonObject, String deviceKey, ExchangePayload payload) {
+        if (DeviceTemplateModel.JsonType.OBJECT.equals(outputJsonObject.getType())) {
+            if (outputJsonObject.getProperties() != null) {
+                for (DeviceTemplateModel.Definition.OutputJsonObject child : outputJsonObject.getProperties()) {
+                    boolean isMatch = isMatchDeviceEntity(child, deviceKey, payload);
+                    if (isMatch) {
+                        return true;
+                    }
+                }
+            }
+        } else {
+            if (outputJsonObject.getEntityMapping() == null) {
+                return false;
+            }
+            String entityKey = deviceKey + "." + outputJsonObject.getEntityMapping();
+            return payload.containsKey(entityKey);
+        }
+        return false;
+    }
+
+    private JsonNode parseJsonNode(DeviceTemplateModel.Definition.OutputJsonObject outputJsonObject, String deviceKey, ExchangePayload payload) {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode jsonNode = mapper.createObjectNode();
+        if (DeviceTemplateModel.JsonType.OBJECT.equals(outputJsonObject.getType())) {
+            if (outputJsonObject.getProperties() != null) {
+                for (DeviceTemplateModel.Definition.OutputJsonObject child : outputJsonObject.getProperties()) {
+                    JsonNode childJsonNode = parseJsonNode(child, deviceKey, payload);
+                    if (childJsonNode != null) {
+                        jsonNode.set(child.getKey(), childJsonNode);
+                    }
+                }
+            }
+        } else {
+            if (outputJsonObject.getValue() != null) {
+                return mapper.valueToTree(outputJsonObject.getValue());
+            } else {
+                if (outputJsonObject.getEntityMapping() == null) {
+                    return null;
+                }
+                String entityKey = deviceKey + "." + outputJsonObject.getEntityMapping();
+                if (!payload.containsKey(entityKey)) {
+                    return null;
+                }
+                Object value = payload.get(entityKey);
+                return mapper.valueToTree(value);
+            }
+        }
+        return jsonNode;
     }
 
     private ExchangePayload buildDeviceEntityValuesPayload(Map<String, JsonNode> flatJsonDataMap,

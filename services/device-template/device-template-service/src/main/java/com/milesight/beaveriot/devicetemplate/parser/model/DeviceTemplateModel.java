@@ -14,7 +14,6 @@ import java.util.List;
  **/
 @Data
 public class DeviceTemplateModel {
-    private String templateType;
     private Definition definition;
     private List<EntityConfig> initialEntities;
 
