@@ -12,6 +12,8 @@ import java.util.List;
 public class DeviceDetailResponse extends DeviceResponseData {
     private String identifier;
 
+    private String templateName;
+
     private String userNickname;
 
     private String userEmail;

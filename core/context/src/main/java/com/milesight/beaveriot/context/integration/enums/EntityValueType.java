@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.context.integration.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.JsonUtils;
@@ -9,6 +10,7 @@ import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import org.springframework.util.ObjectUtils;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
 
@@ -81,4 +83,14 @@ public enum EntityValueType {
         return clazz.isAnnotationPresent(Entities.class);
     }
 
+    @JsonCreator
+    public static EntityValueType fromString(String value) {
+        if (value == null) {
+            throw new IllegalArgumentException("Type value cannot be null");
+        }
+        return Arrays.stream(values())
+                .filter(t -> t.name().equalsIgnoreCase(value))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Invalid type: " + value));
+    }
 }

@@ -1,6 +1,9 @@
 package com.milesight.beaveriot.context.integration.model.config;
 
-import com.milesight.beaveriot.context.integration.model.*;
+import com.milesight.beaveriot.context.integration.model.Device;
+import com.milesight.beaveriot.context.integration.model.DeviceBuilder;
+import com.milesight.beaveriot.context.integration.model.Integration;
+import com.milesight.beaveriot.context.integration.model.IntegrationBuilder;
 import lombok.Data;
 
 import java.util.ArrayList;

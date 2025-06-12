@@ -65,51 +65,38 @@ public class EmailComponent implements ProcessorNode<Exchange> {
 
     private final Object lock = new Object();
 
-    private EmailChannel emailChannel;
-
-    private void initEmailChannelIfNotExists() {
-        if (emailChannel != null) {
-            return;
-        }
+    private EmailChannel initEmailChannel() {
         if (emailConfig == null) {
             throw new IllegalArgumentException("Email config is null.");
         }
-        synchronized (lock) {
-            if (emailChannel != null) {
-                return;
-            }
 
-            EmailConfig.SmtpConfig smtpConfig = null;
-            if (EmailProvider.SMTP.equals(emailConfig.getProvider())
-                    && emailConfig.getSmtpConfig() != null) {
-                smtpConfig = emailConfig.getSmtpConfig();
-            } else if (Boolean.TRUE.equals(emailConfig.getUseSystemSettings())) {
-                val credentials = credentialsServiceProvider.getCredentials(CredentialsType.SMTP)
-                        .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND, "credentials not found"));
-                smtpConfig = JsonUtils.fromJSON(credentials.getAdditionalData(), EmailConfig.SmtpConfig.class);
-                if (smtpConfig == null || !StringUtils.hasText(smtpConfig.getUsername())) {
-                    throw new ServiceException(ErrorCode.DATA_NO_FOUND, "system smtp config not found");
-                }
-                if (smtpConfig.getPassword() == null) {
-                    smtpConfig.setPassword(credentials.getAccessSecret());
-                }
+        EmailConfig.SmtpConfig smtpConfig = null;
+        if (EmailProvider.SMTP.equals(emailConfig.getProvider())
+                && emailConfig.getSmtpConfig() != null) {
+            smtpConfig = emailConfig.getSmtpConfig();
+        } else if (Boolean.TRUE.equals(emailConfig.getUseSystemSettings())) {
+            val credentials = credentialsServiceProvider.getCredentials(CredentialsType.SMTP)
+                    .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND, "credentials not found"));
+            smtpConfig = JsonUtils.fromJSON(credentials.getAdditionalData(), EmailConfig.SmtpConfig.class);
+            if (smtpConfig == null || !StringUtils.hasText(smtpConfig.getUsername())) {
+                throw new ServiceException(ErrorCode.DATA_NO_FOUND, "system smtp config not found");
             }
-
-            if (smtpConfig != null) {
-                emailChannel = new SmtpChannel(smtpConfig, SHARED_SMTP_EXECUTOR);
-            } else {
-                throw new IllegalArgumentException("Email provider is not supported or config is null: " + emailConfig.getProvider());
+            if (smtpConfig.getPassword() == null) {
+                smtpConfig.setPassword(credentials.getAccessSecret());
             }
         }
+
+        if (smtpConfig != null) {
+            return new SmtpChannel(smtpConfig, SHARED_SMTP_EXECUTOR);
+        } else {
+            throw new IllegalArgumentException("Email provider is not supported or config is null: " + emailConfig.getProvider());
+        }
+
     }
 
     @Override
     public void processor(Exchange exchange) {
-        initEmailChannelIfNotExists();
-        if (emailChannel == null) {
-            log.warn("Email channel is not ready.");
-            return;
-        }
+        val emailChannel = initEmailChannel();
         var templates = Map.<String, Object>of("subject", subject, "content", content);
         var outputs = SpELExpressionHelper.resolveExpression(exchange, templates);
         emailChannel.send(fromName, fromAddress, recipients, (String) outputs.get("subject"), (String) outputs.get("content"));

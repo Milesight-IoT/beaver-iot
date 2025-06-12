@@ -27,7 +27,6 @@ public class MqttBrokerSettings {
     @NotEmpty
     private String wsPath;
 
-    @NotNull
     private Integer wsPort;
 
     private Integer wssPort;

@@ -15,4 +15,12 @@ public interface AddDeviceAware {
             throw new UnsupportedOperationException("Class must implement ExchangePayload");
         }
     }
+
+    default String getAddDeviceTemplateKey() {
+        if (this instanceof ExchangePayload exchangePayload) {
+            return (String) exchangePayload.getContext(ExchangeContextKeys.DEVICE_TEMPLATE_KEY_ON_ADD);
+        } else {
+            throw new UnsupportedOperationException("Class must implement ExchangePayload");
+        }
+    }
 }

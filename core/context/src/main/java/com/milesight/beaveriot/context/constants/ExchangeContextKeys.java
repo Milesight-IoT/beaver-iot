@@ -49,8 +49,12 @@ public class ExchangeContextKeys {
     public static final String DEVICE_NAME_ON_ADD = "_deviceNameOnAdd";
 
     /**
+     * the key of device template key on add
+     */
+    public static final String DEVICE_TEMPLATE_KEY_ON_ADD = "_deviceTemplateKeyOnAdd";
+
+    /**
      * the key of device on delete
      */
     public static final String DEVICE_ON_DELETE = "_deviceOnDelete";
-
 }
