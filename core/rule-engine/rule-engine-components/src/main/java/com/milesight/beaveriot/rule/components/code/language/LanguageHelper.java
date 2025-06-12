@@ -7,6 +7,7 @@ import org.graalvm.polyglot.io.IOAccess;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * LanguageHelper class.
@@ -17,16 +18,31 @@ import java.util.Map;
 public class LanguageHelper {
     private LanguageHelper() {}
 
+    // https://www.graalvm.org/latest/reference-manual/embed-languages/#code-caching-across-multiple-contexts
+    // The code cache can be controlled by keeping and maintaining strong references to the Engine and Source objects.
+    private static final Map<String, Engine> engineCache = new ConcurrentHashMap<>();
+
+    public static Engine getEngine(String lang) {
+        return engineCache.computeIfAbsent(lang, k -> Engine
+                .newBuilder(lang)
+                .option("engine.WarnInterpreterOnly", "false")
+                .build()
+        );
+    }
+
     public static Context newContext(String lang) {
         ResourceLimits limits = ResourceLimits.newBuilder()
                 .statementLimit(1000, null)
                 .build();
+        Engine engine = getEngine(lang);
         Context.Builder contextBuilder = Context.newBuilder(lang)
+                .engine(engine)
                 .allowHostAccess(HostAccess.newBuilder()
                         .allowListAccess(true)
                         .allowArrayAccess(true)
                         .allowMapAccess(true)
                         .allowPublicAccess(true)
+                        .allowAccessInheritance(true)
                         .build())
                 .allowIO(IOAccess.NONE)
                 .allowPolyglotAccess(PolyglotAccess.NONE)
@@ -35,8 +51,7 @@ public class LanguageHelper {
                 .allowCreateProcess(false)
                 .allowCreateThread(false)
                 .allowValueSharing(false)
-                .resourceLimits(limits)
-                .option("engine.WarnInterpreterOnly", "false");
+                .resourceLimits(limits);
         return contextBuilder.build();
     }
 

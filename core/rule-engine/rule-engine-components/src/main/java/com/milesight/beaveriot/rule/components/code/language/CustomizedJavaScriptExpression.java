@@ -42,7 +42,8 @@ public class CustomizedJavaScriptExpression extends ExpressionSupport {
                 exchange.getIn().removeHeader(ExpressionEvaluator.HEADER_INPUT_VARIABLES);
             }
 
-            Value o = cx.eval(LANG_ID, expressionString);
+            Source source = Source.create(LANG_ID, expressionString);
+            Value o = cx.eval(source);
 
             return (T) LanguageHelper.convertResultValue(o, exchange, type);
         }
