@@ -50,8 +50,4 @@ public class SmtpChannel implements EmailChannel {
         log.debug("Send email successfully");
     }
 
-    @Override
-    public void close() throws Exception {
-        mailer.close();
-    }
 }
