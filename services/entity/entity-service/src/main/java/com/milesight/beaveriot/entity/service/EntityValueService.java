@@ -338,7 +338,15 @@ public class EntityValueService implements EntityValueServiceProvider {
             return List.of();
         }
 
-        return self().findSpecificEntityValue(allEntities);
+        Map<String, EntityPO> entityPOMap = allEntities.stream().collect(Collectors.toMap(EntityPO::getKey, Function.identity()));
+        List<EntityPO> sortedEntities = new ArrayList<>();
+        keys.forEach(k -> {
+            if (entityPOMap.containsKey(k)) {
+                sortedEntities.add(entityPOMap.get(k));
+            }
+        });
+
+        return self().findSpecificEntityValue(sortedEntities);
     }
 
     @BatchCacheable(cacheNames = CacheKeyConstants.ENTITY_LATEST_VALUE_CACHE_NAME, key = "#p0.![key]")
