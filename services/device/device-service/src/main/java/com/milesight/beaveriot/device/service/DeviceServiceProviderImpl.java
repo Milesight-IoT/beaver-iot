@@ -90,7 +90,7 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
             shouldUpdate = true;
         }
 
-        if (!device.getTemplate().equals(devicePO.getTemplate())) {
+        if (!nullableStringEquals(device.getTemplate(), devicePO.getTemplate())) {
             devicePO.setTemplate(device.getTemplate());
             shouldUpdate = true;
         }
@@ -182,6 +182,13 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
     public List<Device> findAll(String integrationId) {
         return deviceConverter.convertPO(deviceRepository
                 .findAll(f -> f.eq(DevicePO.Fields.integration, integrationId)));
+    }
+
+    private boolean nullableStringEquals(String arg1, String arg2) {
+        if (arg1 == null && arg2 == null) {
+            return true;
+        }
+        return arg1 != null && arg1.equals(arg2);
     }
 
     private boolean deviceAdditionalDataEqual(Map<String, Object> arg1, Map<String, Object> arg2) {
