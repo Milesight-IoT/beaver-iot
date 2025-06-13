@@ -21,6 +21,7 @@ import org.springframework.util.ObjectUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class DeviceServiceProviderImpl implements DeviceServiceProvider {
@@ -90,7 +91,7 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
             shouldUpdate = true;
         }
 
-        if (!nullableStringEquals(device.getTemplate(), devicePO.getTemplate())) {
+        if (!Objects.equals(device.getTemplate(), devicePO.getTemplate())) {
             devicePO.setTemplate(device.getTemplate());
             shouldUpdate = true;
         }
@@ -182,13 +183,6 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
     public List<Device> findAll(String integrationId) {
         return deviceConverter.convertPO(deviceRepository
                 .findAll(f -> f.eq(DevicePO.Fields.integration, integrationId)));
-    }
-
-    private boolean nullableStringEquals(String arg1, String arg2) {
-        if (arg1 == null && arg2 == null) {
-            return true;
-        }
-        return arg1 != null && arg1.equals(arg2);
     }
 
     private boolean deviceAdditionalDataEqual(Map<String, Object> arg1, Map<String, Object> arg2) {
