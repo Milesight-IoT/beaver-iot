@@ -21,6 +21,7 @@ import org.springframework.util.ObjectUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class DeviceServiceProviderImpl implements DeviceServiceProvider {
@@ -90,7 +91,7 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
             shouldUpdate = true;
         }
 
-        if (!device.getTemplate().equals(devicePO.getTemplate())) {
+        if (!Objects.equals(device.getTemplate(), devicePO.getTemplate())) {
             devicePO.setTemplate(device.getTemplate());
             shouldUpdate = true;
         }
