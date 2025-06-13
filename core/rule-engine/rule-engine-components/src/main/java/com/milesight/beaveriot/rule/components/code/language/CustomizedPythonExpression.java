@@ -12,6 +12,8 @@ import java.util.Map;
 
 /**
  * @author leon
+ *
+ *  Slow performance: https://www.graalvm.org/jdk22/reference-manual/python/Performance/
  */
 public class CustomizedPythonExpression extends ExpressionSupport {
 
@@ -28,7 +30,7 @@ public class CustomizedPythonExpression extends ExpressionSupport {
     public <T> T evaluate(Exchange exchange, Class<T> type) {
 
         try (Context cx = LanguageHelper.newContext(LANG_ID)) {
-            Value b = cx.getBindings(LANG_ID);
+            Value b = cx.getBindings(LANG_ID); // Significant performance issue here.
 
             b.putMember("exchange", exchange);
             b.putMember("context", exchange.getContext());
@@ -46,8 +48,9 @@ public class CustomizedPythonExpression extends ExpressionSupport {
                 exchange.getIn().removeHeader(ExpressionEvaluator.HEADER_INPUT_VARIABLES);
             }
 
-            Value expressionOut = cx.eval(LANG_ID, expressionString);
-            Value function = b.getMember(MAIN_FUNCTION);
+            Source source = Source.create(LANG_ID, expressionString);
+            Value expressionOut = cx.eval(source);
+            Value function = expressionOut.getMember(MAIN_FUNCTION);
             if (function == null) {
                 return (T) LanguageHelper.convertResultValue(expressionOut, exchange, type);
             }
