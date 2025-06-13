@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.entity.service;
 
+import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheEvict;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.Sorts;
@@ -8,6 +9,7 @@ import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
+import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
@@ -42,6 +44,7 @@ import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import lombok.*;
 import lombok.extern.slf4j.*;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -385,7 +388,7 @@ public class EntityService implements EntityServiceProvider {
             return;
         }
 
-        deleteEntitiesByPOList(entityPOList);
+        self().deleteEntitiesByPOList(entityPOList);
     }
 
     @Transactional(rollbackFor = Throwable.class)
@@ -399,12 +402,13 @@ public class EntityService implements EntityServiceProvider {
             return;
         }
 
-        deleteEntitiesByPOList(entityPOList);
+        self().deleteEntitiesByPOList(entityPOList);
     }
 
-    private void deleteEntitiesByPOList(List<EntityPO> entityPOList) {
+    @BatchCacheEvict(cacheNames = CacheKeyConstants.ENTITY_LATEST_VALUE_CACHE_NAME, key = "#result")
+    public List<String> deleteEntitiesByPOList(List<EntityPO> entityPOList) {
         if (entityPOList.isEmpty()) {
-            return;
+            return List.of();
         }
 
         List<Long> entityIdList = entityPOList.stream().map(EntityPO::getId).toList();
@@ -418,6 +422,7 @@ public class EntityService implements EntityServiceProvider {
         List<Entity> entityList = convertPOListToEntities(entityPOList);
         entityList.forEach(entity ->
                 eventBus.publish(EntityEvent.of(EntityEvent.EventType.DELETED, entity)));
+        return entityPOList.stream().map(EntityPO::getKey).toList();
     }
 
     @Override
@@ -730,7 +735,7 @@ public class EntityService implements EntityServiceProvider {
                 // only customized entities allowed to be deleted
                 .filter(EntityPO::checkIsCustomizedEntity)
                 .toList();
-        deleteEntitiesByPOList(entityPOList);
+        self().deleteEntitiesByPOList(entityPOList);
     }
 
     /**
@@ -864,5 +869,9 @@ public class EntityService implements EntityServiceProvider {
             return null;
         }
         return String.format("%s.%s", parent, identifier);
+    }
+
+    private EntityService self() {
+        return (EntityService) AopContext.currentProxy();
     }
 }

@@ -18,5 +18,6 @@ public class CacheKeyConstants {
     public static final String DEVICE_PERMISSION_CACHE_NAME_PREFIX = "device:permission";
     public static final String DASHBOARD_PERMISSION_CACHE_NAME_PREFIX = "dashboard:permission";
     public static final String INTEGRATION_PERMISSION_CACHE_NAME_PREFIX = "integration:permission";
+    public static final String ENTITY_LATEST_VALUE_CACHE_NAME = "entity:latest-value";
 
 }
