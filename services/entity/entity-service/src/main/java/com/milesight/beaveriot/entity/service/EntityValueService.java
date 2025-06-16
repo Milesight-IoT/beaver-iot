@@ -314,17 +314,6 @@ public class EntityValueService implements EntityValueServiceProvider {
     @NonNull
     public Map<String, Object> findValuesByKeys(List<String> keys) {
         Map<String, Object> resultMap = new HashMap<>();
-        List<EntityLatestValueCache> values = doFindValuesByKeys(keys);
-        for (int i = 0; i < keys.size(); i++) {
-            EntityLatestValueCache v = values.get(i);
-            if (v.getValue() != null) {
-                resultMap.put(keys.get(i), v.getValue());
-            }
-        }
-        return resultMap;
-    }
-
-    public List<EntityLatestValueCache> doFindValuesByKeys(List<String> keys) {
         List<EntityPO> allEntities = new ArrayList<>();
         List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, keys.toArray()));
         List<EntityPO> childrenEntities = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.parent, keys.toArray()));
@@ -335,18 +324,18 @@ public class EntityValueService implements EntityValueServiceProvider {
             allEntities.addAll(childrenEntities);
         }
         if (allEntities.isEmpty()) {
-            return List.of();
+            return resultMap;
         }
 
-        Map<String, EntityPO> entityPOMap = allEntities.stream().collect(Collectors.toMap(EntityPO::getKey, Function.identity()));
-        List<EntityPO> sortedEntities = new ArrayList<>();
-        keys.forEach(k -> {
-            if (entityPOMap.containsKey(k)) {
-                sortedEntities.add(entityPOMap.get(k));
+        List<EntityLatestValueCache> lvList = self().findSpecificEntityValue(allEntities);
+        for (int i = 0; i < allEntities.size(); i++) {
+            EntityLatestValueCache lv = lvList.get(i);
+            if (lv.getValue() != null) {
+                resultMap.put(allEntities.get(i).getKey(), lv.getValue());
             }
-        });
+        }
 
-        return self().findSpecificEntityValue(sortedEntities);
+        return resultMap;
     }
 
     @BatchCacheable(cacheNames = CacheKeyConstants.ENTITY_LATEST_VALUE_CACHE_NAME, key = "#p0.![key]")
