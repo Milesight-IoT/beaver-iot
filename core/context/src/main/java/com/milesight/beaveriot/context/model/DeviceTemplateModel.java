@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.devicetemplate.parser.model;
+package com.milesight.beaveriot.context.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.milesight.beaveriot.context.integration.model.config.EntityConfig;

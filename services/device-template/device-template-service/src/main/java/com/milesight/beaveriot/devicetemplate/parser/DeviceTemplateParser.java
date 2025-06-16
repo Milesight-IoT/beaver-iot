@@ -15,7 +15,7 @@ import com.milesight.beaveriot.context.integration.model.config.EntityConfig;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateInputResult;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateOutputResult;
 import com.milesight.beaveriot.devicetemplate.facade.IDeviceTemplateParserFacade;
-import com.milesight.beaveriot.devicetemplate.parser.model.DeviceTemplateModel;
+import com.milesight.beaveriot.context.model.DeviceTemplateModel;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
@@ -113,7 +113,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             if (jsonNode.get(DEVICE_ID_KEY) == null) {
                 throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), "Key device_id not found.").build();
             }
-            DeviceTemplateModel deviceTemplateModel = parseDeviceTemplate(deviceTemplate.getContent());
+            DeviceTemplateModel deviceTemplateModel = parse(deviceTemplate.getContent());
 
             Map<String, JsonNode> flatJsonDataMap = new HashMap<>();
             flattenJsonData(jsonNode, flatJsonDataMap, "");
@@ -159,7 +159,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                 throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), "Device template not found").build();
             }
 
-            DeviceTemplateModel deviceTemplateModel = parseDeviceTemplate(deviceTemplate.getContent());
+            DeviceTemplateModel deviceTemplateModel = parse(deviceTemplate.getContent());
             if (deviceTemplateModel.getDefinition().getOutput() == null) {
                 throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), "Device template definition of output not found").build();
             }
@@ -177,6 +177,17 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             return result;
         } catch (Exception e) {
             log.error(e.getMessage());
+            throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+        }
+    }
+
+    public DeviceTemplateModel parse(String deviceTemplateContent) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+            return objectMapper.readValue(deviceTemplateContent, DeviceTemplateModel.class);
+        } catch (Exception e) {
             throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
         }
     }
@@ -328,17 +339,6 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             if (property.getType().equals(DeviceTemplateModel.JsonType.OBJECT) && property.getProperties() != null) {
                 flattenJsonInputDescription(property.getProperties(), flatJsonInputDescriptionMap, key + ".");
             }
-        }
-    }
-
-    private DeviceTemplateModel parseDeviceTemplate(String deviceTemplateContent) {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-            return objectMapper.readValue(deviceTemplateContent, DeviceTemplateModel.class);
-        } catch (Exception e) {
-            throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
         }
     }
 
