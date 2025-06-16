@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.context.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.milesight.beaveriot.context.integration.model.config.EntityConfig;
 import lombok.Data;
@@ -72,6 +73,8 @@ public class DeviceTemplateModel {
             private JsonType type;
             private String entityMapping;
             private boolean required;
+            @JsonProperty("enum")
+            private List<String> enumValues;
             private List<InputJsonObject> properties;
         }
 

@@ -8,6 +8,7 @@ definition:
         entity_mapping: 'device_id'  # entity identifier
       - key: status                  # json key
         type: string                 # json type
+        enum: ['OK', 'Offline']
         entity_mapping: 'status'
       - key: metrics                 # json key
         type: object                 # json type
