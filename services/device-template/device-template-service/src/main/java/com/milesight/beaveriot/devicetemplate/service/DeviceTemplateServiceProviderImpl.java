@@ -18,10 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -84,7 +81,7 @@ public class DeviceTemplateServiceProviderImpl implements DeviceTemplateServiceP
             deviceTemplatePO.setContent(deviceTemplate.getContent());
             shouldUpdate = true;
         }
-        if (!deviceTemplate.getDescription().equals(deviceTemplatePO.getDescription())) {
+        if (!Objects.equals(deviceTemplate.getDescription(), deviceTemplatePO.getDescription())) {
             deviceTemplatePO.setDescription(deviceTemplate.getDescription());
             shouldUpdate = true;
         }
