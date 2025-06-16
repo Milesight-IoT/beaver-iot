@@ -1,10 +1,13 @@
 package com.milesight.beaveriot.entity.service;
 
+import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheEvict;
+import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheable;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
+import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.context.integration.GenericExchangeFlowExecutor;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
@@ -28,7 +31,9 @@ import com.milesight.beaveriot.eventbus.api.EventResponse;
 import jakarta.persistence.EntityManager;
 import lombok.*;
 import lombok.extern.slf4j.*;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
@@ -36,15 +41,7 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.OptionalDouble;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -128,17 +125,18 @@ public class EntityValueService implements EntityValueServiceProvider {
 
     @Override
     public void saveLatestValues(ExchangePayload values) {
-        saveLatestValues(values, System.currentTimeMillis());
+        self().saveLatestValues(values, System.currentTimeMillis());
     }
 
-    protected void saveLatestValues(Map<String, Object> values, long timestamp) {
+    @BatchCacheEvict(cacheNames = CacheKeyConstants.ENTITY_LATEST_VALUE_CACHE_NAME, key = "#result")
+    public List<String> saveLatestValues(Map<String, Object> values, long timestamp) {
         if (values == null || values.isEmpty()) {
-            return;
+            return List.of();
         }
         List<String> entityKeys = values.keySet().stream().toList();
         List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, entityKeys.toArray()));
         if (entityPOList == null || entityPOList.isEmpty()) {
-            return;
+            return List.of();
         }
         Map<String, EntityPO> entityKeyMap = entityPOList.stream().collect(Collectors.toMap(EntityPO::getKey, Function.identity()));
         List<Long> entityIds = entityPOList.stream().map(EntityPO::getId).toList();
@@ -174,6 +172,7 @@ public class EntityValueService implements EntityValueServiceProvider {
             entityLatestPOList.add(entityLatestPO);
         });
         entityLatestRepository.saveAll(entityLatestPOList);
+        return entityKeys;
     }
 
     @Override
@@ -302,10 +301,30 @@ public class EntityValueService implements EntityValueServiceProvider {
         return findValuesByKeys(Collections.singletonList(key)).get(key);
     }
 
+    @Data
+    public static class EntityLatestValueCache {
+        private Object value;
+
+        private EntityValueType valueType;
+
+        private Long updatedAt;
+    }
+
     @Override
     @NonNull
     public Map<String, Object> findValuesByKeys(List<String> keys) {
         Map<String, Object> resultMap = new HashMap<>();
+        List<EntityLatestValueCache> values = doFindValuesByKeys(keys);
+        for (int i = 0; i < keys.size(); i++) {
+            EntityLatestValueCache v = values.get(i);
+            if (v.getValue() != null) {
+                resultMap.put(keys.get(i), v.getValue());
+            }
+        }
+        return resultMap;
+    }
+
+    public List<EntityLatestValueCache> doFindValuesByKeys(List<String> keys) {
         List<EntityPO> allEntities = new ArrayList<>();
         List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, keys.toArray()));
         List<EntityPO> childrenEntities = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.parent, keys.toArray()));
@@ -316,30 +335,66 @@ public class EntityValueService implements EntityValueServiceProvider {
             allEntities.addAll(childrenEntities);
         }
         if (allEntities.isEmpty()) {
-            return resultMap;
+            return List.of();
         }
-        List<Long> entityIds = allEntities.stream().map(EntityPO::getId).toList();
-        Map<Long, String> entityKeyMap = allEntities.stream().collect(Collectors.toMap(EntityPO::getId, EntityPO::getKey));
-        List<EntityLatestPO> entityLatestPOList = entityLatestRepository.findAll(filter -> filter.in(EntityLatestPO.Fields.entityId, entityIds.toArray()));
-        if (entityLatestPOList == null || entityLatestPOList.isEmpty()) {
-            return resultMap;
-        }
-        entityLatestPOList.forEach(entityLatestPO -> {
-            Object value = null;
-            if (entityLatestPO.getValueBoolean() != null) {
-                value = entityLatestPO.getValueBoolean();
-            } else if (entityLatestPO.getValueLong() != null) {
-                value = entityLatestPO.getValueLong();
-            } else if (entityLatestPO.getValueDouble() != null) {
-                value = entityLatestPO.getValueDouble();
-            } else if (entityLatestPO.getValueString() != null) {
-                value = entityLatestPO.getValueString();
-            } else if (entityLatestPO.getValueBinary() != null) {
-                value = entityLatestPO.getValueBinary();
+
+        Map<String, EntityPO> entityPOMap = allEntities.stream().collect(Collectors.toMap(EntityPO::getKey, Function.identity()));
+        List<EntityPO> sortedEntities = new ArrayList<>();
+        keys.forEach(k -> {
+            if (entityPOMap.containsKey(k)) {
+                sortedEntities.add(entityPOMap.get(k));
             }
-            resultMap.put(entityKeyMap.get(entityLatestPO.getEntityId()), value);
         });
-        return resultMap;
+
+        return self().findSpecificEntityValue(sortedEntities);
+    }
+
+    @BatchCacheable(cacheNames = CacheKeyConstants.ENTITY_LATEST_VALUE_CACHE_NAME, key = "#p0.![key]")
+    public List<EntityLatestValueCache> findSpecificEntityValue(List<EntityPO> entityList) {
+        Map<Long, EntityLatestValueCache> entityIdToValue = new LinkedHashMap<>();
+        entityList.forEach(entityPO -> entityIdToValue.put(entityPO.getId(), new EntityLatestValueCache()));
+        List<EntityLatestPO> entityLatestPOList = entityLatestRepository.findAll(filter -> filter.in(EntityLatestPO.Fields.entityId, entityIdToValue.keySet().toArray()));
+        if (entityLatestPOList == null || entityLatestPOList.isEmpty()) {
+            return entityIdToValue.values().stream().toList();
+        }
+
+        entityLatestPOList.forEach(entityLatestPO -> {
+            EntityLatestValueCache value = entityIdToValue.get(entityLatestPO.getEntityId());
+            EntityLatestValueCache nValue = convertEntityLatestCache(entityLatestPO);
+            value.setValueType(nValue.getValueType());
+            value.setValue(nValue.getValue());
+            value.setUpdatedAt(nValue.getUpdatedAt());
+        });
+
+        return entityIdToValue.values().stream().toList();
+    }
+
+    private EntityLatestValueCache convertEntityLatestCache(EntityLatestPO entityLatestPO) {
+        EntityLatestValueCache lv = new EntityLatestValueCache();
+
+        Object value = null;
+        EntityValueType valueType = null;
+        if (entityLatestPO.getValueBoolean() != null) {
+            value = entityLatestPO.getValueBoolean();
+            valueType = EntityValueType.BOOLEAN;
+        } else if (entityLatestPO.getValueLong() != null) {
+            value = entityLatestPO.getValueLong();
+            valueType = EntityValueType.LONG;
+        } else if (entityLatestPO.getValueDouble() != null) {
+            value = entityLatestPO.getValueDouble();
+            valueType = EntityValueType.DOUBLE;
+        } else if (entityLatestPO.getValueString() != null) {
+            value = entityLatestPO.getValueString();
+            valueType = EntityValueType.STRING;
+        } else if (entityLatestPO.getValueBinary() != null) {
+            value = entityLatestPO.getValueBinary();
+            valueType = EntityValueType.BINARY;
+        }
+
+        lv.setValue(value);
+        lv.setValueType(valueType);
+        lv.setUpdatedAt(entityLatestPO.getUpdatedAt());
+        return lv;
     }
 
     @Override
@@ -575,29 +630,25 @@ public class EntityValueService implements EntityValueServiceProvider {
     }
 
     public EntityLatestResponse getEntityStatus(Long entityId) {
-        EntityLatestPO entityLatestPO = entityLatestRepository.fineOneWithDataPermission(filter -> filter.eq(EntityLatestPO.Fields.entityId, entityId)).orElse(null);
         EntityLatestResponse entityLatestResponse = new EntityLatestResponse();
-        if (entityLatestPO == null) {
+        EntityPO entityPO = entityRepository.findOneWithDataPermission(filter -> filter.eq(EntityPO.Fields.id, entityId)).orElse(null);
+        if (entityPO == null) {
             return entityLatestResponse;
         }
-        if (entityLatestPO.getValueBoolean() != null) {
-            entityLatestResponse.setValue(entityLatestPO.getValueBoolean());
-            entityLatestResponse.setValueType(EntityValueType.BOOLEAN);
-        } else if (entityLatestPO.getValueLong() != null) {
-            entityLatestResponse.setValue(entityLatestPO.getValueLong().toString());
-            entityLatestResponse.setValueType(EntityValueType.LONG);
-        } else if (entityLatestPO.getValueDouble() != null) {
-            entityLatestResponse.setValue(entityLatestPO.getValueDouble());
-            entityLatestResponse.setValueType(EntityValueType.DOUBLE);
-        } else if (entityLatestPO.getValueString() != null) {
-            entityLatestResponse.setValue(entityLatestPO.getValueString());
-            entityLatestResponse.setValueType(EntityValueType.STRING);
-        } else if (entityLatestPO.getValueBinary() != null) {
-            entityLatestResponse.setValue(entityLatestPO.getValueBinary());
-            entityLatestResponse.setValueType(EntityValueType.BINARY);
+
+        EntityLatestValueCache lv = self().findSpecificEntityValue(List.of(entityPO)).get(0);
+        if (lv.getValue() == null) {
+            return entityLatestResponse;
         }
-        entityLatestResponse.setUpdatedAt(entityLatestPO.getUpdatedAt() == null ? null : entityLatestPO.getUpdatedAt().toString());
+
+        entityLatestResponse.setUpdatedAt(lv.getUpdatedAt() == null ? null : lv.getUpdatedAt().toString());
+        entityLatestResponse.setValueType(lv.getValueType());
+        entityLatestResponse.setValue(lv.getValue());
         return entityLatestResponse;
+    }
+
+    private EntityValueService self() {
+        return (EntityValueService) AopContext.currentProxy();
     }
 
 }

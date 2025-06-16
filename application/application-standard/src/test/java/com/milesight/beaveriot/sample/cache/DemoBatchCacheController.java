@@ -7,10 +7,7 @@ import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheable;
 import com.milesight.beaveriot.base.annotations.cacheable.BatchCaching;
 import com.milesight.beaveriot.entity.po.EntityPO;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,7 +26,7 @@ public class DemoBatchCacheController {
     static final String CACHE_NAME = "demo:cache-batch";
 
     @GetMapping("/putcache")
-    @BatchCachePut(cacheNames = CACHE_NAME, key = "#result.id")
+    @BatchCachePut(cacheNames = CACHE_NAME, key = "#result.![id]")
     public List<EntityPO> putcache(@RequestParam("keys") String[] keys){
         log.info("putcache:" + Arrays.toString(keys));
 
@@ -42,7 +39,7 @@ public class DemoBatchCacheController {
         }).collect(Collectors.toList());
     }
     @GetMapping("/putcache-array")
-    @BatchCachePut(cacheNames = CACHE_NAME, key = "#result.id")
+    @BatchCachePut(cacheNames = CACHE_NAME, key = "#result.![id]")
     public EntityPO[] testPutArray(@RequestParam("keys") Collection<String> keysList){
         String[] keys = keysList.toArray(String[]::new);
         log.info("testPutArray:" + Arrays.toString(keys));
@@ -57,7 +54,7 @@ public class DemoBatchCacheController {
     }
 
     @GetMapping("/putcache-map")
-    @BatchCachePut(cacheNames = CACHE_NAME, key = "#result.id")
+    @BatchCachePut(cacheNames = CACHE_NAME, key = "#result.![key]")
     public Map<String,EntityPO> testPutMap(@RequestParam("keys") Collection<String> keysList){
         String[] keys = keysList.toArray(String[]::new);
         log.info("testPutArray:" + Arrays.toString(keys));
@@ -82,24 +79,32 @@ public class DemoBatchCacheController {
     }
 
     @GetMapping("/evictcache")
-    @BatchCacheEvict(cacheNames = CACHE_NAME, key = "#result.id")
+    @BatchCacheEvict(cacheNames = CACHE_NAME, key = "#result.![id]")
     public List<EntityPO> testEvict(@RequestParam("keys") Collection<String> keys){
         log.info("testEvict:" + keys);
         return Lists.newArrayList(testPutArray(keys));
     }
 
     @GetMapping("/evictcache-before")
-    @BatchCacheEvict(cacheNames = CACHE_NAME, key = "#p0", beforeInvocation = true)
+    @BatchCacheEvict(cacheNames = CACHE_NAME, key ="#p0" , beforeInvocation = true)
     public List<EntityPO> testEvictBefore(@RequestParam("keys") Collection<String> keys){
         log.info("testEvict:" + keys);
         return Lists.newArrayList(testPutArray(keys));
     }
 
+    @PostMapping("/evictcache-before2")
+    @BatchCacheEvict(cacheNames = CACHE_NAME, key = "#p0.![key]", beforeInvocation = true)
+    public List<EntityPO> testEvictBefore2(@RequestBody Collection<EntityPO> keys){
+        log.info("testEvict:" + keys);
+        return null;
+    }
+
+
 
     @GetMapping("/multicache")
     @BatchCaching(
             cacheable = @BatchCacheable(cacheNames = CACHE_NAME, key = "#p0"),
-            put = @BatchCachePut(cacheNames = CACHE_NAME, key = "#result.id")
+            put = @BatchCachePut(cacheNames = CACHE_NAME, key = "#result.![id]")
     )
     public List<EntityPO> multicache(@RequestParam("keys") Collection<String> keys){
         log.info("multicache:" + keys);

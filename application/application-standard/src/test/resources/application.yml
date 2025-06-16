@@ -44,6 +44,7 @@ spring:
           [ "device:permission"] : 1h
           [ "dashboard:permission" ] : 1h
           [ "integration:permission" ] : 1h
+          [ "entity:latest-value" ] : 15m
 
   redis:
     ssl: ${REDIS_SSL:false}
