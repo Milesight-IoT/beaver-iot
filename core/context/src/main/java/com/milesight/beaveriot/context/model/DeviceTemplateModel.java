@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.context.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.milesight.beaveriot.context.integration.model.config.EntityConfig;
 import lombok.Data;
 import lombok.Getter;
@@ -40,6 +41,11 @@ public class DeviceTemplateModel {
                     .filter(t -> t.name().equalsIgnoreCase(value))
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException("Invalid type: " + value));
+        }
+
+        @JsonValue
+        public String getTypeName() {
+            return typeName;
         }
     }
 
