@@ -14,6 +14,7 @@ import com.milesight.beaveriot.context.integration.model.*;
 import com.milesight.beaveriot.context.integration.model.config.EntityConfig;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateInputResult;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateOutputResult;
+import com.milesight.beaveriot.devicetemplate.enums.ServerErrorCode;
 import com.milesight.beaveriot.devicetemplate.facade.IDeviceTemplateParserFacade;
 import com.milesight.beaveriot.context.model.DeviceTemplateModel;
 import com.networknt.schema.JsonSchema;
@@ -63,7 +64,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             Yaml yaml = new Yaml();
             Object loadedYaml = yaml.load(deviceTemplateContent);
             if (loadedYaml == null) {
-                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), "Device template empty").build();
+                throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_EMPTY.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_EMPTY.getErrorMessage()).build();
             }
 
             ObjectMapper mapper = new ObjectMapper();
@@ -72,7 +73,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             InputStream schemaInputStream = DeviceTemplateParser.class.getClassLoader()
                     .getResourceAsStream("template/device_template_schema.json");
             if (schemaInputStream == null) {
-                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), "Device template schema not found").build();
+                throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_SCHEMA_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_SCHEMA_NOT_FOUND.getErrorMessage()).build();
             }
 
             JsonSchemaFactory factory = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7))
@@ -85,12 +86,16 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                 StringBuilder sb = new StringBuilder();
                 sb.append("Validate error:").append(System.lineSeparator());
                 errors.forEach(error -> sb.append(error.getMessage()).append(System.lineSeparator()));
-                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), sb.toString()).build();
+                throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_VALIDATE_ERROR.getErrorCode(), sb.toString()).build();
             }
             return true;
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+            if (e instanceof ServiceException) {
+                throw (ServiceException) e;
+            } else {
+                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+            }
         }
     }
 
@@ -100,7 +105,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         try {
             DeviceTemplate deviceTemplate = deviceTemplateServiceProvider.findById(deviceTemplateId);
             if (deviceTemplate == null) {
-                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), "Device template not found").build();
+                throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorMessage()).build();
             }
 
             if (!validate(deviceTemplate.getContent())) {
@@ -111,7 +116,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             JsonNode jsonNode = mapper.readTree(jsonData);
 
             if (jsonNode.get(DEVICE_ID_KEY) == null) {
-                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), "Key device_id not found.").build();
+                throw ServiceException.with(ServerErrorCode.DEVICE_ID_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_ID_NOT_FOUND.getErrorMessage()).build();
             }
             DeviceTemplateModel deviceTemplateModel = parse(deviceTemplate.getContent());
 
@@ -142,7 +147,11 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             return result;
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+            if (e instanceof ServiceException) {
+                throw (ServiceException) e;
+            } else {
+                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+            }
         }
     }
 
@@ -151,17 +160,17 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             DeviceTemplateOutputResult result = new DeviceTemplateOutputResult();
             Device device = deviceServiceProvider.findByKey(deviceKey);
             if (device == null) {
-                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), "Device not found").build();
+                throw ServiceException.with(ServerErrorCode.DEVICE_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_NOT_FOUND.getErrorMessage()).build();
             }
 
             DeviceTemplate deviceTemplate = deviceTemplateServiceProvider.findByKey(device.getTemplate());
             if (deviceTemplate == null) {
-                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), "Device template not found").build();
+                throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorMessage()).build();
             }
 
             DeviceTemplateModel deviceTemplateModel = parse(deviceTemplate.getContent());
             if (deviceTemplateModel.getDefinition().getOutput() == null) {
-                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), "Device template definition of output not found").build();
+                throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_DEFINITION_OUTPUT_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_DEFINITION_OUTPUT_NOT_FOUND.getErrorMessage()).build();
             }
 
             ObjectMapper mapper = new ObjectMapper();
@@ -177,7 +186,11 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             return result;
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+            if (e instanceof ServiceException) {
+                throw (ServiceException) e;
+            } else {
+                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+            }
         }
     }
 
@@ -234,7 +247,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             targetType = DeviceTemplateModel.JsonType.LONG;
         }
         if (!definitionType.equals(targetType)) {
-            throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(),
+            throw ServiceException.with(ServerErrorCode.DEVICE_ENTITY_VALUE_VALIDATE_ERROR.getErrorCode(),
                     MessageFormat.format("Invalid value type for json key ''{0}'': requires type {1}, but entity key ''{2}'' provides type {3} with value {4}",
                             currentKey,
                             definitionType.getTypeName(),
@@ -282,7 +295,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         for (String key : flatJsonInputDescriptionMap.keySet()) {
             DeviceTemplateModel.Definition.InputJsonObject inputJsonObject = flatJsonInputDescriptionMap.get(key);
             if (inputJsonObject.isRequired() && !flatJsonDataMap.containsKey(key)) {
-                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), MessageFormat.format("Json validate failed. Required key {0} is missing", key)).build();
+                throw ServiceException.with(ServerErrorCode.JSON_VALIDATE_ERROR.getErrorCode(), MessageFormat.format("Json validate failed. Required key {0} is missing", key)).build();
             }
         }
 
@@ -291,7 +304,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             if (flatJsonInputDescriptionMap.containsKey(key)) {
                 DeviceTemplateModel.Definition.InputJsonObject inputJsonObject = flatJsonInputDescriptionMap.get(key);
                 if (!isMatchType(inputJsonObject, jsonNode)) {
-                    throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), MessageFormat.format("Json validate failed. Json key {0} required type {1}", key, inputJsonObject.getType().getTypeName())).build();
+                    throw ServiceException.with(ServerErrorCode.JSON_VALIDATE_ERROR.getErrorCode(), MessageFormat.format("Json validate failed. Json key {0} required type {1}", key, inputJsonObject.getType().getTypeName())).build();
                 }
             }
         }
