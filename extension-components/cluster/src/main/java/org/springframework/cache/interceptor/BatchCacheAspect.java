@@ -111,10 +111,10 @@ public class BatchCacheAspect extends AbstractCacheInvoker implements BeanFactor
 
         // Collect puts from any @Cacheable miss, if no cached value is found
         if (cacheableOperationContext != null) {
-           if (cacheHit == null) {
-               putCacheableRequest(cacheableOperationContext, cacheValue);
-           } else if(cacheHit instanceof MissingCacheValueWrapper missingCacheValueWrapper) {
-               putCacheableRequest(cacheableOperationContext, missingCacheValueWrapper.getMissingCacheValue());
+            if (cacheHit == null) {
+                putCacheableRequest(cacheableOperationContext, cacheValue);
+            } else if (cacheHit instanceof MissingCacheValueWrapper missingCacheValueWrapper) {
+                putCacheableRequest(cacheableOperationContext, missingCacheValueWrapper.getMissingCacheValue());
             }
         }
 
@@ -131,7 +131,10 @@ public class BatchCacheAspect extends AbstractCacheInvoker implements BeanFactor
             return;
         }
         Collection<?> cacheValueCollection = validateResultAndConvertToCollection(putCacheOperationContext, cacheValue);
-        FullKeyHolder keyHolder = putCacheOperationContext.generateKey(cacheValueCollection);
+
+        FullKeyHolder keyHolder = cacheValue instanceof Map<?,?> cacheValueMap ?
+                FullKeyHolder.of(cacheValueMap.keySet(), putCacheOperationContext.generateKeyPrefix(putCacheOperationContext.createEvaluationContext(cacheValue))) :
+                putCacheOperationContext.generateKey(cacheValueCollection);
         Object keys = keyHolder.getKeys();
         if (ObjectUtils.isEmpty(keys)) {
             return;
@@ -157,7 +160,9 @@ public class BatchCacheAspect extends AbstractCacheInvoker implements BeanFactor
         }
         Collection<?> cacheValueCollection = validateResultAndConvertToCollection(cacheableOperationContext, cacheValue);
         if (cacheableOperationContext.isConditionPassing(cacheValue)) {
-            FullKeyHolder keyHolder = cacheableOperationContext.generateKey(cacheValue);
+            FullKeyHolder keyHolder = cacheValue instanceof Map<?,?> cacheValueMap ?
+                    FullKeyHolder.of(cacheValueMap.keySet(), cacheableOperationContext.generateKeyPrefix(cacheableOperationContext.createEvaluationContext(cacheValue))) :
+                    cacheableOperationContext.generateKey(cacheValue);
             Object[] putCacheKeys = validateKeyAndConvertToArray(keyHolder.getKeys());
             if (!ObjectUtils.isEmpty(putCacheKeys) && putCacheKeys.length == cacheValueCollection.size()) {
                 int idx = 0;
@@ -598,17 +603,22 @@ public class BatchCacheAspect extends AbstractCacheInvoker implements BeanFactor
             if (StringUtils.hasText(this.metadata.operation.getKey())) {
                 EvaluationContext evaluationContext = createEvaluationContext(result);
                 Object key = evaluator.key(this.metadata.operation.getKey(), this.metadata.methodKey, evaluationContext);
-                if (this.metadata.operation instanceof CacheKeyPrefix cacheKeyPrefix && StringUtils.hasText(cacheKeyPrefix.getKeyPrefix())) {
-                    Object prefix = evaluator.key(cacheKeyPrefix.getKeyPrefix(), this.metadata.methodKey, evaluationContext);
-                    if (ObjectUtils.isEmpty(prefix) || ObjectUtils.isEmpty(key)) {
-                        return FullKeyHolder.of(key);
-                    }
-                    return FullKeyHolder.of(key, prefix.toString());
-                } else {
+                String prefix = generateKeyPrefix(evaluationContext);
+                if (ObjectUtils.isEmpty(prefix) || ObjectUtils.isEmpty(key)) {
                     return FullKeyHolder.of(key);
+                } else {
+                    return FullKeyHolder.of(key, prefix);
                 }
             }
             return FullKeyHolder.of(this.metadata.keyGenerator.generate(this.target, this.metadata.method, this.args));
+        }
+
+        protected String generateKeyPrefix(EvaluationContext evaluationContext) {
+            if (this.metadata.operation instanceof CacheKeyPrefix cacheKeyPrefix && StringUtils.hasText(cacheKeyPrefix.getKeyPrefix())) {
+                Object prefix = evaluator.key(cacheKeyPrefix.getKeyPrefix(), this.metadata.methodKey, evaluationContext);
+                return ObjectUtils.isEmpty(prefix) ? "" : prefix.toString();
+            }
+            return null;
         }
 
         private EvaluationContext createEvaluationContext(@Nullable Object result) {
@@ -642,6 +652,7 @@ public class BatchCacheAspect extends AbstractCacheInvoker implements BeanFactor
         public static FullKeyHolder of(Object key) {
             return new FullKeyHolder(key, null);
         }
+
         public static FullKeyHolder of(Object key, String prefix) {
             return key instanceof Collection<?> keyList ?
                     new FullKeyHolder(keyList.stream().map(keyItem -> wrapKeyPrefix(prefix, keyItem)).collect(Collectors.toList()), prefix) :
@@ -653,8 +664,9 @@ public class BatchCacheAspect extends AbstractCacheInvoker implements BeanFactor
                 return keyItem;
             }
             Assert.notNull(keyItem, "keyItem must not be null");
-            return prefix instanceof Optional<?> optional ? keyItem.replace(optional.get() + ":", "") : keyItem.replace(prefix + ":" , "");
+            return prefix instanceof Optional<?> optional ? keyItem.replace(optional.get() + ":", "") : keyItem.replace(prefix + ":", "");
         }
+
         public static Object wrapKeyPrefix(@NonNull Object prefix, @NonNull Object keyItem) {
             if (ObjectUtils.isEmpty(prefix) || ObjectUtils.isEmpty(keyItem)) {
                 return keyItem;
