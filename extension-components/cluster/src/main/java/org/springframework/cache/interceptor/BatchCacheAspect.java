@@ -27,10 +27,7 @@ import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.ObjectUtils;
-import org.springframework.util.StringUtils;
+import org.springframework.util.*;
 import org.springframework.util.function.SingletonSupplier;
 
 import java.lang.reflect.Method;
@@ -121,7 +118,7 @@ public class BatchCacheAspect extends AbstractCacheInvoker implements BeanFactor
         // Collect puts from any @BatchCachePut operation, if present
         collectPutCacheRequest(putOperationContext, cacheValue);
 
-        afterProcessCacheEvicts(evictOperationContext, cacheValue);
+        afterProcessCacheEvicts(evictOperationContext, cacheValue, method);
 
         return returnValue;
     }
@@ -211,8 +208,8 @@ public class BatchCacheAspect extends AbstractCacheInvoker implements BeanFactor
         }
     }
 
-    private void afterProcessCacheEvicts(@Nullable BatchCacheOperationContext context, @Nullable Object result) {
-        if (ObjectUtils.isEmpty(context) || ObjectUtils.isEmpty(result)) {
+    private void afterProcessCacheEvicts(@Nullable BatchCacheOperationContext context, @Nullable Object result, Method method) {
+        if ((ObjectUtils.isEmpty(context) || ObjectUtils.isEmpty(result)) && !ClassUtils.isVoidType(method.getReturnType())) {
             return;
         }
         BatchCacheEvictOperation operation = (BatchCacheEvictOperation) context.getOperation();
