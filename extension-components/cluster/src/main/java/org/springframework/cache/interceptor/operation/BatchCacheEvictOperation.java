@@ -27,11 +27,13 @@ import org.springframework.cache.interceptor.CacheOperation;
  * @since 3.1
  */
 @EqualsAndHashCode
-public class BatchCacheEvictOperation extends CacheOperation {
+public class BatchCacheEvictOperation extends CacheOperation implements CacheKeyPrefix{
 
 	private final boolean cacheWide;
 
 	private final boolean beforeInvocation;
+
+	private String prefix;
 
 
 	/**
@@ -42,8 +44,12 @@ public class BatchCacheEvictOperation extends CacheOperation {
 		super(b);
 		this.cacheWide = b.cacheWide;
 		this.beforeInvocation = b.beforeInvocation;
+		this.prefix = b.prefix;
 	}
 
+	public String getPrefix() {
+		return prefix;
+	}
 
 	public boolean isCacheWide() {
 		return this.cacheWide;
@@ -64,6 +70,12 @@ public class BatchCacheEvictOperation extends CacheOperation {
 
 		private boolean beforeInvocation = false;
 
+		private String prefix;
+
+		public void setPrefix(String prefix) {
+			this.prefix = prefix;
+		}
+
 		public void setCacheWide(boolean cacheWide) {
 			this.cacheWide = cacheWide;
 		}
@@ -79,6 +91,8 @@ public class BatchCacheEvictOperation extends CacheOperation {
 			sb.append(this.cacheWide);
 			sb.append(",");
 			sb.append(this.beforeInvocation);
+			sb.append(",");
+			sb.append(this.prefix);
 			return sb;
 		}
 

@@ -56,4 +56,6 @@ public @interface BatchCacheable {
 
     boolean sync() default false;
 
+    String prefix() default "";
+
 }
