@@ -8,14 +8,14 @@ import org.springframework.lang.Nullable;
  * @author leon
  */
 @EqualsAndHashCode
-public class BatchCacheableOperation extends CacheOperation {
+public class BatchCacheableOperation extends CacheOperation implements CacheKeyPrefix {
 
 	@Nullable
 	private final String unless;
 
 	private final boolean sync;
 
-
+	private String prefix;
 	/**
 	 * Create a new {@link BatchCacheableOperation} instance from the given builder.
 	 * @since 4.3
@@ -24,8 +24,12 @@ public class BatchCacheableOperation extends CacheOperation {
 		super(b);
 		this.unless = b.unless;
 		this.sync = b.sync;
+		this.prefix = b.prefix;
 	}
 
+	public String getPrefix() {
+		return prefix;
+	}
 
 	@Nullable
 	public String getUnless() {
@@ -48,8 +52,14 @@ public class BatchCacheableOperation extends CacheOperation {
 
 		private boolean sync;
 
+		private String prefix;
+
 		public void setUnless(String unless) {
 			this.unless = unless;
+		}
+
+		public void setPrefix(String prefix) {
+			this.prefix = prefix;
 		}
 
 		public void setSync(boolean sync) {
@@ -65,6 +75,8 @@ public class BatchCacheableOperation extends CacheOperation {
 			sb.append(" | sync='");
 			sb.append(this.sync);
 			sb.append('\'');
+			sb.append(',');
+			sb.append(this.prefix);
 			return sb;
 		}
 

@@ -20,4 +20,7 @@ public class CacheKeyConstants {
     public static final String INTEGRATION_PERMISSION_CACHE_NAME_PREFIX = "integration:permission";
     public static final String ENTITY_LATEST_VALUE_CACHE_NAME = "entity:latest-value";
 
+    public static final String TENANT_EXPRESSION = "T(com.milesight.beaveriot.context.security.TenantContext).getTenantId()";
+
+
 }

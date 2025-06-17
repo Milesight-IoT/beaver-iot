@@ -52,4 +52,5 @@ public @interface BatchCacheEvict {
 
     boolean beforeInvocation() default false;
 
+    String prefix() default "";
 }

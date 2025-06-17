@@ -53,4 +53,5 @@ public @interface BatchCachePut {
 
 	String unless() default "";
 
+	String prefix() default "";
 }

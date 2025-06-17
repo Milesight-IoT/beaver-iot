@@ -99,6 +99,7 @@ public class SpringBatchCacheAnnotationParser implements CacheAnnotationParser, 
 		builder.setCacheManager(cacheable.cacheManager());
 		builder.setCacheResolver(cacheable.cacheResolver());
 		builder.setSync(cacheable.sync());
+		builder.setPrefix(cacheable.prefix());
 
 		defaultConfig.applyDefault(builder);
 		BatchCacheableOperation op = builder.build();
@@ -121,6 +122,7 @@ public class SpringBatchCacheAnnotationParser implements CacheAnnotationParser, 
 		builder.setCacheResolver(cacheEvict.cacheResolver());
 		builder.setCacheWide(cacheEvict.allEntries());
 		builder.setBeforeInvocation(cacheEvict.beforeInvocation());
+		builder.setPrefix(cacheEvict.prefix());
 
 		defaultConfig.applyDefault(builder);
 		BatchCacheEvictOperation op = builder.build();
@@ -141,6 +143,7 @@ public class SpringBatchCacheAnnotationParser implements CacheAnnotationParser, 
 		builder.setKeyGenerator(cachePut.keyGenerator());
 		builder.setCacheManager(cachePut.cacheManager());
 		builder.setCacheResolver(cachePut.cacheResolver());
+		builder.setPrefix(cachePut.prefix());
 
 		defaultConfig.applyDefault(builder);
 		BatchCachePutOperation op = builder.build();
