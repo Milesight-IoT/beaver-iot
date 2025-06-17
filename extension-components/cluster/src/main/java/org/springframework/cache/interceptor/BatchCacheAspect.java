@@ -27,7 +27,11 @@ import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
-import org.springframework.util.*;
+import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.util.function.SingletonSupplier;
 
 import java.lang.reflect.Method;
@@ -50,6 +54,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @Aspect
 public class BatchCacheAspect extends AbstractCacheInvoker implements BeanFactoryAware {
+
+    private static final Collection<?> NO_RESULT = new ArrayList<>();
 
     private final StandardEvaluationContext originalEvaluationContext = new StandardEvaluationContext();
 
@@ -317,17 +323,20 @@ public class BatchCacheAspect extends AbstractCacheInvoker implements BeanFactor
         return (result instanceof Collection<?> collection ? collection.toArray() : (Object[]) result);
     }
 
-    private Collection<?> validateResultAndConvertToCollection(BatchCacheOperationContext context, Object result) {
-        if (result instanceof Map<?, ?>) {
+    private Collection<?> validateResultAndConvertToCollection(BatchCacheOperationContext context, @Nullable Object result) {
+        if (result == null) {
+            return NO_RESULT;
+        } else if (result instanceof Map<?, ?>) {
             return ((Map<?, ?>) result).values();
         } else if (result.getClass().isArray()) {
             return Arrays.asList((Object[]) result);
         } else if (result instanceof Collection<?>) {
             return (Collection<?>) result;
         } else {
-            throw new IllegalStateException("BatchCache operation with key of type " + result.getClass().getName() +
-                    " must return a Collection,Map or an array, but method " + context.getMethod().getName() +
-                    " returns " + result.getClass().getName());
+            String resultType = result.getClass().getName();
+            throw new IllegalStateException("BatchCache operation with key of type " + resultType +
+                    " must return a Collection, Map or an array, but method " + context.getMethod().getName() +
+                    " returns " + resultType);
         }
     }
 
@@ -597,6 +606,10 @@ public class BatchCacheAspect extends AbstractCacheInvoker implements BeanFactor
          */
         @Nullable
         protected FullKeyHolder generateKey(@Nullable Object result) {
+            if (result == NO_RESULT) {
+                result = CacheOperationExpressionEvaluator.NO_RESULT;
+            }
+
             if (StringUtils.hasText(this.metadata.operation.getKey())) {
                 EvaluationContext evaluationContext = createEvaluationContext(result);
                 Object key = evaluator.key(this.metadata.operation.getKey(), this.metadata.methodKey, evaluationContext);
