@@ -35,9 +35,13 @@
     <properties>
         <beaver-iot.version>1.2.1</beaver-iot.version>
         <revision>${beaver-iot.version}</revision>
+        <snapshot-repository-id>central-portal-snapshots</snapshot-repository-id>
+        <snapshot-repository-url>https://central.sonatype.com/repository/maven-snapshots/</snapshot-repository-url>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <deploy.skip>false</deploy.skip>
+
         <spring-boot.version>3.3.4</spring-boot.version>
         <camel.version>4.4.3</camel.version>
         <postgresql.version>42.7.3</postgresql.version>
@@ -61,8 +65,6 @@
         <minio-client.version>8.5.17</minio-client.version>
         <aws-sdk.version>2.31.14</aws-sdk.version>
         <graalvm.version>24.1.2</graalvm.version>
-
-        <deploy.skip>false</deploy.skip>
     </properties>
 
     <dependencyManagement>
@@ -487,8 +489,8 @@
 
             <distributionManagement>
                 <snapshotRepository>
-                    <id>central-portal-snapshots</id>
-                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <id>${snapshot-repository-id}</id>
+                    <url>${snapshot-repository-url}</url>
                     <uniqueVersion>false</uniqueVersion>
                 </snapshotRepository>
             </distributionManagement>
@@ -500,8 +502,8 @@
                 </repository>
                 <repository>
                     <name>Central Portal Snapshots</name>
-                    <id>central-portal-snapshots</id>
-                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <id>${snapshot-repository-id}</id>
+                    <url>${snapshot-repository-url}</url>
                     <releases>
                         <enabled>false</enabled>
                     </releases>
