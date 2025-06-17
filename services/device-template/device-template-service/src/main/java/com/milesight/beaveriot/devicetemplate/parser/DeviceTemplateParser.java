@@ -12,11 +12,11 @@ import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.DeviceTemplateServiceProvider;
 import com.milesight.beaveriot.context.integration.model.*;
 import com.milesight.beaveriot.context.integration.model.config.EntityConfig;
+import com.milesight.beaveriot.context.model.DeviceTemplateModel;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateInputResult;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateOutputResult;
 import com.milesight.beaveriot.devicetemplate.enums.ServerErrorCode;
 import com.milesight.beaveriot.devicetemplate.facade.IDeviceTemplateParserFacade;
-import com.milesight.beaveriot.context.model.DeviceTemplateModel;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
@@ -305,21 +305,6 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                 DeviceTemplateModel.Definition.InputJsonObject inputJsonObject = flatJsonInputDescriptionMap.get(key);
                 if (!isMatchType(inputJsonObject, jsonNode)) {
                     throw ServiceException.with(ServerErrorCode.JSON_VALIDATE_ERROR.getErrorCode(), MessageFormat.format("Json validate failed. Json key {0} requires type {1}", key, inputJsonObject.getType().getTypeName())).build();
-                }
-                validateJsonValue(inputJsonObject, jsonNode);
-            }
-        }
-    }
-
-    private void validateJsonValue(DeviceTemplateModel.Definition.InputJsonObject inputJsonObject, JsonNode jsonNode) {
-        if (DeviceTemplateModel.JsonType.STRING.equals(inputJsonObject.getType())) {
-            if (inputJsonObject.getEnumValues() != null) {
-                if (!inputJsonObject.getEnumValues().contains(jsonNode.asText())) {
-                    throw ServiceException.with(ServerErrorCode.JSON_VALIDATE_ERROR.getErrorCode(),
-                            MessageFormat.format("Json validate failed. Json key {0} requires value in {1} but provides value {2}",
-                                    inputJsonObject.getKey(),
-                                    inputJsonObject.getEnumValues(),
-                                    jsonNode.asText())).build();
                 }
             }
         }
