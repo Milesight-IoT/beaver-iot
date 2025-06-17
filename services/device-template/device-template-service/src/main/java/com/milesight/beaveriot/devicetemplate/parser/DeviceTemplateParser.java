@@ -12,11 +12,11 @@ import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.DeviceTemplateServiceProvider;
 import com.milesight.beaveriot.context.integration.model.*;
 import com.milesight.beaveriot.context.integration.model.config.EntityConfig;
+import com.milesight.beaveriot.context.model.DeviceTemplateModel;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateInputResult;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateOutputResult;
 import com.milesight.beaveriot.devicetemplate.enums.ServerErrorCode;
 import com.milesight.beaveriot.devicetemplate.facade.IDeviceTemplateParserFacade;
-import com.milesight.beaveriot.context.model.DeviceTemplateModel;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
@@ -230,14 +230,14 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                     return null;
                 }
                 Object value = payload.get(entityKey);
-                validateValue(currentKey, entityKey, outputJsonObject.getType(), value);
+                validateEntityValue(currentKey, entityKey, outputJsonObject.getType(), value);
                 return mapper.valueToTree(value);
             }
         }
         return jsonNode;
     }
 
-    private void validateValue(String currentKey, String entityKey, DeviceTemplateModel.JsonType definitionType, Object value) {
+    private void validateEntityValue(String currentKey, String entityKey, DeviceTemplateModel.JsonType definitionType, Object value) {
         DeviceTemplateModel.JsonType targetType = DeviceTemplateModel.JsonType.STRING;
         if (value instanceof Boolean) {
             targetType = DeviceTemplateModel.JsonType.BOOLEAN;
@@ -304,7 +304,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             if (flatJsonInputDescriptionMap.containsKey(key)) {
                 DeviceTemplateModel.Definition.InputJsonObject inputJsonObject = flatJsonInputDescriptionMap.get(key);
                 if (!isMatchType(inputJsonObject, jsonNode)) {
-                    throw ServiceException.with(ServerErrorCode.JSON_VALIDATE_ERROR.getErrorCode(), MessageFormat.format("Json validate failed. Json key {0} required type {1}", key, inputJsonObject.getType().getTypeName())).build();
+                    throw ServiceException.with(ServerErrorCode.JSON_VALIDATE_ERROR.getErrorCode(), MessageFormat.format("Json validate failed. Json key {0} requires type {1}", key, inputJsonObject.getType().getTypeName())).build();
                 }
             }
         }
@@ -312,7 +312,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
 
     private boolean isMatchType(DeviceTemplateModel.Definition.InputJsonObject inputJsonObject, JsonNode jsonNode) {
         return switch (inputJsonObject.getType()) {
-            case DOUBLE -> jsonNode.isDouble();
+            case DOUBLE -> jsonNode.isFloat() || jsonNode.isDouble();
             case LONG -> jsonNode.isInt() || jsonNode.isLong();
             case BOOLEAN -> jsonNode.isBoolean();
             case STRING -> jsonNode.isTextual();
