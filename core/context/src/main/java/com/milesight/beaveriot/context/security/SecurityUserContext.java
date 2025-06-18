@@ -20,12 +20,21 @@ public class SecurityUserContext {
 
     public static void setSecurityUser(SecurityUser securityUser) {
         securityUserThreadLocal.set(securityUser);
-        TenantContext.setTenantId(securityUser.getTenantId());
+        if (securityUser != null) {
+            TenantContext.setTenantId(securityUser.getTenantId());
+        }
     }
 
     public static void clear() {
         securityUserThreadLocal.remove();
         TenantContext.clear();
+    }
+
+    public static void clear(boolean alsoCleanUpTenantContext) {
+        securityUserThreadLocal.remove();
+        if (alsoCleanUpTenantContext) {
+            TenantContext.clear();
+        }
     }
 
     public static Long getUserId() {
