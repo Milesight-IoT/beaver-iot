@@ -18,8 +18,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class LanguageHelper {
     private LanguageHelper() {}
 
+    // 1. The code cache can be controlled by keeping and maintaining strong references to the Engine and Source objects.
     // https://www.graalvm.org/latest/reference-manual/embed-languages/#code-caching-across-multiple-contexts
-    // The code cache can be controlled by keeping and maintaining strong references to the Engine and Source objects.
+    // 2. The SandboxPolicy.ISOLATED and SandboxPolicy.UNTRUSTED policies are not available in GraalVM Community Edition.
+    // https://www.graalvm.org/release-notes/JDK_17/
     private static final Map<String, Engine> engineCache = new ConcurrentHashMap<>();
 
     public static Engine getEngine(String lang) {
