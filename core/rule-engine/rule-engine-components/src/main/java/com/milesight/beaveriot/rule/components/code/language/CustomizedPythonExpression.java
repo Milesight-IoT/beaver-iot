@@ -5,7 +5,6 @@ import org.apache.camel.Exchange;
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.support.ExpressionSupport;
 import org.graalvm.polyglot.*;
-import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 import java.util.Map;
@@ -50,7 +49,7 @@ public class CustomizedPythonExpression extends ExpressionSupport {
 
             Source source = Source.create(LANG_ID, expressionString);
             Value expressionOut = cx.eval(source);
-            Value function = expressionOut.getMember(MAIN_FUNCTION);
+            Value function = expressionOut.hasMembers() ? expressionOut.getMember(MAIN_FUNCTION) : null;
             if (function == null) {
                 return (T) LanguageHelper.convertResultValue(expressionOut, exchange, type);
             }
