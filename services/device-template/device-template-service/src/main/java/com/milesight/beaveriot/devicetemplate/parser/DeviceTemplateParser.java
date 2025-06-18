@@ -10,6 +10,7 @@ import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.DeviceTemplateServiceProvider;
+import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
 import com.milesight.beaveriot.context.integration.model.*;
 import com.milesight.beaveriot.context.integration.model.config.EntityConfig;
 import com.milesight.beaveriot.context.model.DeviceTemplateModel;
@@ -42,10 +43,12 @@ import java.util.*;
 @Service
 public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     private final static String DEVICE_ID_KEY = "device_id";
+    private final IntegrationServiceProvider integrationServiceProvider;
     private final DeviceServiceProvider deviceServiceProvider;
     private final DeviceTemplateServiceProvider deviceTemplateServiceProvider;
 
-    public DeviceTemplateParser(DeviceServiceProvider deviceServiceProvider, DeviceTemplateServiceProvider deviceTemplateServiceProvider) {
+    public DeviceTemplateParser(IntegrationServiceProvider integrationServiceProvider, DeviceServiceProvider deviceServiceProvider, DeviceTemplateServiceProvider deviceTemplateServiceProvider) {
+        this.integrationServiceProvider = integrationServiceProvider;
         this.deviceServiceProvider = deviceServiceProvider;
         this.deviceTemplateServiceProvider = deviceTemplateServiceProvider;
     }
@@ -103,13 +106,9 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     public DeviceTemplateInputResult input(String integration, Long deviceTemplateId, String jsonData) {
         DeviceTemplateInputResult result = new DeviceTemplateInputResult();
         try {
-            DeviceTemplate deviceTemplate = deviceTemplateServiceProvider.findById(deviceTemplateId);
+            DeviceTemplate deviceTemplate = getAndValidateDeviceTemplate(integration, deviceTemplateId);
             if (deviceTemplate == null) {
-                throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorMessage()).build();
-            }
-
-            if (!validate(deviceTemplate.getContent())) {
-                return result;
+                return null;
             }
 
             ObjectMapper mapper = new ObjectMapper();
@@ -131,7 +130,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
 
             // Build device
             String deviceId = jsonNode.get(DEVICE_ID_KEY).asText();
-            Device device = buildDevice(integration, deviceId, deviceTemplate.getKey());
+            Device device = buildDevice(integration, deviceId, deviceId, deviceTemplate.getKey());
 
             // Build device entities
             List<Entity> deviceEntities = buildDeviceEntities(integration, device.getKey(), deviceTemplateModel.getInitialEntities());
@@ -192,6 +191,49 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                 throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
             }
         }
+    }
+
+    @Override
+    public Device createDevice(String integration, Long deviceTemplateId, String deviceId, String deviceName) {
+        try {
+            DeviceTemplate deviceTemplate = getAndValidateDeviceTemplate(integration, deviceTemplateId);
+            if (deviceTemplate == null) {
+                return null;
+            }
+
+            DeviceTemplateModel deviceTemplateModel = parse(deviceTemplate.getContent());
+            // Build device
+            Device device = buildDevice(integration, deviceId, deviceName, deviceTemplate.getKey());
+
+            // Build device entities
+            List<Entity> deviceEntities = buildDeviceEntities(integration, device.getKey(), deviceTemplateModel.getInitialEntities());
+            device.setEntities(deviceEntities);
+            return device;
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            if (e instanceof ServiceException) {
+                throw (ServiceException) e;
+            } else {
+                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+            }
+        }
+    }
+
+    private DeviceTemplate getAndValidateDeviceTemplate(String integration, Long deviceTemplateId) {
+        if (integrationServiceProvider.getIntegration(integration) == null) {
+            throw ServiceException.with(ServerErrorCode.INTEGRATION_NOT_FOUND.getErrorCode(), ServerErrorCode.INTEGRATION_NOT_FOUND.getErrorMessage()).build();
+        }
+
+        DeviceTemplate deviceTemplate = deviceTemplateServiceProvider.findById(deviceTemplateId);
+        if (deviceTemplate == null) {
+            throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorMessage()).build();
+        }
+
+        if (!validate(deviceTemplate.getContent())) {
+            return null;
+        }
+
+        return deviceTemplate;
     }
 
     public DeviceTemplateModel parse(String deviceTemplateContent) {
@@ -355,9 +397,9 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         }
     }
 
-    protected Device buildDevice(String integration, String deviceId, String deviceTemplateKey) {
+    protected Device buildDevice(String integration, String deviceId, String deviceName, String deviceTemplateKey) {
         return new DeviceBuilder(integration)
-                .name(deviceId)
+                .name(deviceName)
                 .template(deviceTemplateKey)
                 .identifier(deviceId)
                 .additional(Map.of("deviceId", deviceId))
