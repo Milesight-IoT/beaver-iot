@@ -36,20 +36,16 @@ spring:
     #    type: caffeine
 #    cache-names: "resource:data-pre-sign"
     caffeine:
-      spec: maximumSize=50000,expireAfterAccess=10m
+      spec: maximumSize=50000,expireAfterWrite=${spring.cache.specs.time-to-live:1h}
     redis:
       cache-null-values: true
       value-serializer-class: org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer
-      time-to-live: 10m
+      time-to-live: ${spring.cache.specs.time-to-live:1h}
     specs:
+      time-to-live: 1h
       time-to-lives:
         [ "resource:data-pre-sign" ]: ${resource.pre_sign_expire}
         [ "resource:data" ]: 2m
-        [ "user:menus"] : 1h
-        [ "entity:permission" ] : 1h
-        [ "device:permission"] : 1h
-        [ "dashboard:permission" ] : 1h
-        [ "integration:permission" ] : 1h
         [ "entity:latest-value" ] : 15m
 
   redis:

@@ -29,7 +29,7 @@ public class CustomizeCaffeineCacheManager extends CaffeineCacheManager {
         Duration matchTimeToLive = specs.getMatchTimeToLive(name);
         if (matchTimeToLive != null) {
             return Caffeine.newBuilder()
-                    .expireAfterAccess(matchTimeToLive.getSeconds(), TimeUnit.SECONDS)
+                    .expireAfterWrite(matchTimeToLive.getSeconds(), TimeUnit.SECONDS)
                     .build();
         } else {
             return super.createNativeCaffeineCache(name);
@@ -41,7 +41,7 @@ public class CustomizeCaffeineCacheManager extends CaffeineCacheManager {
         Duration matchTimeToLive = specs.getMatchTimeToLive(name);
         if (matchTimeToLive != null) {
             return Caffeine.newBuilder()
-                    .expireAfterAccess(matchTimeToLive.getSeconds(), TimeUnit.SECONDS)
+                    .expireAfterWrite(matchTimeToLive.getSeconds(), TimeUnit.SECONDS)
                     .buildAsync();
         } else {
             return super.createAsyncCaffeineCache(name);

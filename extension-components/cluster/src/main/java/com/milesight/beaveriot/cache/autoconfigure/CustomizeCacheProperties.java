@@ -1,9 +1,9 @@
 package com.milesight.beaveriot.cache.autoconfigure;
 
 import com.milesight.beaveriot.base.constants.StringConstant;
-import lombok.Data;
-import lombok.Getter;
+import lombok.*;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.lang.Nullable;
 
 import java.time.Duration;
 import java.util.LinkedHashMap;
@@ -26,13 +26,21 @@ public class CustomizeCacheProperties {
     private Specs specs = new Specs();
 
 
-    @Getter
+    @Data
     public static class Specs {
+
+        /**
+         * Default expiration time (unit s) of the cache.
+         */
+        @Nullable
+        public Duration timeToLive;
+
         /**
          * Precisely set the expiration time (unit s) of the corresponding cache, and use timeToLive global configuration when it is not configured. Support prefix matching, for example: demo:key1:*
          */
         public Map<String, Duration> timeToLives = new LinkedHashMap<>();
 
+        @Nullable
         public Duration getMatchTimeToLive(String key){
             //Since timeToLives may have a prefix match, take the prefix[]
             String matchKey = timeToLives.keySet().stream().filter(k->{
@@ -43,7 +51,7 @@ public class CustomizeCacheProperties {
                     return key.equals(unwrapKey);
                 }
             }).findFirst().orElse(null);
-            return matchKey == null ? null : timeToLives.get(matchKey);
+            return matchKey == null ? timeToLive : timeToLives.get(matchKey);
         }
 
         public static String unwrapPrefixAndSubfix(String key) {
