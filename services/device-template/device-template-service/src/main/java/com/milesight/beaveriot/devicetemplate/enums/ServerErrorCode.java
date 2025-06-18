@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
  * create: 2025/6/16 10:00
  **/
 public enum ServerErrorCode implements ErrorCodeSpec {
+    INTEGRATION_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "integration_not_found", "Integration not found"),
     DEVICE_TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "device_template_not_found", "Device template not found"),
     DEVICE_TEMPLATE_EMPTY(HttpStatus.BAD_REQUEST.value(), "device_template_empty", "Device template empty"),
     DEVICE_TEMPLATE_SCHEMA_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "device_template_schema_not_found", "Device template schema not found"),
