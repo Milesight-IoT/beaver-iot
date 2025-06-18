@@ -128,7 +128,7 @@ public class EntityValueService implements EntityValueServiceProvider {
         self().saveLatestValues(values, System.currentTimeMillis());
     }
 
-    @BatchCacheEvict(cacheNames = CacheKeyConstants.ENTITY_LATEST_VALUE_CACHE_NAME, key = "#result")
+    @BatchCacheEvict(cacheNames = CacheKeyConstants.ENTITY_LATEST_VALUE_CACHE_NAME, key = "#result", prefix = CacheKeyConstants.TENANT_EXPRESSION)
     public List<String> saveLatestValues(Map<String, Object> values, long timestamp) {
         if (values == null || values.isEmpty()) {
             return List.of();
@@ -338,7 +338,7 @@ public class EntityValueService implements EntityValueServiceProvider {
         return resultMap;
     }
 
-    @BatchCacheable(cacheNames = CacheKeyConstants.ENTITY_LATEST_VALUE_CACHE_NAME, key = "#p0.![key]")
+    @BatchCacheable(cacheNames = CacheKeyConstants.ENTITY_LATEST_VALUE_CACHE_NAME, key = "#p0.![key]", prefix = CacheKeyConstants.TENANT_EXPRESSION)
     public List<EntityLatestValueCache> findSpecificEntityValue(List<EntityPO> entityList) {
         Map<Long, EntityLatestValueCache> entityIdToValue = new LinkedHashMap<>();
         entityList.forEach(entityPO -> entityIdToValue.put(entityPO.getId(), new EntityLatestValueCache()));
