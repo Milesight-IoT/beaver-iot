@@ -215,7 +215,7 @@ public class BatchCacheAspect extends AbstractCacheInvoker implements BeanFactor
     }
 
     private void afterProcessCacheEvicts(@Nullable BatchCacheOperationContext context, @Nullable Object result, Method method) {
-        if ((ObjectUtils.isEmpty(context) || ObjectUtils.isEmpty(result)) && !ClassUtils.isVoidType(method.getReturnType())) {
+        if ((ObjectUtils.isEmpty(context) || (!ClassUtils.isVoidType(method.getReturnType()) && ObjectUtils.isEmpty(result)))) {
             return;
         }
         BatchCacheEvictOperation operation = (BatchCacheEvictOperation) context.getOperation();
