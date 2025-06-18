@@ -9,7 +9,7 @@ import com.milesight.beaveriot.context.model.response.DeviceTemplateOutputResult
 public interface IDeviceTemplateParserFacade {
     boolean validate(String deviceTemplateContent);
     String defaultContent();
-    public DeviceTemplateModel parse(String deviceTemplateContent);
+    DeviceTemplateModel parse(String deviceTemplateContent);
     DeviceTemplateInputResult input(String integration, Long deviceTemplateId, String jsonData);
     DeviceTemplateOutputResult output(String deviceKey, ExchangePayload payload);
     Device createDevice(String integration, Long deviceTemplateId, String deviceId, String deviceName);
