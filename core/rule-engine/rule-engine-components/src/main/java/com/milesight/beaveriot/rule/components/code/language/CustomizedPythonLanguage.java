@@ -14,7 +14,7 @@ import static org.graalvm.polyglot.Source.newBuilder;
 /**
  * @author leon
  */
-public class CustomizedPythonLanguage extends TypedLanguageSupport implements ScriptingLanguage {
+public class CustomizedPythonLanguage extends TypedLanguageSupport implements ScriptingLanguage, LanguageWarmUp {
 
     @Override
     public Predicate createPredicate(String expression) {
@@ -36,5 +36,10 @@ public class CustomizedPythonLanguage extends TypedLanguageSupport implements Sc
             Object answer = o != null ? o.as(resultType) : null;
             return resultType.cast(answer);
         }
+    }
+
+    @Override
+    public void warmUp() {
+        evaluate("", Map.of(), Object.class);
     }
 }

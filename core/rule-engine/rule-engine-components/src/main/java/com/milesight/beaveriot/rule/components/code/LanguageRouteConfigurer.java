@@ -4,7 +4,9 @@ import com.milesight.beaveriot.rule.RuleEngineRouteConfigurer;
 import com.milesight.beaveriot.rule.components.code.language.CustomizedJavaScriptLanguage;
 import com.milesight.beaveriot.rule.components.code.language.CustomizedMvelLanguage;
 import com.milesight.beaveriot.rule.components.code.language.CustomizedPythonLanguage;
+import com.milesight.beaveriot.rule.components.code.language.LanguageWarmUp;
 import groovy.lang.GroovyShell;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.language.groovy.GroovyShellFactory;
@@ -18,13 +20,25 @@ import java.util.Map;
  * @author leon
  */
 @Component
+@Slf4j
 public class LanguageRouteConfigurer implements RuleEngineRouteConfigurer {
     @Override
     public void customizeRoute(CamelContext context) throws Exception {
-        context.getRegistry().bind("groovyShellFactory", new CustomizedGroovyShellFactory());
-        context.getRegistry().bind("js-language", new CustomizedJavaScriptLanguage());
-        context.getRegistry().bind("mvel-language", new CustomizedMvelLanguage());
-        context.getRegistry().bind("python-language", new CustomizedPythonLanguage());
+        bindRegistry(context, "groovyShellFactory", new CustomizedGroovyShellFactory());
+        bindRegistry(context, "mvel-language", new CustomizedMvelLanguage());
+        bindRegistry(context, "js-language", new CustomizedJavaScriptLanguage());
+        bindRegistry(context, "python-language", new CustomizedPythonLanguage());
+    }
+
+    public void bindRegistry(CamelContext context, String name, Object lang) {
+        context.getRegistry().bind(name, lang);
+        if (LanguageWarmUp.class.isAssignableFrom(lang.getClass())) {
+            new Thread(() -> {
+                log.info("[Language-Warming] {} start", name);
+                ((LanguageWarmUp) lang).warmUp();
+                log.info("[Language-Warming] {} done", name);
+            }).start();
+        }
     }
 
     public class CustomizedGroovyShellFactory implements GroovyShellFactory {
