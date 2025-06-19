@@ -5,5 +5,5 @@ package org.springframework.cache.interceptor.operation;
  */
 public interface CacheKeyPrefix {
 
-    String getPrefix();
+    String getKeyPrefix();
 }

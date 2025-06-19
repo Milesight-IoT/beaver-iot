@@ -1,13 +1,13 @@
 package org.springframework.cache.interceptor.operation;
 
-import lombok.EqualsAndHashCode;
+import lombok.*;
 import org.springframework.cache.interceptor.CacheOperation;
 import org.springframework.lang.Nullable;
 
 /**
  * @author leon
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = true)
 public class BatchCacheableOperation extends CacheOperation implements CacheKeyPrefix {
 
 	@Nullable
@@ -15,7 +15,7 @@ public class BatchCacheableOperation extends CacheOperation implements CacheKeyP
 
 	private final boolean sync;
 
-	private String prefix;
+	private final String keyPrefix;
 	/**
 	 * Create a new {@link BatchCacheableOperation} instance from the given builder.
 	 * @since 4.3
@@ -24,11 +24,11 @@ public class BatchCacheableOperation extends CacheOperation implements CacheKeyP
 		super(b);
 		this.unless = b.unless;
 		this.sync = b.sync;
-		this.prefix = b.prefix;
+		this.keyPrefix = b.keyPrefix;
 	}
 
-	public String getPrefix() {
-		return prefix;
+	public String getKeyPrefix() {
+		return keyPrefix;
 	}
 
 	@Nullable
@@ -52,14 +52,14 @@ public class BatchCacheableOperation extends CacheOperation implements CacheKeyP
 
 		private boolean sync;
 
-		private String prefix;
+		private String keyPrefix;
 
-		public void setUnless(String unless) {
+		public void setUnless(@Nullable String unless) {
 			this.unless = unless;
 		}
 
-		public void setPrefix(String prefix) {
-			this.prefix = prefix;
+		public void setKeyPrefix(String keyPrefix) {
+			this.keyPrefix = keyPrefix;
 		}
 
 		public void setSync(boolean sync) {
@@ -67,7 +67,7 @@ public class BatchCacheableOperation extends CacheOperation implements CacheKeyP
 		}
 
 		@Override
-		protected StringBuilder getOperationDescription() {
+		protected @NonNull StringBuilder getOperationDescription() {
 			StringBuilder sb = super.getOperationDescription();
 			sb.append(" | unless='");
 			sb.append(this.unless);
@@ -76,12 +76,12 @@ public class BatchCacheableOperation extends CacheOperation implements CacheKeyP
 			sb.append(this.sync);
 			sb.append('\'');
 			sb.append(',');
-			sb.append(this.prefix);
+			sb.append(this.keyPrefix);
 			return sb;
 		}
 
 		@Override
-		public BatchCacheableOperation build() {
+		public @NonNull BatchCacheableOperation build() {
 			return new BatchCacheableOperation(this);
 		}
 	}

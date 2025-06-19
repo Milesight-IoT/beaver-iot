@@ -1,6 +1,5 @@
 package com.milesight.beaveriot.user.facade;
 
-import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.user.constants.UserConstants;
 import com.milesight.beaveriot.user.convert.TenantConverter;
@@ -15,21 +14,20 @@ import com.milesight.beaveriot.user.enums.UserStatus;
 import com.milesight.beaveriot.user.po.MenuPO;
 import com.milesight.beaveriot.user.po.RoleMenuPO;
 import com.milesight.beaveriot.user.po.RolePO;
-import com.milesight.beaveriot.user.po.RoleResourcePO;
 import com.milesight.beaveriot.user.po.TenantPO;
 import com.milesight.beaveriot.user.po.UserPO;
 import com.milesight.beaveriot.user.po.UserRolePO;
 import com.milesight.beaveriot.user.repository.MenuRepository;
 import com.milesight.beaveriot.user.repository.RoleMenuRepository;
 import com.milesight.beaveriot.user.repository.RoleRepository;
-import com.milesight.beaveriot.user.repository.RoleResourceRepository;
 import com.milesight.beaveriot.user.repository.TenantRepository;
 import com.milesight.beaveriot.user.repository.UserRepository;
 import com.milesight.beaveriot.user.repository.UserRoleRepository;
+import com.milesight.beaveriot.user.service.RoleService;
 import com.milesight.beaveriot.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -46,21 +44,29 @@ import java.util.stream.Collectors;
 public class UserFacade implements IUserFacade {
 
     @Autowired
-    UserService userService;
+    private UserService userService;
+
+    @Lazy
     @Autowired
-    UserRoleRepository userRoleRepository;
+    private RoleService roleService;
+
     @Autowired
-    RoleRepository roleRepository;
+    private UserRoleRepository userRoleRepository;
+
     @Autowired
-    RoleMenuRepository roleMenuRepository;
+    private RoleRepository roleRepository;
+
     @Autowired
-    MenuRepository menuRepository;
+    private RoleMenuRepository roleMenuRepository;
+
     @Autowired
-    RoleResourceRepository roleResourceRepository;
+    private MenuRepository menuRepository;
+
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
+
     @Autowired
-    TenantRepository tenantRepository;
+    private TenantRepository tenantRepository;
 
     @Override
     public TenantDTO analyzeTenantId(String tenantId) {
@@ -85,121 +91,94 @@ public class UserFacade implements IUserFacade {
 
     @Override
     public UserResourceDTO getResource(Long userId, List<ResourceType> resourceTypes) {
-        return userService.getResource(userId, resourceTypes);
+        return userService.getUserResource(userId, resourceTypes);
     }
 
     @Override
     public List<UserDTO> getUserByIds(List<Long> userIds) {
-        List<UserPO> userPOS = userService.getUserByIds(userIds);
-        return UserConverter.INSTANCE.convertDTOList(userPOS);
+        List<UserPO> userPOs = userService.getUserByIds(userIds);
+        return UserConverter.INSTANCE.convertDTOList(userPOs);
     }
 
     @Override
     public List<RoleDTO> getRolesByUserId(Long userId) {
+        List<RolePO> rolePOs = getRolePOsByUserId(userId);
+        if (rolePOs == null || rolePOs.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return rolePOs.stream()
+                .map(rolePO -> {
+                    RoleDTO roleDTO = new RoleDTO();
+                    roleDTO.setRoleId(rolePO.getId());
+                    roleDTO.setRoleName(rolePO.getName());
+                    return roleDTO;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private List<RolePO> getRolePOsByUserId(Long userId) {
         List<UserRolePO> userRolePOList = userRoleRepository.findAll(filterable -> filterable.eq(UserRolePO.Fields.userId, userId));
         if (userRolePOList == null || userRolePOList.isEmpty()) {
             return new ArrayList<>();
         }
-        List<Long> roleIds = userRolePOList.stream().map(UserRolePO::getRoleId).toList();
-        List<RolePO> rolePOS = roleRepository.findAll(filterable -> filterable.in(RolePO.Fields.id, roleIds.toArray()));
-        if (rolePOS == null || rolePOS.isEmpty()) {
-            return new ArrayList<>();
-        }
-        return rolePOS.stream().map(rolePO -> {
-            RoleDTO roleDTO = new RoleDTO();
-            roleDTO.setRoleId(rolePO.getId());
-            roleDTO.setRoleName(rolePO.getName());
-            return roleDTO;
-        }).toList();
+        Long[] roleIds = userRolePOList.stream().map(UserRolePO::getRoleId).toArray(Long[]::new);
+        return roleRepository.findAll(filterable -> filterable.in(RolePO.Fields.id, roleIds));
     }
 
-    @Cacheable(cacheNames = CacheKeyConstants.USER_MENUS_CACHE_NAME_PREFIX, key = "#p0")
+    @Cacheable(cacheNames = CacheKeyConstants.USER_ID_TO_MENUS, key = "T(com.milesight.beaveriot.context.security.TenantContext).getTenantId()+':'+#p0")
     @Override
     public List<MenuDTO> getMenusByUserId(Long userId) {
-        List<UserRolePO> userRolePOList = userRoleRepository.findAll(filterable -> filterable.eq(UserRolePO.Fields.userId, userId));
-        if (userRolePOList == null || userRolePOList.isEmpty()) {
+        List<RolePO> rolePOs = getRolePOsByUserId(userId);
+        if (rolePOs == null || rolePOs.isEmpty()) {
             return new ArrayList<>();
         }
-        List<Long> roleIds = userRolePOList.stream().map(UserRolePO::getRoleId).toList();
-        List<RolePO> rolePOS = roleRepository.findAll(filterable -> filterable.in(RolePO.Fields.id, roleIds.toArray()));
-        if (rolePOS == null || rolePOS.isEmpty()) {
-            return new ArrayList<>();
-        }
-        boolean isSuperAdmin = rolePOS.stream().anyMatch(rolePO -> Objects.equals(rolePO.getName(), UserConstants.SUPER_ADMIN_ROLE_NAME));
+
+        boolean isSuperAdmin = rolePOs.stream().anyMatch(rolePO -> Objects.equals(rolePO.getName(), UserConstants.SUPER_ADMIN_ROLE_NAME));
         if (isSuperAdmin) {
             List<MenuPO> menuPOList = menuRepository.findAll();
-            return menuPOList.stream().map(menuPO -> {
-                MenuDTO menuDTO = new MenuDTO();
-                menuDTO.setMenuId(menuPO.getId());
-                menuDTO.setMenuCode(menuPO.getCode());
-                return menuDTO;
-            }).collect(Collectors.toList());
+            return menuPOList.stream()
+                    .map(menuPO -> {
+                        MenuDTO menuDTO = new MenuDTO();
+                        menuDTO.setMenuId(menuPO.getId());
+                        menuDTO.setMenuCode(menuPO.getCode());
+                        return menuDTO;
+                    })
+                    .collect(Collectors.toList());
         }
-        List<RoleMenuPO> roleMenuPOS = roleMenuRepository.findAll(filterable -> filterable.in(RoleMenuPO.Fields.roleId, roleIds.toArray()));
-        if (roleMenuPOS == null || roleMenuPOS.isEmpty()) {
+
+        Long[] roleIds = rolePOs.stream().map(RolePO::getId).toArray(Long[]::new);
+        List<RoleMenuPO> roleMenuPOs = roleMenuRepository.findAll(filterable -> filterable.in(RoleMenuPO.Fields.roleId, roleIds));
+        if (roleMenuPOs == null || roleMenuPOs.isEmpty()) {
             return new ArrayList<>();
         }
-        List<Long> menuIds = roleMenuPOS.stream().map(RoleMenuPO::getMenuId).toList();
-        List<MenuPO> menuPOList = menuRepository.findAll(filterable -> filterable.in(MenuPO.Fields.id, menuIds.toArray()));
-        if (menuPOList == null || menuPOList.isEmpty()) {
-            return new ArrayList<>();
-        }
-        return menuPOList.stream().map(menuPO -> {
-            MenuDTO menuDTO = new MenuDTO();
-            menuDTO.setMenuId(menuPO.getId());
-            menuDTO.setMenuCode(menuPO.getCode());
-            return menuDTO;
-        }).collect(Collectors.toList());
+
+        List<Long> menuIds = roleMenuPOs.stream().map(RoleMenuPO::getMenuId).toList();
+        return menuRepository.findAll(filterable -> filterable.in(MenuPO.Fields.id, menuIds.toArray()))
+                .stream()
+                .map(menuPO -> {
+                    MenuDTO menuDTO = new MenuDTO();
+                    menuDTO.setMenuId(menuPO.getId());
+                    menuDTO.setMenuCode(menuPO.getCode());
+                    return menuDTO;
+                })
+                .collect(Collectors.toList());
     }
 
-    @CacheEvict(cacheNames = {CacheKeyConstants.ENTITY_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.DEVICE_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.DASHBOARD_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.INTEGRATION_PERMISSION_CACHE_NAME_PREFIX}, allEntries = true)
     @Override
     public void deleteResource(ResourceType resourceType, List<Long> resourceIds) {
-        if (resourceIds == null || resourceIds.isEmpty()) {
-            return;
-        }
-        List<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filterable -> filterable.in(RoleResourcePO.Fields.resourceId, resourceIds.toArray()).eq(RoleResourcePO.Fields.resourceType, resourceType));
-        if (roleResourcePOS != null && !roleResourcePOS.isEmpty()) {
-            roleResourceRepository.deleteAll(roleResourcePOS);
-        }
+        roleService.deleteResource(resourceType, resourceIds);
     }
 
-    @CacheEvict(cacheNames = {CacheKeyConstants.ENTITY_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.DEVICE_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.DASHBOARD_PERMISSION_CACHE_NAME_PREFIX,
-            CacheKeyConstants.INTEGRATION_PERMISSION_CACHE_NAME_PREFIX}, allEntries = true)
     @Override
     public void associateResource(Long userId, ResourceType resourceType, List<Long> resourceIds) {
-        if (resourceIds == null || resourceIds.isEmpty()) {
-            return;
-        }
-        List<UserRolePO> userRolePOList = userRoleRepository.findAll(filterable -> filterable.eq(UserRolePO.Fields.userId, userId));
-        if (userRolePOList == null || userRolePOList.isEmpty()) {
-            return;
-        }
-        List<RoleResourcePO> roleResourcePOS = new ArrayList<>();
-        userRolePOList.forEach(userRolePO -> {
-            Long roleId = userRolePO.getRoleId();
-            resourceIds.forEach(resourceId -> {
-                RoleResourcePO roleResourcePO = new RoleResourcePO();
-                roleResourcePO.setId(SnowflakeUtil.nextId());
-                roleResourcePO.setRoleId(roleId);
-                roleResourcePO.setResourceId(resourceId.toString());
-                roleResourcePO.setResourceType(resourceType);
-                roleResourcePOS.add(roleResourcePO);
-            });
-        });
-        roleResourceRepository.saveAll(roleResourcePOS);
+        roleService.associateResource(userId, resourceType, resourceIds);
     }
 
     @Override
     public List<UserDTO> getUserLike(String keyword) {
-        List<UserPO> userPOS = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.nickname, keyword)
+        List<UserPO> userPOs = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.nickname, keyword)
                 .likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.email, keyword)));
-        return UserConverter.INSTANCE.convertDTOList(userPOS);
+        return UserConverter.INSTANCE.convertDTOList(userPOs);
     }
 
 }

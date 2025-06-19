@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.permission.aspect;
 
+import com.milesight.beaveriot.permission.enums.ColumnDataType;
 import com.milesight.beaveriot.permission.enums.DataPermissionType;
 
 import java.lang.annotation.Documented;
@@ -20,5 +21,6 @@ import java.lang.annotation.Target;
 public @interface DataPermission {
 
     DataPermissionType type();
+    ColumnDataType dataType() default ColumnDataType.NUMBER;
     String column();
 }

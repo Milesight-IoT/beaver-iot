@@ -1,6 +1,6 @@
 package com.milesight.beaveriot.permission.service;
 
-import com.milesight.beaveriot.permission.dto.WorkflowPermissionDTO;
+import com.milesight.beaveriot.permission.dto.PermissionDTO;
 import com.milesight.beaveriot.user.dto.UserResourceDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
@@ -22,11 +22,11 @@ public class WorkflowPermissionService {
     @Autowired
     IUserFacade userFacade;
 
-    public WorkflowPermissionDTO getWorkflowPermission(Long userId) {
-        WorkflowPermissionDTO workflowPermissionDTO = new WorkflowPermissionDTO();
+    public PermissionDTO getWorkflowPermission(Long userId) {
+        PermissionDTO permissionDTO = new PermissionDTO();
         UserResourceDTO userResourceDTO = userFacade.getResource(userId, Collections.singletonList(ResourceType.WORKFLOW));
-        workflowPermissionDTO.setHasAllPermission(userResourceDTO.isHasAllResource());
-        workflowPermissionDTO.setWorkflowIds(new ArrayList<>());
+        permissionDTO.setHaveAllPermissions(userResourceDTO.isHasAllResource());
+        permissionDTO.setIds(new ArrayList<>());
         if (!userResourceDTO.isHasAllResource()) {
             List<String> workflowIds = new ArrayList<>();
             Map<ResourceType, List<String>> resource = userResourceDTO.getResource();
@@ -37,8 +37,8 @@ public class WorkflowPermissionService {
                     }
                 });
             }
-            workflowPermissionDTO.setWorkflowIds(workflowIds);
+            permissionDTO.setIds(workflowIds);
         }
-        return workflowPermissionDTO;
+        return permissionDTO;
     }
 }

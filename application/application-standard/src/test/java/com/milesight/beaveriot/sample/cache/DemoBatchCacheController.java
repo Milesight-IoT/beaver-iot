@@ -1,10 +1,19 @@
 package com.milesight.beaveriot.sample.cache;
 
 import com.google.common.collect.Lists;
-import com.milesight.beaveriot.base.annotations.cacheable.*;
+import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheEvict;
+import com.milesight.beaveriot.base.annotations.cacheable.BatchCachePut;
+import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheable;
+import com.milesight.beaveriot.base.annotations.cacheable.BatchCaching;
+import com.milesight.beaveriot.base.annotations.cacheable.CacheKeys;
 import com.milesight.beaveriot.entity.po.EntityPO;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
+import lombok.extern.slf4j.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -12,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.milesight.beaveriot.context.constants.CacheKeyConstants.TENANT_EXPRESSION;
+import static com.milesight.beaveriot.context.constants.CacheKeyConstants.TENANT_PREFIX;
 
 /**
  * @author leon
@@ -24,7 +33,7 @@ public class DemoBatchCacheController {
 
     static final String CACHE_NAME = "demo:cache-batch";
     @GetMapping("/putcache")
-    @BatchCachePut(cacheNames = CACHE_NAME, key = "#p0" , prefix = TENANT_EXPRESSION)
+    @BatchCachePut(cacheNames = CACHE_NAME, key = "#p0" , keyPrefix = TENANT_PREFIX)
     public List<EntityPO> putcache(@RequestParam("keys") Collection<String> keys){
         log.info("putcache:" + Arrays.toString(keys.toArray()));
 
@@ -37,7 +46,7 @@ public class DemoBatchCacheController {
         }).collect(Collectors.toList());
     }
     @GetMapping("/putcache-array")
-    @BatchCachePut(cacheNames = CACHE_NAME, key = "#result.![id]", prefix = TENANT_EXPRESSION)
+    @BatchCachePut(cacheNames = CACHE_NAME, key = "#result.![id]", keyPrefix = TENANT_PREFIX)
     public EntityPO[] testPutArray(@RequestParam("keys") Collection<String> keysList){
         String[] keys = keysList.toArray(String[]::new);
         log.info("testPutArray:" + Arrays.toString(keys));
@@ -52,7 +61,7 @@ public class DemoBatchCacheController {
     }
 
     @GetMapping("/putcache-map")
-    @BatchCachePut(cacheNames = CACHE_NAME, key = "#result.![key]", prefix = TENANT_EXPRESSION)
+    @BatchCachePut(cacheNames = CACHE_NAME, key = "#result.![key]", keyPrefix = TENANT_PREFIX)
     public Map<String,EntityPO> testPutMap(@RequestParam("keys") List<String> keysList){
         String[] keys = keysList.toArray(String[]::new);
         log.info("testPutArray:" + Arrays.toString(keys));
@@ -61,14 +70,14 @@ public class DemoBatchCacheController {
     }
 
     @GetMapping("/getcache")
-    @BatchCacheable(cacheNames = CACHE_NAME, key = "#p0", prefix = TENANT_EXPRESSION)
+    @BatchCacheable(cacheNames = CACHE_NAME, key = "#p0", keyPrefix = TENANT_PREFIX)
     public List<EntityPO> testCacheable(@RequestParam("keys") List<String> keys){
         log.info("testCacheable:" + keys);
         return putcache(keys);
     }
 
     @PostMapping("/getcache-map")
-    @BatchCacheable(cacheNames = CACHE_NAME, key = "#p0", prefix = TENANT_EXPRESSION)
+    @BatchCacheable(cacheNames = CACHE_NAME, key = "#p0", keyPrefix = TENANT_PREFIX)
     public Map<String, EntityPO> testCacheableForMap(@CacheKeys @RequestParam("keys") List<String> keys, @RequestBody String body){
         log.info("testCacheable:{}, body:{}" , keys, body );
         return putcache(keys).stream().map(
@@ -77,7 +86,7 @@ public class DemoBatchCacheController {
     }
 
     @PostMapping("/getcache-map-obj")
-    @BatchCacheable(cacheNames = CACHE_NAME, key = "#p0.![key]", prefix = TENANT_EXPRESSION)
+    @BatchCacheable(cacheNames = CACHE_NAME, key = "#p0.![key]", keyPrefix = TENANT_PREFIX)
     public Map<String, EntityPO> testCacheableForMapObj(@CacheKeys @RequestParam("keys") List<EntityPO> keys, @RequestBody String body){
         log.info("testCacheable:{}, body:{}" , keys, body );
         return putcache(keys.stream().map(item->item.getKey()).toList()).stream().map(
@@ -86,21 +95,21 @@ public class DemoBatchCacheController {
     }
 
     @GetMapping("/evictcache")
-    @BatchCacheEvict(cacheNames = CACHE_NAME, key = "#result.![id]", prefix = TENANT_EXPRESSION)
+    @BatchCacheEvict(cacheNames = CACHE_NAME, key = "#result.![id]", keyPrefix = TENANT_PREFIX)
     public List<EntityPO> testEvict(@RequestParam("keys") Collection<String> keys){
         log.info("testEvict:" + keys);
         return Lists.newArrayList(testPutArray(keys));
     }
 
     @GetMapping("/evictcache-before")
-    @BatchCacheEvict(cacheNames = CACHE_NAME, key ="#p0" , beforeInvocation = true, prefix = TENANT_EXPRESSION)
+    @BatchCacheEvict(cacheNames = CACHE_NAME, key ="#p0" , beforeInvocation = true, keyPrefix = TENANT_PREFIX)
     public List<EntityPO> testEvictBefore(@RequestParam("keys") Collection<String> keys){
         log.info("testEvict:" + keys);
         return Lists.newArrayList(testPutArray(keys));
     }
 
     @PostMapping("/evictcache-before2")
-    @BatchCacheEvict(cacheNames = CACHE_NAME, key = "#p0.![key]", beforeInvocation = true, prefix = TENANT_EXPRESSION)
+    @BatchCacheEvict(cacheNames = CACHE_NAME, key = "#p0.![key]", beforeInvocation = true, keyPrefix = TENANT_PREFIX)
     public List<EntityPO> testEvictBefore2(@RequestBody Collection<EntityPO> keys, Object body){
         log.info("testEvict:" + keys);
         return null;

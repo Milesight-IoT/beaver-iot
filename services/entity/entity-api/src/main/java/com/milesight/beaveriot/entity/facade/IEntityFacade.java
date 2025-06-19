@@ -5,6 +5,7 @@ import com.milesight.beaveriot.entity.dto.EntityQuery;
 import com.milesight.beaveriot.entity.dto.EntityResponse;
 import org.springframework.data.domain.Page;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +20,8 @@ public interface IEntityFacade {
     List<EntityDTO> getUserOrTargetEntities(Long userId, List<String> targetIds);
 
     List<EntityDTO> getTargetEntities(List<String> targetIds);
+
+    Map<Long, String> mapEntityIdToAttachTargetId(Collection<Long> entityIds);
 
     void deleteCustomizedEntitiesByIds(List<Long> entityIds);
 

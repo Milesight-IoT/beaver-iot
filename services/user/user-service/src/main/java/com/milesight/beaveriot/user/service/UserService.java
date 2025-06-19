@@ -5,8 +5,9 @@ import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.GenericQueryPageRequest;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
-import com.milesight.beaveriot.context.aspect.SecurityUserContext;
+import com.milesight.beaveriot.context.aspect.WithSecurityUserContext;
 import com.milesight.beaveriot.context.security.SecurityUser;
+import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.user.constants.UserConstants;
@@ -34,26 +35,27 @@ import com.milesight.beaveriot.user.po.TenantPO;
 import com.milesight.beaveriot.user.po.UserPO;
 import com.milesight.beaveriot.user.po.UserRolePO;
 import com.milesight.beaveriot.user.repository.MenuRepository;
-import com.milesight.beaveriot.user.repository.RoleMenuRepository;
-import com.milesight.beaveriot.user.repository.RoleRepository;
-import com.milesight.beaveriot.user.repository.RoleResourceRepository;
 import com.milesight.beaveriot.user.repository.TenantRepository;
 import com.milesight.beaveriot.user.repository.UserRepository;
-import com.milesight.beaveriot.user.repository.UserRoleRepository;
 import com.milesight.beaveriot.user.util.SignUtils;
+import lombok.*;
+import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -62,33 +64,41 @@ import java.util.stream.Collectors;
  * @author loong
  * @date 2024/10/14 8:42
  */
+@Slf4j
 @Service
 public class UserService {
 
     @Autowired
-    UserRepository userRepository;
-    @Autowired
-    UserRoleRepository userRoleRepository;
-    @Autowired
-    RoleRepository roleRepository;
-    @Autowired
-    RoleResourceRepository roleResourceRepository;
-    @Autowired
-    RoleMenuRepository roleMenuRepository;
-    @Autowired
-    MenuRepository menuRepository;
-    @Autowired
-    TenantRepository tenantRepository;
-    @Autowired
-    @Lazy
-    IDeviceFacade deviceFacade;
+    private UserRepository userRepository;
 
-    @SecurityUserContext(tenantId = "#tenantId")
+    @Autowired
+    private MenuRepository menuRepository;
+
+    @Autowired
+    private TenantRepository tenantRepository;
+
+    @Lazy
+    @Autowired
+    private IDeviceFacade deviceFacade;
+
+    @Lazy
+    @Autowired
+    private RoleService roleService;
+
+    @WithSecurityUserContext(tenantId = "#tenantId")
     @Transactional(rollbackFor = Exception.class)
     public void register(String tenantId, UserRegisterRequest userRegisterRequest) {
         String email = userRegisterRequest.getEmail();
         String nickname = userRegisterRequest.getNickname();
         String password = userRegisterRequest.getPassword();
+        log.debug("register user: tenantId={}, email={}, nickname={}", tenantId, email, nickname);
+
+        validateEmailPasswordAndEnsureNotExist(email, nickname, password);
+        UserPO userPO = createUser(email, nickname, password);
+        roleService.createUserRole(userPO.getId(), roleService.getSuperAdminRoleId());
+    }
+
+    private void validateEmailPasswordAndEnsureNotExist(String email, String nickname, String password) {
         if (!StringUtils.hasText(email) || !StringUtils.hasText(nickname) || !StringUtils.hasText(password)) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("email and nickname and password must be not null").build();
         }
@@ -96,7 +106,11 @@ public class UserService {
         if (userPO != null) {
             throw ServiceException.with(UserErrorCode.USER_REGISTER_EMAIL_EXIST).build();
         }
-        userPO = new UserPO();
+    }
+
+    @NonNull
+    private UserPO createUser(String email, String nickname, String password) {
+        UserPO userPO = new UserPO();
         userPO.setId(SnowflakeUtil.nextId());
         userPO.setEmail(email);
         userPO.setEmailHash(SignUtils.sha256Hex(email));
@@ -105,16 +119,10 @@ public class UserService {
         userPO.setPreference(null);
         userPO.setStatus(UserStatus.ENABLE);
         userRepository.save(userPO);
-
-        Long roleId = analyzeSuperAdminRoleId();
-        UserRolePO userRolePO = new UserRolePO();
-        userRolePO.setId(SnowflakeUtil.nextId());
-        userRolePO.setUserId(userPO.getId());
-        userRolePO.setRoleId(roleId);
-        userRoleRepository.save(userRolePO);
+        return userPO;
     }
 
-    @SecurityUserContext(tenantId = "#tenantId")
+    @WithSecurityUserContext(tenantId = "#tenantId")
     public UserStatusResponse status(String tenantId) {
         List<UserPO> users = userRepository.findAll();
         boolean isInit = users != null && !users.isEmpty();
@@ -124,11 +132,12 @@ public class UserService {
     }
 
     public UserInfoResponse getUserInfo() {
-        SecurityUser securityUser = com.milesight.beaveriot.context.security.SecurityUserContext.getSecurityUser();
+        SecurityUser securityUser = SecurityUserContext.getSecurityUser();
         UserInfoResponse userInfoResponse = new UserInfoResponse();
-        if (securityUser == null){
+        if (securityUser == null) {
             return userInfoResponse;
         }
+
         Long userId = securityUser.getUserId();
         userInfoResponse.setUserId(userId.toString());
         userInfoResponse.setTenantId(securityUser.getTenantId());
@@ -136,94 +145,87 @@ public class UserService {
         userInfoResponse.setEmail(securityUser.getEmail());
         userInfoResponse.setCreatedAt(securityUser.getCreatedAt());
 
-        List<MenuPO> menuPOS = menuRepository.findAll();
-        if (menuPOS != null && !menuPOS.isEmpty()) {
+        List<MenuPO> menuPOs = menuRepository.findAll();
+        if (menuPOs != null && !menuPOs.isEmpty()) {
             List<UserMenuResponse> userMenuResponses = getMenusByUserId(userId);
             List<String> userMenuParentIds = userMenuResponses.stream().map(UserMenuResponse::getParentId).filter(Objects::nonNull).distinct().toList();
-            List<UserMenuResponse> allUserMenuResponses = new ArrayList<>();
-            allUserMenuResponses.addAll(userMenuResponses);
-            recurrenceParentMenu(menuPOS, userMenuParentIds, allUserMenuResponses);
+            List<UserMenuResponse> allUserMenuResponses = new ArrayList<>(userMenuResponses);
+            recurrenceParentMenu(menuPOs, userMenuParentIds, allUserMenuResponses);
 
-            List<MenuResponse> menuResponses = new ArrayList<>();
-            List<UserMenuResponse> rootUserMenuResponses = allUserMenuResponses.stream().filter(userMenuResponse -> userMenuResponse.getParentId() == null).distinct().toList();
-            rootUserMenuResponses.forEach(UserMenuResponse -> {
-                MenuResponse menuResponse = new MenuResponse();
-                menuResponse.setMenuId(UserMenuResponse.getMenuId());
-                menuResponse.setCode(UserMenuResponse.getCode());
-                menuResponse.setName(UserMenuResponse.getName());
-                menuResponse.setType(UserMenuResponse.getType());
-                menuResponse.setParentId(UserMenuResponse.getParentId());
-
-                List<MenuResponse> menuChild = recurrenceChildMenu(allUserMenuResponses, UserMenuResponse.getMenuId());
-                menuResponse.setChildren(menuChild);
-                menuResponses.add(menuResponse);
-            });
-
+            List<MenuResponse> menuResponses = allUserMenuResponses.stream()
+                    .filter(userMenuResponse -> userMenuResponse.getParentId() == null)
+                    .distinct()
+                    .map(userMenuResponse -> buildMenuResponse(allUserMenuResponses, userMenuResponse))
+                    .toList();
             userInfoResponse.setMenus(menuResponses);
         }
 
         AtomicBoolean isSuperAdmin = new AtomicBoolean(false);
-        List<UserRolePO> userRolePOS = userRoleRepository.findAll(filter -> filter.eq(UserRolePO.Fields.userId, userId));
-        if (userRolePOS != null && !userRolePOS.isEmpty()) {
-            List<Long> roleIds = userRolePOS.stream().map(UserRolePO::getRoleId).toList();
-            List<RolePO> rolePOS = roleRepository.findAll(filter -> filter.in(RolePO.Fields.id, roleIds.toArray()));
-            List<UserInfoResponse.Role> roles = rolePOS.stream().map(rolePO -> {
-                if (rolePO.getName().equals(UserConstants.SUPER_ADMIN_ROLE_NAME)) {
-                    isSuperAdmin.set(true);
-                }
-                UserInfoResponse.Role role = new UserInfoResponse.Role();
-                role.setRoleId(rolePO.getId().toString());
-                role.setRoleName(rolePO.getName());
-                return role;
-            }).collect(Collectors.toList());
+        List<UserRolePO> userRolePOs = roleService.getUserRolePOsByUserId(userId);
+        if (userRolePOs != null && !userRolePOs.isEmpty()) {
+            List<Long> roleIds = userRolePOs.stream().map(UserRolePO::getRoleId).toList();
+            List<RolePO> rolePOs = roleService.getRoleByRoleIds(roleIds);
+            List<UserInfoResponse.Role> roles = rolePOs.stream()
+                    .map(rolePO -> {
+                        if (rolePO.getName().equals(UserConstants.SUPER_ADMIN_ROLE_NAME)) {
+                            isSuperAdmin.set(true);
+                        }
+                        UserInfoResponse.Role role = new UserInfoResponse.Role();
+                        role.setRoleId(rolePO.getId().toString());
+                        role.setRoleName(rolePO.getName());
+                        return role;
+                    })
+                    .toList();
             userInfoResponse.setRoles(roles);
         }
         userInfoResponse.setIsSuperAdmin(isSuperAdmin.get());
         return userInfoResponse;
     }
 
-    private void recurrenceParentMenu(List<MenuPO> menuPOS, List<String> userMenuParentIds, List<UserMenuResponse> allUserMenuResponses) {
+    @NonNull
+    private MenuResponse buildMenuResponse(List<UserMenuResponse> allUserMenuResponses, UserMenuResponse userMenuResponse) {
+        MenuResponse menuResponse = new MenuResponse();
+        menuResponse.setMenuId(userMenuResponse.getMenuId());
+        menuResponse.setCode(userMenuResponse.getCode());
+        menuResponse.setName(userMenuResponse.getName());
+        menuResponse.setType(userMenuResponse.getType());
+        menuResponse.setParentId(userMenuResponse.getParentId());
+
+        List<MenuResponse> menuChild = recurrenceChildMenu(allUserMenuResponses, userMenuResponse.getMenuId());
+        menuResponse.setChildren(menuChild);
+        return menuResponse;
+    }
+
+    private void recurrenceParentMenu(List<MenuPO> menuPOs, List<String> userMenuParentIds, List<UserMenuResponse> allUserMenuResponses) {
         if (userMenuParentIds == null || userMenuParentIds.isEmpty()) {
             return;
         }
-        List<MenuPO> parentMenuPOS = menuPOS.stream().filter(t -> userMenuParentIds.contains(t.getId().toString())).toList();
-        if (parentMenuPOS.isEmpty()) {
+
+        List<MenuPO> parentMenuPOs = menuPOs.stream().filter(t -> userMenuParentIds.contains(t.getId().toString())).toList();
+        if (parentMenuPOs.isEmpty()) {
             return;
         }
-        List<UserMenuResponse> parentUserMenuResponses = parentMenuPOS.stream().map(menuPO -> {
-            UserMenuResponse userMenuResponse = new UserMenuResponse();
-            userMenuResponse.setMenuId(menuPO.getId().toString());
-            userMenuResponse.setCode(menuPO.getCode());
-            userMenuResponse.setName(menuPO.getName());
-            userMenuResponse.setType(menuPO.getType());
-            userMenuResponse.setParentId(menuPO.getParentId() == null ? null : menuPO.getParentId().toString());
-            return userMenuResponse;
-        }).toList();
+
+        List<UserMenuResponse> parentUserMenuResponses = parentMenuPOs.stream()
+                .map(UserService::buildUserMenuResponse)
+                .toList();
         allUserMenuResponses.addAll(parentUserMenuResponses);
 
-        List<String> parentMenuParentIds = parentMenuPOS.stream().map(MenuPO::getParentId).filter(Objects::nonNull).map(Objects::toString).distinct().toList();
-
-        recurrenceParentMenu(menuPOS, parentMenuParentIds, allUserMenuResponses);
+        List<String> parentMenuParentIds = parentMenuPOs.stream()
+                .map(MenuPO::getParentId)
+                .filter(Objects::nonNull)
+                .map(Objects::toString)
+                .distinct()
+                .toList();
+        recurrenceParentMenu(menuPOs, parentMenuParentIds, allUserMenuResponses);
     }
 
     private List<MenuResponse> recurrenceChildMenu(List<UserMenuResponse> menuResponses, String parentId) {
-        List<UserMenuResponse> menuChs = menuResponses.stream().filter(t -> t.getParentId() != null && t.getParentId().equals(parentId)).distinct().toList();
-        if (menuChs.isEmpty()) {
-            return new ArrayList<>();
-        }
-        List<MenuResponse> menuChResponses = new ArrayList<>();
-        menuChs.forEach(t -> {
-            MenuResponse menuChResponse = new MenuResponse();
-            menuChResponse.setMenuId(t.getMenuId());
-            menuChResponse.setCode(t.getCode());
-            menuChResponse.setName(t.getName());
-            menuChResponse.setType(t.getType());
-            menuChResponse.setParentId(t.getParentId());
-            List<MenuResponse> menuChild = recurrenceChildMenu(menuResponses, t.getMenuId());
-            menuChResponse.setChildren(menuChild);
-            menuChResponses.add(menuChResponse);
-        });
-        return menuChResponses;
+        return menuResponses.stream()
+                .filter(t -> t.getParentId() != null && t.getParentId().equals(parentId))
+                .distinct()
+                .map(t -> buildMenuResponse(menuResponses, t))
+                .toList();
     }
 
     public Page<UserInfoResponse> getUsers(GenericQueryPageRequest userListRequest) {
@@ -232,7 +234,7 @@ public class UserService {
         }
         String keyword = userListRequest.getKeyword();
         Page<UserPO> userPages = userRepository.findAll(filterable -> filterable.or(filterable1 -> filterable1.likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.nickname, keyword)
-                                .likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.email, keyword))
+                        .likeIgnoreCase(StringUtils.hasText(keyword), UserPO.Fields.email, keyword))
                 , userListRequest.toPageable());
         if (userPages == null || userPages.getContent().isEmpty()) {
             return Page.empty();
@@ -240,13 +242,13 @@ public class UserService {
         Map<Long, List<Long>> userRoleIdMap = new HashMap<>();
         Map<Long, String> roleNameMap = new HashMap<>();
         List<Long> userIds = userPages.stream().map(UserPO::getId).toList();
-        List<UserRolePO> userRolePOS = userRoleRepository.findAll(filter -> filter.in(UserRolePO.Fields.userId, userIds.toArray()));
-        if (userRolePOS != null && !userRolePOS.isEmpty()) {
-            userRoleIdMap.putAll(userRolePOS.stream().collect(Collectors.groupingBy(UserRolePO::getUserId, Collectors.mapping(UserRolePO::getRoleId, Collectors.toList()))));
-            List<Long> roleIds = userRolePOS.stream().map(UserRolePO::getRoleId).toList();
-            List<RolePO> rolePOS = roleRepository.findAll(filter -> filter.in(RolePO.Fields.id, roleIds.toArray()));
-            if (rolePOS != null && !rolePOS.isEmpty()) {
-                roleNameMap.putAll(rolePOS.stream().collect(Collectors.toMap(RolePO::getId, RolePO::getName)));
+        List<UserRolePO> userRolePOs = roleService.getUserRolePOsByUserIds(userIds);
+        if (userRolePOs != null && !userRolePOs.isEmpty()) {
+            userRoleIdMap.putAll(userRolePOs.stream().collect(Collectors.groupingBy(UserRolePO::getUserId, Collectors.mapping(UserRolePO::getRoleId, Collectors.toList()))));
+            List<Long> roleIds = userRolePOs.stream().map(UserRolePO::getRoleId).toList();
+            List<RolePO> rolePOs = roleService.getRoleByRoleIds(roleIds);
+            if (rolePOs != null && !rolePOs.isEmpty()) {
+                roleNameMap.putAll(rolePOs.stream().collect(Collectors.toMap(RolePO::getId, RolePO::getName)));
             }
         }
         return userPages.map(userPO -> {
@@ -275,22 +277,8 @@ public class UserService {
         String email = createUserRequest.getEmail();
         String nickname = createUserRequest.getNickname();
         String password = createUserRequest.getPassword();
-        if (!StringUtils.hasText(email) || !StringUtils.hasText(nickname) || !StringUtils.hasText(password)) {
-            throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("email and nickname and password must be not null").build();
-        }
-        UserPO userPO = getUserByEmail(email);
-        if (userPO != null) {
-            throw ServiceException.with(UserErrorCode.USER_REGISTER_EMAIL_EXIST).build();
-        }
-        userPO = new UserPO();
-        userPO.setId(SnowflakeUtil.nextId());
-        userPO.setEmail(email);
-        userPO.setEmailHash(SignUtils.sha256Hex(email));
-        userPO.setNickname(nickname);
-        userPO.setPassword(new BCryptPasswordEncoder().encode(password));
-        userPO.setPreference(null);
-        userPO.setStatus(UserStatus.ENABLE);
-        userRepository.save(userPO);
+        validateEmailPasswordAndEnsureNotExist(email, nickname, password);
+        createUser(email, nickname, password);
     }
 
     public void updateUser(Long userId, UpdateUserRequest updateUserRequest) {
@@ -311,7 +299,7 @@ public class UserService {
     }
 
     public void updatePassword(UpdatePasswordRequest updatePasswordRequest) {
-        UserPO userPO = userRepository.findOne(filter -> filter.eq(UserPO.Fields.id, com.milesight.beaveriot.context.security.SecurityUserContext.getUserId())).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).build());
+        UserPO userPO = userRepository.findOne(filter -> filter.eq(UserPO.Fields.id, SecurityUserContext.getUserId())).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).build());
         if (!new BCryptPasswordEncoder().matches(updatePasswordRequest.getOldPassword(), userPO.getPassword())) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("old password is not correct").build();
         }
@@ -324,11 +312,11 @@ public class UserService {
         if (userId == null) {
             return;
         }
-        if (userId.equals(com.milesight.beaveriot.context.security.SecurityUserContext.getUserId())) {
+        if (userId.equals(SecurityUserContext.getUserId())) {
             throw ServiceException.with(ErrorCode.SERVER_ERROR).detailMessage("delete current user is not allowed").build();
         }
         userRepository.deleteById(userId);
-        userRoleRepository.deleteByUserId(userId);
+        roleService.deleteUserRoleByUserId(userId);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -337,60 +325,45 @@ public class UserService {
         if (userIds == null || userIds.isEmpty()) {
             return;
         }
-        if (userIds.contains(com.milesight.beaveriot.context.security.SecurityUserContext.getUserId())) {
+        if (userIds.contains(SecurityUserContext.getUserId())) {
             throw ServiceException.with(ErrorCode.SERVER_ERROR).detailMessage("delete current user is not allowed").build();
         }
         userRepository.deleteAllById(userIds);
-        userRoleRepository.deleteByUserIds(userIds);
+        roleService.deleteUserRoleByUserIds(userIds);
     }
 
     public List<UserMenuResponse> getMenusByUserId(Long userId) {
         boolean permissionMode = permissionModule();
         if (!permissionMode) {
-            List<MenuPO> menuPOList = menuRepository.findAll();
-            return menuPOList.stream().map(menuPO -> {
-                UserMenuResponse userMenuResponse = new UserMenuResponse();
-                userMenuResponse.setMenuId(menuPO.getId().toString());
-                userMenuResponse.setCode(menuPO.getCode());
-                userMenuResponse.setName(menuPO.getName());
-                userMenuResponse.setType(menuPO.getType());
-                userMenuResponse.setParentId(menuPO.getParentId() == null ? null : menuPO.getParentId().toString());
-                return userMenuResponse;
-            }).toList();
+            return getAllUserMenuResponses();
         }
-        List<UserRolePO> userRolePOS = userRoleRepository.findAll(filter -> filter.eq(UserRolePO.Fields.userId, userId));
-        if (userRolePOS == null || userRolePOS.isEmpty()) {
+        List<UserRolePO> userRolePOs = roleService.getUserRolePOsByUserId(userId);
+        if (userRolePOs == null || userRolePOs.isEmpty()) {
             return new ArrayList<>();
         }
-        List<Long> roleIds = userRolePOS.stream().map(UserRolePO::getRoleId).toList();
-        List<RolePO> rolePOS = roleRepository.findAll(filter -> filter.in(RolePO.Fields.id, roleIds.toArray()));
-        if (rolePOS == null || rolePOS.isEmpty()) {
+        List<Long> roleIds = userRolePOs.stream().map(UserRolePO::getRoleId).toList();
+        List<RolePO> rolePOs = roleService.getRoleByRoleIds(roleIds);
+        if (rolePOs == null || rolePOs.isEmpty()) {
             return new ArrayList<>();
         }
-        boolean hasAllMenu = rolePOS.stream().anyMatch(rolePO -> Objects.equals(rolePO.getName(), UserConstants.SUPER_ADMIN_ROLE_NAME));
+        boolean hasAllMenu = rolePOs.stream().anyMatch(rolePO -> Objects.equals(rolePO.getName(), UserConstants.SUPER_ADMIN_ROLE_NAME));
         if (hasAllMenu) {
-            List<MenuPO> menuPOList = menuRepository.findAll();
-            return menuPOList.stream().map(menuPO -> {
-                UserMenuResponse userMenuResponse = new UserMenuResponse();
-                userMenuResponse.setMenuId(menuPO.getId().toString());
-                userMenuResponse.setCode(menuPO.getCode());
-                userMenuResponse.setName(menuPO.getName());
-                userMenuResponse.setType(menuPO.getType());
-                userMenuResponse.setParentId(menuPO.getParentId() == null ? null : menuPO.getParentId().toString());
-                return userMenuResponse;
-            }).toList();
+            return getAllUserMenuResponses();
         }
-        List<RoleMenuPO> roleMenuPOS = roleMenuRepository.findAll(filter -> filter.in(RoleMenuPO.Fields.roleId, roleIds.toArray()));
-        if (roleMenuPOS == null || roleMenuPOS.isEmpty()) {
+
+        List<RoleMenuPO> roleMenuPOs = roleService.getRoleMenuPOsByRoleIds(roleIds);
+        if (roleMenuPOs == null || roleMenuPOs.isEmpty()) {
             return new ArrayList<>();
         }
-        List<Long> menuIds = roleMenuPOS.stream().map(RoleMenuPO::getMenuId).toList();
+
+        List<Long> menuIds = roleMenuPOs.stream().map(RoleMenuPO::getMenuId).toList();
         List<MenuPO> menuPOList = menuRepository.findAll(filterable -> filterable.in(MenuPO.Fields.id, menuIds.toArray()));
         if (menuPOList == null || menuPOList.isEmpty()) {
             return new ArrayList<>();
         }
+
         Map<Long, MenuPO> menuMap = menuPOList.stream().collect(Collectors.toMap(MenuPO::getId, Function.identity()));
-        return roleMenuPOS.stream().map(roleMenuPO -> {
+        return roleMenuPOs.stream().map(roleMenuPO -> {
             if (!menuMap.containsKey(roleMenuPO.getMenuId())) {
                 return null;
             }
@@ -404,6 +377,24 @@ public class UserService {
         }).filter(Objects::nonNull).toList();
     }
 
+    @NonNull
+    private List<UserMenuResponse> getAllUserMenuResponses() {
+        return menuRepository.findAll().stream()
+                .map(UserService::buildUserMenuResponse)
+                .toList();
+    }
+
+    @NonNull
+    private static UserMenuResponse buildUserMenuResponse(MenuPO menuPO) {
+        UserMenuResponse userMenuResponse = new UserMenuResponse();
+        userMenuResponse.setMenuId(menuPO.getId().toString());
+        userMenuResponse.setCode(menuPO.getCode());
+        userMenuResponse.setName(menuPO.getName());
+        userMenuResponse.setType(menuPO.getType());
+        userMenuResponse.setParentId(menuPO.getParentId() == null ? null : menuPO.getParentId().toString());
+        return userMenuResponse;
+    }
+
     public UserPermissionResponse getUserPermission(Long userId, UserPermissionRequest userPermissionRequest) {
         boolean permissionMode = permissionModule();
         if (!permissionMode) {
@@ -411,58 +402,52 @@ public class UserService {
             userPermissionResponse.setHasPermission(true);
             return userPermissionResponse;
         }
+
         UserPermissionResponse userPermissionResponse = new UserPermissionResponse();
         userPermissionResponse.setHasPermission(false);
-        List<UserRolePO> userRolePOS = userRoleRepository.findAll(filter -> filter.eq(UserRolePO.Fields.userId, userId));
-        if (userRolePOS == null || userRolePOS.isEmpty()) {
+
+        List<Long> roleIds = roleService.getUserRolePOsByUserId(userId).stream()
+                .map(UserRolePO::getRoleId)
+                .toList();
+
+        Boolean isSuperAdmin = containsSuperAdmin(roleIds).orElse(null);
+        if (!Boolean.FALSE.equals(isSuperAdmin)) {
+            userPermissionResponse.setHasPermission(Boolean.TRUE.equals(isSuperAdmin));
             return userPermissionResponse;
         }
-        List<Long> roleIds = userRolePOS.stream().map(UserRolePO::getRoleId).toList();
-        List<RolePO> rolePOS = roleRepository.findAll(filter -> filter.in(RolePO.Fields.id, roleIds.toArray()));
-        if (rolePOS == null || rolePOS.isEmpty()) {
-            return userPermissionResponse;
-        }
-        if (rolePOS.stream().anyMatch(rolePO -> Objects.equals(rolePO.getName(), UserConstants.SUPER_ADMIN_ROLE_NAME))) {
-            userPermissionResponse.setHasPermission(true);
-            return userPermissionResponse;
-        }
-        if (userPermissionRequest.getResourceType() == ResourceType.DEVICE) {
-            List<DeviceNameDTO> deviceNameDTOList = deviceFacade.getDeviceNameByIds(List.of(Long.parseLong(userPermissionRequest.getResourceId())));
+
+        String resourceId = userPermissionRequest.getResourceId();
+        ResourceType resourceType = userPermissionRequest.getResourceType();
+        if (resourceType == ResourceType.DEVICE) {
+            List<DeviceNameDTO> deviceNameDTOList = deviceFacade.getDeviceNameByIds(List.of(Long.parseLong(resourceId)));
             if (deviceNameDTOList == null || deviceNameDTOList.isEmpty()) {
                 return userPermissionResponse;
             }
             String integrationId = deviceNameDTOList.get(0).getIntegrationConfig() == null ? null : deviceNameDTOList.get(0).getIntegrationConfig().getId();
             if (integrationId != null) {
-                List<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filter -> filter.in(RoleResourcePO.Fields.roleId, roleIds.toArray())
-                        .eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION)
-                        .eq(RoleResourcePO.Fields.resourceId, integrationId));
-                if (roleResourcePOS != null && !roleResourcePOS.isEmpty()) {
+                List<RoleResourcePO> roleResourcePOs = roleService.getRoleResourcePOsByRoleIdsAndResourceTypeAndResourceId(roleIds, ResourceType.INTEGRATION, integrationId);
+                if (roleResourcePOs != null && !roleResourcePOs.isEmpty()) {
                     userPermissionResponse.setHasPermission(true);
                     return userPermissionResponse;
                 }
             }
         }
-        List<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filter -> filter.in(RoleResourcePO.Fields.roleId, roleIds.toArray())
-                .eq(RoleResourcePO.Fields.resourceType, userPermissionRequest.getResourceType())
-                .eq(RoleResourcePO.Fields.resourceId, userPermissionRequest.getResourceId()));
-        if (roleResourcePOS == null || roleResourcePOS.isEmpty()) {
+
+        List<RoleResourcePO> roleResourcePOs = roleService.getRoleResourcePOsByRoleIdsAndResourceTypeAndResourceId(
+                roleIds, resourceType, resourceId);
+        if (roleResourcePOs == null || roleResourcePOs.isEmpty()) {
             return userPermissionResponse;
         }
+
         userPermissionResponse.setHasPermission(true);
         return userPermissionResponse;
     }
 
     public TenantPO analyzeTenantId(String tenantId) {
-        if(!StringUtils.hasText(tenantId)) {
+        if (!StringUtils.hasText(tenantId)) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("tenantId is not exist").build();
         }
         return tenantRepository.findOne(filter -> filter.eq(TenantPO.Fields.id, tenantId)).orElse(null);
-    }
-
-    public Long analyzeSuperAdminRoleId() {
-        String roleName = UserConstants.SUPER_ADMIN_ROLE_NAME;
-        RolePO rolePO = roleRepository.findOne(filter -> filter.eq(RolePO.Fields.name, roleName)).orElseThrow(() -> ServiceException.with(UserErrorCode.ROLE_DOES_NOT_EXIT).detailMessage("role is not exist").build());
-        return rolePO.getId();
     }
 
     public UserPO getUserByEmail(String email, UserStatus status) {
@@ -473,36 +458,45 @@ public class UserService {
         return userRepository.findOne(filter -> filter.eq(UserPO.Fields.email, email)).orElse(null);
     }
 
-    public UserResourceDTO getResource(Long userId, List<ResourceType> resourceTypes) {
+    public UserResourceDTO getUserResource(Long userId, List<ResourceType> resourceTypes) {
         UserResourceDTO userResourceDTO = new UserResourceDTO();
         userResourceDTO.setHasAllResource(false);
-        userResourceDTO.setResource(new HashMap<>());
+        userResourceDTO.setResource(Collections.emptyMap());
         boolean permissionMode = permissionModule();
         if (!permissionMode) {
             userResourceDTO.setHasAllResource(true);
             return userResourceDTO;
         }
-        List<UserRolePO> userRolePOS = userRoleRepository.findAll(filter -> filter.eq(UserRolePO.Fields.userId, userId));
-        if (userRolePOS == null || userRolePOS.isEmpty()) {
+
+        List<Long> roleIds = roleService.getUserRolePOsByUserId(userId).stream()
+                .map(UserRolePO::getRoleId)
+                .toList();
+
+        Boolean isSuperAdmin = containsSuperAdmin(roleIds).orElse(null);
+        if (!Boolean.FALSE.equals(isSuperAdmin)) {
+            userResourceDTO.setHasAllResource(Boolean.TRUE.equals(isSuperAdmin));
             return userResourceDTO;
         }
-        List<Long> roleIds = userRolePOS.stream().map(UserRolePO::getRoleId).toList();
-        List<RolePO> rolePOS = roleRepository.findAll(filter -> filter.in(RolePO.Fields.id, roleIds.toArray()));
-        if (rolePOS == null || rolePOS.isEmpty()) {
+
+        List<RoleResourcePO> roleResourcePOs = roleService.getRoleResourcePOsByRoleIdsAndResourceTypes(roleIds, resourceTypes);
+        if (roleResourcePOs == null || roleResourcePOs.isEmpty()) {
             return userResourceDTO;
         }
-        boolean hasAllResource = rolePOS.stream().anyMatch(rolePO -> Objects.equals(rolePO.getName(), UserConstants.SUPER_ADMIN_ROLE_NAME));
-        userResourceDTO.setHasAllResource(hasAllResource);
-        if (hasAllResource) {
-            return userResourceDTO;
-        }
-        List<RoleResourcePO> roleResourcePOS = roleResourceRepository.findAll(filter -> filter.in(RoleResourcePO.Fields.roleId, roleIds.toArray()).in(RoleResourcePO.Fields.resourceType, resourceTypes.stream().map(ResourceType::name).toArray()));
-        if (roleResourcePOS == null || roleResourcePOS.isEmpty()) {
-            return userResourceDTO;
-        }
-        Map<ResourceType, List<String>> resource = roleResourcePOS.stream().collect(Collectors.groupingBy(RoleResourcePO::getResourceType, Collectors.mapping(RoleResourcePO::getResourceId, Collectors.toList())));
+
+        Map<ResourceType, List<String>> resource = roleResourcePOs.stream()
+                .collect(Collectors.groupingBy(RoleResourcePO::getResourceType, Collectors.mapping(RoleResourcePO::getResourceId, Collectors.toList())));
         userResourceDTO.setResource(resource);
         return userResourceDTO;
+    }
+
+    private Optional<Boolean> containsSuperAdmin(List<Long> roleIds) {
+        List<RolePO> rolePOs = roleService.getRoleByRoleIds(roleIds);
+        if (CollectionUtils.isEmpty(rolePOs)) {
+            return Optional.empty();
+        }
+        boolean isSuperAdmin = rolePOs.stream()
+                .anyMatch(rolePO -> UserConstants.SUPER_ADMIN_ROLE_NAME.equals(rolePO.getName()));
+        return Optional.of(isSuperAdmin);
     }
 
     public List<UserPO> getUserByIds(List<Long> userIds) {

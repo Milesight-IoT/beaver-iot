@@ -405,7 +405,7 @@ public class EntityService implements EntityServiceProvider {
         self().deleteEntitiesByPOList(entityPOList);
     }
 
-    @BatchCacheEvict(cacheNames = CacheKeyConstants.ENTITY_LATEST_VALUE_CACHE_NAME, key = "#result", prefix = CacheKeyConstants.TENANT_EXPRESSION)
+    @BatchCacheEvict(cacheNames = CacheKeyConstants.ENTITY_LATEST_VALUE_CACHE_NAME, key = "#result", keyPrefix = CacheKeyConstants.TENANT_PREFIX)
     public List<String> deleteEntitiesByPOList(List<EntityPO> entityPOList) {
         if (entityPOList.isEmpty()) {
             return List.of();

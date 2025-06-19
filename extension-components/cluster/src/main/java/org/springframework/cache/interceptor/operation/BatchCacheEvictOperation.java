@@ -16,7 +16,7 @@
 
 package org.springframework.cache.interceptor.operation;
 
-import lombok.EqualsAndHashCode;
+import lombok.*;
 import org.springframework.cache.interceptor.CacheOperation;
 
 /**
@@ -26,14 +26,14 @@ import org.springframework.cache.interceptor.CacheOperation;
  * @author Marcin Kamionowski
  * @since 3.1
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = true)
 public class BatchCacheEvictOperation extends CacheOperation implements CacheKeyPrefix{
 
 	private final boolean cacheWide;
 
 	private final boolean beforeInvocation;
 
-	private String prefix;
+	private final String keyPrefix;
 
 
 	/**
@@ -44,11 +44,11 @@ public class BatchCacheEvictOperation extends CacheOperation implements CacheKey
 		super(b);
 		this.cacheWide = b.cacheWide;
 		this.beforeInvocation = b.beforeInvocation;
-		this.prefix = b.prefix;
+		this.keyPrefix = b.keyPrefix;
 	}
 
-	public String getPrefix() {
-		return prefix;
+	public String getKeyPrefix() {
+		return keyPrefix;
 	}
 
 	public boolean isCacheWide() {
@@ -70,10 +70,10 @@ public class BatchCacheEvictOperation extends CacheOperation implements CacheKey
 
 		private boolean beforeInvocation = false;
 
-		private String prefix;
+		private String keyPrefix;
 
-		public void setPrefix(String prefix) {
-			this.prefix = prefix;
+		public void setKeyPrefix(String keyPrefix) {
+			this.keyPrefix = keyPrefix;
 		}
 
 		public void setCacheWide(boolean cacheWide) {
@@ -85,19 +85,19 @@ public class BatchCacheEvictOperation extends CacheOperation implements CacheKey
 		}
 
 		@Override
-		protected StringBuilder getOperationDescription() {
+		protected @NonNull StringBuilder getOperationDescription() {
 			StringBuilder sb = super.getOperationDescription();
 			sb.append(",");
 			sb.append(this.cacheWide);
 			sb.append(",");
 			sb.append(this.beforeInvocation);
 			sb.append(",");
-			sb.append(this.prefix);
+			sb.append(this.keyPrefix);
 			return sb;
 		}
 
 		@Override
-		public BatchCacheEvictOperation build() {
+		public @NonNull BatchCacheEvictOperation build() {
 			return new BatchCacheEvictOperation(this);
 		}
 	}
