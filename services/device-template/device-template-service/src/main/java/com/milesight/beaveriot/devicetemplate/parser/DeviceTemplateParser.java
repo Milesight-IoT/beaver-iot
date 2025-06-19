@@ -312,7 +312,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
 
     private boolean isMatchType(DeviceTemplateModel.Definition.InputJsonObject inputJsonObject, JsonNode jsonNode) {
         return switch (inputJsonObject.getType()) {
-            case DOUBLE -> jsonNode.isFloat() || jsonNode.isDouble();
+            case DOUBLE -> jsonNode.isFloat() || jsonNode.isDouble() || jsonNode.isInt() || jsonNode.isLong();
             case LONG -> jsonNode.isInt() || jsonNode.isLong();
             case BOOLEAN -> jsonNode.isBoolean();
             case STRING -> jsonNode.isTextual();
