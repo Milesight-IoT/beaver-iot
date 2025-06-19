@@ -4,12 +4,12 @@ import com.milesight.beaveriot.rule.RuleEngineRouteConfigurer;
 import com.milesight.beaveriot.rule.components.code.language.CustomizedJavaScriptLanguage;
 import com.milesight.beaveriot.rule.components.code.language.CustomizedMvelLanguage;
 import com.milesight.beaveriot.rule.components.code.language.CustomizedPythonLanguage;
+import com.milesight.beaveriot.rule.components.code.language.LanguageWarmUp;
 import groovy.lang.GroovyShell;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.language.groovy.GroovyShellFactory;
-import org.apache.camel.spi.ScriptingLanguage;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 
@@ -24,22 +24,21 @@ import java.util.Map;
 public class LanguageRouteConfigurer implements RuleEngineRouteConfigurer {
     @Override
     public void customizeRoute(CamelContext context) throws Exception {
-        context.getRegistry().bind("groovyShellFactory", new CustomizedGroovyShellFactory());
-        context.getRegistry().bind("mvel-language", new CustomizedMvelLanguage());
-
-        CustomizedJavaScriptLanguage javaScriptLanguage = new CustomizedJavaScriptLanguage();
-        context.getRegistry().bind("js-language", javaScriptLanguage);
-        log.info("[Language-Warm-Up] js");
-        warmUp(javaScriptLanguage);
-
-        CustomizedPythonLanguage pythonLanguage = new CustomizedPythonLanguage();
-        context.getRegistry().bind("python-language", pythonLanguage);
-        log.info("[Language-Warm-Up] python");
-        warmUp(pythonLanguage);
+        bindRegistry(context, "groovyShellFactory", new CustomizedGroovyShellFactory());
+        bindRegistry(context, "mvel-language", new CustomizedMvelLanguage());
+        bindRegistry(context, "js-language", new CustomizedJavaScriptLanguage());
+        bindRegistry(context, "python-language", new CustomizedPythonLanguage());
     }
 
-    public void warmUp(ScriptingLanguage lang) {
-       lang.evaluate("", Map.of(), Object.class);
+    public void bindRegistry(CamelContext context, String name, Object lang) {
+        context.getRegistry().bind(name, lang);
+        if (LanguageWarmUp.class.isAssignableFrom(lang.getClass())) {
+            new Thread(() -> {
+                log.info("[Language-Warming] {} start", name);
+                ((LanguageWarmUp) lang).warmUp();
+                log.info("[Language-Warming] {} done", name);
+            }).start();
+        }
     }
 
     public class CustomizedGroovyShellFactory implements GroovyShellFactory {
