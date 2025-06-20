@@ -145,6 +145,7 @@ public class DeviceService implements IDeviceFacade {
         deviceResponseData.setName(devicePO.getName());
         deviceResponseData.setIntegration(devicePO.getIntegration());
         deviceResponseData.setAdditionalData(devicePO.getAdditionalData());
+        deviceResponseData.setTemplate(devicePO.getTemplate());
         deviceResponseData.setCreatedAt(devicePO.getCreatedAt());
         deviceResponseData.setUpdatedAt(devicePO.getUpdatedAt());
 
@@ -181,7 +182,12 @@ public class DeviceService implements IDeviceFacade {
         Page<DeviceResponseData> responseDataList;
         try {
             responseDataList = deviceRepository
-                    .findAllWithDataPermission(f -> f.likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.name, searchDeviceRequest.getName()), searchDeviceRequest.toPageable())
+                    .findAllWithDataPermission(f -> {
+                        f.likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.name, searchDeviceRequest.getName());
+                        if (searchDeviceRequest.getTemplate() != null) {
+                            f.and(filterable -> filterable.eq(DevicePO.Fields.template, searchDeviceRequest.getTemplate()));
+                        }
+                    }, searchDeviceRequest.toPageable())
                     .map(this::convertPOToResponseData);
         } catch (Exception e) {
             if (e instanceof ServiceException serviceException

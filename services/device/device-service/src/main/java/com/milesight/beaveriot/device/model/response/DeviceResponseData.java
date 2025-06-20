@@ -11,6 +11,7 @@ public class DeviceResponseData {
     private String name;
     private String integration;
     private Map<String, Object> additionalData;
+    private String template;
     private Long createdAt;
     private Long updatedAt;
 

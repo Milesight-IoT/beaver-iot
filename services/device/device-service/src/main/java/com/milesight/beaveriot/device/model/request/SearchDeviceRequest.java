@@ -13,4 +13,5 @@ import lombok.ToString;
 public class SearchDeviceRequest extends GenericPageRequest {
     @Size(max = DeviceDataFieldConstants.DEVICE_NAME_MAX_LENGTH)
     private String name;
+    private String template;
 }
