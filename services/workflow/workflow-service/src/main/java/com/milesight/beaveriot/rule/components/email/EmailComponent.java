@@ -37,25 +37,27 @@ public class EmailComponent implements ProcessorNode<Exchange> {
     @Autowired
     private CredentialsServiceProvider credentialsServiceProvider;
 
-    @UriParamExtension(uiComponentGroup = "emailContent", uiComponent = "text")
+    @Metadata(required = true)
+    @UriParamExtension(uiComponentGroup = "Email Notification", uiComponent = "text")
     @UriParam(displayName = "Subject", description = "Email subject.", prefix = "bean")
     private String subject;
 
     @Metadata(/* Hidden from UI */ autowired = true)
-    @UriParamExtension(uiComponentGroup = "emailContent", uiComponent = "text")
+    @UriParamExtension(uiComponentGroup = "Email Notification", uiComponent = "text")
     @UriParam(displayName = "From Name", description = "Email from name.", prefix = "bean")
     private String fromName;
 
     @Metadata(/* Hidden from UI */ autowired = true)
-    @UriParamExtension(uiComponentGroup = "emailContent", uiComponent = "text")
+    @UriParamExtension(uiComponentGroup = "Email Notification", uiComponent = "text")
     @UriParam(displayName = "From Address", description = "Email from address.", prefix = "bean")
     private String fromAddress;
 
-    @UriParamExtension(uiComponentGroup = "emailContent", uiComponent = "emailRecipients")
+    @Metadata(required = true)
+    @UriParamExtension(uiComponentGroup = "Email Notification", uiComponent = "emailRecipients")
     @UriParam(displayName = "Recipients", description = "Email recipients.", prefix = "bean", javaType = "java.util.List<java.lang.String>")
     private List<String> recipients;
 
-    @UriParamExtension(uiComponentGroup = "emailContent", uiComponent = "emailContent", loggable = true)
+    @UriParamExtension(uiComponentGroup = "Email Notification", uiComponent = "emailContent", loggable = true)
     @UriParam(displayName = "Content", description = "Email content.", prefix = "bean")
     private String content;
 
