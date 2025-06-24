@@ -21,6 +21,9 @@ definition:
       - key: ts                      # json key
         type: string                 # data type
         entity_mapping: 'timestamp'  # entity identifier
+      - key: image                   # json key
+        type: string                 # data type
+        entity_mapping: 'image'
   output:
     type: object
     properties:
@@ -107,3 +110,10 @@ initial_entities:
       - identifier: 'ctrl_status1'
         name: 'ctrl_status1'     # entity name
         value_type: long         # entity value type
+  - identifier: 'image'    # entity identifier
+    name: 'image'          # entity name
+    value_type: string     # entity value type
+    type: property         # entity type
+    access_mod: RW
+    attributes:
+      format: 'IMAGE:BASE64'
