@@ -7,12 +7,16 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+/**
+ * SearchDeviceGroupRequest class.
+ *
+ * @author simon
+ * @date 2025/6/25
+ */
 @Data
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class SearchDeviceRequest extends GenericPageRequest {
-    @Size(max = DeviceDataFieldConstants.DEVICE_NAME_MAX_LENGTH)
+public class SearchDeviceGroupRequest extends GenericPageRequest {
+    @Size(max = DeviceDataFieldConstants.DEVICE_GROUP_NAME_MAX_LENGTH)
     private String name;
-    private String template;
-    private String groupId;
 }

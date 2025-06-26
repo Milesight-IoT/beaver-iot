@@ -32,7 +32,7 @@ public class DeviceController {
 
     @OperationPermission(codes = OperationPermissionCode.DEVICE_VIEW)
     @PostMapping("/search")
-    public ResponseBody<Page<DeviceResponseData>> searchDevice(@RequestBody SearchDeviceRequest searchDeviceRequest) {
+    public ResponseBody<Page<DeviceResponseData>> searchDevice(@RequestBody @Valid SearchDeviceRequest searchDeviceRequest) {
         return ResponseBuilder.success(deviceService.searchDevice(searchDeviceRequest));
     }
 
