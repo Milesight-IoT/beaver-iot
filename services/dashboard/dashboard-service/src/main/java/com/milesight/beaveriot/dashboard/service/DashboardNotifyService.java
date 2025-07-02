@@ -61,7 +61,7 @@ public class DashboardNotifyService {
             mqttPubSubServiceProvider.publish(webMqttUsername, "downlink/web/exchange",
                     event.getBytes(StandardCharsets.UTF_8), MqttQos.AT_MOST_ONCE, false);
 
-            log.info("onDashboardNotify:{}", exchangePayload);
+            log.debug("onDashboardNotify:{}", exchangePayload);
         } catch (Exception e) {
             log.error("onDashboardNotify error:{}", e.getMessage(), e);
         }
