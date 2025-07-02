@@ -2,118 +2,71 @@ definition:
   input:
     type: object
     properties:
-      - key: device_id               # json key
-        type: string                 # data type
+      - key: device_id                 # json key
+        type: string                   # data type
         required: true
-        entity_mapping: 'device_id'  # entity identifier
-      - key: status                  # json key
-        type: string                 # data type
-        entity_mapping: 'status'
-      - key: metrics                 # json key
-        type: object                 # data type
-        properties:
-          - key: temp                              # json key
-            type: double                           # data type
-            entity_mapping: 'metrics.temperature'  # entity identifier
-          - key: hum                            # json key
-            type: long                          # data type
-            entity_mapping: 'metrics.humidity'  # entity identifier
-      - key: ts                      # json key
-        type: string                 # data type
-        entity_mapping: 'timestamp'  # entity identifier
-      - key: image                   # json key
-        type: string                 # data type
-        entity_mapping: 'image'
+        entity_mapping: 'device_id'    # entity identifier
+      - key: temperature               # json key
+        type: double                   # data type
+        entity_mapping: 'temperature'  # entity identifier
+      - key: humidity                  # json key
+        type: double                   # data type
+        entity_mapping: 'humidity'     # entity identifier
+      - key: status                    # json key
+        type: long                     # data type
+        entity_mapping: 'status'       # entity identifier
+      - key: time                      # json key
+        type: string                   # data type
+        entity_mapping: 'time'         # entity identifier
   output:
     type: object
     properties:
-      - key: serviceId               # json key
-        type: string                 # data type
-        value: 'set_delay_work'
-      - key: inputs               # json key
-        type: object              # data type
-        properties:
-          - key: delay_time
-            type: long
-            entity_mapping: 'set_delay_work.delay_time'
-          - key: ctrl_status1
-            type: long
-            entity_mapping: 'set_delay_work.ctrl_status1'
+      - key: device_id                 # json key
+        type: string                   # data type
+        entity_mapping: 'device_id'    # entity identifier
+      - key: temperature               # json key
+        type: double                   # data type
+        entity_mapping: 'temperature'  # entity identifier
+      - key: humidity                  # json key
+        type: double                   # data type
+        entity_mapping: 'humidity'     # entity identifier
+      - key: status                    # json key
+        type: long                     # data type
+        entity_mapping: 'status'       # entity identifier
+      - key: time                      # json key
+        type: string                   # data type
+        entity_mapping: 'time'         # entity identifier
 initial_entities:
   - identifier: 'device_id'  # entity identifier
     name: 'device_id'        # entity name
     value_type: string       # entity value type
     type: property           # entity type
     access_mod: R
-  - identifier: 'status'   # entity identifier
-    name: 'status'         # entity name
-    value_type: string     # entity value type
-    type: property         # entity type
-    access_mod: RW
+  - identifier: 'temperature'   # entity identifier
+    name: 'temperature'         # entity name
+    value_type: double          # entity value type
+    type: property              # entity type
+    access_mod: R
+    attributes:
+      unit: ℃
+  - identifier: 'humidity'     # entity identifier
+    name: 'humidity'           # entity name
+    value_type: double           # entity value type
+    type: property             # entity type
+    access_mod: R
+    attributes:
+      unit: %
+  - identifier: 'status'      # entity identifier
+    name: 'status'            # entity name
+    value_type: long          # entity value type
+    type: property            # entity type
+    access_mod: R
     attributes:
       enum:
-        OK: OK
-        Offline: Offline
-  - identifier: 'metrics'  # entity identifier
-    name: 'metrics'        # entity name
-    value_type: object     # entity value type
-    type: property         # entity type
-    access_mod: R
-    children:
-      - identifier: 'temperature'  # entity identifier
-        name: 'temperature'        # entity name
-        value_type: double         # entity value type
-        attributes:
-          unit: "°C"
-          fraction_digits: 1
-          min: 0
-          max: 99
-          min_length: 1
-          max_length: 10
-      - identifier: 'humidity'  # entity identifier
-        name: 'humidity'        # entity name
-        value_type: long        # entity value type
-        attributes:
-          unit: "%"
-          fraction_digits: 0
-  - identifier: 'timestamp' # entity identifier
-    name: 'timestamp'       # entity name
-    value_type: string      # entity value type
-    type: property          # entity type
-    access_mod: R
-  - identifier: 'low_temperature' # entity identifier
-    name: 'low_temperature'       # entity name
-    value_type: object            # entity value type
-    type: event                   # entity type
-    access_mod: R
-    children:
-      - identifier: 'temperature'    # entity identifier
-        name: 'temperature'          # entity name
-        value_type: double           # entity value type
-      - identifier: 'event_time'    # entity identifier
-        name: 'event_time'          # entity name
-        value_type: long            # entity value type
-  - identifier: 'service_id'  # entity identifier
-    name: 'service_id'        # entity name
-    value_type: string        # entity value type
-    type: service             # entity type
-    access_mod: R
-  - identifier: 'set_delay_work'  # entity identifier
-    name: 'set_delay_work'        # entity name
-    value_type: object            # entity value type
-    type: service                 # entity type
-    access_mod: R
-    children:
-      - identifier: 'delay_time'
-        name: 'delay_time'       # entity name
-        value_type: long         # entity value type
-      - identifier: 'ctrl_status1'
-        name: 'ctrl_status1'     # entity name
-        value_type: long         # entity value type
-  - identifier: 'image'    # entity identifier
-    name: 'image'          # entity name
+        0: Offline
+        1: Online
+  - identifier: 'time'     # entity identifier
+    name: 'time'           # entity name
     value_type: string     # entity value type
     type: property         # entity type
-    access_mod: RW
-    attributes:
-      format: 'IMAGE:BASE64'
+    access_mod: R
