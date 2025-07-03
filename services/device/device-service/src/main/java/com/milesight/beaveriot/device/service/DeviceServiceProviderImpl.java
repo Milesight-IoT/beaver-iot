@@ -14,6 +14,7 @@ import com.milesight.beaveriot.device.repository.DeviceRepository;
 import com.milesight.beaveriot.device.support.DeviceConverter;
 import com.milesight.beaveriot.eventbus.EventBus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -204,6 +205,13 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
     @Override
     public long countByDeviceTemplateKey(String deviceTemplateKey) {
         return deviceRepository.count(f -> f.eq(DevicePO.Fields.template, deviceTemplateKey));
+    }
+
+    @Override
+    public void deleteByDeviceTemplateKey(String deviceTemplateKey) {
+        Specification<DevicePO> spec = (root, query, criteriaBuilder) ->
+                criteriaBuilder.equal(root.get("template"), deviceTemplateKey);
+        deviceRepository.delete(spec);
     }
 
     @Override

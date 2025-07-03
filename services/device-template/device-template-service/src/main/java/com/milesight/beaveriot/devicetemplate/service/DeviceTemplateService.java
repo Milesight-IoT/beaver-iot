@@ -131,6 +131,6 @@ public class DeviceTemplateService implements IDeviceTemplateFacade {
 
         deviceTemplateRepository.deleteById(deviceTemplate.getId());
 
-        deviceServiceProvider.clearTemplate(deviceTemplate.getKey());
+        deviceServiceProvider.deleteByDeviceTemplateKey(deviceTemplate.getKey());
     }
 }
