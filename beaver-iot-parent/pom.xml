@@ -65,6 +65,7 @@
         <minio-client.version>8.5.17</minio-client.version>
         <aws-sdk.version>2.31.14</aws-sdk.version>
         <graalvm.version>24.1.2</graalvm.version>
+        <poi.version>5.4.1</poi.version>
     </properties>
 
     <dependencyManagement>
