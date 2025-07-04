@@ -38,6 +38,25 @@ public class TenantContext {
         return Optional.of(tenantId.getTenantId());
     }
 
+    public static Optional<Object> tryGetTenantParam(String paramName) {
+        TenantId tenantId = tenantThreadLocal.get();
+        if (tenantId == null || ObjectUtils.isEmpty(tenantId.getTenantId())) {
+            return Optional.empty();
+        }
+
+        return Optional.ofNullable(tenantId.getTenantParams().get(paramName));
+    }
+
+    public static boolean tryPutTenantParam(String paramName, Object paramValue) {
+        TenantId tenantId = tenantThreadLocal.get();
+        if (tenantId == null || ObjectUtils.isEmpty(tenantId.getTenantId())) {
+            return false;
+        }
+
+        tenantId.getTenantParams().put(paramName, paramValue);
+        return true;
+    }
+
     public static void setTenantId(String tenantId) {
         if (!KeyValidator.isValid(tenantId)) {
             throw new IllegalArgumentException("Tenant ID '" + tenantId + "' is not valid");

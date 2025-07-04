@@ -15,4 +15,6 @@ public class SearchDeviceRequest extends GenericPageRequest {
     private String name;
     private String template;
     private String groupId;
+    private Boolean filterNotGrouped;
+    private String identifier;
 }

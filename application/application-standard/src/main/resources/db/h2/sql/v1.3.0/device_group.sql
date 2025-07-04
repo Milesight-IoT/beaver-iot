@@ -10,10 +10,11 @@ CREATE TABLE t_device_group (
 );
 
 CREATE TABLE t_device_group_mapping (
-    id              BIGINT  PRIMARY KEY,
-    group_id        BIGINT  NOT NULL,
-    device_id       BIGINT  NOT NULL,
-    created_at      BIGINT  DEFAULT NULL,
+    id              BIGINT          PRIMARY KEY,
+    group_id        BIGINT          NOT NULL,
+    device_id       BIGINT          NOT NULL,
+    tenant_id       VARCHAR(255)    NOT NULL,
+    created_at      BIGINT          DEFAULT NULL,
     CONSTRAINT uk_device_group_mapping_group_id_device_id UNIQUE (group_id, device_id)
 );
 

@@ -13,7 +13,7 @@ import lombok.Data;
  */
 @Data
 public class CreateDeviceGroupRequest {
-    @Size(max = DeviceDataFieldConstants.DEVICE_GROUP_NAME_MAX_LENGTH)
+    @Size(min = 1, max = DeviceDataFieldConstants.DEVICE_GROUP_NAME_MAX_LENGTH)
     @NotBlank
     private String name;
 }

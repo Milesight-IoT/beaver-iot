@@ -17,5 +17,7 @@ public class CreateDeviceRequest {
 
     private String template;
 
+    private String groupName;
+
     private ExchangePayload paramEntities;
 }

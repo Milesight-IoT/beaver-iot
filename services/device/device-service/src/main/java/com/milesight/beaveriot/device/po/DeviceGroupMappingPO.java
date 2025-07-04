@@ -28,6 +28,9 @@ public class DeviceGroupMappingPO {
     @Column(name = "device_id", nullable = false)
     private Long deviceId;
 
+    @Column(insertable = false, updatable = false)
+    private String tenantId;
+
     @Column(name = "created_at")
     @CreatedDate
     private Long createdAt;

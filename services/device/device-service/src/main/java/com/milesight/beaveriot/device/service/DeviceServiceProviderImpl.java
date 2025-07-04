@@ -8,7 +8,10 @@ import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.event.DeviceEvent;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.device.constants.DeviceDataFieldConstants;
+import com.milesight.beaveriot.device.model.request.CreateDeviceGroupRequest;
+import com.milesight.beaveriot.device.po.DeviceGroupPO;
 import com.milesight.beaveriot.device.po.DevicePO;
 import com.milesight.beaveriot.device.repository.DeviceRepository;
 import com.milesight.beaveriot.device.support.DeviceConverter;
@@ -41,6 +44,9 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
 
     @Autowired
     DeviceService deviceService;
+
+    @Autowired
+    DeviceGroupService deviceGroupService;
 
     @Override
     public void save(Device device) {
@@ -118,6 +124,14 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
         entityServiceProvider.batchSave(device.getEntities());
 
         deviceService.evictIntegrationIdToDeviceCache(device.getIntegrationId());
+
+        String groupName = (String) TenantContext.tryGetTenantParam(DeviceService.TENANT_PARAM_DEVICE_GROUP_NAME).orElse(null);
+        if (groupName != null) {
+            CreateDeviceGroupRequest createDeviceGroupRequest = new CreateDeviceGroupRequest();
+            createDeviceGroupRequest.setName(groupName);
+            DeviceGroupPO deviceGroupPO = deviceGroupService.getOrCreateDeviceGroup(createDeviceGroupRequest, false);
+            deviceGroupService.moveDevicesToGroupId(deviceGroupPO.getId(), List.of(devicePO.getId()));
+        }
     }
 
     @Override

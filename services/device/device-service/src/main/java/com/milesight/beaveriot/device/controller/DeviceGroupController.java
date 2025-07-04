@@ -6,6 +6,8 @@ import com.milesight.beaveriot.device.model.request.CreateDeviceGroupRequest;
 import com.milesight.beaveriot.device.model.request.SearchDeviceGroupRequest;
 import com.milesight.beaveriot.device.model.response.DeviceGroupResponseData;
 import com.milesight.beaveriot.device.service.DeviceGroupService;
+import com.milesight.beaveriot.permission.aspect.OperationPermission;
+import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -25,37 +27,27 @@ public class DeviceGroupController {
 
     @PostMapping("/search")
     public ResponseBody<Page<DeviceGroupResponseData>> searchGroup(@RequestBody @Valid SearchDeviceGroupRequest request) {
-        // TODO
-        return ResponseBuilder.success();
+        return ResponseBuilder.success(deviceGroupService.search(request));
     }
 
+    @OperationPermission(codes = OperationPermissionCode.DEVICE_GROUP_MANAGE)
     @PostMapping("")
     public ResponseBody<Void> addGroup(@RequestBody @Valid CreateDeviceGroupRequest request) {
-        // TODO
+        deviceGroupService.getOrCreateDeviceGroup(request, true);
         return ResponseBuilder.success();
     }
 
+    @OperationPermission(codes = OperationPermissionCode.DEVICE_GROUP_MANAGE)
     @PutMapping("/{groupId}")
     public ResponseBody<Void> updateGroup(@PathVariable("groupId") Long groupId, @RequestBody @Valid CreateDeviceGroupRequest request) {
-        // TODO
+        deviceGroupService.updateDeviceGroup(groupId, request);
         return ResponseBuilder.success();
     }
 
+    @OperationPermission(codes = OperationPermissionCode.DEVICE_GROUP_MANAGE)
     @DeleteMapping("/{groupId}")
     public ResponseBody<Void> deleteGroup(@PathVariable("groupId") Long groupId) {
-        // TODO
-        return ResponseBuilder.success();
-    }
-
-    @PostMapping("/device-transfer")
-    public ResponseBody<Void> transferDevice() {
-        // TODO
-        return ResponseBuilder.success();
-    }
-
-    @DeleteMapping("/device-remove")
-    public ResponseBody<Void> removeDeviceFromGroup(@PathVariable("groupId") Long groupId, @PathVariable("deviceId") Long deviceId) {
-        // TODO
+        deviceGroupService.deleteDeviceGroup(groupId);
         return ResponseBuilder.success();
     }
 }

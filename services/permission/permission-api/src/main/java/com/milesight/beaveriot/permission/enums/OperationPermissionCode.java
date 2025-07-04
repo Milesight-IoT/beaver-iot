@@ -18,6 +18,7 @@ public enum OperationPermissionCode {
     DEVICE_ADD("device.add", MenuCode.DEVICE),
     DEVICE_EDIT("device.edit", MenuCode.DEVICE),
     DEVICE_DELETE("device.delete", MenuCode.DEVICE),
+    DEVICE_GROUP_MANAGE("device.group_manage", MenuCode.DEVICE),
 
     ENTITY_CUSTOM_VIEW("entity_custom.view", MenuCode.ENTITY_CUSTOM),
     ENTITY_CUSTOM_ADD("entity_custom.add", MenuCode.ENTITY_CUSTOM),
