@@ -36,4 +36,7 @@ public interface DeviceRepository extends BaseJpaRepository<DevicePO, Long> {
     default List<DevicePO> findByIdInWithDataPermission(List<Long> ids) {
         return findByIdIn(ids);
     }
+
+    @DataPermission(type = DataPermissionType.DEVICE, column = "id")
+    void deleteAllByTemplate(String template);
 }
