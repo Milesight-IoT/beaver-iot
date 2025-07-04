@@ -48,14 +48,14 @@ initial_entities:
     type: property              # entity type
     access_mod: R
     attributes:
-      unit: ℃
+      unit: '℃'
   - identifier: 'humidity'     # entity identifier
     name: 'humidity'           # entity name
     value_type: double           # entity value type
     type: property             # entity type
     access_mod: R
     attributes:
-      unit: %
+      unit: '%'
   - identifier: 'status'      # entity identifier
     name: 'status'            # entity name
     value_type: long          # entity value type
@@ -63,8 +63,8 @@ initial_entities:
     access_mod: R
     attributes:
       enum:
-        0: Offline
-        1: Online
+        0: 'Offline'
+        1: 'Online'
   - identifier: 'time'     # entity identifier
     name: 'time'           # entity name
     value_type: string     # entity value type
