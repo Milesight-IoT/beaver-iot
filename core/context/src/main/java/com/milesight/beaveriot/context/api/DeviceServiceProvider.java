@@ -26,5 +26,7 @@ public interface DeviceServiceProvider {
 
     long countByDeviceTemplateKey(String deviceTemplateKey);
 
+    void deleteByDeviceTemplateKey(String deviceTemplateKey);
+
     void clearTemplate(String deviceTemplateKey);
 }

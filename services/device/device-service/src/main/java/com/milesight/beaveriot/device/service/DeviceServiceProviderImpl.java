@@ -207,6 +207,11 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
     }
 
     @Override
+    public void deleteByDeviceTemplateKey(String deviceTemplateKey) {
+        deviceRepository.deleteAllByTemplate(deviceTemplateKey);
+    }
+
+    @Override
     public void clearTemplate(String deviceTemplateKey) {
         List<DevicePO> devices = deviceRepository.findAll(f -> f.eq(DevicePO.Fields.template, deviceTemplateKey));
         devices.forEach(devicePO -> devicePO.setTemplate(null));
