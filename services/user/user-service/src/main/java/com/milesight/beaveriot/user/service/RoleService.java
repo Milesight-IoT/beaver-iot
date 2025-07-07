@@ -736,12 +736,13 @@ public class RoleService {
 
     @Transactional(rollbackFor = Throwable.class)
     public void associateMenu(Long roleId, RoleMenuRequest roleMenuRequest) {
+        roleMenuRepository.deleteByRoleId(roleId);
+
         List<Long> menuIds = roleMenuRequest.getMenuIds();
         if (menuIds == null || menuIds.isEmpty()) {
             return;
         }
 
-        roleMenuRepository.deleteByRoleId(roleId);
         List<Long> userIds = getUserRolePOsByRoleId(roleId).stream()
                 .map(UserRolePO::getUserId)
                 .toList();
