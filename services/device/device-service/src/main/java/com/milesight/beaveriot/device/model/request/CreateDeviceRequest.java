@@ -17,6 +17,7 @@ public class CreateDeviceRequest {
 
     private String template;
 
+    @Size(max = DeviceDataFieldConstants.DEVICE_GROUP_NAME_MAX_LENGTH)
     private String groupName;
 
     private ExchangePayload paramEntities;

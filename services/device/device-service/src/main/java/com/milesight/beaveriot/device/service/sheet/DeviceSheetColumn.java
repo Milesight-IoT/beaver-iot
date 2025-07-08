@@ -3,6 +3,7 @@ package com.milesight.beaveriot.device.service.sheet;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * DeviceSheetData class.
@@ -28,7 +29,7 @@ public class DeviceSheetColumn {
 
     private String type;
 
-    private List<String> enums;
+    private Map<String, String> enums;
 
     private Integer maxLength;
 
@@ -41,4 +42,6 @@ public class DeviceSheetColumn {
     private Double min;
 
     private Boolean isHexString;
+
+    private Boolean required = true;
 }

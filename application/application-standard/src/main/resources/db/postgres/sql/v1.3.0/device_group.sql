@@ -21,3 +21,4 @@ CREATE TABLE t_device_group_mapping (
 );
 
 CREATE INDEX idx_device_group_mapping_device_id ON t_device_group_mapping (device_id);
+CREATE INDEX idx_device_group_mapping_tenant_id ON t_device_group_mapping (tenant_id);

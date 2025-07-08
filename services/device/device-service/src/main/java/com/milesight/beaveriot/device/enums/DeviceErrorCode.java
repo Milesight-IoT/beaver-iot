@@ -11,6 +11,8 @@ public enum DeviceErrorCode implements ErrorCodeSpec {
     DEVICE_GROUP_NOT_FOUND(HttpStatus.NOT_FOUND.value()),
     DEVICE_GROUP_NAME_EXISTS(HttpStatus.BAD_REQUEST.value()),
     DEVICE_GROUP_NUMBER_LIMITATION(HttpStatus.BAD_REQUEST.value()),
+    DEVICE_LIST_SHEET_STRUCTURE_ERROR(HttpStatus.BAD_REQUEST.value()),
+    DEVICE_LIST_SHEET_PARSING_ERROR(HttpStatus.BAD_REQUEST.value()),
     ;
 
     private final int status;

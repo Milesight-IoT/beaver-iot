@@ -14,6 +14,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * DeviceSheetGenerator class.
@@ -21,7 +22,7 @@ import java.util.*;
  * @author simon
  * @date 2025/6/26
  */
-public class DeviceSheetGenerator implements Closeable {
+public class DeviceSheetGenerator {
     @Getter
     private final Set<String> columnNameSet = new HashSet<>();
 
@@ -35,7 +36,7 @@ public class DeviceSheetGenerator implements Closeable {
 
     private DataValidationHelper deviceDataValidationHelper;
 
-    private XSSFWorkbook getWorkbook() {
+    public XSSFWorkbook getWorkbook() {
         if (workbook == null) {
             workbook = new XSSFWorkbook();
         }
@@ -49,6 +50,7 @@ public class DeviceSheetGenerator implements Closeable {
 
             // create header row
             deviceSheet.createRow(0);
+            deviceSheet.createFreezePane(0, 1);
         }
 
         return deviceSheet;
@@ -58,21 +60,29 @@ public class DeviceSheetGenerator implements Closeable {
         return getDeviceSheet().getRow(0);
     }
 
-    private XSSFSheet getHiddenSheet(String sheetName) {
+    private XSSFSheet getHiddenSheet(String sheetName, Consumer<XSSFSheet> createPreset) {
         return hiddenSheetMap.computeIfAbsent(sheetName, k -> {
             XSSFSheet hiddenSheet = getWorkbook().createSheet(sheetName);
             int sheetIdx = getWorkbook().getSheetIndex(hiddenSheet);
             getWorkbook().setSheetHidden(sheetIdx, true);
+            if (createPreset != null) {
+                createPreset.accept(hiddenSheet);
+            }
             return hiddenSheet;
         });
     }
 
     private XSSFSheet getHiddenOptionSheet() {
-        return getHiddenSheet(DeviceSheetConstants.HIDDEN_OPTION_SHEET);
+        return getHiddenSheet(DeviceSheetConstants.HIDDEN_OPTION_SHEET, null);
     }
 
     private XSSFSheet getHiddenColMetaSheet() {
-        return getHiddenSheet(DeviceSheetConstants.HIDDEN_COL_META_SHEET);
+        return getHiddenSheet(DeviceSheetConstants.HIDDEN_COL_META_SHEET, sheet -> {
+            Row row = sheet.createRow(0);
+            row.createCell(0).setCellValue(DeviceSheetConstants.HIDDEN_COL_META_INDEX);
+            row.createCell(1).setCellValue(DeviceSheetConstants.HIDDEN_COL_META_KEY);
+            row.createCell(2).setCellValue(DeviceSheetConstants.HIDDEN_COL_META_NAME);
+        });
     }
 
     private void applyDeviceInputConstraint(int col, DataValidationConstraint constraint) {
@@ -91,7 +101,7 @@ public class DeviceSheetGenerator implements Closeable {
         return deviceDataValidationHelper;
     }
 
-    private CellStyle generateDeviceHeaderStyle() {
+    private CellStyle generateDeviceHeaderStyle(DeviceSheetColumn column) {
         XSSFCellStyle style = getWorkbook().createCellStyle();
 
         // set text alignment
@@ -101,13 +111,22 @@ public class DeviceSheetGenerator implements Closeable {
         // set font
         XSSFFont font = getWorkbook().createFont();
         font.setBold(true);
-        style.setFont(font);
+
+        BorderStyle borderStyle = BorderStyle.MEDIUM;
+
+        // set required style
+        if (Boolean.TRUE.equals(column.getRequired())) {
+            DataFormat dataFormat = getWorkbook().createDataFormat();
+            style.setDataFormat(dataFormat.getFormat("\"*\"@"));
+        }
 
         // set border
-        style.setBorderBottom(BorderStyle.THIN);
-        style.setBorderLeft(BorderStyle.THIN);
-        style.setBorderRight(BorderStyle.THIN);
-        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(borderStyle);
+        style.setBorderLeft(borderStyle);
+        style.setBorderRight(borderStyle);
+        style.setBorderTop(borderStyle);
+
+        style.setFont(font);
         return style;
     }
 
@@ -131,11 +150,13 @@ public class DeviceSheetGenerator implements Closeable {
 
         // build header row
         Row headerRow = getDeviceSheetHeaderRow();
+        headerRow.setHeight(DeviceSheetConstants.HEADER_ROW_HEIGHT);
         Cell cell = headerRow.createCell(columnIndex);
         cell.setCellValue(column.getName());
-        cell.setCellStyle(generateDeviceHeaderStyle());
+        cell.setCellStyle(generateDeviceHeaderStyle(column));
         this.resolveInputConstraint(columnIndex, column);
         getDeviceSheet().autoSizeColumn(columnIndex);
+        getDeviceSheet().setColumnWidth(columnIndex, getDeviceSheet().getColumnWidth(columnIndex) + DeviceSheetConstants.ADDITIONAL_COLUMN_WIDTH);
 
         // add column meta data
         this.addColumnMeta(columnIndex, column);
@@ -177,6 +198,7 @@ public class DeviceSheetGenerator implements Closeable {
         CellStyle textStyle = getWorkbook().createCellStyle();
         DataFormat format = getWorkbook().createDataFormat();
         textStyle.setDataFormat(format.getFormat("@"));
+        textStyle.setQuotePrefixed(true);
         getDeviceSheet().setDefaultColumnStyle(columnIndex, textStyle);
 
         List<String> condList = new ArrayList<>();
@@ -220,7 +242,8 @@ public class DeviceSheetGenerator implements Closeable {
     private DataValidationConstraint createEnumColumnConstraint(DeviceSheetColumn column) {
         List<String> enums = Optional
                 .ofNullable(column.getEnums())
-                .orElseGet(List::of)
+                .orElseGet(Map::of)
+                .keySet()
                 .stream()
                 .filter(StringUtils::hasText)
                 .toList();
@@ -289,16 +312,5 @@ public class DeviceSheetGenerator implements Closeable {
         if (constraint != null) {
             this.applyDeviceInputConstraint(columnIndex, constraint);
         }
-    }
-
-    public byte[] output() throws IOException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        getWorkbook().write(bos);
-        return bos.toByteArray();
-    }
-
-    @Override
-    public void close() throws IOException {
-        getWorkbook().close();
     }
 }

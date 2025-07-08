@@ -47,7 +47,7 @@ public enum EntityValueType {
             case STRING:
                 return value instanceof String ? value : JsonUtils.cast(value, String.class);
             case LONG:
-                return value instanceof Long ? value : JsonUtils.cast(value, Long.class);
+                return value instanceof Long ? value : JsonUtils.cast(value, Double.class).longValue();
             case DOUBLE:
                 return value instanceof Double ? value : JsonUtils.cast(value, Double.class);
             case BOOLEAN:
