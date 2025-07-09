@@ -17,6 +17,7 @@ public enum MenuCode {
     WORKFLOW("workflow", null),
     INTEGRATION("integration", null),
     CREDENTIALS("credentials", null),
+    TAG("tag", null),
     ;
     private final String code;
     private final MenuCode parent;
