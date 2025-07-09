@@ -2,10 +2,7 @@ package com.milesight.beaveriot.device.controller;
 
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
-import com.milesight.beaveriot.device.model.request.BatchDeleteDeviceRequest;
-import com.milesight.beaveriot.device.model.request.CreateDeviceRequest;
-import com.milesight.beaveriot.device.model.request.SearchDeviceRequest;
-import com.milesight.beaveriot.device.model.request.UpdateDeviceRequest;
+import com.milesight.beaveriot.device.model.request.*;
 import com.milesight.beaveriot.device.model.response.DeviceDetailResponse;
 import com.milesight.beaveriot.device.model.response.DeviceResponseData;
 import com.milesight.beaveriot.device.service.DeviceService;
@@ -32,7 +29,7 @@ public class DeviceController {
 
     @OperationPermission(codes = OperationPermissionCode.DEVICE_VIEW)
     @PostMapping("/search")
-    public ResponseBody<Page<DeviceResponseData>> searchDevice(@RequestBody SearchDeviceRequest searchDeviceRequest) {
+    public ResponseBody<Page<DeviceResponseData>> searchDevice(@RequestBody @Valid SearchDeviceRequest searchDeviceRequest) {
         return ResponseBuilder.success(deviceService.searchDevice(searchDeviceRequest));
     }
 
@@ -54,5 +51,12 @@ public class DeviceController {
     @GetMapping("/{deviceId}")
     public ResponseBody<DeviceDetailResponse> getDeviceDetail(@PathVariable("deviceId") Long deviceId) {
         return ResponseBuilder.success(deviceService.getDeviceDetail(deviceId));
+    }
+
+    @OperationPermission(codes = OperationPermissionCode.DEVICE_EDIT)
+    @PostMapping("/move-to-group")
+    public ResponseBody<Void> updateDevice(@RequestBody @Valid MoveDeviceToGroupRequest request) {
+        deviceService.moveDeviceToGroup(request);
+        return ResponseBuilder.success();
     }
 }

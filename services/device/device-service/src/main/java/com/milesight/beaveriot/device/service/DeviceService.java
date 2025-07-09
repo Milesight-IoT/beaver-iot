@@ -16,14 +16,19 @@ import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.Integration;
 import com.milesight.beaveriot.context.integration.model.event.DeviceEvent;
+import com.milesight.beaveriot.context.security.TenantContext;
+import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.device.model.request.CreateDeviceRequest;
+import com.milesight.beaveriot.device.model.request.MoveDeviceToGroupRequest;
 import com.milesight.beaveriot.device.model.request.SearchDeviceRequest;
 import com.milesight.beaveriot.device.model.request.UpdateDeviceRequest;
 import com.milesight.beaveriot.device.model.response.DeviceDetailResponse;
 import com.milesight.beaveriot.device.model.response.DeviceEntityData;
 import com.milesight.beaveriot.device.model.response.DeviceResponseData;
+import com.milesight.beaveriot.device.po.DeviceGroupMappingPO;
+import com.milesight.beaveriot.device.po.DeviceGroupPO;
 import com.milesight.beaveriot.device.po.DevicePO;
 import com.milesight.beaveriot.device.repository.DeviceRepository;
 import com.milesight.beaveriot.device.support.DeviceConverter;
@@ -56,6 +61,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.DEVICE_NAME_ON_ADD;
@@ -93,9 +100,14 @@ public class DeviceService implements IDeviceFacade {
     @Autowired
     private EntityValueServiceProvider entityValueServiceProvider;
 
+    @Autowired
+    DeviceGroupService deviceGroupService;
+
     @Lazy
     @Autowired
     private DeviceService self;
+
+    public static final String TENANT_PARAM_DEVICE_GROUP_NAME = "DEVICE_GROUP_NAME";
 
     @IntegrationPermission
     public Integration getIntegration(String integrationIdentifier) {
@@ -128,6 +140,11 @@ public class DeviceService implements IDeviceFacade {
         payload.putContext(DEVICE_NAME_ON_ADD, createDeviceRequest.getName());
         payload.putContext(DEVICE_TEMPLATE_KEY_ON_ADD, createDeviceRequest.getTemplate());
 
+        // set group name to context
+        if (StringUtils.hasText(createDeviceRequest.getGroupName())) {
+            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_NAME, createDeviceRequest.getGroupName());
+        }
+
         // Must return a device
         try {
             entityValueServiceProvider.saveValuesAndPublishSync(payload);
@@ -144,6 +161,7 @@ public class DeviceService implements IDeviceFacade {
         deviceResponseData.setKey(devicePO.getKey());
         deviceResponseData.setName(devicePO.getName());
         deviceResponseData.setIntegration(devicePO.getIntegration());
+        deviceResponseData.setIdentifier(devicePO.getIdentifier());
         deviceResponseData.setAdditionalData(devicePO.getAdditionalData());
         deviceResponseData.setTemplate(devicePO.getTemplate());
         deviceResponseData.setCreatedAt(devicePO.getCreatedAt());
@@ -160,8 +178,12 @@ public class DeviceService implements IDeviceFacade {
                 .collect(Collectors.toMap(Integration::getId, integration -> integration));
     }
 
-    private void fillIntegrationInfo(List<DeviceResponseData> dataList) {
+
+
+    private void fillRelativeInfo(List<DeviceResponseData> dataList) {
         Map<String, Integration> integrationMap = getIntegrationMap(dataList.stream().map(DeviceResponseData::getIntegration).toList());
+        Map<Long, DeviceGroupPO> deviceGroupMap = deviceGroupService.deviceMapToGroup(dataList.stream().map(d -> Long.valueOf(d.getId())).toList());
+
         dataList.forEach(d -> {
             Integration integration = integrationMap.get(d.getIntegration());
             if (integration == null) {
@@ -171,6 +193,11 @@ public class DeviceService implements IDeviceFacade {
 
             d.setDeletable(StringUtils.hasLength(integration.getEntityIdentifierDeleteDevice()));
             d.setIntegrationName(integration.getName());
+
+            DeviceGroupPO groupPO = deviceGroupMap.get(Long.valueOf(d.getId()));
+            if (groupPO != null) {
+                d.setGroupName(groupPO.getName());
+            }
         });
     }
 
@@ -179,15 +206,34 @@ public class DeviceService implements IDeviceFacade {
             searchDeviceRequest.sort(new Sorts().desc(DevicePO.Fields.id));
         }
 
-        Page<DeviceResponseData> responseDataList;
+        Consumer<Filterable> filter = f -> f.likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.name, searchDeviceRequest.getName())
+                .eq(StringUtils.hasText(searchDeviceRequest.getTemplate()), DevicePO.Fields.template, searchDeviceRequest.getTemplate())
+                .likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getIdentifier()), DevicePO.Fields.identifier, searchDeviceRequest.getIdentifier());
+
+        Page<DeviceResponseData> responseDataList = Page.empty();
+        String groupIdStr = searchDeviceRequest.getGroupId();
+        boolean filterNotGrouped = Boolean.TRUE.equals(searchDeviceRequest.getFilterNotGrouped());
+        if (StringUtils.hasText(groupIdStr) && filterNotGrouped) {
+            return responseDataList;
+        } else if (StringUtils.hasText(groupIdStr)) {
+            List<DeviceGroupMappingPO> mappingPOList = deviceGroupService.findAllMappingByGroupId(Long.valueOf(searchDeviceRequest.getGroupId()));
+            if (mappingPOList.isEmpty()) {
+                return responseDataList;
+            }
+
+            Set<Long> deviceIdSet = new HashSet<>();
+            mappingPOList.forEach(mappingPO -> deviceIdSet.add(mappingPO.getDeviceId()));
+            filter = filter.andThen(f -> f.in(DevicePO.Fields.id, deviceIdSet.toArray()));
+        } else if (filterNotGrouped) {
+            Long[] groupedDeviceIds = deviceGroupService.findAllGroupedDeviceIdList().toArray(Long[]::new);
+            if (groupedDeviceIds.length > 0) {
+                filter = filter.andThen(f -> f.notIn(DevicePO.Fields.id, groupedDeviceIds));
+            }
+        }
+
         try {
             responseDataList = deviceRepository
-                    .findAllWithDataPermission(f -> {
-                        f.likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.name, searchDeviceRequest.getName());
-                        if (searchDeviceRequest.getTemplate() != null) {
-                            f.and(filterable -> filterable.eq(DevicePO.Fields.template, searchDeviceRequest.getTemplate()));
-                        }
-                    }, searchDeviceRequest.toPageable())
+                    .findAllWithDataPermission(filter, searchDeviceRequest.toPageable())
                     .map(this::convertPOToResponseData);
         } catch (Exception e) {
             if (e instanceof ServiceException serviceException
@@ -197,7 +243,7 @@ public class DeviceService implements IDeviceFacade {
             throw e;
         }
 
-        fillIntegrationInfo(responseDataList.getContent());
+        fillRelativeInfo(responseDataList.getContent());
         return responseDataList;
     }
 
@@ -288,7 +334,7 @@ public class DeviceService implements IDeviceFacade {
 
         // set detail data
         BeanUtils.copyProperties(convertPOToResponseData(findResult.get()), deviceDetailResponse);
-        fillIntegrationInfo(List.of(deviceDetailResponse));
+        fillRelativeInfo(List.of(deviceDetailResponse));
         deviceDetailResponse.setIdentifier(findResult.get().getIdentifier());
 
         if (findResult.get().getUserId() != null) {
@@ -413,6 +459,7 @@ public class DeviceService implements IDeviceFacade {
 
     public void deleteDevice(Device device) {
         entityServiceProvider.deleteByTargetId(device.getId().toString());
+        deviceGroupService.removeDevices(List.of(device.getId()));
 
         deviceRepository.deleteById(device.getId());
         self.evictIntegrationIdToDeviceCache(device.getIntegrationId());
@@ -431,5 +478,24 @@ public class DeviceService implements IDeviceFacade {
     @BatchCacheEvict(cacheNames = CacheKeyConstants.INTEGRATION_ID_TO_DEVICE, keyPrefix = CacheKeyConstants.TENANT_PREFIX)
     public void evictIntegrationIdToDeviceCache(@CacheKeys Collection<String> integrationIds) {
         // do nothing
+    }
+
+    public void moveDeviceToGroup(MoveDeviceToGroupRequest request) {
+        if (request.getDeviceIdList() == null || request.getDeviceIdList().isEmpty()) {
+            return;
+        }
+
+        List<Long> deviceIdList = request.getDeviceIdList().stream().map(Long::valueOf).toList();
+
+        // check permission
+        deviceRepository.findByIdInWithDataPermission(deviceIdList);
+
+        if (!StringUtils.hasText(request.getGroupId())) {
+            deviceGroupService.removeDevices(deviceIdList);
+        } else {
+            Long groupId = Long.valueOf(request.getGroupId());
+            deviceGroupService.getDeviceGroup(groupId);
+            deviceGroupService.moveDevicesToGroupId(groupId, deviceIdList);
+        }
     }
 }

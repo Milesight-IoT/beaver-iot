@@ -144,6 +144,14 @@ public class Entity implements IdentityKey, Cloneable {
         }
     }
 
+    public boolean isOptional() {
+        if (getAttributes() == null) {
+            return false;
+        }
+
+        return Boolean.TRUE.equals(getAttributes().get(AttributeBuilder.ATTRIBUTE_OPTIONAL));
+    }
+
     @Override
     public Entity clone() {
         Entity entity = new Entity();
