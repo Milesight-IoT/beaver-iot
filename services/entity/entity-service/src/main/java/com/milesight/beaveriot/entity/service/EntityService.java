@@ -857,6 +857,10 @@ public class EntityService implements EntityServiceProvider {
         return convertEntityPOToEntityMetaResponse(entityPO);
     }
 
+    public List<EntityPO> listEntityPOById(List<Long> entityIds) {
+        return entityRepository.findAllWithDataPermission(filterable -> filterable.in(EntityPO.Fields.id, entityIds.toArray()));
+    }
+
     private String getCustomEntityKey(String identifier) {
         if (identifier == null) {
             return null;

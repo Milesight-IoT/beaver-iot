@@ -1,0 +1,33 @@
+package com.milesight.beaveriot.entity.repository;
+
+import com.milesight.beaveriot.data.jpa.repository.BaseJpaRepository;
+import com.milesight.beaveriot.entity.po.EntityTagPO;
+import com.milesight.beaveriot.entity.po.EntityTagProjection;
+import com.milesight.beaveriot.permission.aspect.Tenant;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+
+@Tenant
+public interface EntityTagRepository extends BaseJpaRepository<EntityTagPO, Long> {
+
+    @Query(value = """
+                    SELECT t.*, COUNT(m.id) AS taggedEntitiesCount
+                    FROM t_entity_tag t
+                    LEFT JOIN t_entity_tag_mapping m ON t.id = m.tag_id
+                    GROUP BY t.id
+            """, nativeQuery = true)
+    Page<EntityTagProjection> search(Pageable pageable);
+
+    @Query(value = """
+                    SELECT t.*, COUNT(m.id) AS taggedEntitiesCount
+                    FROM t_entity_tag t
+                    LEFT JOIN t_entity_tag_mapping m ON t.id = m.tag_id
+                    WHERE t.name LIKE %:keyword% OR t.description LIKE %:keyword%
+                    GROUP BY t.id
+            """, nativeQuery = true)
+    Page<EntityTagProjection> search(@Param("keyword") String keyword, Pageable pageable);
+
+}

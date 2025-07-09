@@ -38,6 +38,9 @@ public enum OperationPermissionCode {
 
     CREDENTIALS_VIEW("credentials.view", MenuCode.CREDENTIALS),
     CREDENTIALS_EDIT("credentials.edit", MenuCode.CREDENTIALS),
+
+    ENTITY_TAG_VIEW("entity_tag.view", MenuCode.TAG),
+    ENTITY_TAG_EDIT("entity_tag.edit", MenuCode.TAG),
     ;
 
     private final String code;
