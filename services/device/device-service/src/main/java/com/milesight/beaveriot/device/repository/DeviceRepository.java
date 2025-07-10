@@ -23,6 +23,11 @@ public interface DeviceRepository extends BaseJpaRepository<DevicePO, Long> {
     List<Object[]> countByIntegrations(@Param("integrations") List<String> integrations);
 
     @DataPermission(type = DataPermissionType.DEVICE, column = "id")
+    default List<DevicePO> findAllWithDataPermission(Consumer<Filterable> filterable){
+        return findAll(filterable);
+    }
+
+    @DataPermission(type = DataPermissionType.DEVICE, column = "id")
     default Page<DevicePO> findAllWithDataPermission(Consumer<Filterable> filterable, Pageable pageable){
         return findAll(filterable, pageable);
     }

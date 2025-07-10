@@ -5,6 +5,7 @@ import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
 import lombok.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -41,5 +42,9 @@ public class EntityResponse {
     private Long entityUpdatedAt;
 
     private String entityDescription;
+
+    private EntityDeviceGroup deviceGroup;
+
+    private List<EntityTag> entityTags;
 
 }

@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.entity.model.dto;
+package com.milesight.beaveriot.entity.dto;
 
 import lombok.*;
 

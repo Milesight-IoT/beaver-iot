@@ -15,6 +15,18 @@ public interface Filterable {
 
     Filterable likeIgnoreCase(boolean condition, String name, String value);
 
+    Filterable notLikeIgnoreCase(String name, String value);
+
+    Filterable notLikeIgnoreCase(boolean condition, String name, String value);
+
+    Filterable startsWithIgnoreCase(boolean condition, String name, String value);
+
+    Filterable startsWithIgnoreCase(String name, String value);
+
+    Filterable endsWithIgnoreCase(String name, String value);
+
+    Filterable endsWithIgnoreCase(boolean condition, String name, String value);
+
     Filterable like(String name, String value);
 
     Filterable like(boolean condition, String name, String value);
@@ -23,13 +35,13 @@ public interface Filterable {
 
     Filterable notLike(boolean condition, String name, String value);
 
-    Filterable likeLeft(String name, String value);
+    Filterable startsWith(String name, String value);
 
-    Filterable likeLeft(boolean condition, String name, String value);
+    Filterable startsWith(boolean condition, String name, String value);
 
-    Filterable likeRight(String name, String value);
+    Filterable endsWith(String name, String value);
 
-    Filterable likeRight(boolean condition, String name, String value);
+    Filterable endsWith(boolean condition, String name, String value);
 
     Filterable allEq(Map<String,Object> params);
 
@@ -43,23 +55,23 @@ public interface Filterable {
 
     Filterable ne(boolean condition, String name, Object value);
 
-    Filterable gt(String name, Object value);
+    <T> Filterable gt(String name, Comparable<T> value);
 
-    Filterable gt(boolean condition, String name, Object value);
+    <T> Filterable gt(boolean condition, String name, Comparable<T> value);
 
-    Filterable ge(String name, Object value);
+    <T> Filterable ge(String name, Comparable<T> value);
 
-    Filterable ge(boolean condition, String name, Object value);
+    <T> Filterable ge(boolean condition, String name, Comparable<T> value);
 
-    Filterable lt(String name, Object value);
+    <T> Filterable lt(String name, Comparable<T> value);
 
-    Filterable lt(boolean condition, String name, Object value);
+    <T> Filterable lt(boolean condition, String name, Comparable<T> value);
 
-    Filterable le(String name, Object value);
+    <T> Filterable le(String name, Comparable<T> value);
 
-    Filterable le(boolean condition, String name, Object value);
+    <T> Filterable le(boolean condition, String name, Comparable<T> value);
 
-    Filterable between(String name, Object min, Object max);
+    <T> Filterable between(String name, Comparable<T> min, Comparable<T> max);
 
     Filterable isNull(String name);
 

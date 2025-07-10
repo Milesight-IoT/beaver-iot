@@ -4,11 +4,13 @@ import com.milesight.beaveriot.data.filterable.Filterable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.repository.query.FluentQuery;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * @author leon
@@ -33,6 +35,8 @@ public interface BaseRepository<T,ID extends Serializable> {
     List<T> findAll(Sort sort);
 
     Page<T> findAll(Pageable pageable);
+
+    <S extends T> List<T> findBy(Consumer<Filterable> consumer, Function<FluentQuery.FetchableFluentQuery<S>, List<T>> queryFunction);
 
     /**
      * Query based on condition list

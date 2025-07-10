@@ -34,6 +34,36 @@ public class SearchFilter extends CompositeCondition implements Filterable{
     }
 
     @Override
+    public Filterable notLikeIgnoreCase(String name, String value) {
+        return addCompareCondition(!ObjectUtils.isEmpty(value), SearchOperator.CASE_IGNORE_NOT_LIKE, name, value);
+    }
+
+    @Override
+    public Filterable notLikeIgnoreCase(boolean condition, String name, String value) {
+        return addCompareCondition(condition, SearchOperator.CASE_IGNORE_NOT_LIKE, name, value);
+    }
+
+    @Override
+    public Filterable startsWithIgnoreCase(boolean condition, String name, String value) {
+        return addCompareCondition(condition, SearchOperator.CASE_IGNORE_STARTS_WITH, name, value);
+    }
+
+    @Override
+    public Filterable startsWithIgnoreCase(String name, String value) {
+        return addCompareCondition(!ObjectUtils.isEmpty(value), SearchOperator.CASE_IGNORE_STARTS_WITH, name, value);
+    }
+
+    @Override
+    public Filterable endsWithIgnoreCase(String name, String value) {
+        return addCompareCondition(!ObjectUtils.isEmpty(value), SearchOperator.CASE_IGNORE_ENDS_WITH, name, value);
+    }
+
+    @Override
+    public Filterable endsWithIgnoreCase(boolean condition, String name, String value) {
+        return addCompareCondition(condition, SearchOperator.CASE_IGNORE_ENDS_WITH, name, value);
+    }
+
+    @Override
     public Filterable like(String name, String value) {
         return addCompareCondition(!ObjectUtils.isEmpty(value), SearchOperator.LIKE, name, value);
     }
@@ -61,29 +91,29 @@ public class SearchFilter extends CompositeCondition implements Filterable{
     }
 
     @Override
-    public Filterable likeLeft(String name, String value) {
-        return addCompareCondition(!ObjectUtils.isEmpty(value), SearchOperator.LIKE_LEFT, name, value);
+    public Filterable startsWith(String name, String value) {
+        return addCompareCondition(!ObjectUtils.isEmpty(value), SearchOperator.STARTS_WITH, name, value);
     }
 
     @Override
-    public Filterable likeLeft(boolean condition, String name, String value) {
-        return addCompareCondition(condition, SearchOperator.LIKE_LEFT, name, value);
+    public Filterable startsWith(boolean condition, String name, String value) {
+        return addCompareCondition(condition, SearchOperator.STARTS_WITH, name, value);
     }
 
     @Override
-    public Filterable likeRight(String name, String value) {
-        return addCompareCondition(!ObjectUtils.isEmpty(value), SearchOperator.LIKE_RIGHT, name, value);
+    public Filterable endsWith(String name, String value) {
+        return addCompareCondition(!ObjectUtils.isEmpty(value), SearchOperator.ENDS_WITH, name, value);
     }
 
     @Override
-    public Filterable likeRight(boolean condition, String name, String value) {
-        return addCompareCondition(condition, SearchOperator.LIKE_RIGHT, name, value);
+    public Filterable endsWith(boolean condition, String name, String value) {
+        return addCompareCondition(condition, SearchOperator.ENDS_WITH, name, value);
     }
 
     @Override
     public Filterable allEq(Map<String, Object> params) {
         if(!ObjectUtils.isEmpty(params)){
-            params.entrySet().stream().forEach(entry->eq(entry.getKey(), entry.getValue()));
+            params.entrySet().forEach(entry -> eq(entry.getKey(), entry.getValue()));
         }
         return this;
     }
@@ -91,7 +121,7 @@ public class SearchFilter extends CompositeCondition implements Filterable{
     @Override
     public Filterable allEq(boolean condition, Map<String, Object> params) {
         if(!ObjectUtils.isEmpty(params)){
-            params.entrySet().stream().forEach(entry->eq(condition,entry.getKey(), entry.getValue()));
+            params.entrySet().forEach(entry -> eq(condition, entry.getKey(), entry.getValue()));
         }
         return this;
     }
@@ -116,47 +146,47 @@ public class SearchFilter extends CompositeCondition implements Filterable{
     }
 
     @Override
-    public Filterable gt(String name, Object value) {
+    public <T> Filterable gt(String name, Comparable<T> value) {
         return addCompareCondition(!ObjectUtils.isEmpty(value), SearchOperator.GT, name, value);
     }
 
     @Override
-    public Filterable gt(boolean condition, String name, Object value) {
+    public <T> Filterable gt(boolean condition, String name, Comparable<T> value) {
         return addCompareCondition(condition, SearchOperator.GT, name, value);
     }
 
     @Override
-    public Filterable ge(String name, Object value) {
+    public <T> Filterable ge(String name, Comparable<T> value) {
         return addCompareCondition(!ObjectUtils.isEmpty(value), SearchOperator.GE, name, value);
     }
 
     @Override
-    public Filterable ge(boolean condition, String name, Object value) {
+    public <T> Filterable ge(boolean condition, String name, Comparable<T> value) {
         return addCompareCondition(condition, SearchOperator.GE, name, value);
     }
 
     @Override
-    public Filterable lt(String name, Object value) {
+    public <T> Filterable lt(String name, Comparable<T> value) {
         return addCompareCondition(!ObjectUtils.isEmpty(value), SearchOperator.LT, name, value);
     }
 
     @Override
-    public Filterable lt(boolean condition, String name, Object value) {
+    public <T> Filterable lt(boolean condition, String name, Comparable<T> value) {
         return addCompareCondition(condition, SearchOperator.LT, name, value);
     }
 
     @Override
-    public Filterable le(String name, Object value) {
+    public <T> Filterable le(String name, Comparable<T> value) {
         return addCompareCondition(!ObjectUtils.isEmpty(value), SearchOperator.LE, name, value);
     }
 
     @Override
-    public Filterable le(boolean condition, String name, Object value) {
+    public <T> Filterable le(boolean condition, String name, Comparable<T> value) {
         return addCompareCondition(condition, SearchOperator.LE, name, value);
     }
 
     @Override
-    public Filterable between(String name, Object min, Object max) {
+    public <T> Filterable between(String name, Comparable<T> min, Comparable<T> max) {
         Assert.notNull(min, "min value must not be null");
         Assert.notNull(max, "max value must not be null");
         return addCompareCondition((!ObjectUtils.isEmpty(min) && !ObjectUtils.isEmpty(max)) , SearchOperator.BETWEEN, name, Pair.of(min, max));

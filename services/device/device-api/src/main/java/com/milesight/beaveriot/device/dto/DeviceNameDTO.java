@@ -1,8 +1,7 @@
 package com.milesight.beaveriot.device.dto;
 
 import com.milesight.beaveriot.context.integration.model.Integration;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
 @Data
 @Builder
@@ -14,5 +13,7 @@ public class DeviceNameDTO {
     private String template;
     private Integration integrationConfig;
     private String name;
+    private Long groupId;
+    private String groupName;
     private Long createdAt;
 }
