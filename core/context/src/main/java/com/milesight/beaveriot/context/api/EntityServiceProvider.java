@@ -2,6 +2,7 @@ package com.milesight.beaveriot.context.api;
 
 import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.context.integration.model.Entity;
+import com.milesight.beaveriot.context.model.EntityTag;
 import lombok.*;
 
 import java.util.Collection;
@@ -34,5 +35,7 @@ public interface EntityServiceProvider {
     Entity findById(Long entityId);
 
     List<Entity> findByIds(List<Long> ids);
+
+    Map<Long, List<EntityTag>> findTagsByIds(List<Long> entityIds);
 
 }

@@ -90,16 +90,31 @@ public class SpecificationConverter {
                     predicates.add(criteriaBuilder.like(criteriaBuilder.upper(root.get(compareCondition.getName())), "%" + compareCondition.getValue().toString().toUpperCase() + "%"));
                 }
                 break;
+            case CASE_IGNORE_NOT_LIKE:
+                if(!ObjectUtils.isEmpty(compareCondition.getValue())){
+                    predicates.add(criteriaBuilder.notLike(criteriaBuilder.upper(root.get(compareCondition.getName())), "%" + compareCondition.getValue().toString().toUpperCase() + "%"));
+                }
+                break;
+            case CASE_IGNORE_STARTS_WITH:
+                if(!ObjectUtils.isEmpty(compareCondition.getValue())){
+                    predicates.add(criteriaBuilder.like(criteriaBuilder.upper(root.get(compareCondition.getName())), compareCondition.getValue().toString().toUpperCase() + "%"));
+                }
+                break;
+            case CASE_IGNORE_ENDS_WITH:
+                if(!ObjectUtils.isEmpty(compareCondition.getValue())){
+                    predicates.add(criteriaBuilder.like(criteriaBuilder.upper(root.get(compareCondition.getName())), "%" + compareCondition.getValue().toString().toUpperCase()));
+                }
+                break;
             case LIKE:
                 predicates.add(criteriaBuilder.like(root.get(compareCondition.getName()), "%" + compareCondition.getValue() + "%"));
                 break;
             case NOT_LIKE:
                 predicates.add(criteriaBuilder.notLike(root.get(compareCondition.getName()), "%" + compareCondition.getValue() + "%"));
                 break;
-            case LIKE_LEFT:
+            case STARTS_WITH:
                 predicates.add(criteriaBuilder.like(root.get(compareCondition.getName()), compareCondition.getValue() + "%"));
                 break;
-            case LIKE_RIGHT:
+            case ENDS_WITH:
                 predicates.add(criteriaBuilder.like(root.get(compareCondition.getName()), "%" + compareCondition.getValue()));
                 break;
             case BETWEEN:

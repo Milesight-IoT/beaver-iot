@@ -13,14 +13,21 @@ import com.milesight.beaveriot.device.po.DeviceGroupMappingPO;
 import com.milesight.beaveriot.device.po.DeviceGroupPO;
 import com.milesight.beaveriot.device.repository.DeviceGroupMappingRepository;
 import com.milesight.beaveriot.device.repository.DeviceGroupRepository;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -186,4 +193,18 @@ public class DeviceGroupService {
     public List<DeviceGroupMappingPO> findAllMappingByGroupId(Long groupId) {
         return deviceGroupMappingRepository.findAll(f -> f.eq(DeviceGroupMappingPO.Fields.groupId, groupId));
     }
+
+    public Map<Long, List<DeviceGroupPO>> deviceIdToGroups(List<Long> deviceIds) {
+        List<DeviceGroupMappingPO> mappings = deviceGroupMappingRepository.findAllByDeviceIdIn(deviceIds);
+        return deviceGroupRepository.findAllById(mappings.stream().map(DeviceGroupMappingPO::getGroupId).toList()).stream()
+                .collect(Collectors.groupingBy(DeviceGroupPO::getId));
+    }
+
+    public List<Long> findAllDeviceIdsByGroupNameIn(List<String> groupNames) {
+        return deviceGroupRepository.findAll(f -> f.in(DeviceGroupPO.Fields.name, groupNames.toArray()))
+                .stream()
+                .map(DeviceGroupPO::getId)
+                .collect(Collectors.toList());
+    }
+
 }

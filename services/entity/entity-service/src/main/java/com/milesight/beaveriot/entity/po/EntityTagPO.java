@@ -22,7 +22,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EntityTagPO implements EntityTagProjection {
+public class EntityTagPO {
 
     @Id
     private Long id;
