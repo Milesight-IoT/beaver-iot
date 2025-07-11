@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.user.model.response;
 
-import com.milesight.beaveriot.user.enums.MenuType;
-import lombok.Data;
+import com.milesight.beaveriot.permission.enums.MenuType;
+import lombok.*;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.user.enums;
+package com.milesight.beaveriot.permission.enums;
 
 /**
  * @author loong
@@ -6,6 +6,6 @@ package com.milesight.beaveriot.user.enums;
  */
 public enum MenuType {
 
-    MENU, FUNCTION;
+    MENU, FUNCTION
 
 }

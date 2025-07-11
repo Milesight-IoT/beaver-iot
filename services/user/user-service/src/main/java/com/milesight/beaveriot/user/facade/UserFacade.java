@@ -11,13 +11,12 @@ import com.milesight.beaveriot.user.dto.UserDTO;
 import com.milesight.beaveriot.user.dto.UserResourceDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.enums.UserStatus;
-import com.milesight.beaveriot.user.po.MenuPO;
+import com.milesight.beaveriot.user.model.Menu;
 import com.milesight.beaveriot.user.po.RoleMenuPO;
 import com.milesight.beaveriot.user.po.RolePO;
 import com.milesight.beaveriot.user.po.TenantPO;
 import com.milesight.beaveriot.user.po.UserPO;
 import com.milesight.beaveriot.user.po.UserRolePO;
-import com.milesight.beaveriot.user.repository.MenuRepository;
 import com.milesight.beaveriot.user.repository.RoleMenuRepository;
 import com.milesight.beaveriot.user.repository.RoleRepository;
 import com.milesight.beaveriot.user.repository.TenantRepository;
@@ -25,6 +24,7 @@ import com.milesight.beaveriot.user.repository.UserRepository;
 import com.milesight.beaveriot.user.repository.UserRoleRepository;
 import com.milesight.beaveriot.user.service.RoleService;
 import com.milesight.beaveriot.user.service.UserService;
+import com.milesight.beaveriot.user.util.MenuStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
@@ -34,6 +34,7 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -58,9 +59,6 @@ public class UserFacade implements IUserFacade {
 
     @Autowired
     private RoleMenuRepository roleMenuRepository;
-
-    @Autowired
-    private MenuRepository menuRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -135,8 +133,8 @@ public class UserFacade implements IUserFacade {
 
         boolean isSuperAdmin = rolePOs.stream().anyMatch(rolePO -> Objects.equals(rolePO.getName(), UserConstants.SUPER_ADMIN_ROLE_NAME));
         if (isSuperAdmin) {
-            List<MenuPO> menuPOList = menuRepository.findAll();
-            return menuPOList.stream()
+            List<Menu> menuList = MenuStore.getAllMenus();
+            return menuList.stream()
                     .map(menuPO -> {
                         MenuDTO menuDTO = new MenuDTO();
                         menuDTO.setMenuId(menuPO.getId());
@@ -152,9 +150,10 @@ public class UserFacade implements IUserFacade {
             return new ArrayList<>();
         }
 
-        List<Long> menuIds = roleMenuPOs.stream().map(RoleMenuPO::getMenuId).toList();
-        return menuRepository.findAll(filterable -> filterable.in(MenuPO.Fields.id, menuIds.toArray()))
+        Set<Long> menuIds = roleMenuPOs.stream().map(RoleMenuPO::getMenuId).collect(Collectors.toSet());
+        return MenuStore.getAllMenus()
                 .stream()
+                .filter(menuPO -> menuIds.contains(menuPO.getId()))
                 .map(menuPO -> {
                     MenuDTO menuDTO = new MenuDTO();
                     menuDTO.setMenuId(menuPO.getId());
