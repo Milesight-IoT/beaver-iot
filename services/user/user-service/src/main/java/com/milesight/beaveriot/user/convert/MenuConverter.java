@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.user.convert;
 
+import com.milesight.beaveriot.user.model.Menu;
 import com.milesight.beaveriot.user.model.response.MenuResponse;
-import com.milesight.beaveriot.user.po.MenuPO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Mappings;
@@ -19,6 +19,6 @@ public interface MenuConverter {
     @Mappings({
             @Mapping(source = "id", target = "menuId"),
     })
-    MenuResponse convertResponse(MenuPO menuPO);
+    MenuResponse convertResponse(Menu menu);
 
 }

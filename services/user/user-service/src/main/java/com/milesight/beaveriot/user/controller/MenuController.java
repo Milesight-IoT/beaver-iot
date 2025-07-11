@@ -3,8 +3,7 @@ package com.milesight.beaveriot.user.controller;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.user.model.response.MenuResponse;
-import com.milesight.beaveriot.user.service.MenuService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.milesight.beaveriot.user.util.MenuStore;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,12 +18,9 @@ import java.util.List;
 @RequestMapping("/user/menus")
 public class MenuController {
 
-    @Autowired
-    MenuService menuService;
-
-    @GetMapping("")
+    @GetMapping
     public ResponseBody<List<MenuResponse>> getMenus() {
-        List<MenuResponse> menuResponses = menuService.getMenus();
+        List<MenuResponse> menuResponses = MenuStore.getMenuTrees();
         return ResponseBuilder.success(menuResponses);
     }
 }

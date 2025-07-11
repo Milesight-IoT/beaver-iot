@@ -15,6 +15,7 @@ import com.milesight.beaveriot.user.dto.UserResourceDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.enums.UserErrorCode;
 import com.milesight.beaveriot.user.enums.UserStatus;
+import com.milesight.beaveriot.user.model.Menu;
 import com.milesight.beaveriot.user.model.request.BatchDeleteUserRequest;
 import com.milesight.beaveriot.user.model.request.ChangePasswordRequest;
 import com.milesight.beaveriot.user.model.request.CreateUserRequest;
@@ -27,16 +28,15 @@ import com.milesight.beaveriot.user.model.response.UserInfoResponse;
 import com.milesight.beaveriot.user.model.response.UserMenuResponse;
 import com.milesight.beaveriot.user.model.response.UserPermissionResponse;
 import com.milesight.beaveriot.user.model.response.UserStatusResponse;
-import com.milesight.beaveriot.user.po.MenuPO;
 import com.milesight.beaveriot.user.po.RoleMenuPO;
 import com.milesight.beaveriot.user.po.RolePO;
 import com.milesight.beaveriot.user.po.RoleResourcePO;
 import com.milesight.beaveriot.user.po.TenantPO;
 import com.milesight.beaveriot.user.po.UserPO;
 import com.milesight.beaveriot.user.po.UserRolePO;
-import com.milesight.beaveriot.user.repository.MenuRepository;
 import com.milesight.beaveriot.user.repository.TenantRepository;
 import com.milesight.beaveriot.user.repository.UserRepository;
+import com.milesight.beaveriot.user.util.MenuStore;
 import com.milesight.beaveriot.user.util.SignUtils;
 import lombok.*;
 import lombok.extern.slf4j.*;
@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -70,9 +71,6 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private MenuRepository menuRepository;
 
     @Autowired
     private TenantRepository tenantRepository;
@@ -145,12 +143,12 @@ public class UserService {
         userInfoResponse.setEmail(securityUser.getEmail());
         userInfoResponse.setCreatedAt(securityUser.getCreatedAt());
 
-        List<MenuPO> menuPOs = menuRepository.findAll();
-        if (menuPOs != null && !menuPOs.isEmpty()) {
+        List<Menu> menus = MenuStore.getAllMenus();
+        if (!menus.isEmpty()) {
             List<UserMenuResponse> userMenuResponses = getMenusByUserId(userId);
             List<String> userMenuParentIds = userMenuResponses.stream().map(UserMenuResponse::getParentId).filter(Objects::nonNull).distinct().toList();
             List<UserMenuResponse> allUserMenuResponses = new ArrayList<>(userMenuResponses);
-            recurrenceParentMenu(menuPOs, userMenuParentIds, allUserMenuResponses);
+            recurrenceParentMenu(menus, userMenuParentIds, allUserMenuResponses);
 
             List<MenuResponse> menuResponses = allUserMenuResponses.stream()
                     .filter(userMenuResponse -> userMenuResponse.getParentId() == null)
@@ -196,28 +194,28 @@ public class UserService {
         return menuResponse;
     }
 
-    private void recurrenceParentMenu(List<MenuPO> menuPOs, List<String> userMenuParentIds, List<UserMenuResponse> allUserMenuResponses) {
+    private void recurrenceParentMenu(List<Menu> menus, List<String> userMenuParentIds, List<UserMenuResponse> allUserMenuResponses) {
         if (userMenuParentIds == null || userMenuParentIds.isEmpty()) {
             return;
         }
 
-        List<MenuPO> parentMenuPOs = menuPOs.stream().filter(t -> userMenuParentIds.contains(t.getId().toString())).toList();
-        if (parentMenuPOs.isEmpty()) {
+        List<Menu> parentMenus = menus.stream().filter(t -> userMenuParentIds.contains(t.getId().toString())).toList();
+        if (parentMenus.isEmpty()) {
             return;
         }
 
-        List<UserMenuResponse> parentUserMenuResponses = parentMenuPOs.stream()
+        List<UserMenuResponse> parentUserMenuResponses = parentMenus.stream()
                 .map(UserService::buildUserMenuResponse)
                 .toList();
         allUserMenuResponses.addAll(parentUserMenuResponses);
 
-        List<String> parentMenuParentIds = parentMenuPOs.stream()
-                .map(MenuPO::getParentId)
+        List<String> parentMenuParentIds = parentMenus.stream()
+                .map(Menu::getParentId)
                 .filter(Objects::nonNull)
                 .map(Objects::toString)
                 .distinct()
                 .toList();
-        recurrenceParentMenu(menuPOs, parentMenuParentIds, allUserMenuResponses);
+        recurrenceParentMenu(menus, parentMenuParentIds, allUserMenuResponses);
     }
 
     private List<MenuResponse> recurrenceChildMenu(List<UserMenuResponse> menuResponses, String parentId) {
@@ -356,42 +354,47 @@ public class UserService {
             return new ArrayList<>();
         }
 
-        List<Long> menuIds = roleMenuPOs.stream().map(RoleMenuPO::getMenuId).toList();
-        List<MenuPO> menuPOList = menuRepository.findAll(filterable -> filterable.in(MenuPO.Fields.id, menuIds.toArray()));
-        if (menuPOList == null || menuPOList.isEmpty()) {
+        Set<Long> menuIds = roleMenuPOs.stream().map(RoleMenuPO::getMenuId).collect(Collectors.toSet());
+        Map<Long, Menu> idToMenu = MenuStore.getAllMenus().stream()
+                .filter(menuPO -> menuIds.contains(menuPO.getId()))
+                .collect(Collectors.toMap(Menu::getId, Function.identity()));
+        if (idToMenu.isEmpty()) {
             return new ArrayList<>();
         }
 
-        Map<Long, MenuPO> menuMap = menuPOList.stream().collect(Collectors.toMap(MenuPO::getId, Function.identity()));
         return roleMenuPOs.stream().map(roleMenuPO -> {
-            if (!menuMap.containsKey(roleMenuPO.getMenuId())) {
-                return null;
-            }
-            UserMenuResponse userMenuResponse = new UserMenuResponse();
-            userMenuResponse.setMenuId(roleMenuPO.getMenuId().toString());
-            userMenuResponse.setCode(menuMap.get(roleMenuPO.getMenuId()).getCode());
-            userMenuResponse.setName(menuMap.get(roleMenuPO.getMenuId()).getName());
-            userMenuResponse.setType(menuMap.get(roleMenuPO.getMenuId()).getType());
-            userMenuResponse.setParentId(menuMap.get(roleMenuPO.getMenuId()).getParentId() == null ? null : menuMap.get(roleMenuPO.getMenuId()).getParentId().toString());
-            return userMenuResponse;
-        }).filter(Objects::nonNull).toList();
+                    Menu menu = idToMenu.get(roleMenuPO.getMenuId());
+                    if (menu == null) {
+                        return null;
+                    }
+
+                    UserMenuResponse userMenuResponse = new UserMenuResponse();
+                    userMenuResponse.setMenuId(roleMenuPO.getMenuId().toString());
+                    userMenuResponse.setCode(menu.getCode());
+                    userMenuResponse.setName(menu.getName());
+                    userMenuResponse.setType(menu.getType());
+                    userMenuResponse.setParentId(menu.getParentId() == null ? null : menu.getParentId().toString());
+                    return userMenuResponse;
+                })
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     @NonNull
     private List<UserMenuResponse> getAllUserMenuResponses() {
-        return menuRepository.findAll().stream()
+        return MenuStore.getAllMenus().stream()
                 .map(UserService::buildUserMenuResponse)
                 .toList();
     }
 
     @NonNull
-    private static UserMenuResponse buildUserMenuResponse(MenuPO menuPO) {
+    private static UserMenuResponse buildUserMenuResponse(Menu menu) {
         UserMenuResponse userMenuResponse = new UserMenuResponse();
-        userMenuResponse.setMenuId(menuPO.getId().toString());
-        userMenuResponse.setCode(menuPO.getCode());
-        userMenuResponse.setName(menuPO.getName());
-        userMenuResponse.setType(menuPO.getType());
-        userMenuResponse.setParentId(menuPO.getParentId() == null ? null : menuPO.getParentId().toString());
+        userMenuResponse.setMenuId(menu.getId().toString());
+        userMenuResponse.setCode(menu.getCode());
+        userMenuResponse.setName(menu.getName());
+        userMenuResponse.setType(menu.getType());
+        userMenuResponse.setParentId(menu.getParentId() == null ? null : menu.getParentId().toString());
         return userMenuResponse;
     }
 

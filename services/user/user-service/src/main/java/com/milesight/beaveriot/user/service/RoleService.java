@@ -21,6 +21,7 @@ import com.milesight.beaveriot.entity.facade.IEntityFacade;
 import com.milesight.beaveriot.user.constants.UserConstants;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.enums.UserErrorCode;
+import com.milesight.beaveriot.user.model.Menu;
 import com.milesight.beaveriot.user.model.request.CreateRoleRequest;
 import com.milesight.beaveriot.user.model.request.RoleMenuRequest;
 import com.milesight.beaveriot.user.model.request.RoleResourceListRequest;
@@ -39,18 +40,17 @@ import com.milesight.beaveriot.user.model.response.RoleResourceResponse;
 import com.milesight.beaveriot.user.model.response.RoleResponse;
 import com.milesight.beaveriot.user.model.response.UserRoleResponse;
 import com.milesight.beaveriot.user.model.response.UserUndistributedResponse;
-import com.milesight.beaveriot.user.po.MenuPO;
 import com.milesight.beaveriot.user.po.RoleMenuPO;
 import com.milesight.beaveriot.user.po.RolePO;
 import com.milesight.beaveriot.user.po.RoleResourcePO;
 import com.milesight.beaveriot.user.po.UserPO;
 import com.milesight.beaveriot.user.po.UserRolePO;
-import com.milesight.beaveriot.user.repository.MenuRepository;
 import com.milesight.beaveriot.user.repository.RoleMenuRepository;
 import com.milesight.beaveriot.user.repository.RoleRepository;
 import com.milesight.beaveriot.user.repository.RoleResourceRepository;
 import com.milesight.beaveriot.user.repository.UserRepository;
 import com.milesight.beaveriot.user.repository.UserRoleRepository;
+import com.milesight.beaveriot.user.util.MenuStore;
 import lombok.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -96,9 +96,6 @@ public class RoleService {
 
     @Autowired
     private RoleMenuRepository roleMenuRepository;
-
-    @Autowired
-    private MenuRepository menuRepository;
 
     @Autowired
     private IDashboardFacade dashboardFacade;
@@ -738,9 +735,10 @@ public class RoleService {
     public void associateMenu(Long roleId, RoleMenuRequest roleMenuRequest) {
         roleMenuRepository.deleteByRoleId(roleId);
 
-        List<Long> menuIds = roleMenuRequest.getMenuIds();
-        if (menuIds == null || menuIds.isEmpty()) {
+        List<Long> requestMenuIds = roleMenuRequest.getMenuIds();
+        if (requestMenuIds == null || requestMenuIds.isEmpty()) {
             return;
+
         }
 
         List<Long> userIds = getUserRolePOsByRoleId(roleId).stream()
@@ -748,9 +746,11 @@ public class RoleService {
                 .toList();
         self.evictUserMenusCache(userIds);
 
-        List<RoleMenuPO> roleMenuPOs = menuRepository.findAll(filterable -> filterable.in(MenuPO.Fields.id, menuIds.toArray()))
+        Set<Long> menuIds = new HashSet<>(requestMenuIds);
+        List<RoleMenuPO> roleMenuPOs = MenuStore.getAllMenus()
                 .stream()
-                .map(MenuPO::getId)
+                .map(Menu::getId)
+                .filter(menuIds::contains)
                 .map(menuId -> {
                     RoleMenuPO roleMenuPO = new RoleMenuPO();
                     roleMenuPO.setId(SnowflakeUtil.nextId());
@@ -783,23 +783,24 @@ public class RoleService {
             return Collections.emptyList();
         }
 
-        List<Long> menuIds = roleMenuPOs.stream().map(RoleMenuPO::getMenuId).toList();
-        Map<Long, MenuPO> menuMap = menuRepository.findAll(filterable -> filterable.in(MenuPO.Fields.id, menuIds.toArray())).stream()
-                .collect(Collectors.toMap(MenuPO::getId, Function.identity(), (a, b) -> a));
+        Set<Long> menuIds = roleMenuPOs.stream().map(RoleMenuPO::getMenuId).collect(Collectors.toSet());
+        Map<Long, Menu> menuMap = MenuStore.getAllMenus().stream()
+                .filter(menuPO -> menuIds.contains(menuPO.getId()))
+                .collect(Collectors.toMap(Menu::getId, Function.identity(), (a, b) -> a));
 
         return roleMenuPOs.stream()
                 .map(roleMenuPO -> {
-                    MenuPO menuPO = menuMap.get(roleMenuPO.getMenuId());
-                    if (menuPO == null) {
+                    Menu menu = menuMap.get(roleMenuPO.getMenuId());
+                    if (menu == null) {
                         return null;
                     }
 
                     RoleMenuResponse roleMenuResponse = new RoleMenuResponse();
                     roleMenuResponse.setMenuId(roleMenuPO.getMenuId().toString());
-                    roleMenuResponse.setCode(menuPO.getCode());
-                    roleMenuResponse.setName(menuPO.getName());
-                    roleMenuResponse.setType(menuPO.getType());
-                    roleMenuResponse.setParentId(menuPO.getParentId() == null ? null : menuPO.getParentId().toString());
+                    roleMenuResponse.setCode(menu.getCode());
+                    roleMenuResponse.setName(menu.getName());
+                    roleMenuResponse.setType(menu.getType());
+                    roleMenuResponse.setParentId(menu.getParentId() == null ? null : menu.getParentId().toString());
                     return roleMenuResponse;
                 })
                 .filter(Objects::nonNull)
