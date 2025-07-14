@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.context.integration.model;
 
 import com.milesight.beaveriot.base.enums.EntityErrorCode;
-import com.milesight.beaveriot.base.error.ErrorHolder;
+import com.milesight.beaveriot.base.error.ErrorHolderExt;
 import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.ValidationUtils;
 import com.milesight.beaveriot.context.api.DeviceServiceProvider;
@@ -19,10 +19,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -197,79 +194,118 @@ public class Entity implements IdentityKey, Cloneable {
         return attributes == null ? null : (attributes.containsKey(attributeKey) ? JsonUtils.toMap(attributes.get(attributeKey)) : null);
     }
 
-    public List<ErrorHolder> validate(Object value) {
-        List<ErrorHolder> errors = new ArrayList<>();
-        String noticeName = getKey();
+    public List<ErrorHolderExt> validate(Object value) {
+        List<ErrorHolderExt> errors = new ArrayList<>();
+        String entityKey = getKey();
+        String entityName = getName();
+        Map<String, Object> entityData = Map.of(ExtraDataConstants.KEY_ENTITY_KEY, entityKey, ExtraDataConstants.KEY_ENTITY_NAME, entityName);
         try {
             if (!isOptional() && value == null) {
-                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_NULL.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_NULL.formatMessage(noticeName)));
+                errors.add(ErrorHolderExt.of(EntityErrorCode.ENTITY_VALUE_NULL.getErrorCode(),
+                        EntityErrorCode.ENTITY_VALUE_NULL.formatMessage(entityKey), entityData));
                 return errors;
             }
 
             if (!isMatchType(value)) {
-                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_NOT_MATCH_TYPE.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_NOT_MATCH_TYPE.formatMessage(noticeName, valueType.name(), value.getClass().getSimpleName())));
+                errors.add(ErrorHolderExt.of(EntityErrorCode.ENTITY_VALUE_NOT_MATCH_TYPE.getErrorCode(),
+                        EntityErrorCode.ENTITY_VALUE_NOT_MATCH_TYPE.formatMessage(entityKey, valueType.name(), value.getClass().getSimpleName()),
+                        buildExtraData(entityData, Map.of(
+                                ExtraDataConstants.KEY_REQUIRED_TYPE, valueType.name(),
+                                ExtraDataConstants.KEY_PROVIDED_TYPE, value.getClass().getSimpleName()))));
                 return errors;
             }
 
             if (EntityValueType.DOUBLE.equals(valueType) || EntityValueType.LONG.equals(valueType)) {
-                validateValueRange(noticeName, value, errors);
-                validateValueFormat(noticeName, value, errors);
+                validateValueRange(entityKey, entityData, value, errors);
+                validateValueFormat(entityKey, entityData, value, errors);
             } else if (EntityValueType.STRING.equals(valueType)) {
-                validateLengthRange(noticeName, value, errors);
-                validateValueEnum(noticeName, value, errors);
-                validateValueFormat(noticeName, value, errors);
+                validateLengthRange(entityKey, entityData, value, errors);
+                validateValueEnum(entityKey, entityData, value, errors);
+                validateValueFormat(entityKey, entityData, value, errors);
             }
         } catch (Exception e) {
             errors.clear();
-            errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_VALIDATION_ERROR.getErrorCode(),
-                    EntityErrorCode.ENTITY_VALUE_VALIDATION_ERROR.formatMessage(noticeName, e.getMessage())));
+            errors.add(ErrorHolderExt.of(EntityErrorCode.ENTITY_VALUE_VALIDATION_ERROR.getErrorCode(),
+                    EntityErrorCode.ENTITY_VALUE_VALIDATION_ERROR.formatMessage(entityKey, e.getMessage()),
+                    entityData));
         }
 
         return errors;
     }
 
-    private void validateValueRange(String noticeName, Object value, List<ErrorHolder> errors) {
+    private Map<String, Object> buildExtraData(Map<String, Object> baseData, Map<String, Object> specialData) {
+        Map<String, Object> extraData = new HashMap<>(baseData);
+        extraData.putAll(specialData);
+        return extraData;
+    }
+
+    private static class ExtraDataConstants {
+        public static final String KEY_ENTITY_KEY = "entity_key";
+        public static final String KEY_ENTITY_NAME = "entity_name";
+        public static final String KEY_REQUIRED_TYPE = "required_type";
+        public static final String KEY_PROVIDED_TYPE = "provided_type";
+    }
+
+    private void validateValueRange(String entityKey, Map<String, Object> entityData, Object value, List<ErrorHolderExt> errors) {
         Double min = getAttributeDoubleValue(AttributeBuilder.ATTRIBUTE_MIN);
         Double max = getAttributeDoubleValue(AttributeBuilder.ATTRIBUTE_MAX);
         double doubleValue = Double.parseDouble(value.toString());
         if (min != null && max != null) {
             if (doubleValue < min || doubleValue > max) {
-                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_OUT_OF_RANGE.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_OUT_OF_RANGE.formatMessage(noticeName, min, max)));
+                errors.add(ErrorHolderExt.of(EntityErrorCode.ENTITY_VALUE_OUT_OF_RANGE.getErrorCode(),
+                        EntityErrorCode.ENTITY_VALUE_OUT_OF_RANGE.formatMessage(entityKey, min, max),
+                        buildExtraData(entityData, Map.of(
+                                AttributeBuilder.ATTRIBUTE_MIN, min,
+                                AttributeBuilder.ATTRIBUTE_MAX, max
+                        ))));
             }
         } else if (min != null) {
             if (doubleValue < min) {
-                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_LESS_THAN_MIN.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_LESS_THAN_MIN.formatMessage(noticeName, min)));
+                errors.add(ErrorHolderExt.of(EntityErrorCode.ENTITY_VALUE_LESS_THAN_MIN.getErrorCode(),
+                        EntityErrorCode.ENTITY_VALUE_LESS_THAN_MIN.formatMessage(entityKey, min),
+                        buildExtraData(entityData, Map.of(
+                                AttributeBuilder.ATTRIBUTE_MIN, min
+                        ))));
             }
         } else if (max != null){
             if (doubleValue > max) {
-                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_GREATER_THAN_MAX.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_GREATER_THAN_MAX.formatMessage(noticeName, max)));
+                errors.add(ErrorHolderExt.of(EntityErrorCode.ENTITY_VALUE_GREATER_THAN_MAX.getErrorCode(),
+                        EntityErrorCode.ENTITY_VALUE_GREATER_THAN_MAX.formatMessage(entityKey, max),
+                        buildExtraData(entityData, Map.of(
+                                AttributeBuilder.ATTRIBUTE_MAX, max
+                        ))));
             }
         }
     }
 
-    private void validateLengthRange(String noticeName, Object value, List<ErrorHolder> errors) {
+    private void validateLengthRange(String entityKey, Map<String, Object> entityData, Object value, List<ErrorHolderExt> errors) {
         Long minLength = getAttributeLongValue(AttributeBuilder.ATTRIBUTE_MIN_LENGTH);
         Long maxLength = getAttributeLongValue(AttributeBuilder.ATTRIBUTE_MAX_LENGTH);
         long length = (value.toString()).length();
         if (minLength != null && maxLength != null) {
             if (length < minLength || length > maxLength) {
-                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_LENGTH_OUT_OF_RANGE.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_LENGTH_OUT_OF_RANGE.formatMessage(noticeName,  minLength, maxLength)));
+                errors.add(ErrorHolderExt.of(EntityErrorCode.ENTITY_VALUE_LENGTH_OUT_OF_RANGE.getErrorCode(),
+                        EntityErrorCode.ENTITY_VALUE_LENGTH_OUT_OF_RANGE.formatMessage(entityKey,  minLength, maxLength),
+                        buildExtraData(entityData, Map.of(
+                                AttributeBuilder.ATTRIBUTE_MIN_LENGTH, minLength,
+                                AttributeBuilder.ATTRIBUTE_MAX_LENGTH, maxLength
+                        ))));
             }
         } else if (minLength != null) {
             if (length < minLength) {
-                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_LENGTH_SHORTER_THAN_MIN_LENGTH.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_LENGTH_SHORTER_THAN_MIN_LENGTH.formatMessage(noticeName, minLength)));
+                errors.add(ErrorHolderExt.of(EntityErrorCode.ENTITY_VALUE_LENGTH_SHORTER_THAN_MIN_LENGTH.getErrorCode(),
+                        EntityErrorCode.ENTITY_VALUE_LENGTH_SHORTER_THAN_MIN_LENGTH.formatMessage(entityKey, minLength),
+                        buildExtraData(entityData, Map.of(
+                                AttributeBuilder.ATTRIBUTE_MIN_LENGTH, minLength
+                        ))));
             }
         } else if (maxLength != null) {
             if (length > maxLength) {
-                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_LENGTH_LONGER_THAN_MAX_LENGTH.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_LENGTH_LONGER_THAN_MAX_LENGTH.formatMessage(noticeName, maxLength)));
+                errors.add(ErrorHolderExt.of(EntityErrorCode.ENTITY_VALUE_LENGTH_LONGER_THAN_MAX_LENGTH.getErrorCode(),
+                        EntityErrorCode.ENTITY_VALUE_LENGTH_LONGER_THAN_MAX_LENGTH.formatMessage(entityKey, maxLength),
+                        buildExtraData(entityData, Map.of(
+                                AttributeBuilder.ATTRIBUTE_MAX_LENGTH, maxLength
+                        ))));
             }
         }
 
@@ -285,25 +321,31 @@ public class Entity implements IdentityKey, Cloneable {
                 }
             }
             if (!isLengthInRange) {
-                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_LENGTH_INVALID_ENUM.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_LENGTH_INVALID_ENUM.formatMessage(noticeName, "{" + String.join(", ", lengthRangeArray) + "}")));
+                errors.add(ErrorHolderExt.of(EntityErrorCode.ENTITY_VALUE_LENGTH_INVALID_ENUM.getErrorCode(),
+                        EntityErrorCode.ENTITY_VALUE_LENGTH_INVALID_ENUM.formatMessage(entityKey, "{" + String.join(", ", lengthRangeArray) + "}"),
+                        buildExtraData(entityData, Map.of(
+                                AttributeBuilder.ATTRIBUTE_LENGTH_RANGE, lengthRange
+                        ))));
             }
         }
     }
 
-    private void validateValueEnum(String noticeName, Object value, List<ErrorHolder> errors) {
+    private void validateValueEnum(String entityKey, Map<String, Object> entityData, Object value, List<ErrorHolderExt> errors) {
         Map<String, Object> enumMap = getAttributeMapValue(AttributeBuilder.ATTRIBUTE_ENUM);
         if (CollectionUtils.isEmpty(enumMap)) {
             return;
         }
 
         if (!enumMap.containsKey(value.toString())) {
-            errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_INVALID_ENUM.getErrorCode(),
-                    EntityErrorCode.ENTITY_VALUE_INVALID_ENUM.formatMessage(noticeName, "{" + String.join(", ", enumMap.keySet()) + "}")));
+            errors.add(ErrorHolderExt.of(EntityErrorCode.ENTITY_VALUE_INVALID_ENUM.getErrorCode(),
+                    EntityErrorCode.ENTITY_VALUE_INVALID_ENUM.formatMessage(entityKey, "{" + String.join(", ", enumMap.keySet()) + "}"),
+                    buildExtraData(entityData, Map.of(
+                            AttributeBuilder.ATTRIBUTE_ENUM, enumMap.keySet()
+                    ))));
         }
     }
 
-    private void validateValueFormat(String noticeName, Object value, List<ErrorHolder> errors) {
+    private void validateValueFormat(String entityKey, Map<String, Object> entityData, Object value, List<ErrorHolderExt> errors) {
         String format = getAttributeStringValue(AttributeBuilder.ATTRIBUTE_FORMAT);
         if (format == null) {
             return;
@@ -326,8 +368,11 @@ public class Entity implements IdentityKey, Cloneable {
         }
 
         if (!isValid) {
-            errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_NOT_MATCH_FORMAT.getErrorCode(),
-                    EntityErrorCode.ENTITY_VALUE_NOT_MATCH_FORMAT.formatMessage(noticeName, format)));
+            errors.add(ErrorHolderExt.of(EntityErrorCode.ENTITY_VALUE_NOT_MATCH_FORMAT.getErrorCode(),
+                    EntityErrorCode.ENTITY_VALUE_NOT_MATCH_FORMAT.formatMessage(entityKey, format),
+                    buildExtraData(entityData, Map.of(
+                            AttributeBuilder.ATTRIBUTE_FORMAT, format
+                    ))));
         }
     }
 
