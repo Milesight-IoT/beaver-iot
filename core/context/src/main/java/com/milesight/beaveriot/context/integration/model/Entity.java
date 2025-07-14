@@ -386,7 +386,7 @@ public class Entity implements IdentityKey, Cloneable {
             case BOOLEAN -> value instanceof Boolean;
             case STRING -> value instanceof String;
             case BINARY -> value instanceof byte[];
-            case OBJECT -> value instanceof Map;
+            default -> true;
         };
     }
 }
