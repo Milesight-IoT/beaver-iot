@@ -202,8 +202,8 @@ public class Entity implements IdentityKey, Cloneable {
         String noticeName = getKey();
         try {
             if (!isOptional() && value == null) {
-                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_NONE.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_NONE.formatMessage(noticeName)));
+                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_NULL.getErrorCode(),
+                        EntityErrorCode.ENTITY_VALUE_NULL.formatMessage(noticeName)));
                 return errors;
             }
 
@@ -223,8 +223,8 @@ public class Entity implements IdentityKey, Cloneable {
             }
         } catch (Exception e) {
             errors.clear();
-            errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_VALIDATE_ERROR.getErrorCode(),
-                    EntityErrorCode.ENTITY_VALUE_VALIDATE_ERROR.formatMessage(noticeName, e.getMessage())));
+            errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_VALIDATION_ERROR.getErrorCode(),
+                    EntityErrorCode.ENTITY_VALUE_VALIDATION_ERROR.formatMessage(noticeName, e.getMessage())));
         }
 
         return errors;
@@ -246,8 +246,8 @@ public class Entity implements IdentityKey, Cloneable {
             }
         } else if (max != null){
             if (doubleValue > max) {
-                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_GRATER_THAN_MAX.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_GRATER_THAN_MAX.formatMessage(noticeName, max)));
+                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_GREATER_THAN_MAX.getErrorCode(),
+                        EntityErrorCode.ENTITY_VALUE_GREATER_THAN_MAX.formatMessage(noticeName, max)));
             }
         }
     }
@@ -258,8 +258,8 @@ public class Entity implements IdentityKey, Cloneable {
         long length = (value.toString()).length();
         if (minLength != null && maxLength != null) {
             if (length < minLength || length > maxLength) {
-                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_LENGTH_OUT_OF_LENGTH_RANGE.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_LENGTH_OUT_OF_LENGTH_RANGE.formatMessage(noticeName,  minLength, maxLength)));
+                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_LENGTH_OUT_OF_RANGE.getErrorCode(),
+                        EntityErrorCode.ENTITY_VALUE_LENGTH_OUT_OF_RANGE.formatMessage(noticeName,  minLength, maxLength)));
             }
         } else if (minLength != null) {
             if (length < minLength) {
@@ -285,8 +285,8 @@ public class Entity implements IdentityKey, Cloneable {
                 }
             }
             if (!isLengthInRange) {
-                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_LENGTH_OUT_OF_LENGTH_ENUM.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_LENGTH_OUT_OF_LENGTH_ENUM.formatMessage(noticeName, "{" + String.join(", ", lengthRangeArray) + "}")));
+                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_LENGTH_INVALID_ENUM.getErrorCode(),
+                        EntityErrorCode.ENTITY_VALUE_LENGTH_INVALID_ENUM.formatMessage(noticeName, "{" + String.join(", ", lengthRangeArray) + "}")));
             }
         }
     }
@@ -298,8 +298,8 @@ public class Entity implements IdentityKey, Cloneable {
         }
 
         if (!enumMap.containsKey(value.toString())) {
-            errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_OUT_OF_ENUM.getErrorCode(),
-                    EntityErrorCode.ENTITY_VALUE_OUT_OF_ENUM.formatMessage(noticeName, "{" + String.join(", ", enumMap.keySet()) + "}")));
+            errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_INVALID_ENUM.getErrorCode(),
+                    EntityErrorCode.ENTITY_VALUE_INVALID_ENUM.formatMessage(noticeName, "{" + String.join(", ", enumMap.keySet()) + "}")));
         }
     }
 
