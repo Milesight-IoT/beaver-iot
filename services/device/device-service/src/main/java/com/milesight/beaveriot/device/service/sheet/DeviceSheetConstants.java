@@ -23,9 +23,8 @@ public class DeviceSheetConstants {
 
     public static final String HIDDEN_COL_META_SHEET = "_HIDDEN_COL_META";
 
-    protected static final String[] TOTAL_SHEETS = {
+    protected static final String[] REQUIRED_SHEETS = {
             DEVICE_SHEET_NAME,
-            HIDDEN_OPTION_SHEET,
             HIDDEN_COL_META_SHEET,
     };
 

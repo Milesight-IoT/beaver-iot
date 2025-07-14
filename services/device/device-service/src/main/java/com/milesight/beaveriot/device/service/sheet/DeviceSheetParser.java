@@ -113,12 +113,7 @@ public class DeviceSheetParser {
     }
 
     private boolean doValidateStructure() {
-        // validate sheets
-        if (workbook.getNumberOfSheets() != DeviceSheetConstants.TOTAL_SHEETS.length) {
-            return false;
-        }
-
-        if (Arrays.stream(DeviceSheetConstants.TOTAL_SHEETS).anyMatch(sheetName -> workbook.getSheet(sheetName) == null)) {
+        if (Arrays.stream(DeviceSheetConstants.REQUIRED_SHEETS).anyMatch(sheetName -> workbook.getSheet(sheetName) == null)) {
             return false;
         }
 
