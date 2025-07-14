@@ -3,6 +3,7 @@ package com.milesight.beaveriot.base.error;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.util.ObjectUtils;
 
 import java.util.Collections;
@@ -11,6 +12,7 @@ import java.util.List;
 /**
  * @author leon
  */
+@NoArgsConstructor
 @Data
 public class ErrorHolder {
 

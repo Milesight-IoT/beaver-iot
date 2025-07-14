@@ -3,6 +3,7 @@ package com.milesight.beaveriot.base.error;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.milesight.beaveriot.base.exception.BaseException;
 import com.milesight.beaveriot.base.exception.EventBusExecutionException;
+import com.milesight.beaveriot.base.exception.MultipleErrorException;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.base.enums.ErrorCode;
@@ -116,7 +117,13 @@ public class DefaultExceptionHandler {
             }
         }
         return ResponseEntity.status(ErrorCode.SERVER_ERROR.getStatus()).body(ResponseBuilder.fail(ErrorCode.SERVER_ERROR, cause.getMessage()));
+    }
 
+    @ResponseBody
+    @ExceptionHandler(MultipleErrorException.class)
+    public ResponseEntity<Object> multipleErrorExceptionHandler(MultipleErrorException e) {
+        log.debug("Cause MultipleErrorException Detail:", e);
+        return ResponseEntity.status(e.getStatus()).body(ResponseBuilder.fail(ErrorCode.MULTIPLE_ERROR.getErrorCode(), e.getMessage(), null, e.getErrors()));
     }
 
     @ResponseBody
