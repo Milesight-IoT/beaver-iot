@@ -1,6 +1,8 @@
 package com.milesight.beaveriot.context.integration.model;
 
 
+import com.milesight.beaveriot.base.error.ErrorHolder;
+import com.milesight.beaveriot.base.exception.MultipleErrorException;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.constants.ExchangeContextKeys;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
@@ -9,6 +11,7 @@ import com.milesight.beaveriot.context.support.SpringContext;
 import com.milesight.beaveriot.eventbus.api.IdentityKey;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
@@ -24,6 +27,12 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
     private transient Map<String, Object> context = new HashMap<>();
 
     private long timestamp = System.currentTimeMillis();
+
+    private Boolean isValid;
+
+    private Integer hashCode;
+
+    private MultipleErrorException validationErrorException;
 
     public ExchangePayload() {
     }
@@ -87,6 +96,53 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
         return this;
     }
 
+    public boolean validate() {
+        Integer currentHashCode = Objects.hashCode(this);
+        if (isValid == null || !currentHashCode.equals(hashCode)) {
+            hashCode = currentHashCode;
+            List<ErrorHolder> errors = new ArrayList<>();
+
+            Map<String, Entity> allChildrenEntities = getAllChildrenEntities();
+            allChildrenEntities.forEach((key, entity) -> {
+                Object value = get(key);
+                List<ErrorHolder> entityErrors = entity.validate(value);
+                if (!entityErrors.isEmpty()) {
+                    errors.addAll(entityErrors);
+                }
+            });
+
+            if (CollectionUtils.isEmpty(errors)) {
+                isValid = true;
+            } else {
+                isValid = false;
+                validationErrorException = MultipleErrorException.with(HttpStatus.BAD_REQUEST.value(), "Validate exchange payload error", errors);
+                throw validationErrorException;
+            }
+        } else if (!isValid) {
+            throw validationErrorException;
+        }
+        return true;
+    }
+
+    private Map<String, Entity> getAllChildrenEntities() {
+        EntityServiceProvider entityServiceProvider = SpringContext.getBean(EntityServiceProvider.class);
+
+        Map<String, Entity> exchangeEntities = getExchangeEntities();
+        Map<String, Entity> allChildrenEntities = new HashMap<>();
+        Set<String> allParentKeys = new HashSet<>();
+        exchangeEntities.forEach((key, entity) -> {
+            String parentKey = entity.getParentKey();
+            if (parentKey != null && (allParentKeys.isEmpty() || !allParentKeys.contains(parentKey))) {
+                Entity parentEntity = entityServiceProvider.findByKey(parentKey);
+                parentEntity.getChildren().forEach(childEntity -> {
+                    allChildrenEntities.put(childEntity.getKey(), childEntity);
+                });
+                allParentKeys.add(parentKey);
+            }
+        });
+        return allChildrenEntities;
+    }
+
     @Override
     public Map<String, Entity> getExchangeEntities() {
         if (ObjectUtils.isEmpty(keySet())) {
@@ -114,7 +170,7 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
 
         return splitExchangePayloads.entrySet()
                 .stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> ExchangePayload.createFrom(this, entry.getValue())));
+                .collect(Collectors.toMap(Entry::getKey, entry -> ExchangePayload.createFrom(this, entry.getValue())));
     }
 
     @Override
