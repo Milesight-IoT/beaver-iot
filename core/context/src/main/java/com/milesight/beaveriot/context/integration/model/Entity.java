@@ -2,7 +2,6 @@ package com.milesight.beaveriot.context.integration.model;
 
 import com.milesight.beaveriot.base.enums.EntityErrorCode;
 import com.milesight.beaveriot.base.error.ErrorHolderExt;
-import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.ValidationUtils;
 import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
@@ -189,9 +188,8 @@ public class Entity implements IdentityKey, Cloneable {
         return attributes == null ? null : (attributes.containsKey(attributeKey) ? attributes.get(attributeKey).toString() : null);
     }
 
-
     public Map<String, Object> getAttributeMapValue(String attributeKey) {
-        return attributes == null ? null : (attributes.containsKey(attributeKey) ? JsonUtils.toMap(attributes.get(attributeKey)) : null);
+        return attributes == null ? null : (attributes.containsKey(attributeKey) ? (Map<String, Object>) attributes.get(attributeKey) : null);
     }
 
     public List<ErrorHolderExt> validate(Object value) {
@@ -340,7 +338,7 @@ public class Entity implements IdentityKey, Cloneable {
             errors.add(ErrorHolderExt.of(EntityErrorCode.ENTITY_VALUE_INVALID_ENUM.getErrorCode(),
                     EntityErrorCode.ENTITY_VALUE_INVALID_ENUM.formatMessage(entityKey, "{" + String.join(", ", enumMap.keySet()) + "}"),
                     buildExtraData(entityData, Map.of(
-                            AttributeBuilder.ATTRIBUTE_ENUM, enumMap.keySet()
+                            AttributeBuilder.ATTRIBUTE_ENUM, enumMap
                     ))));
         }
     }
