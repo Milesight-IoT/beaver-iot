@@ -61,7 +61,11 @@ public class TenantContext {
         if (!KeyValidator.isValid(tenantId)) {
             throw new IllegalArgumentException("Tenant ID '" + tenantId + "' is not valid");
         }
-        tenantThreadLocal.set(new TenantId(tenantId));
+
+        TenantId oldTenant = tenantThreadLocal.get();
+        if (oldTenant == null || !tenantId.equals(oldTenant.getTenantId())) {
+            tenantThreadLocal.set(new TenantId(tenantId));
+        }
     }
 
     public static void clear() {
