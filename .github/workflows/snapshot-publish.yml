@@ -11,6 +11,9 @@ jobs:
   build:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    concurrency:
+      group: snapshot
+      cancel-in-progress: true
     permissions:
       contents: read
       packages: write
