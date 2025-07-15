@@ -10,6 +10,7 @@ public class ValidationUtils {
     private static final String REGEX_IMAGE_BASE64 = "^data:image\\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+\\/=]+$";
     private static final String REGEX_NUMBER = "^-?\\d+(\\.\\d+)?$";
     private static final String REGEX_INTEGER = "^-?\\d+$";
+    private static final String REGEX_POSITIVE_INTEGER = "^[1-9]\\d*$";
 
     public static boolean isHex(String text) {
         return matches(text, REGEX_HEX);
@@ -29,6 +30,10 @@ public class ValidationUtils {
 
     public static boolean isInteger(String text) {
         return matches(text, REGEX_INTEGER);
+    }
+
+    public static boolean isPositiveInteger(String text) {
+        return matches(text, REGEX_POSITIVE_INTEGER);
     }
 
     public static boolean matches(String text, String regex) {
