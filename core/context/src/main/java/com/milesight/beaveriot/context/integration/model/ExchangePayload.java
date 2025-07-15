@@ -105,7 +105,7 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
             Map<String, Entity> allChildrenEntities = getAllChildrenEntities();
             allChildrenEntities.forEach((key, entity) -> {
                 Object value = get(key);
-                List<ErrorHolderExt> entityErrors = entity.doValidate(value);
+                List<ErrorHolderExt> entityErrors = entity.validateValue(value);
                 if (!entityErrors.isEmpty()) {
                     errors.addAll(entityErrors);
                 }

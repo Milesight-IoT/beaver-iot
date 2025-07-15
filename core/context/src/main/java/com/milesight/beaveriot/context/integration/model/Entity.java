@@ -195,11 +195,12 @@ public class Entity implements IdentityKey, Cloneable {
         return attributes == null ? null : (attributes.containsKey(attributeKey) ? attributes.get(attributeKey).toString() : null);
     }
 
+    @SuppressWarnings("unchecked")
     public Map<String, Object> getAttributeMapValue(String attributeKey) {
         return attributes == null ? null : (attributes.containsKey(attributeKey) ? (Map<String, Object>) attributes.get(attributeKey) : null);
     }
 
-    public List<ErrorHolderExt> doValidate(Object value) {
+    public List<ErrorHolderExt> validateValue(Object value) {
         List<ErrorHolderExt> errors = new ArrayList<>();
         String entityKey = getKey();
         String entityName = getName();
