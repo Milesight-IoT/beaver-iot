@@ -127,6 +127,9 @@ public class Entity implements IdentityKey, Cloneable {
         if(type == EntityType.PROPERTY){
             Assert.notNull(accessMod, "Entity AccessMod must not be null");
         }
+        if (!CollectionUtils.isEmpty(getChildren())) {
+            children.forEach(Entity::validate);
+        }
     }
 
     public void setChildren(List<Entity> children) {
