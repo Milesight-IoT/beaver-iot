@@ -10,6 +10,7 @@ import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
 import com.milesight.beaveriot.context.integration.model.AttributeBuilder;
+import com.milesight.beaveriot.context.support.EntityValidator;
 import com.milesight.beaveriot.data.support.MapJsonConverter;
 import com.milesight.beaveriot.entity.constants.EntityDataFieldConstants;
 import jakarta.persistence.*;
@@ -273,21 +274,10 @@ public class EntityPO {
             return;
         }
 
-        if (!isMatchType(defaultValue)) {
+        if (!EntityValidator.isMatchType(valueType, defaultValue)) {
             errors.add(ErrorHolderExt.of(EntityErrorCode.ENTITY_ATTRIBUTE_DEFAULT_VALUE_INVALID.getErrorCode(),
                     EntityErrorCode.ENTITY_ATTRIBUTE_DEFAULT_VALUE_INVALID.formatMessage(entityKey, valueType.name())));
         }
-    }
-
-    private boolean isMatchType(Object value) {
-        return switch (valueType) {
-            case DOUBLE -> ValidationUtils.isNumber(value.toString());
-            case LONG -> ValidationUtils.isInteger(value.toString());
-            case BOOLEAN -> value instanceof Boolean;
-            case STRING -> value instanceof String;
-            case BINARY -> value instanceof byte[];
-            default -> true;
-        };
     }
 
     private void validateAttributeFractionDigits(String entityKey, List<ErrorHolderExt> errors) {
