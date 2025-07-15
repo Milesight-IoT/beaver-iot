@@ -127,7 +127,6 @@ public class Entity implements IdentityKey, Cloneable {
         if(type == EntityType.PROPERTY){
             Assert.notNull(accessMod, "Entity AccessMod must not be null");
         }
-
     }
 
     public void validateAll() {
