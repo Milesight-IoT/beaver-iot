@@ -5,6 +5,7 @@ import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.DeviceBuilder;
+import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.Integration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,7 @@ public class IntegrationServiceProviderImpl extends IntegrationServiceProvider {
             deviceServiceProvider.save(saveDevice);
             device.setId(null);
         });
+        integrationConfig.getInitialEntities().forEach(Entity::validate);
         entityServiceProvider.batchSave(integrationConfig.getInitialEntities());
     }
 
