@@ -71,7 +71,7 @@ public class Entity implements IdentityKey, Cloneable {
     }
 
     public void initializeProperties(String integrationId, String deviceKey) {
-        validate();
+        doValidate();
         Assert.notNull(integrationId, "Integration must not be null");
         Assert.notNull(deviceKey, "Device must not be null");
         this.setIntegrationId(integrationId);
@@ -97,7 +97,7 @@ public class Entity implements IdentityKey, Cloneable {
     }
 
     protected void initializeProperties(String integrationId) {
-        validate();
+        doValidate();
         Assert.notNull(integrationId, "Integration must not be null");
         this.setIntegrationId(integrationId);
         if (!CollectionUtils.isEmpty(children)) {
@@ -119,7 +119,7 @@ public class Entity implements IdentityKey, Cloneable {
         return Optional.ofNullable(integrationServiceProvider.getActiveIntegration(integrationId));
     }
 
-    public void validate() {
+    protected void doValidate() {
         Assert.notNull(identifier, "Entity identifier must not be null");
         Assert.notNull(type, "EntityType must not be null");
         Assert.notNull(valueType, "Entity ValueType must not be null");
@@ -129,10 +129,10 @@ public class Entity implements IdentityKey, Cloneable {
         }
     }
 
-    public void validateAll() {
-        validate();
+    public void validate() {
+        doValidate();
         if (!CollectionUtils.isEmpty(getChildren())) {
-            children.forEach(Entity::validateAll);
+            children.forEach(Entity::validate);
         }
     }
 
@@ -199,7 +199,7 @@ public class Entity implements IdentityKey, Cloneable {
         return attributes == null ? null : (attributes.containsKey(attributeKey) ? (Map<String, Object>) attributes.get(attributeKey) : null);
     }
 
-    public List<ErrorHolderExt> validate(Object value) {
+    public List<ErrorHolderExt> doValidate(Object value) {
         List<ErrorHolderExt> errors = new ArrayList<>();
         String entityKey = getKey();
         String entityName = getName();
