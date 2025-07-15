@@ -64,7 +64,7 @@ public class EntityBuilder extends BaseEntityBuilder<EntityBuilder> {
                 entity.initializeProperties(integrationId);
             }
         }
-        entity.validate();
+        entity.doValidate();
         return entity;
     }
 
