@@ -49,6 +49,10 @@ public class Entity implements IdentityKey, Cloneable {
         return StringUtils.hasLength(parentIdentifier) ? parentIdentifier + "." + identifier : identifier;
     }
 
+    private static class ValidationConstants {
+        public static final String REGEX_IDENTIFIER = "^[A-Za-z0-9_@#\\$\\-\\/\\[\\]]+$";
+    }
+
     @Override
     public String getKey() {
         String fullIdentifier = getFullIdentifier();
