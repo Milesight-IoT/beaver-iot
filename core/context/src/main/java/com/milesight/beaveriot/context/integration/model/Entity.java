@@ -210,6 +210,10 @@ public class Entity implements IdentityKey, Cloneable {
         String entityName = getName();
         Map<String, Object> entityData = Map.of(ExtraDataConstants.KEY_ENTITY_KEY, entityKey, ExtraDataConstants.KEY_ENTITY_NAME, entityName);
         try {
+            if (isOptional() && (value == null || value.toString().isEmpty())) {
+                return errors;
+            }
+
             if (!isOptional() && value == null) {
                 errors.add(ErrorHolderExt.of(EntityErrorCode.ENTITY_VALUE_NULL.getErrorCode(),
                         EntityErrorCode.ENTITY_VALUE_NULL.formatMessage(entityKey), entityData));
@@ -391,8 +395,8 @@ public class Entity implements IdentityKey, Cloneable {
             return false;
         }
         return switch (valueType) {
-            case DOUBLE -> (value instanceof Float || value instanceof Double || value instanceof Integer || value instanceof Long);
-            case LONG -> (value instanceof Integer || value instanceof Long);
+            case DOUBLE -> (value instanceof Float || value instanceof Double || value instanceof Integer || value instanceof Long || ValidationUtils.isNumber(value.toString()));
+            case LONG -> (value instanceof Integer || value instanceof Long || ValidationUtils.isInteger(value.toString()));
             case BOOLEAN -> value instanceof Boolean;
             case STRING -> value instanceof String;
             case BINARY -> value instanceof byte[];
