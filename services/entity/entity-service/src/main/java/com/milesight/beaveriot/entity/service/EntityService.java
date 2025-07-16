@@ -3,14 +3,13 @@ package com.milesight.beaveriot.entity.service;
 import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheEvict;
 import com.milesight.beaveriot.base.enums.ComparisonOperator;
 import com.milesight.beaveriot.base.enums.ErrorCode;
-import com.milesight.beaveriot.base.error.ErrorHolderExt;
+import com.milesight.beaveriot.base.error.ErrorHolder;
 import com.milesight.beaveriot.base.exception.MultipleErrorException;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
-import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
 import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
@@ -34,11 +33,7 @@ import com.milesight.beaveriot.entity.dto.EntityQuery;
 import com.milesight.beaveriot.entity.dto.EntityResponse;
 import com.milesight.beaveriot.entity.enums.EntitySearchColumn;
 import com.milesight.beaveriot.entity.model.dto.EntityAdvancedSearchCondition;
-import com.milesight.beaveriot.entity.model.request.EntityAdvancedSearchQuery;
-import com.milesight.beaveriot.entity.model.request.EntityCreateRequest;
-import com.milesight.beaveriot.entity.model.request.EntityModifyRequest;
-import com.milesight.beaveriot.entity.model.request.ServiceCallRequest;
-import com.milesight.beaveriot.entity.model.request.UpdatePropertyEntityRequest;
+import com.milesight.beaveriot.entity.model.request.*;
 import com.milesight.beaveriot.entity.model.response.EntityMetaResponse;
 import com.milesight.beaveriot.entity.po.EntityPO;
 import com.milesight.beaveriot.entity.repository.EntityHistoryRepository;
@@ -50,13 +45,16 @@ import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.user.dto.MenuDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
-import lombok.*;
-import lombok.extern.slf4j.*;
+import jakarta.annotation.Nullable;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -387,9 +385,9 @@ public class EntityService implements EntityServiceProvider {
     }
 
     private void batchValidateEntityPOs(List<EntityPO> entityPOList) {
-        List<ErrorHolderExt> errors = new ArrayList<>();
+        List<ErrorHolder> errors = new ArrayList<>();
         entityPOList.forEach(entityPO -> {
-            List<ErrorHolderExt> entityPOErrors = entityPO.validate();
+            List<ErrorHolder> entityPOErrors = entityPO.validate();
             if (!CollectionUtils.isEmpty(entityPOErrors)) {
                 errors.addAll(entityPOErrors);
             }
