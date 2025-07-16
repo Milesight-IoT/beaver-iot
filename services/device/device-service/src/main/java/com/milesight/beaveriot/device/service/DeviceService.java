@@ -3,6 +3,7 @@ package com.milesight.beaveriot.device.service;
 import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheEvict;
 import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheable;
 import com.milesight.beaveriot.base.annotations.cacheable.CacheKeys;
+import com.milesight.beaveriot.base.enums.ComparisonOperator;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.Sorts;
@@ -16,6 +17,7 @@ import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.Integration;
 import com.milesight.beaveriot.context.integration.model.event.DeviceEvent;
+import com.milesight.beaveriot.context.model.EntityTag;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
@@ -48,6 +50,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -62,8 +65,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.DEVICE_NAME_ON_ADD;
 import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.DEVICE_ON_DELETE;
@@ -135,23 +138,21 @@ public class DeviceService implements IDeviceFacade {
                     .build();
         }
 
-        // call service for adding
         ExchangePayload payload = createDeviceRequest.getParamEntities();
+        payload.validate();
         payload.putContext(DEVICE_NAME_ON_ADD, createDeviceRequest.getName());
         payload.putContext(DEVICE_TEMPLATE_KEY_ON_ADD, createDeviceRequest.getTemplate());
 
-        // set group name to context
-        if (StringUtils.hasText(createDeviceRequest.getGroupName())) {
-            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_NAME, createDeviceRequest.getGroupName());
-        }
+        boolean hasGroup = StringUtils.hasText(createDeviceRequest.getGroupName());
+        TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_NAME, hasGroup ? createDeviceRequest.getGroupName() : null);
 
-        // Must return a device
         try {
+            // call service for adding
             entityValueServiceProvider.saveValuesAndPublishSync(payload);
-        } catch (Exception e) {
-            throw ServiceException
-                    .with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "add device failed")
-                    .build();
+        } finally {
+            if (hasGroup) {
+                TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_NAME, null);
+            }
         }
     }
 
@@ -179,7 +180,6 @@ public class DeviceService implements IDeviceFacade {
     }
 
 
-
     private void fillRelativeInfo(List<DeviceResponseData> dataList) {
         Map<String, Integration> integrationMap = getIntegrationMap(dataList.stream().map(DeviceResponseData::getIntegration).toList());
         Map<Long, DeviceGroupPO> deviceGroupMap = deviceGroupService.deviceMapToGroup(dataList.stream().map(d -> Long.valueOf(d.getId())).toList());
@@ -199,6 +199,31 @@ public class DeviceService implements IDeviceFacade {
                 d.setGroupName(groupPO.getName());
             }
         });
+    }
+
+    @Override
+    public List<Long> fuzzySearchDeviceIdsByName(ComparisonOperator operator, String keyword) {
+        Assert.hasText(keyword, "keyword cannot be empty");
+        return deviceRepository.findAllWithDataPermission(f -> {
+                    switch (operator) {
+                        case EQ -> f.eq(DevicePO.Fields.name, keyword);
+                        case NE -> f.ne(DevicePO.Fields.name, keyword);
+                        case CONTAINS -> f.likeIgnoreCase(DevicePO.Fields.name, keyword);
+                        case NOT_CONTAINS -> f.notLikeIgnoreCase(DevicePO.Fields.name, keyword);
+                        case START_WITH -> f.startsWithIgnoreCase(DevicePO.Fields.name, keyword);
+                        case END_WITH -> f.endsWithIgnoreCase(DevicePO.Fields.name, keyword);
+                        default ->
+                                throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Unsupported operator: " + operator).build();
+                    }
+                })
+                .stream()
+                .map(DevicePO::getId)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Long> findDeviceIdsByGroupNameIn(List<String> deviceGroupNames) {
+        return deviceGroupService.findAllDeviceIdsByGroupNameIn(deviceGroupNames);
     }
 
     public Page<DeviceResponseData> searchDevice(SearchDeviceRequest searchDeviceRequest) {
@@ -314,13 +339,7 @@ public class DeviceService implements IDeviceFacade {
                 .filter(Objects::nonNull)
                 .forEach((ExchangePayload payload) -> {
                     // call service for deleting
-                    try {
-                        entityValueServiceProvider.saveValuesAndPublishSync(payload);
-                    } catch (Exception e) {
-                        throw ServiceException
-                                .with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "delete device failed")
-                                .build();
-                    }
+                    entityValueServiceProvider.saveValuesAndPublishSync(payload);
                 });
     }
 
@@ -356,15 +375,24 @@ public class DeviceService implements IDeviceFacade {
 
         // set entities
         List<Entity> entities = entityServiceProvider.findByTargetId(AttachTargetType.DEVICE, deviceId.toString());
+        List<Long> entityIds = entities.stream().flatMap(entity -> Stream.concat(
+                        Stream.of(entity.getId()),
+                        Optional.ofNullable(entity.getChildren())
+                                .map(e -> e.stream().map(Entity::getId))
+                                .orElseGet(Stream::empty)))
+                .toList();
+        Map<Long, List<EntityTag>> entityIdToTags = entityServiceProvider.findTagsByIds(entityIds);
         deviceDetailResponse.setEntities(entities
                 .stream().flatMap((Entity pEntity) -> {
-                    ArrayList<Entity> flatEntities = new ArrayList<>();
+                    List<Entity> flatEntities = new ArrayList<>();
                     flatEntities.add(pEntity);
 
                     List<Entity> childrenEntities = pEntity.getChildren();
                     if (childrenEntities != null) {
                         flatEntities.addAll(childrenEntities);
                     }
+
+                    List<EntityTag> entityTags = entityIdToTags.get(pEntity.getId());
 
                     return flatEntities.stream().map(entity -> DeviceEntityData
                             .builder()
@@ -375,6 +403,7 @@ public class DeviceService implements IDeviceFacade {
                             .valueType(entity.getValueType())
                             .valueAttribute(entity.getAttributes())
                             .description(entity.getDescription())
+                            .entityTags(entityTags)
                             .build());
                 }).toList());
         return deviceDetailResponse;
@@ -383,18 +412,28 @@ public class DeviceService implements IDeviceFacade {
     // Device API Implementations
 
     private List<DeviceNameDTO> convertDevicePOList(List<DevicePO> devicePOList) {
+        List<Long> deviceIds = devicePOList.stream().map(DevicePO::getId).toList();
+        Map<Long, List<DeviceGroupPO>> deviceIdToGroups = deviceGroupService.deviceIdToGroups(deviceIds);
         Map<String, Integration> integrationMap = getIntegrationMap(devicePOList.stream().map(DevicePO::getIntegration).toList());
-        return devicePOList.stream().map(devicePO -> DeviceNameDTO.builder()
-                .id(devicePO.getId())
-                .name(devicePO.getName())
-                .key(devicePO.getKey())
-                .userId(devicePO.getUserId())
-                .template(devicePO.getTemplate())
-                .createdAt(devicePO.getCreatedAt())
-                .integrationId(devicePO.getIntegration())
-                .integrationConfig(integrationMap.get(devicePO.getIntegration()))
-                .build()
-        ).toList();
+        return devicePOList.stream()
+                .map(devicePO -> DeviceNameDTO.builder()
+                        .id(devicePO.getId())
+                        .name(devicePO.getName())
+                        .key(devicePO.getKey())
+                        .userId(devicePO.getUserId())
+                        .template(devicePO.getTemplate())
+                        .createdAt(devicePO.getCreatedAt())
+                        .integrationId(devicePO.getIntegration())
+                        .integrationConfig(integrationMap.get(devicePO.getIntegration()))
+                        .build())
+                .peek(device -> {
+                    List<DeviceGroupPO> deviceGroupPOList = deviceIdToGroups.get(device.getId());
+                    if (!CollectionUtils.isEmpty(deviceGroupPOList)) {
+                        device.setGroupId(deviceGroupPOList.get(0).getId());
+                        device.setGroupName(deviceGroupPOList.get(0).getName());
+                    }
+                })
+                .toList();
     }
 
     @Override

@@ -5,9 +5,9 @@ import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
+import com.milesight.beaveriot.context.model.EntityTag;
 import com.milesight.beaveriot.entity.enums.EntityErrorCode;
 import com.milesight.beaveriot.entity.enums.EntityTagMappingOperation;
-import com.milesight.beaveriot.entity.model.dto.EntityTag;
 import com.milesight.beaveriot.entity.model.request.EntityTagQuery;
 import com.milesight.beaveriot.entity.model.request.EntityTagUpdateRequest;
 import com.milesight.beaveriot.entity.model.response.EntityTagResponse;
@@ -19,11 +19,14 @@ import com.milesight.beaveriot.entity.repository.EntityTagRepository;
 import lombok.extern.slf4j.*;
 import lombok.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -39,6 +42,7 @@ public class EntityTagService {
 
     public static final String LOCK_NAME = "entity_tag_modification";
 
+    @Lazy
     @Autowired
     private EntityService entityService;
 
@@ -87,15 +91,27 @@ public class EntityTagService {
         entityTagRepository.save(entityTagPO);
     }
 
-    private EntityTagResponse convertToResponse(EntityTagProjection save) {
+    private EntityTagResponse convertToResponse(EntityTagProjection projection) {
         return EntityTagResponse.builder()
-                .id(String.valueOf(save.getId()))
-                .name(save.getName())
-                .description(save.getDescription())
-                .color(save.getColor())
-                .createdAt(save.getCreatedAt())
-                .updatedAt(save.getUpdatedAt())
-                .taggedEntitiesCount(save.getTaggedEntitiesCount())
+                .id(String.valueOf(projection.getId()))
+                .name(projection.getName())
+                .description(projection.getDescription())
+                .color(projection.getColor())
+                .createdAt(projection.getCreatedAt())
+                .updatedAt(projection.getUpdatedAt())
+                .taggedEntitiesCount(projection.getTaggedEntitiesCount())
+                .build();
+    }
+
+    private EntityTagResponse convertToResponse(EntityTagPO po) {
+        return EntityTagResponse.builder()
+                .id(String.valueOf(po.getId()))
+                .name(po.getName())
+                .description(po.getDescription())
+                .color(po.getColor())
+                .createdAt(po.getCreatedAt())
+                .updatedAt(po.getUpdatedAt())
+                .taggedEntitiesCount(po.getTaggedEntitiesCount())
                 .build();
     }
 
@@ -150,7 +166,7 @@ public class EntityTagService {
                                 .id(SnowflakeUtil.nextId())
                                 .entityId(entity.getId())
                                 .tagId(tagId)
-                        .build()))
+                                .build()))
                 .collect(Collectors.toList());
         entityTagMappingRepository.saveAll(newEntityTagMappings);
     }
@@ -187,7 +203,11 @@ public class EntityTagService {
         addTagsToEntities(targetEntityIds, addedTagIds);
     }
 
-    public Map<Long, List<EntityTag>> mapEntityIdToTags(List<Long> entityIds) {
+    public Map<Long, List<EntityTag>> entityIdToTags(List<Long> entityIds) {
+        if (CollectionUtils.isEmpty(entityIds)) {
+            return Collections.emptyMap();
+        }
+
         val mappings = entityTagMappingRepository.findByEntityIdIn(entityIds);
         val tagIds = mappings.stream()
                 .map(EntityTagMappingPO::getTagId)
@@ -212,6 +232,31 @@ public class EntityTagService {
                                     .color(tag.getColor())
                                     .build();
                         }, Collectors.toList())));
+    }
+
+    public List<Long> findEntityIdsByTagContains(List<String> tagNames) {
+        return entityTagMappingRepository.findEntityIdsByTagContains(tagNames, tagNames.size());
+    }
+
+    public List<Long> findEntityIdsByTagNotContains(List<String> tagNames) {
+        return entityTagMappingRepository.findEntityIdsByTagNotContains(tagNames);
+    }
+
+    public List<Long> findEntityIdsByTagEquals(List<String> tagNames) {
+        return entityTagMappingRepository.findEntityIdsByTagEquals(tagNames);
+    }
+
+    public List<Long> findEntityIdsByTagIn(List<String> tagNames) {
+        return entityTagMappingRepository.findEntityIdsByTagIn(tagNames);
+    }
+
+
+    public List<Long> findEntityIdsByTagIsEmpty() {
+        return entityTagMappingRepository.findEntityIdsByTagIsEmpty();
+    }
+
+    public List<Long> findEntityIdsByTagIsNotEmpty() {
+        return entityTagMappingRepository.findEntityIdsByTagIsNotEmpty();
     }
 
 }
