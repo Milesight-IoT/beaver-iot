@@ -138,19 +138,22 @@ public class DeviceService implements IDeviceFacade {
                     .build();
         }
 
-        // call service for adding
         ExchangePayload payload = createDeviceRequest.getParamEntities();
         payload.validate();
         payload.putContext(DEVICE_NAME_ON_ADD, createDeviceRequest.getName());
         payload.putContext(DEVICE_TEMPLATE_KEY_ON_ADD, createDeviceRequest.getTemplate());
 
-        // set group name to context
-        if (StringUtils.hasText(createDeviceRequest.getGroupName())) {
-            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_NAME, createDeviceRequest.getGroupName());
-        }
+        boolean hasGroup = StringUtils.hasText(createDeviceRequest.getGroupName());
+        TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_NAME, hasGroup ? createDeviceRequest.getGroupName() : null);
 
-        // call service for deleting
-        entityValueServiceProvider.saveValuesAndPublishSync(payload);
+        try {
+            // call service for adding
+            entityValueServiceProvider.saveValuesAndPublishSync(payload);
+        } finally {
+            if (hasGroup) {
+                TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_NAME, null);
+            }
+        }
     }
 
     private DeviceResponseData convertPOToResponseData(DevicePO devicePO) {

@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.device.service;
 
+import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
@@ -47,6 +48,7 @@ public class DeviceGroupService {
     @Autowired
     DeviceGroupMappingRepository deviceGroupMappingRepository;
 
+    @DistributedLock(name = "device-group-#{#p0.name}", waitForLock = "5s")
     public DeviceGroupPO getOrCreateDeviceGroup(CreateDeviceGroupRequest request, boolean mustCreate) {
         Optional<DeviceGroupPO> deviceGroupPOOptional = deviceGroupRepository.findOne(f -> f.eq(DeviceGroupPO.Fields.name, request.getName()));
         if (deviceGroupPOOptional.isPresent()) {
