@@ -144,10 +144,7 @@ public class DeviceService implements IDeviceFacade {
         payload.putContext(DEVICE_TEMPLATE_KEY_ON_ADD, createDeviceRequest.getTemplate());
 
         boolean hasGroup = StringUtils.hasText(createDeviceRequest.getGroupName());
-        if (hasGroup) {
-            // set group name in thread context
-            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_NAME, createDeviceRequest.getGroupName());
-        }
+        TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_NAME, hasGroup ? createDeviceRequest.getGroupName() : null);
 
         try {
             // call service for adding
