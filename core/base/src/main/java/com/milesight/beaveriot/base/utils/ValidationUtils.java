@@ -6,7 +6,7 @@ package com.milesight.beaveriot.base.utils;
  **/
 public class ValidationUtils {
     private static final String REGEX_HEX = "^[0-9a-fA-F]*$";
-    private static final String REGEX_URL = "^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z0-9-]+(?::\\d+)?(?:\\/[^\\s?#]*)*(?:\\?[^\\s#]*)?(?:#[^\\s]*)?$";
+    private static final String REGEX_URL = "^https?:\\/\\/(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z0-9-]+(?::\\d+)?(?:\\/(?:[\\p{L}\\p{N}\\-._~!$&'()*+,;=:@\\/%]|%[0-9a-fA-F]{2})*)*(?:\\?(?:[\\p{L}\\p{N}\\-._~!$&'()*+,;=:@\\/?]|%[0-9a-fA-F]{2})*)?(?:#(?:[\\p{L}\\p{N}\\-._~!$&'()*+,;=:@\\/?]|%[0-9a-fA-F]{2})*)?$";
     private static final String REGEX_IMAGE_BASE64 = "^data:image\\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+\\/=]+$";
     private static final String REGEX_NUMBER = "^-?\\d+(\\.\\d+)?$";
     private static final String REGEX_INTEGER = "^-?\\d+$";
