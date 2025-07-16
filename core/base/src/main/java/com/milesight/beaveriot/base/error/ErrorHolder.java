@@ -24,14 +24,29 @@ public class ErrorHolder {
      * Exception information
      */
     private String errorMessage;
+    /**
+     * Exception Data
+     */
+    private Object args;
 
     protected ErrorHolder(String errorCode, String errorMessage) {
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;
+        this.args = null;
+    }
+
+    protected ErrorHolder(String errorCode, String errorMessage, Object args) {
+        this.errorCode = errorCode;
+        this.errorMessage = errorMessage;
+        this.args = args;
     }
 
     public static ErrorHolder of(String errorCode, String errorMessage) {
         return new ErrorHolder(errorCode, errorMessage);
+    }
+
+    public static ErrorHolder of(String errorCode, String errorMessage, Object args) {
+        return new ErrorHolder(errorCode, errorMessage, args);
     }
 
     public static List<ErrorHolder> of(List<Throwable> causes) {
@@ -39,8 +54,13 @@ public class ErrorHolder {
             return Collections.emptyList();
         }
         return causes.stream().map(cause -> {
-            String errorCode = cause instanceof ServiceException serviceException? serviceException.getErrorCode() : ErrorCode.SERVER_ERROR.getErrorCode();
-            return new ErrorHolder(errorCode, cause.getMessage());
+            String errorCode = ErrorCode.SERVER_ERROR.getErrorCode();
+            Object args = null;
+            if (cause instanceof ServiceException serviceException) {
+                errorCode = serviceException.getErrorCode();
+                args = serviceException.getArgs();
+            }
+            return new ErrorHolder(errorCode, cause.getMessage(), args);
         }).toList();
     }
 }

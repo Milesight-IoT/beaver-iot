@@ -692,6 +692,7 @@ public class EntityService implements EntityServiceProvider {
             throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
         }
         ExchangePayload payload = new ExchangePayload(exchange);
+        payload.validate();
         entityValueServiceProvider.saveValuesAndPublishSync(payload);
     }
 
@@ -719,8 +720,9 @@ public class EntityService implements EntityServiceProvider {
             log.info("no service found");
             throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).build();
         }
-
-        return entityValueServiceProvider.saveValuesAndPublishSync(new ExchangePayload(exchange));
+        ExchangePayload payload = new ExchangePayload(exchange);
+        payload.validate();
+        return entityValueServiceProvider.saveValuesAndPublishSync(payload);
     }
 
     /**
