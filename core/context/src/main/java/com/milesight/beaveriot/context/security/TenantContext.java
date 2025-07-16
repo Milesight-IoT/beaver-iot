@@ -47,13 +47,21 @@ public class TenantContext {
         return Optional.ofNullable(tenantId.getTenantParams().get(paramName));
     }
 
+    /*
+     * Be careful! Lifecycle of every param should be completed.
+     */
     public static boolean tryPutTenantParam(String paramName, Object paramValue) {
         TenantId tenantId = tenantThreadLocal.get();
         if (tenantId == null || ObjectUtils.isEmpty(tenantId.getTenantId())) {
             return false;
         }
 
-        tenantId.getTenantParams().put(paramName, paramValue);
+        if (paramValue == null) {
+            tenantId.getTenantParams().remove(paramName);
+        } else {
+            tenantId.getTenantParams().put(paramName, paramValue);
+        }
+
         return true;
     }
 

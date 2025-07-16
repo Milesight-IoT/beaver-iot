@@ -4,6 +4,7 @@ import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.entity.dto.EntityQuery;
 import com.milesight.beaveriot.entity.dto.EntityResponse;
+import com.milesight.beaveriot.entity.model.request.EntityAdvancedSearchQuery;
 import com.milesight.beaveriot.entity.model.request.EntityAggregateQuery;
 import com.milesight.beaveriot.entity.model.request.EntityCreateRequest;
 import com.milesight.beaveriot.entity.model.request.EntityDeleteRequest;
@@ -51,6 +52,12 @@ public class EntityController {
     EntityValueService entityValueService;
     @Autowired
     EntityExportService entityExportService;
+
+    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.ENTITY_CUSTOM_VIEW, OperationPermissionCode.ENTITY_DATA_VIEW, OperationPermissionCode.WORKFLOW_EDIT})
+    @PostMapping("/advanced-search")
+    public ResponseBody<Page<EntityResponse>> advancedSearch(@RequestBody EntityAdvancedSearchQuery query) {
+        return ResponseBuilder.success(entityService.advancedSearch(query));
+    }
 
     @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.ENTITY_CUSTOM_VIEW, OperationPermissionCode.ENTITY_DATA_VIEW, OperationPermissionCode.WORKFLOW_EDIT})
     @PostMapping("/search")

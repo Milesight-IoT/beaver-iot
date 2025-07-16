@@ -5,6 +5,8 @@ spring:
   jackson:
     default-property-inclusion: non_null
     property-naming-strategy: SNAKE_CASE
+    mapper:
+      accept-case-insensitive-enums: true
   jpa:
     show-sql: false
     properties:

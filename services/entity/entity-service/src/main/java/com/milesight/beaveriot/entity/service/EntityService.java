@@ -1,13 +1,13 @@
 package com.milesight.beaveriot.entity.service;
 
 import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheEvict;
+import com.milesight.beaveriot.base.enums.ComparisonOperator;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
-import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
 import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
@@ -19,14 +19,19 @@ import com.milesight.beaveriot.context.integration.model.EntityBuilder;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.Integration;
 import com.milesight.beaveriot.context.integration.model.event.EntityEvent;
+import com.milesight.beaveriot.context.model.EntityTag;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.data.util.PageConverter;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
+import com.milesight.beaveriot.entity.dto.EntityDeviceGroup;
 import com.milesight.beaveriot.entity.dto.EntityQuery;
 import com.milesight.beaveriot.entity.dto.EntityResponse;
+import com.milesight.beaveriot.entity.enums.EntitySearchColumn;
+import com.milesight.beaveriot.entity.model.dto.EntityAdvancedSearchCondition;
+import com.milesight.beaveriot.entity.model.request.EntityAdvancedSearchQuery;
 import com.milesight.beaveriot.entity.model.request.EntityCreateRequest;
 import com.milesight.beaveriot.entity.model.request.EntityModifyRequest;
 import com.milesight.beaveriot.entity.model.request.ServiceCallRequest;
@@ -49,6 +54,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -58,6 +64,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -97,7 +104,10 @@ public class EntityService implements EntityServiceProvider {
     @Autowired
     private EntityLatestRepository entityLatestRepository;
     @Autowired
-    private EntityValueServiceProvider entityValueServiceProvider;
+    private EntityValueService entityValueService;
+
+    @Autowired
+    private EntityTagService entityTagService;
 
     private static Entity convertPOToEntity(EntityPO entityPO, Map<String, DeviceNameDTO> deviceIdToDetails) {
         String integrationId = null;
@@ -116,8 +126,8 @@ public class EntityService implements EntityServiceProvider {
         return convertPOToEntity(entityPO, integrationId, deviceKey);
     }
 
-    private static Entity convertPOToEntity(EntityPO entityPO, String IntegrationId, String deviceKey) {
-        EntityBuilder entityBuilder = new EntityBuilder(IntegrationId, deviceKey)
+    private static Entity convertPOToEntity(EntityPO entityPO, String integrationId, String deviceKey) {
+        EntityBuilder entityBuilder = new EntityBuilder(integrationId, deviceKey)
                 .id(entityPO.getId())
                 .identifier(entityPO.getKey().substring(entityPO.getKey().lastIndexOf(".") + 1))
                 .valueType(entityPO.getValueType())
@@ -482,24 +492,22 @@ public class EntityService implements EntityServiceProvider {
         }
     }
 
+    @Override
+    public Map<Long, List<EntityTag>> findTagsByIds(List<Long> entityIds) {
+        return entityTagService.entityIdToTags(entityIds);
+    }
+
     public Page<EntityResponse> search(EntityQuery entityQuery) {
         boolean isExcludeChildren = entityQuery.getExcludeChildren() != null && entityQuery.getExcludeChildren();
         List<String> attachTargetIds = searchAttachTargetIdsByKeyword(entityQuery.getKeyword());
 
-        Long userId = SecurityUserContext.getUserId();
-        if (userId == null) {
-            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not logged in").build();
-        }
-        List<MenuDTO> menuDTOList = userFacade.getMenusByUserId(userId);
-        if (menuDTOList == null || menuDTOList.isEmpty()) {
-            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have permission").build();
-        }
+        List<MenuDTO> menuDTOList = getAndCheckUserMenuPermission();
         boolean hasEntityCustomViewPermission = menuDTOList.stream().anyMatch(menuDTO -> OperationPermissionCode.ENTITY_CUSTOM_VIEW.getCode().equals(menuDTO.getMenuCode()));
-        if(!hasEntityCustomViewPermission){
+        if (!hasEntityCustomViewPermission) {
             entityQuery.setCustomized(false);
         }
         List<String> sourceTargetIds = searchAttachTargetIdsByKeyword(entityQuery.getEntitySourceName());
-        if(StringUtils.hasText(entityQuery.getEntitySourceName()) && sourceTargetIds.isEmpty()){
+        if (StringUtils.hasText(entityQuery.getEntitySourceName()) && sourceTargetIds.isEmpty()) {
             return Page.empty();
         }
         Consumer<Filterable> filterable = f -> f.isNull(isExcludeChildren, EntityPO.Fields.parent)
@@ -545,11 +553,26 @@ public class EntityService implements EntityServiceProvider {
 
         Page<EntityPO> entityPOPage = PageConverter.convertToPage(entityPOList, entityQuery.toPageable());
 
-        return convertEntityPOListToEntityResponses(entityPOPage);
+        return convertEntityPOPageToEntityResponses(entityPOPage);
+    }
+
+    @NonNull
+    private List<MenuDTO> getAndCheckUserMenuPermission() {
+        Long userId = SecurityUserContext.getUserId();
+        if (userId == null) {
+            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not logged in").build();
+        }
+        List<MenuDTO> menuDTOList = userFacade.getMenusByUserId(userId);
+        if (menuDTOList == null || menuDTOList.isEmpty()) {
+            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have permission").build();
+        }
+        return menuDTOList;
     }
 
     private EntityResponse convertEntityPOToEntityResponse(EntityPO entityPO, Map<String, Integration> integrationMap, Map<String, DeviceNameDTO> deviceIdToDetails, Map<String, EntityPO> parentKeyMap) {
         String deviceName = null;
+        String deviceGroupId = null;
+        String deviceGroupName = null;
         String integrationName = null;
         String attachTargetId = entityPO.getAttachTargetId();
         AttachTargetType attachTarget = entityPO.getAttachTarget();
@@ -557,6 +580,10 @@ public class EntityService implements EntityServiceProvider {
             DeviceNameDTO deviceDetail = deviceIdToDetails.get(attachTargetId);
             if (deviceDetail != null) {
                 deviceName = deviceDetail.getName();
+                if (deviceDetail.getGroupId() != null) {
+                    deviceGroupId = String.valueOf(deviceDetail.getGroupId());
+                    deviceGroupName = deviceDetail.getGroupName();
+                }
                 if (deviceDetail.getIntegrationConfig() != null) {
                     integrationName = deviceDetail.getIntegrationConfig().getName();
                 }
@@ -568,6 +595,10 @@ public class EntityService implements EntityServiceProvider {
             }
         }
 
+        final EntityPO parentEntity = parentKeyMap.get(entityPO.getParent());
+        final String parentName = parentEntity == null ? null : parentEntity.getName();
+        final EntityDeviceGroup deviceGroup = deviceGroupId == null ? null : new EntityDeviceGroup(deviceGroupId, deviceGroupName);
+
         EntityResponse response = new EntityResponse();
         response.setDeviceName(deviceName);
         response.setIntegrationName(integrationName);
@@ -576,13 +607,14 @@ public class EntityService implements EntityServiceProvider {
         response.setEntityKey(entityPO.getKey());
         response.setEntityType(entityPO.getType());
         response.setEntityName(entityPO.getName());
-        response.setEntityParentName(entityPO.getParent() == null ? null : parentKeyMap.get(entityPO.getParent()) == null? null : parentKeyMap.get(entityPO.getParent()).getName());
+        response.setEntityParentName(entityPO.getParent() == null ? null : parentName);
         response.setEntityValueAttribute(entityPO.getValueAttribute());
         response.setEntityValueType(entityPO.getValueType());
         response.setEntityIsCustomized(entityPO.checkIsCustomizedEntity());
         response.setEntityCreatedAt(entityPO.getCreatedAt());
         response.setEntityUpdatedAt(entityPO.getUpdatedAt());
         response.setEntityDescription(entityPO.getDescription());
+        response.setDeviceGroup(deviceGroup);
         return response;
     }
 
@@ -597,12 +629,7 @@ public class EntityService implements EntityServiceProvider {
         if (integrations != null && !integrations.isEmpty()) {
             List<String> integrationIds = integrations.stream().map(Integration::getId).toList();
             attachTargetIds.addAll(integrationIds);
-
-            List<DeviceNameDTO> integrationDevices = deviceFacade.getDeviceNameByIntegrations(integrationIds);
-            if (integrationDevices != null && !integrationDevices.isEmpty()) {
-                List<String> deviceIds = integrationDevices.stream().map(t -> String.valueOf(t.getId())).toList();
-                attachTargetIds.addAll(deviceIds);
-            }
+            attachTargetIds.addAll(getDeviceIdsByIntegrationId(integrationIds));
         }
 
         List<DeviceNameDTO> deviceNameDTOList = deviceFacade.fuzzySearchDeviceByName(keyword);
@@ -623,37 +650,50 @@ public class EntityService implements EntityServiceProvider {
     }
 
     private List<EntityResponse> convertEntityPOListToEntityResponses(List<EntityPO> entityPOList) {
-        return convertEntityPOListToEntityResponses(new PageImpl<>(entityPOList)).toList();
+        return convertEntityPOPageToEntityResponses(new PageImpl<>(entityPOList)).toList();
     }
 
-    private Page<EntityResponse> convertEntityPOListToEntityResponses(Page<EntityPO> entityPOList) {
-        List<String> parentKeys = entityPOList.stream()
+    private Page<EntityResponse> convertEntityPOListToFullEntityResponses(Page<EntityPO> entityPOPage) {
+        if (entityPOPage == null || entityPOPage.isEmpty()) {
+            return Page.empty();
+        }
+        val res = convertEntityPOPageToEntityResponses(entityPOPage);
+        val entityIds = res.map(EntityResponse::getEntityId).map(Long::valueOf).toList();
+        val entityIdToTags = entityTagService.entityIdToTags(entityIds);
+        return res.map(entityResponse -> {
+            entityResponse.setEntityTags(entityIdToTags.get(Long.valueOf(entityResponse.getEntityId())));
+            return entityResponse;
+        });
+    }
+
+    private Page<EntityResponse> convertEntityPOPageToEntityResponses(Page<EntityPO> entityPOPage) {
+        List<String> parentKeys = entityPOPage.stream()
                 .map(EntityPO::getParent)
                 .filter(StringUtils::hasText)
                 .distinct()
                 .toList();
         List<EntityPO> parentEntityPOList = new ArrayList<>();
-        if(!parentKeys.isEmpty()) {
+        if (!parentKeys.isEmpty()) {
             parentEntityPOList.addAll(entityRepository.findAllWithDataPermission(f -> f.in(EntityPO.Fields.key, parentKeys.toArray())));
         }
         Map<String, EntityPO> parentKeyMap = new HashMap<>();
-        if(!parentEntityPOList.isEmpty()) {
+        if (!parentEntityPOList.isEmpty()) {
             parentKeyMap.putAll(parentEntityPOList.stream().collect(Collectors.toMap(EntityPO::getKey, Function.identity())));
         }
-        List<Long> foundDeviceIds = entityPOList.stream()
+        List<Long> foundDeviceIds = entityPOPage.stream()
                 .filter(entityPO -> AttachTargetType.DEVICE.equals(entityPO.getAttachTarget()))
                 .map(entityPO -> Long.parseLong(entityPO.getAttachTargetId()))
                 .distinct()
                 .toList();
         Map<String, DeviceNameDTO> deviceIdToDetails = deviceIdToDetails(foundDeviceIds);
-        Set<String> integrationIds = entityPOList.stream()
+        Set<String> integrationIds = entityPOPage.stream()
                 .filter(entityPO -> AttachTargetType.INTEGRATION.equals(entityPO.getAttachTarget()))
                 .map(EntityPO::getAttachTargetId)
                 .collect(Collectors.toSet());
         Map<String, Integration> integrationMap = integrationServiceProvider.findIntegrations(i -> integrationIds.contains(i.getId()))
                 .stream()
                 .collect(Collectors.toMap(Integration::getId, Function.identity(), (v1, v2) -> v1));
-        return entityPOList.map(entityPO -> convertEntityPOToEntityResponse(entityPO, integrationMap, deviceIdToDetails, parentKeyMap));
+        return entityPOPage.map(entityPO -> convertEntityPOToEntityResponse(entityPO, integrationMap, deviceIdToDetails, parentKeyMap));
     }
 
     public EntityMetaResponse getEntityMeta(Long entityId) {
@@ -693,7 +733,7 @@ public class EntityService implements EntityServiceProvider {
         }
         ExchangePayload payload = new ExchangePayload(exchange);
         payload.validate();
-        entityValueServiceProvider.saveValuesAndPublishSync(payload);
+        entityValueService.saveValuesAndPublishSync(payload);
     }
 
     public EventResponse serviceCall(ServiceCallRequest serviceCallRequest) {
@@ -722,7 +762,7 @@ public class EntityService implements EntityServiceProvider {
         }
         ExchangePayload payload = new ExchangePayload(exchange);
         payload.validate();
-        return entityValueServiceProvider.saveValuesAndPublishSync(payload);
+        return entityValueService.saveValuesAndPublishSync(new ExchangePayload(exchange));
     }
 
     /**
@@ -861,6 +901,222 @@ public class EntityService implements EntityServiceProvider {
 
     public List<EntityPO> listEntityPOById(List<Long> entityIds) {
         return entityRepository.findAllWithDataPermission(filterable -> filterable.in(EntityPO.Fields.id, entityIds.toArray()));
+    }
+
+    public Page<EntityResponse> advancedSearch(EntityAdvancedSearchQuery entityQuery) {
+
+        val columnToCondition = entityQuery.getEntityFilter();
+
+        val integrationNameCondition = columnToCondition.get(EntitySearchColumn.INTEGRATION_NAME);
+        val integrationAndDeviceIds = getIntegrationAndDeviceIdsByIntegrationNameCondition(integrationNameCondition);
+        if (integrationAndDeviceIds == null) {
+            return Page.empty();
+        }
+        val attachTargetIds = new HashSet<>(integrationAndDeviceIds);
+
+        val deviceNameCondition = columnToCondition.get(EntitySearchColumn.DEVICE_NAME);
+        val deviceIds = getDeviceIdsByDeviceNameCondition(deviceNameCondition);
+        if (deviceIds == null) {
+            return Page.empty();
+        }
+        attachTargetIds.addAll(deviceIds);
+
+        val deviceGroupNameCondition = columnToCondition.get(EntitySearchColumn.DEVICE_GROUP);
+        val deviceIdsByGroupName = getDeviceIdsByDeviceGroupNameCondition(deviceGroupNameCondition);
+        if (deviceIdsByGroupName == null) {
+            return Page.empty();
+        }
+        attachTargetIds.addAll(deviceIdsByGroupName);
+
+        val entityParentCondition = columnToCondition.get(EntitySearchColumn.ENTITY_PARENT_NAME);
+        val parentEntityKeys = getEntityIdsByEntityParentNameCondition(entityParentCondition);
+        if (parentEntityKeys == null) {
+            return Page.empty();
+        }
+
+        val tagCondition = columnToCondition.get(EntitySearchColumn.ENTITY_TAGS);
+        val entityIds = getEntityIdsByEntityTagCondition(tagCondition);
+        if (entityIds == null) {
+            return Page.empty();
+        }
+
+        Consumer<Filterable> filterable = f -> {
+            columnToCondition.forEach((column, condition) -> {
+                if (!column.getSupportedOperators().contains(condition.getOperator())) {
+                    throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Invalid operator").build();
+                }
+                if (column.getColumnName() != null) {
+                    buildTextFilterable(f, condition.getOperator(), column.getColumnName(), condition.getValues());
+                }
+            });
+
+            f.in(!entityIds.isEmpty(), EntityPO.Fields.id, entityIds.toArray());
+            f.in(!parentEntityKeys.isEmpty(), EntityPO.Fields.parent, parentEntityKeys.toArray());
+            f.in(!attachTargetIds.isEmpty(), EntityPO.Fields.attachTargetId, attachTargetIds.toArray());
+
+            if (entityParentCondition != null) {
+                if (ComparisonOperator.IS_EMPTY.equals(entityParentCondition.getOperator())) {
+                    f.isNull(EntityPO.Fields.parent);
+                } else if (ComparisonOperator.IS_NOT_EMPTY.equals(entityParentCondition.getOperator())) {
+                    f.isNotNull(EntityPO.Fields.parent);
+                }
+            }
+        };
+
+        val entityPOPage = entityRepository.findAllWithDataPermission(filterable, entityQuery.toPageable());
+        return convertEntityPOListToFullEntityResponses(entityPOPage);
+    }
+
+    private List<Long> getEntityIdsByEntityTagCondition(EntityAdvancedSearchCondition tagCondition) {
+        if (tagCondition == null || CollectionUtils.isEmpty(tagCondition.getValues())) {
+            return Collections.emptyList();
+        }
+
+        val entityIds = switch (tagCondition.getOperator()) {
+            case EQ -> entityTagService.findEntityIdsByTagEquals(tagCondition.getValues());
+            case CONTAINS -> entityTagService.findEntityIdsByTagContains(tagCondition.getValues());
+            case NOT_CONTAINS -> entityTagService.findEntityIdsByTagNotContains(tagCondition.getValues());
+            case ANY_EQUALS -> entityTagService.findEntityIdsByTagIn(tagCondition.getValues());
+            case IS_EMPTY -> entityTagService.findEntityIdsByTagIsEmpty();
+            case IS_NOT_EMPTY -> entityTagService.findEntityIdsByTagIsNotEmpty();
+            default ->
+                    throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Invalid operator").build();
+        };
+
+        if (entityIds.isEmpty()) {
+            return null;
+        }
+        return entityIds;
+    }
+
+    private List<String> getEntityIdsByEntityParentNameCondition(EntityAdvancedSearchCondition entityParentCondition) {
+        if (entityParentCondition == null || CollectionUtils.isEmpty(entityParentCondition.getValues())) {
+            return Collections.emptyList();
+        }
+
+        val operator = entityParentCondition.getOperator();
+        if (ComparisonOperator.IS_EMPTY.equals(operator) || ComparisonOperator.IS_NOT_EMPTY.equals(operator)) {
+            return Collections.emptyList();
+        }
+
+        val parentEntityKeys = entityRepository.findAllWithDataPermission(filterable -> {
+                    buildTextFilterable(filterable, entityParentCondition.getOperator(), EntityPO.Fields.name, entityParentCondition.getValues());
+                    filterable.isNull(EntityPO.Fields.parent);
+                })
+                .stream()
+                .map(EntityPO::getKey)
+                .collect(Collectors.toList());
+
+        if (parentEntityKeys.isEmpty()) {
+            return null;
+        }
+        return parentEntityKeys;
+    }
+
+    @Nullable
+    private List<String> getDeviceIdsByDeviceNameCondition(EntityAdvancedSearchCondition deviceNameCondition) {
+        if (deviceNameCondition == null || CollectionUtils.isEmpty(deviceNameCondition.getValues())) {
+            return Collections.emptyList();
+        }
+
+        val keyword = deviceNameCondition.getValues().get(0);
+        val deviceIds = deviceFacade.fuzzySearchDeviceIdsByName(deviceNameCondition.getOperator(), keyword)
+                .stream()
+                .map(String::valueOf)
+                .toList();
+
+        if (deviceIds.isEmpty()) {
+            return null;
+        }
+        return deviceIds;
+    }
+
+    @Nullable
+    private List<String> getDeviceIdsByDeviceGroupNameCondition(EntityAdvancedSearchCondition deviceGroupNameCondition) {
+        if (deviceGroupNameCondition == null || CollectionUtils.isEmpty(deviceGroupNameCondition.getValues())) {
+            return Collections.emptyList();
+        }
+
+        val operator = deviceGroupNameCondition.getOperator();
+        if (!ComparisonOperator.ANY_EQUALS.equals(operator)) {
+            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Unsupported operator: " + operator).build();
+        }
+
+        val deviceIds = deviceFacade.findDeviceIdsByGroupNameIn(deviceGroupNameCondition.getValues())
+                .stream()
+                .map(String::valueOf)
+                .toList();
+
+        if (deviceIds.isEmpty()) {
+            return null;
+        }
+        return deviceIds;
+    }
+
+    @Nullable
+    private List<String> getIntegrationAndDeviceIdsByIntegrationNameCondition(EntityAdvancedSearchCondition integrationNameCondition) {
+        if (integrationNameCondition == null || CollectionUtils.isEmpty(integrationNameCondition.getValues())) {
+            return Collections.emptyList();
+        }
+
+        val operator = integrationNameCondition.getOperator();
+        val keyword = integrationNameCondition.getValues().get(0);
+        val integrationIds = searchIntegrationIdsByName(operator, keyword);
+
+        if (integrationIds.isEmpty()) {
+            return null;
+        } else {
+            List<String> deviceIds = getDeviceIdsByIntegrationId(integrationIds);
+            return Stream.concat(deviceIds.stream(), integrationIds.stream()).toList();
+        }
+    }
+
+    @NonNull
+    private List<String> getDeviceIdsByIntegrationId(List<String> integrationIds) {
+        List<DeviceNameDTO> integrationDevices = deviceFacade.getDeviceNameByIntegrations(integrationIds);
+        if (integrationDevices == null || integrationDevices.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return integrationDevices.stream()
+                .map(DeviceNameDTO::getId)
+                .map(String::valueOf)
+                .toList();
+    }
+
+    @NonNull
+    private List<String> searchIntegrationIdsByName(ComparisonOperator operator, String keyword) {
+        return integrationServiceProvider.findIntegrations(integration -> switch (operator) {
+            case EQ -> Objects.equals(integration.getName(), keyword);
+            case NE -> !Objects.equals(integration.getName(), keyword);
+            case CONTAINS -> integration.getName().toLowerCase().contains(keyword.toLowerCase());
+            case NOT_CONTAINS -> !integration.getName().toLowerCase().contains(keyword.toLowerCase());
+            case START_WITH -> integration.getName().toLowerCase().startsWith(keyword.toLowerCase());
+            case END_WITH -> integration.getName().toLowerCase().endsWith(keyword.toLowerCase());
+            default ->
+                    throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Unsupported operator: " + operator).build();
+        }).stream().map(Integration::getId).toList();
+    }
+
+    private void buildTextFilterable(Filterable filterable, ComparisonOperator operator, String columnName, List<String> values) {
+        switch (operator) {
+            case CONTAINS ->
+                    filterable.likeIgnoreCase(!CollectionUtils.isEmpty(values) && values.get(0) != null, columnName, values.get(0));
+            case NOT_CONTAINS ->
+                    filterable.notLikeIgnoreCase(!CollectionUtils.isEmpty(values) && values.get(0) != null, columnName, values.get(0));
+            case START_WITH ->
+                    filterable.startsWithIgnoreCase(!CollectionUtils.isEmpty(values) && values.get(0) != null, columnName, values.get(0));
+            case END_WITH ->
+                    filterable.endsWithIgnoreCase(!CollectionUtils.isEmpty(values) && values.get(0) != null, columnName, values.get(0));
+            case EQ ->
+                    filterable.eq(!CollectionUtils.isEmpty(values) && values.get(0) != null, columnName, values.get(0));
+            case NE ->
+                    filterable.ne(!CollectionUtils.isEmpty(values) && values.get(0) != null, columnName, values.get(0));
+            case ANY_EQUALS -> filterable.in(!CollectionUtils.isEmpty(values), columnName, values.toArray());
+            case IS_EMPTY -> filterable.isNull(columnName);
+            case IS_NOT_EMPTY -> filterable.isNotNull(columnName);
+            default ->
+                    throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Unsupported operator: " + operator).build();
+        }
     }
 
     private String getCustomEntityKey(String identifier) {
