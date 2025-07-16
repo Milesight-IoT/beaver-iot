@@ -62,7 +62,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.DEVICE_NAME_ON_ADD;
@@ -137,6 +136,7 @@ public class DeviceService implements IDeviceFacade {
 
         // call service for adding
         ExchangePayload payload = createDeviceRequest.getParamEntities();
+        payload.validate();
         payload.putContext(DEVICE_NAME_ON_ADD, createDeviceRequest.getName());
         payload.putContext(DEVICE_TEMPLATE_KEY_ON_ADD, createDeviceRequest.getTemplate());
 
@@ -145,14 +145,8 @@ public class DeviceService implements IDeviceFacade {
             TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_NAME, createDeviceRequest.getGroupName());
         }
 
-        // Must return a device
-        try {
-            entityValueServiceProvider.saveValuesAndPublishSync(payload);
-        } catch (Exception e) {
-            throw ServiceException
-                    .with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "add device failed")
-                    .build();
-        }
+        // call service for deleting
+        entityValueServiceProvider.saveValuesAndPublishSync(payload);
     }
 
     private DeviceResponseData convertPOToResponseData(DevicePO devicePO) {
@@ -314,13 +308,7 @@ public class DeviceService implements IDeviceFacade {
                 .filter(Objects::nonNull)
                 .forEach((ExchangePayload payload) -> {
                     // call service for deleting
-                    try {
-                        entityValueServiceProvider.saveValuesAndPublishSync(payload);
-                    } catch (Exception e) {
-                        throw ServiceException
-                                .with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "delete device failed")
-                                .build();
-                    }
+                    entityValueServiceProvider.saveValuesAndPublishSync(payload);
                 });
     }
 

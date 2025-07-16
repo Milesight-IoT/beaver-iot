@@ -42,8 +42,6 @@ import java.util.*;
 @Slf4j
 @Service
 public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
-    private final static String DEVICE_ID_KEY = "device_id";
-    private final static String DEVICE_NAME_KEY = "device_name";
     private final IntegrationServiceProvider integrationServiceProvider;
     private final DeviceServiceProvider deviceServiceProvider;
     private final DeviceTemplateServiceProvider deviceTemplateServiceProvider;
@@ -123,8 +121,8 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     }
 
     private static class ValidationConstants {
-        public static final String ERROR_MESSAGE_DEVICE_ID = "$.definition.input.properties: exactly one property must serve as a device id identifier (either key = 'device_id' or is_device_id = true)";
-        public static final String ERROR_MESSAGE_DEVICE_NAME = "$.definition.input.properties: at most one property can serve as a device name identifier (either key = 'device_name' or is_device_name = true)";
+        public static final String ERROR_MESSAGE_DEVICE_ID = "$.definition.input.properties: exactly one property must serve as a device id identifier (is_device_id = true)";
+        public static final String ERROR_MESSAGE_DEVICE_NAME = "$.definition.input.properties: at most one property can serve as a device name identifier (is_device_name = true)";
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -203,12 +201,12 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
 
     private List<DeviceTemplateModel.Definition.InputJsonObject> getDeviceIdInputJsonObjects(DeviceTemplateModel deviceTemplateModel) {
         return deviceTemplateModel.getDefinition().getInput().getProperties().stream().filter(
-                inputJsonObject -> DEVICE_ID_KEY.equals(inputJsonObject.getKey()) || inputJsonObject.isDeviceId()).toList();
+                DeviceTemplateModel.Definition.InputJsonObject::isDeviceId).toList();
     }
 
     private List<DeviceTemplateModel.Definition.InputJsonObject> getDeviceNameInputJsonObjects(DeviceTemplateModel deviceTemplateModel) {
         return deviceTemplateModel.getDefinition().getInput().getProperties().stream().filter(
-                inputJsonObject -> DEVICE_NAME_KEY.equals(inputJsonObject.getKey()) || inputJsonObject.isDeviceName()).toList();
+                DeviceTemplateModel.Definition.InputJsonObject::isDeviceName).toList();
     }
 
     public DeviceTemplateOutputResult output(String deviceKey, ExchangePayload payload) {
