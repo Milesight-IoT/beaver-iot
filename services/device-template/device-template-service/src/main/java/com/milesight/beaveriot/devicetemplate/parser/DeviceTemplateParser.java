@@ -43,6 +43,7 @@ import java.util.*;
 @Service
 public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     private final static String DEVICE_ID_KEY = "device_id";
+    private final static String DEVICE_NAME_KEY = "device_name";
     private final IntegrationServiceProvider integrationServiceProvider;
     private final DeviceServiceProvider deviceServiceProvider;
     private final DeviceTemplateServiceProvider deviceTemplateServiceProvider;
@@ -91,6 +92,25 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                 errors.forEach(error -> sb.append(error.getMessage()).append(System.lineSeparator()));
                 throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_VALIDATE_ERROR.getErrorCode(), sb.toString()).build();
             }
+
+            List<String> semanticErrorMessage = new ArrayList<>();
+            DeviceTemplateModel deviceTemplateModel = parse(deviceTemplateContent);
+            List<DeviceTemplateModel.Definition.InputJsonObject> deviceIdInputJsonObjects = getDeviceIdInputJsonObjects(deviceTemplateModel);
+            if (deviceIdInputJsonObjects.size() != 1) {
+                semanticErrorMessage.add(ValidationConstants.ERROR_MESSAGE_DEVICE_ID);
+            }
+
+            List<DeviceTemplateModel.Definition.InputJsonObject> deviceNameInputJsonObjects = getDeviceNameInputJsonObjects(deviceTemplateModel);
+            if (deviceNameInputJsonObjects.size() > 1) {
+                semanticErrorMessage.add(ValidationConstants.ERROR_MESSAGE_DEVICE_NAME);
+            }
+
+            if (!semanticErrorMessage.isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Validate error:").append(System.lineSeparator());
+                semanticErrorMessage.forEach(errorMessage -> sb.append(errorMessage).append(System.lineSeparator()));
+                throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_VALIDATE_ERROR.getErrorCode(), sb.toString()).build();
+            }
             return true;
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -100,6 +120,11 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                 throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
             }
         }
+    }
+
+    private static class ValidationConstants {
+        public static final String ERROR_MESSAGE_DEVICE_ID = "$.definition.input.properties: exactly one property must serve as a device id identifier (either key = 'device_id' or is_device_id = true)";
+        public static final String ERROR_MESSAGE_DEVICE_NAME = "$.definition.input.properties: at most one property can serve as a device name identifier (either key = 'device_name' or is_device_name = true)";
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -114,10 +139,13 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode jsonNode = mapper.readTree(jsonData);
 
-            if (jsonNode.get(DEVICE_ID_KEY) == null) {
+            DeviceTemplateModel deviceTemplateModel = parse(deviceTemplate.getContent());
+            String deviceIdKey = getDeviceIdKey(deviceTemplateModel);
+            String deviceNameKey = getDeviceNameKey(deviceTemplateModel);
+
+            if (deviceIdKey == null || jsonNode.get(deviceIdKey) == null) {
                 throw ServiceException.with(ServerErrorCode.DEVICE_ID_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_ID_NOT_FOUND.getErrorMessage()).build();
             }
-            DeviceTemplateModel deviceTemplateModel = parse(deviceTemplate.getContent());
 
             Map<String, JsonNode> flatJsonDataMap = new HashMap<>();
             flattenJsonData(jsonNode, flatJsonDataMap, "");
@@ -129,8 +157,9 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             validateJsonData(flatJsonDataMap, flatJsonInputDescriptionMap);
 
             // Build device
-            String deviceId = jsonNode.get(DEVICE_ID_KEY).asText();
-            Device device = buildDevice(integration, deviceId, deviceId, deviceTemplate.getKey());
+            String deviceId = jsonNode.get(deviceIdKey).asText();
+            String deviceName = (deviceNameKey == null || jsonNode.get(deviceNameKey) == null) ? deviceId : jsonNode.get(deviceNameKey).asText();
+            Device device = buildDevice(integration, deviceId, deviceName, deviceTemplate.getKey());
 
             // Build device entities
             List<Entity> deviceEntities = buildDeviceEntities(integration, device.getKey(), deviceTemplateModel.getInitialEntities());
@@ -152,6 +181,34 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                 throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
             }
         }
+    }
+
+    private String getDeviceIdKey(DeviceTemplateModel deviceTemplateModel) {
+        List<DeviceTemplateModel.Definition.InputJsonObject> deviceIdInputJsonObjects = getDeviceIdInputJsonObjects(deviceTemplateModel);
+        String deviceIdKey = null;
+        if (!deviceIdInputJsonObjects.isEmpty()) {
+            deviceIdKey = deviceIdInputJsonObjects.get(0).getKey();
+        }
+        return deviceIdKey;
+    }
+
+    private String getDeviceNameKey(DeviceTemplateModel deviceTemplateModel) {
+        List<DeviceTemplateModel.Definition.InputJsonObject> deviceNameInputJsonObjects = getDeviceNameInputJsonObjects(deviceTemplateModel);
+        String deviceNameKey = null;
+        if (!deviceNameInputJsonObjects.isEmpty()) {
+            deviceNameKey = deviceNameInputJsonObjects.get(0).getKey();
+        }
+        return deviceNameKey;
+    }
+
+    private List<DeviceTemplateModel.Definition.InputJsonObject> getDeviceIdInputJsonObjects(DeviceTemplateModel deviceTemplateModel) {
+        return deviceTemplateModel.getDefinition().getInput().getProperties().stream().filter(
+                inputJsonObject -> DEVICE_ID_KEY.equals(inputJsonObject.getKey()) || inputJsonObject.isDeviceId()).toList();
+    }
+
+    private List<DeviceTemplateModel.Definition.InputJsonObject> getDeviceNameInputJsonObjects(DeviceTemplateModel deviceTemplateModel) {
+        return deviceTemplateModel.getDefinition().getInput().getProperties().stream().filter(
+                inputJsonObject -> DEVICE_NAME_KEY.equals(inputJsonObject.getKey()) || inputJsonObject.isDeviceName()).toList();
     }
 
     public DeviceTemplateOutputResult output(String deviceKey, ExchangePayload payload) {
