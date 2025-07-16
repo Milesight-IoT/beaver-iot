@@ -2,9 +2,10 @@ package com.milesight.beaveriot.device.model.response;
 
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
-import lombok.Builder;
-import lombok.Data;
+import com.milesight.beaveriot.context.model.EntityTag;
+import lombok.*;
 
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -17,4 +18,5 @@ public class DeviceEntityData {
     private Map<String, Object> valueAttribute;
     private EntityValueType valueType;
     private String description;
+    private List<EntityTag> entityTags;
 }

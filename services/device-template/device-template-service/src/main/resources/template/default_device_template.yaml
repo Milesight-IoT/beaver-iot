@@ -5,7 +5,11 @@ definition:
       - key: device_id                 # json key
         type: string                   # data type
         required: true
+        is_device_id: true
         entity_mapping: 'device_id'    # entity identifier
+      - key: device_name               # json key
+        type: string                   # data type
+        is_device_name: true
       - key: temperature               # json key
         type: double                   # data type
         entity_mapping: 'temperature'  # entity identifier

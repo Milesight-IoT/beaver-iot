@@ -10,12 +10,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.repository.NoRepositoryBean;
+import org.springframework.data.repository.query.FluentQuery;
 import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * @author leon
@@ -53,6 +55,11 @@ public interface BaseJpaRepository<T,ID extends Serializable> extends JpaReposit
     @Override
     Page<T> findAll(Pageable pageable);
 
+
+    @Override
+    default <S extends T> List<T> findBy(Consumer<Filterable> consumer, Function<FluentQuery.FetchableFluentQuery<S>, List<T>> queryFunction){
+        return findBy(SpecificationConverter.toSpecification(consumer), queryFunction);
+    }
 
     @Override
     default List<T> findAll(Consumer<Filterable> consumer){

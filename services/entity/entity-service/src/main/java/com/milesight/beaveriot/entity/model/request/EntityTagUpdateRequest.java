@@ -15,7 +15,7 @@ public class EntityTagUpdateRequest {
     @Size(min = 1, max = 25)
     private String name;
 
-    @Size(min = 1, max = 63)
+    @Size(max = 63)
     private String description;
 
     @NotBlank
