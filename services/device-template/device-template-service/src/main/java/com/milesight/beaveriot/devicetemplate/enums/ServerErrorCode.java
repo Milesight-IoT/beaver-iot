@@ -3,6 +3,8 @@ package com.milesight.beaveriot.devicetemplate.enums;
 import com.milesight.beaveriot.base.exception.ErrorCodeSpec;
 import org.springframework.http.HttpStatus;
 
+import java.text.MessageFormat;
+
 /**
  * author: Luxb
  * create: 2025/6/16 10:00
@@ -14,7 +16,7 @@ public enum ServerErrorCode implements ErrorCodeSpec {
     DEVICE_TEMPLATE_SCHEMA_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "device_template_schema_not_found", "Device template schema not found"),
     DEVICE_TEMPLATE_VALIDATE_ERROR(HttpStatus.BAD_REQUEST.value(), "device_template_validate_error", "Device template validate error"),
     DEVICE_TEMPLATE_DEFINITION_OUTPUT_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "device_template_definition_output_not_found", "Device template definition output not found"),
-    DEVICE_ID_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "device_id_not_found", "Key device_id not found"),
+    DEVICE_ID_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "device_id_not_found", "Device ID key ''{0}'' not found"),
     DEVICE_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "device_not_found", "Device not found"),
     JSON_VALIDATE_ERROR(HttpStatus.BAD_REQUEST.value(), "json_validate_error", "Json validate error"),
     DEVICE_ENTITY_VALUE_VALIDATE_ERROR(HttpStatus.BAD_REQUEST.value(), "device_entity_value_validate_error", "Device entity value validate error")
@@ -60,6 +62,10 @@ public enum ServerErrorCode implements ErrorCodeSpec {
     @Override
     public String getErrorMessage() {
         return errorMessage;
+    }
+
+    public String formatMessage(Object... args) {
+        return MessageFormat.format(errorMessage, args);
     }
 
     @Override

@@ -144,7 +144,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             String deviceNameKey = getDeviceNameKey(deviceTemplateModel);
 
             if (deviceIdKey == null || jsonNode.get(deviceIdKey) == null) {
-                throw ServiceException.with(ServerErrorCode.DEVICE_ID_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_ID_NOT_FOUND.getErrorMessage()).build();
+                throw ServiceException.with(ServerErrorCode.DEVICE_ID_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_ID_NOT_FOUND.formatMessage(deviceIdKey)).build();
             }
 
             Map<String, JsonNode> flatJsonDataMap = new HashMap<>();
