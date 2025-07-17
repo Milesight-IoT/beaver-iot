@@ -7,7 +7,6 @@ import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.resource.ResourceStorage;
-import com.milesight.beaveriot.resource.config.ResourceConstants;
 import com.milesight.beaveriot.resource.manager.constants.ResourceManagerConstants;
 import com.milesight.beaveriot.resource.manager.dto.ResourceRefDTO;
 import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
@@ -66,7 +65,8 @@ public class ResourceService implements ResourceManagerFacade {
         ResourceTempPO resourceTempPO = new ResourceTempPO();
         resourceTempPO.setId(SnowflakeUtil.nextId());
         resourceTempPO.setCreatedAt(System.currentTimeMillis());
-        resourceTempPO.setExpiredAt(resourceTempPO.getCreatedAt() + (ResourceManagerConstants.TEMP_RESOURCE_LIVE_MINUTES * 60 * 1000));
+
+        resourceTempPO.setExpiredAt(resourceTempPO.getCreatedAt() + (getTempResourceLiveMinutes(request.getTempResourceLiveMinutes()) * 60 * 1000));
         resourceTempPO.setSettled(false);
 
         ResourcePO resourcePO = new ResourcePO();
@@ -85,6 +85,16 @@ public class ResourceService implements ResourceManagerFacade {
         resourceRepository.save(resourcePO);
 
         return preSignResult;
+    }
+
+    private long getTempResourceLiveMinutes(Integer tempResourceLiveMinutes) {
+        if (tempResourceLiveMinutes == null) {
+            return ResourceManagerConstants.TEMP_RESOURCE_LIVE_MINUTES;
+        } else if (tempResourceLiveMinutes > ResourceManagerConstants.MAX_TEMP_RESOURCE_LIVE_MINUTES) {
+            return ResourceManagerConstants.MAX_TEMP_RESOURCE_LIVE_MINUTES;
+        } else {
+            return tempResourceLiveMinutes;
+        }
     }
 
     private String getCurrentUser() {
