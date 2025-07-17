@@ -15,4 +15,6 @@ public class RequestUploadConfig {
     private String fileName;
 
     private String description;
+
+    private Integer tempResourceLiveMinutes;
 }
