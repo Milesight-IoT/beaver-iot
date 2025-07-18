@@ -865,8 +865,9 @@ public class EntityService implements EntityServiceProvider {
         // Only custom entity can update attribute
         if (!CollectionUtils.isEmpty(entityModifyRequest.getValueAttribute()) && entityPO.checkIsCustomizedEntity()) {
             entityPO.setValueAttribute(entityModifyRequest.getValueAttribute());
-            if (!entityPO.validateUserModifiedCustomEntity()) {
-                throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Invalid custom entity update data").build();
+            List<ErrorHolder> errors = entityPO.validate();
+            if (!CollectionUtils.isEmpty(errors)) {
+                throw MultipleErrorException.with(HttpStatus.BAD_REQUEST.value(), "Validate entity error", errors);
             }
         }
 
@@ -901,8 +902,9 @@ public class EntityService implements EntityServiceProvider {
         entityPO.setUserId(SecurityUserContext.getUserId());
         entityPO.setAttachTarget(AttachTargetType.INTEGRATION);
         entityPO.setAttachTargetId(IntegrationConstants.SYSTEM_INTEGRATION_ID);
-        if (!entityPO.validateUserModifiedCustomEntity()) {
-            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Invalid custom entity create data").build();
+        List<ErrorHolder> errors = entityPO.validate();
+        if (!CollectionUtils.isEmpty(errors)) {
+            throw MultipleErrorException.with(HttpStatus.BAD_REQUEST.value(), "Validate entity error", errors);
         }
 
         entityPO = entityRepository.save(entityPO);
