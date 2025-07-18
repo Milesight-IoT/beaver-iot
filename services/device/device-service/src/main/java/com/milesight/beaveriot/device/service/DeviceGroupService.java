@@ -198,8 +198,12 @@ public class DeviceGroupService {
 
     public Map<Long, List<DeviceGroupPO>> deviceIdToGroups(List<Long> deviceIds) {
         List<DeviceGroupMappingPO> mappings = deviceGroupMappingRepository.findAllByDeviceIdIn(deviceIds);
-        return deviceGroupRepository.findAllById(mappings.stream().map(DeviceGroupMappingPO::getGroupId).toList()).stream()
-                .collect(Collectors.groupingBy(DeviceGroupPO::getId));
+        Map<Long, Long> groupIdToDeviceId = mappings.stream().collect(Collectors.toMap(DeviceGroupMappingPO::getGroupId, DeviceGroupMappingPO::getDeviceId, (a, b) -> a));
+        if (groupIdToDeviceId.isEmpty()) {
+            return Map.of();
+        }
+        return deviceGroupRepository.findAllById(groupIdToDeviceId.keySet()).stream()
+                .collect(Collectors.groupingBy(group -> groupIdToDeviceId.get(group.getId())));
     }
 
     public List<Long> findAllDeviceIdsByGroupNameIn(List<String> groupNames) {
