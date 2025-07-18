@@ -18,6 +18,7 @@ public interface EntityTagRepository extends BaseJpaRepository<EntityTagPO, Long
                     FROM t_entity_tag t
                     LEFT JOIN t_entity_tag_mapping m ON t.id = m.tag_id
                     GROUP BY t.id
+                    ORDER BY t.created_at DESC
             """, nativeQuery = true)
     Page<EntityTagProjection> search(Pageable pageable);
 
@@ -27,6 +28,7 @@ public interface EntityTagRepository extends BaseJpaRepository<EntityTagPO, Long
                     LEFT JOIN t_entity_tag_mapping m ON t.id = m.tag_id
                     WHERE t.name LIKE %:keyword% OR t.description LIKE %:keyword%
                     GROUP BY t.id
+                    ORDER BY t.created_at DESC
             """, nativeQuery = true)
     Page<EntityTagProjection> search(@Param("keyword") String keyword, Pageable pageable);
 
