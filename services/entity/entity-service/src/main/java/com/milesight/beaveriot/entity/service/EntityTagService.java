@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @Slf4j
@@ -153,10 +154,11 @@ public class EntityTagService {
             throw new ServiceException(EntityErrorCode.ENTITY_TAG_NOT_FOUND);
         }
 
-        val entityTagMappings = entityTagMappingRepository.findByTagIdInAndEntityIdIn(tagIds, entityIds)
+        val entityIdToTagIds = entityTagMappingRepository.findByEntityIdIn(entityIds)
                 .stream()
-                .collect(Collectors.groupingBy(EntityTagMappingPO::getEntityId));
-        if (entityTagMappings.entrySet().stream().anyMatch(entry -> entry.getValue().size() + tagIds.size() > MAX_NUMBER_OF_TAGS_PER_ENTITY)) {
+                .collect(Collectors.groupingBy(EntityTagMappingPO::getEntityId, Collectors.mapping(EntityTagMappingPO::getTagId, Collectors.toSet())));
+        if (entityIdToTagIds.entrySet().stream()
+                .anyMatch(entry -> Stream.concat(entry.getValue().stream(), tagIds.stream()).distinct().count() > MAX_NUMBER_OF_TAGS_PER_ENTITY)) {
             throw new ServiceException(EntityErrorCode.NUMBER_OF_TAGS_PER_ENTITY_EXCEEDED);
         }
 
@@ -167,6 +169,10 @@ public class EntityTagService {
                                 .entityId(entity.getId())
                                 .tagId(tagId)
                                 .build()))
+                .filter(mapping -> {
+                    val existingTags = entityIdToTagIds.get(mapping.getEntityId());
+                    return CollectionUtils.isEmpty(existingTags) || !existingTags.contains(mapping.getTagId());
+                })
                 .collect(Collectors.toList());
         entityTagMappingRepository.saveAll(newEntityTagMappings);
     }
