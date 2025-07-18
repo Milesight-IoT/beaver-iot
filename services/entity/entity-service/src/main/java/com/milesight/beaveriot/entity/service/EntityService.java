@@ -3,6 +3,8 @@ package com.milesight.beaveriot.entity.service;
 import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheEvict;
 import com.milesight.beaveriot.base.enums.ComparisonOperator;
 import com.milesight.beaveriot.base.enums.ErrorCode;
+import com.milesight.beaveriot.base.error.ErrorHolder;
+import com.milesight.beaveriot.base.exception.MultipleErrorException;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.JsonUtils;
@@ -31,11 +33,7 @@ import com.milesight.beaveriot.entity.dto.EntityQuery;
 import com.milesight.beaveriot.entity.dto.EntityResponse;
 import com.milesight.beaveriot.entity.enums.EntitySearchColumn;
 import com.milesight.beaveriot.entity.model.dto.EntityAdvancedSearchCondition;
-import com.milesight.beaveriot.entity.model.request.EntityAdvancedSearchQuery;
-import com.milesight.beaveriot.entity.model.request.EntityCreateRequest;
-import com.milesight.beaveriot.entity.model.request.EntityModifyRequest;
-import com.milesight.beaveriot.entity.model.request.ServiceCallRequest;
-import com.milesight.beaveriot.entity.model.request.UpdatePropertyEntityRequest;
+import com.milesight.beaveriot.entity.model.request.*;
 import com.milesight.beaveriot.entity.model.response.EntityMetaResponse;
 import com.milesight.beaveriot.entity.po.EntityPO;
 import com.milesight.beaveriot.entity.repository.EntityHistoryRepository;
@@ -47,28 +45,22 @@ import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.user.dto.MenuDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
-import lombok.*;
-import lombok.extern.slf4j.*;
+import jakarta.annotation.Nullable;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.lang.Nullable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -356,9 +348,7 @@ public class EntityService implements EntityServiceProvider {
                 });
             }
         }
-        if (!deleteEntityPOList.isEmpty()) {
-            entityRepository.deleteAll(deleteEntityPOList);
-        }
+
         List<EntityPO> entityPOList = new ArrayList<>();
 
         entityList.forEach(t -> {
@@ -373,6 +363,13 @@ public class EntityService implements EntityServiceProvider {
                 entityPOList.add(entityPO);
             }
         });
+
+        batchValidateEntityPOs(entityPOList);
+
+        if (!deleteEntityPOList.isEmpty()) {
+            entityRepository.deleteAll(deleteEntityPOList);
+        }
+
         entityRepository.saveAll(entityPOList);
 
         entityList.forEach(entity -> {
@@ -385,6 +382,19 @@ public class EntityService implements EntityServiceProvider {
                 }
             }
         });
+    }
+
+    private void batchValidateEntityPOs(List<EntityPO> entityPOList) {
+        List<ErrorHolder> errors = new ArrayList<>();
+        entityPOList.forEach(entityPO -> {
+            List<ErrorHolder> entityPOErrors = entityPO.validate();
+            if (!CollectionUtils.isEmpty(entityPOErrors)) {
+                errors.addAll(entityPOErrors);
+            }
+        });
+        if (!CollectionUtils.isEmpty(errors)) {
+            throw MultipleErrorException.with(HttpStatus.BAD_REQUEST.value(), "Validate entity error", errors);
+        }
     }
 
     @Transactional(rollbackFor = Throwable.class)
@@ -855,8 +865,9 @@ public class EntityService implements EntityServiceProvider {
         // Only custom entity can update attribute
         if (!CollectionUtils.isEmpty(entityModifyRequest.getValueAttribute()) && entityPO.checkIsCustomizedEntity()) {
             entityPO.setValueAttribute(entityModifyRequest.getValueAttribute());
-            if (!entityPO.validateUserModifiedCustomEntity()) {
-                throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Invalid custom entity update data").build();
+            List<ErrorHolder> errors = entityPO.validate();
+            if (!CollectionUtils.isEmpty(errors)) {
+                throw MultipleErrorException.with(HttpStatus.BAD_REQUEST.value(), "Validate entity error", errors);
             }
         }
 
@@ -891,8 +902,9 @@ public class EntityService implements EntityServiceProvider {
         entityPO.setUserId(SecurityUserContext.getUserId());
         entityPO.setAttachTarget(AttachTargetType.INTEGRATION);
         entityPO.setAttachTargetId(IntegrationConstants.SYSTEM_INTEGRATION_ID);
-        if (!entityPO.validateUserModifiedCustomEntity()) {
-            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Invalid custom entity create data").build();
+        List<ErrorHolder> errors = entityPO.validate();
+        if (!CollectionUtils.isEmpty(errors)) {
+            throw MultipleErrorException.with(HttpStatus.BAD_REQUEST.value(), "Validate entity error", errors);
         }
 
         entityPO = entityRepository.save(entityPO);

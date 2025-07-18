@@ -9,6 +9,7 @@ import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
+import com.milesight.beaveriot.context.support.EntityValidator;
 import com.milesight.beaveriot.context.support.SpringContext;
 import com.milesight.beaveriot.eventbus.api.IdentityKey;
 import lombok.Getter;
@@ -216,7 +217,7 @@ public class Entity implements IdentityKey, Cloneable {
                 return errors;
             }
 
-            if (!isMatchType(value)) {
+            if (!EntityValidator.isMatchType(valueType, value)) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_NOT_MATCH_TYPE.getErrorCode(),
                         EntityErrorCode.ENTITY_VALUE_NOT_MATCH_TYPE.formatMessage(entityKey, valueType.name(), value.getClass().getSimpleName()),
                         buildExtraData(entityData, Map.of(
@@ -384,19 +385,5 @@ public class Entity implements IdentityKey, Cloneable {
                             AttributeBuilder.ATTRIBUTE_FORMAT, format
                     ))));
         }
-    }
-
-    private boolean isMatchType(Object value) {
-        if (value == null) {
-            return false;
-        }
-        return switch (valueType) {
-            case DOUBLE -> (value instanceof Float || value instanceof Double || value instanceof Integer || value instanceof Long || ValidationUtils.isNumber(value.toString()));
-            case LONG -> (value instanceof Integer || value instanceof Long || ValidationUtils.isInteger(value.toString()));
-            case BOOLEAN -> value instanceof Boolean;
-            case STRING -> value instanceof String;
-            case BINARY -> value instanceof byte[];
-            default -> true;
-        };
     }
 }
