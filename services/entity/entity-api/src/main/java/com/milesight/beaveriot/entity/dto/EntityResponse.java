@@ -44,6 +44,8 @@ public class EntityResponse {
 
     private String entityDescription;
 
+    private String entityLatestValue;
+
     private EntityDeviceGroup deviceGroup;
 
     private List<EntityTag> entityTags;
