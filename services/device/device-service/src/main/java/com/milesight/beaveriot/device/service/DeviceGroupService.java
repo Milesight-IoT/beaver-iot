@@ -17,6 +17,7 @@ import com.milesight.beaveriot.device.repository.DeviceGroupRepository;
 import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -32,6 +33,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * DeviceGroupService class.
@@ -198,18 +200,33 @@ public class DeviceGroupService {
 
     public Map<Long, List<DeviceGroupPO>> deviceIdToGroups(List<Long> deviceIds) {
         List<DeviceGroupMappingPO> mappings = deviceGroupMappingRepository.findAllByDeviceIdIn(deviceIds);
-        Map<Long, Long> groupIdToDeviceId = mappings.stream().collect(Collectors.toMap(DeviceGroupMappingPO::getGroupId, DeviceGroupMappingPO::getDeviceId, (a, b) -> a));
-        if (groupIdToDeviceId.isEmpty()) {
+        Map<Long, Set<Long>> groupIdToDeviceIds = mappings.stream()
+                .collect(Collectors.groupingBy(DeviceGroupMappingPO::getGroupId, Collectors.mapping(DeviceGroupMappingPO::getDeviceId, Collectors.toSet())));
+        if (groupIdToDeviceIds.isEmpty()) {
             return Map.of();
         }
-        return deviceGroupRepository.findAllById(groupIdToDeviceId.keySet()).stream()
-                .collect(Collectors.groupingBy(group -> groupIdToDeviceId.get(group.getId())));
+        Map<Long, DeviceGroupPO> groupIdToPO = deviceGroupRepository.findAllById(groupIdToDeviceIds.keySet()).stream()
+                .collect(Collectors.toMap(DeviceGroupPO::getId, Function.identity(), (a, b) -> a));
+        return groupIdToDeviceIds.entrySet().stream()
+                .flatMap(entry -> {
+                    DeviceGroupPO group = groupIdToPO.get(entry.getKey());
+                    if (group == null) {
+                        return Stream.empty();
+                    }
+                    return entry.getValue().stream()
+                            .map(deviceId -> Pair.of(deviceId, group));
+                })
+                .collect(Collectors.groupingBy(Pair::getFirst, Collectors.mapping(Pair::getSecond, Collectors.toList())));
     }
 
     public List<Long> findAllDeviceIdsByGroupNameIn(List<String> groupNames) {
-        return deviceGroupRepository.findAll(f -> f.in(DeviceGroupPO.Fields.name, groupNames.toArray()))
+        List<Long> groupIds = deviceGroupRepository.findAll(f -> f.in(DeviceGroupPO.Fields.name, groupNames.toArray()))
                 .stream()
                 .map(DeviceGroupPO::getId)
+                .toList();
+        return deviceGroupMappingRepository.findAll(f -> f.in(DeviceGroupMappingPO.Fields.groupId, groupIds.toArray()))
+                .stream()
+                .map(DeviceGroupMappingPO::getDeviceId)
                 .collect(Collectors.toList());
     }
 
