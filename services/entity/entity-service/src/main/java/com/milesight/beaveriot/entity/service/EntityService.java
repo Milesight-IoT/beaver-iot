@@ -989,7 +989,6 @@ public class EntityService implements EntityServiceProvider {
             });
 
             f.in(!entityIds.isEmpty(), EntityPO.Fields.id, entityIds.toArray());
-            f.in(!parentEntityKeys.isEmpty(), EntityPO.Fields.parent, parentEntityKeys.toArray());
             f.in(!attachTargetIds.isEmpty(), EntityPO.Fields.attachTargetId, attachTargetIds.toArray());
 
             if (entityParentCondition != null) {
@@ -997,6 +996,11 @@ public class EntityService implements EntityServiceProvider {
                     f.isNull(EntityPO.Fields.parent);
                 } else if (ComparisonOperator.IS_NOT_EMPTY.equals(entityParentCondition.getOperator())) {
                     f.isNotNull(EntityPO.Fields.parent);
+                } else if (ComparisonOperator.NOT_CONTAINS.equals(entityParentCondition.getOperator())) {
+                    f.or(f1 -> f1.in(!parentEntityKeys.isEmpty(), EntityPO.Fields.parent, parentEntityKeys.toArray())
+                            .isNull(EntityPO.Fields.parent));
+                } else {
+                    f.in(!parentEntityKeys.isEmpty(), EntityPO.Fields.parent, parentEntityKeys.toArray());
                 }
             }
         };
@@ -1006,7 +1010,7 @@ public class EntityService implements EntityServiceProvider {
     }
 
     private List<Long> getEntityIdsByEntityTagCondition(EntityAdvancedSearchCondition tagCondition) {
-        if (tagCondition == null || CollectionUtils.isEmpty(tagCondition.getValues())) {
+        if (tagCondition == null) {
             return Collections.emptyList();
         }
 

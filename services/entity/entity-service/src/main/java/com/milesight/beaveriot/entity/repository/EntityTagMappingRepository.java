@@ -33,12 +33,12 @@ public interface EntityTagMappingRepository extends BaseJpaRepository<EntityTagM
     List<Long> findEntityIdsByTagContains(@Param("tagNames") List<String> tagNames, @Param("tagNumber") Integer tagNumber);
 
     @Query(value = """
-                    SELECT entity_id
-                    FROM t_entity_tag_mapping m
-                    LEFT JOIN t_entity_tag t ON t.id = m.tag_id
-                    WHERE t.name IN :tagNames
-                    GROUP BY entity_id
-                    HAVING COUNT(DISTINCT tag_id) = 0;
+                    SELECT e.id AS entity_id
+                    FROM t_entity e
+                    LEFT JOIN t_entity_tag_mapping m ON e.id = m.entity_id
+                    LEFT JOIN t_entity_tag t ON t.id = m.tag_id AND t.name IN :tagNames
+                    GROUP BY e.id
+                    HAVING COUNT(DISTINCT t.name) = 0;
             """, nativeQuery = true)
     List<Long> findEntityIdsByTagNotContains(@Param("tagNames") List<String> tagNames);
 

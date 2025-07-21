@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.base.exception;
 
+import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.error.ErrorHolder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,6 +15,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class MultipleErrorException extends BaseException {
+    private String errorCode = ErrorCode.MULTIPLE_ERROR.getErrorCode();
     private int status;
     private final List<ErrorHolder> errors;
 
