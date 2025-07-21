@@ -1006,7 +1006,7 @@ public class EntityService implements EntityServiceProvider {
     }
 
     private List<Long> getEntityIdsByEntityTagCondition(EntityAdvancedSearchCondition tagCondition) {
-        if (tagCondition == null || CollectionUtils.isEmpty(tagCondition.getValues())) {
+        if (tagCondition == null) {
             return Collections.emptyList();
         }
 
