@@ -241,18 +241,30 @@ public class EntityTagService {
     }
 
     public List<Long> findEntityIdsByTagContains(List<String> tagNames) {
+        if (CollectionUtils.isEmpty(tagNames)) {
+            return Collections.emptyList();
+        }
         return entityTagMappingRepository.findEntityIdsByTagContains(tagNames, tagNames.size());
     }
 
     public List<Long> findEntityIdsByTagNotContains(List<String> tagNames) {
+        if (CollectionUtils.isEmpty(tagNames)) {
+            return Collections.emptyList();
+        }
         return entityTagMappingRepository.findEntityIdsByTagNotContains(tagNames);
     }
 
     public List<Long> findEntityIdsByTagEquals(List<String> tagNames) {
+        if (CollectionUtils.isEmpty(tagNames)) {
+            return Collections.emptyList();
+        }
         return entityTagMappingRepository.findEntityIdsByTagEquals(tagNames);
     }
 
     public List<Long> findEntityIdsByTagIn(List<String> tagNames) {
+        if (CollectionUtils.isEmpty(tagNames)) {
+            return Collections.emptyList();
+        }
         return entityTagMappingRepository.findEntityIdsByTagIn(tagNames);
     }
 
