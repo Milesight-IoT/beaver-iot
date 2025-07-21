@@ -161,7 +161,7 @@ public class EntityPO {
         } catch (Exception e) {
             errors.clear();
             errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_VALIDATION_ERROR.getErrorCode(),
-                    EntityErrorCode.ENTITY_VALUE_VALIDATION_ERROR.formatMessage(entityKey, e.getMessage()),
+                    EntityErrorCode.ENTITY_VALIDATION_ERROR.formatMessage(entityKey, e.getMessage()),
                     entityData));
         }
         return errors;
