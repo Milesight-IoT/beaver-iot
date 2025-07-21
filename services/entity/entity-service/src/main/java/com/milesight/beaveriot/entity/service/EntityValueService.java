@@ -336,6 +336,9 @@ public class EntityValueService implements EntityValueServiceProvider {
             return resultMap;
         }
 
+        allEntities = new ArrayList<>(allEntities.stream()
+                .collect(Collectors.toMap(EntityPO::getId, Function.identity(), (a, b) -> a))
+                .values());
         List<EntityLatestValueCache> lvList = self().findSpecificEntityValue(allEntities);
         for (int i = 0; i < allEntities.size(); i++) {
             EntityLatestValueCache lv = lvList.get(i);

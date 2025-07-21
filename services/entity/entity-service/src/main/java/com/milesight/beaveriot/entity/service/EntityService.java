@@ -33,7 +33,11 @@ import com.milesight.beaveriot.entity.dto.EntityQuery;
 import com.milesight.beaveriot.entity.dto.EntityResponse;
 import com.milesight.beaveriot.entity.enums.EntitySearchColumn;
 import com.milesight.beaveriot.entity.model.dto.EntityAdvancedSearchCondition;
-import com.milesight.beaveriot.entity.model.request.*;
+import com.milesight.beaveriot.entity.model.request.EntityAdvancedSearchQuery;
+import com.milesight.beaveriot.entity.model.request.EntityCreateRequest;
+import com.milesight.beaveriot.entity.model.request.EntityModifyRequest;
+import com.milesight.beaveriot.entity.model.request.ServiceCallRequest;
+import com.milesight.beaveriot.entity.model.request.UpdatePropertyEntityRequest;
 import com.milesight.beaveriot.entity.model.response.EntityMetaResponse;
 import com.milesight.beaveriot.entity.po.EntityPO;
 import com.milesight.beaveriot.entity.repository.EntityHistoryRepository;
@@ -46,9 +50,8 @@ import com.milesight.beaveriot.user.dto.MenuDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import jakarta.annotation.Nullable;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+import lombok.*;
+import lombok.extern.slf4j.*;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -60,7 +63,16 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -579,7 +591,10 @@ public class EntityService implements EntityServiceProvider {
         return menuDTOList;
     }
 
-    private EntityResponse convertEntityPOToEntityResponse(EntityPO entityPO, Map<String, Integration> integrationMap, Map<String, DeviceNameDTO> deviceIdToDetails, Map<String, EntityPO> parentKeyMap) {
+    private EntityResponse convertEntityPOToEntityResponse(EntityPO entityPO,
+                                                           Map<String, Integration> integrationMap,
+                                                           Map<String, DeviceNameDTO> deviceIdToDetails,
+                                                           Map<String, EntityPO> parentKeyMap) {
         String deviceName = null;
         String deviceGroupId = null;
         String deviceGroupName = null;
@@ -667,11 +682,22 @@ public class EntityService implements EntityServiceProvider {
         if (entityPOPage == null || entityPOPage.isEmpty()) {
             return Page.empty();
         }
+
         val res = convertEntityPOPageToEntityResponses(entityPOPage);
         val entityIds = res.map(EntityResponse::getEntityId).map(Long::valueOf).toList();
         val entityIdToTags = entityTagService.entityIdToTags(entityIds);
+
+        val entityKeys = res.stream()
+                .map(EntityResponse::getEntityKey)
+                .distinct()
+                .collect(Collectors.toList());
+        val entityKeyToLatestValue = entityValueService.findValuesByKeys(entityKeys);
+
         return res.map(entityResponse -> {
             entityResponse.setEntityTags(entityIdToTags.get(Long.valueOf(entityResponse.getEntityId())));
+            entityResponse.setEntityLatestValue(Optional.ofNullable(entityKeyToLatestValue.get(entityResponse.getEntityKey()))
+                    .map(Object::toString)
+                    .orElse(null));
             return entityResponse;
         });
     }
