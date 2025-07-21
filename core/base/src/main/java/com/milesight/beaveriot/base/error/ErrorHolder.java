@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.base.error;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
+import com.milesight.beaveriot.base.exception.MultipleErrorException;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -59,6 +60,9 @@ public class ErrorHolder {
             if (cause instanceof ServiceException serviceException) {
                 errorCode = serviceException.getErrorCode();
                 args = serviceException.getArgs();
+            } else if (cause instanceof MultipleErrorException multipleErrorException) {
+                errorCode = multipleErrorException.getErrorCode();
+                args = multipleErrorException.getErrors();
             }
             return new ErrorHolder(errorCode, cause.getMessage(), args);
         }).toList();

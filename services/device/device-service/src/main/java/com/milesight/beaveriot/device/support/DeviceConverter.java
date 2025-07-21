@@ -42,6 +42,7 @@ public class DeviceConverter {
                     .id(devicePO.getId())
                     .additional(devicePO.getAdditionalData())
                     .entities(deviceEntityMap.getOrDefault(devicePO.getKey(), new ArrayList<>()))
+                    .template(devicePO.getTemplate())
                     .build();
             device.setCreatedAt(devicePO.getCreatedAt());
             return device;
