@@ -140,7 +140,7 @@ public class EntityTagService {
 
     @Transactional
     public void addTagsToEntities(List<Long> entityIds, List<Long> tagIds) {
-        if (tagIds == null || tagIds.isEmpty()) {
+        if (entityIds == null || entityIds.isEmpty() || tagIds == null || tagIds.isEmpty()) {
             return;
         }
 
@@ -205,6 +205,11 @@ public class EntityTagService {
                 .map(EntityTagMappingPO::getEntityId)
                 .distinct()
                 .collect(Collectors.toList());
+
+        if (targetEntityIds.isEmpty()) {
+            return;
+        }
+
         entityTagMappingRepository.deleteByTagIdInAndEntityIdIn(removedTagIds, targetEntityIds);
         addTagsToEntities(targetEntityIds, addedTagIds);
     }
