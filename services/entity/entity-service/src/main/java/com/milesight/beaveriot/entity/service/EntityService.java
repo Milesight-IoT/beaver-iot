@@ -943,6 +943,9 @@ public class EntityService implements EntityServiceProvider {
 
     public Page<EntityResponse> advancedSearch(EntityAdvancedSearchQuery entityQuery) {
 
+        List<MenuDTO> menuDTOList = getAndCheckUserMenuPermission();
+        boolean hasEntityCustomViewPermission = menuDTOList.stream().anyMatch(menuDTO -> OperationPermissionCode.ENTITY_CUSTOM_VIEW.getCode().equals(menuDTO.getMenuCode()));
+
         val columnToCondition = entityQuery.getEntityFilter();
 
         val integrationNameCondition = columnToCondition.get(EntitySearchColumn.INTEGRATION_NAME);
@@ -990,6 +993,7 @@ public class EntityService implements EntityServiceProvider {
 
             f.in(!entityIds.isEmpty(), EntityPO.Fields.id, entityIds.toArray());
             f.in(!attachTargetIds.isEmpty(), EntityPO.Fields.attachTargetId, attachTargetIds.toArray());
+            f.ne(!hasEntityCustomViewPermission, EntityPO.Fields.attachTargetId, IntegrationConstants.SYSTEM_INTEGRATION_ID);
 
             if (entityParentCondition != null) {
                 if (ComparisonOperator.IS_EMPTY.equals(entityParentCondition.getOperator())) {
