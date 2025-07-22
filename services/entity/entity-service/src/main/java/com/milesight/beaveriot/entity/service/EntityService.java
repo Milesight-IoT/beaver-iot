@@ -991,6 +991,7 @@ public class EntityService implements EntityServiceProvider {
                 }
             });
 
+            f.eq(EntityPO.Fields.visible, true);
             f.in(!entityIds.isEmpty(), EntityPO.Fields.id, entityIds.toArray());
             f.in(!attachTargetIds.isEmpty(), EntityPO.Fields.attachTargetId, attachTargetIds.toArray());
             f.ne(!hasEntityCustomViewPermission, EntityPO.Fields.attachTargetId, IntegrationConstants.SYSTEM_INTEGRATION_ID);
