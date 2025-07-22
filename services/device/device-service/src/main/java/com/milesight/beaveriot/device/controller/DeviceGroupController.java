@@ -4,6 +4,7 @@ import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.device.model.request.CreateDeviceGroupRequest;
 import com.milesight.beaveriot.device.model.request.SearchDeviceGroupRequest;
+import com.milesight.beaveriot.device.model.response.DeviceGroupNumberResponse;
 import com.milesight.beaveriot.device.model.response.DeviceGroupResponseData;
 import com.milesight.beaveriot.device.service.DeviceGroupService;
 import com.milesight.beaveriot.permission.aspect.OperationPermission;
@@ -25,9 +26,16 @@ public class DeviceGroupController {
     @Autowired
     DeviceGroupService deviceGroupService;
 
+    @OperationPermission(codes = OperationPermissionCode.DEVICE_VIEW)
     @PostMapping("/search")
     public ResponseBody<Page<DeviceGroupResponseData>> searchGroup(@RequestBody @Valid SearchDeviceGroupRequest request) {
         return ResponseBuilder.success(deviceGroupService.search(request));
+    }
+
+    @OperationPermission(codes = OperationPermissionCode.DEVICE_VIEW)
+    @GetMapping("/number")
+    public ResponseBody<DeviceGroupNumberResponse> countGroup() {
+        return ResponseBuilder.success(new DeviceGroupNumberResponse(deviceGroupService.countDeviceGroup()));
     }
 
     @OperationPermission(codes = OperationPermissionCode.DEVICE_GROUP_MANAGE)
