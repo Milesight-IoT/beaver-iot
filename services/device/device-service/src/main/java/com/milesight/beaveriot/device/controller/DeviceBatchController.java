@@ -66,7 +66,7 @@ public class DeviceBatchController {
         }
 
         return ResponseEntity.ok()
-                .headers(getFileHeaders(getFilePrefix() + "_device_template.xlsx"))
+                .headers(getFileHeaders(getFilePrefix() + "_devices_import_template.xlsx"))
                 .body(bos.toByteArray());
     }
 

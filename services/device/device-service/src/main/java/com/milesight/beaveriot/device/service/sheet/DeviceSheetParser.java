@@ -29,8 +29,6 @@ public class DeviceSheetParser {
 
     private final List<DeviceSheetColumn> deviceListColumns;
 
-    private Boolean isValid = null;
-
     @Data
     private static class ColumnMetaData {
         private Integer colIndex;
@@ -54,12 +52,22 @@ public class DeviceSheetParser {
     }
 
     public void validate() {
-        if (isValid == null) {
-            isValid = doValidateStructure() && doValidateDeviceNumber();
+        if (!doValidateStructure()) {
+            throw ServiceException.with(DeviceErrorCode.DEVICE_LIST_SHEET_STRUCTURE_ERROR).build();
         }
 
-        if (!isValid) {
-            throw ServiceException.with(DeviceErrorCode.DEVICE_LIST_SHEET_STRUCTURE_ERROR).build();
+        if (getDeviceListSheet().getLastRowNum() < 1) {
+            throw ServiceException.with(DeviceErrorCode.DEVICE_LIST_SHEET_NO_DEVICE).build();
+        }
+
+        if (getDeviceListSheet().getLastRowNum() > DeviceSheetConstants.MAX_BATCH_NUMBER) {
+            throw ServiceException
+                    .with(DeviceErrorCode.DEVICE_LIST_SHEET_DEVICE_OVER_LIMITATION)
+                    .args(Map.of(
+                            "limiation", DeviceSheetConstants.MAX_BATCH_NUMBER,
+                            "detected", getDeviceListSheet().getLastRowNum()
+                    ))
+                    .build();
         }
     }
 
@@ -69,10 +77,6 @@ public class DeviceSheetParser {
 
     private Sheet getColumnMetaSheet() {
         return workbook.getSheet(DeviceSheetConstants.HIDDEN_COL_META_SHEET);
-    }
-
-    private boolean doValidateDeviceNumber() {
-        return getDeviceListSheet().getLastRowNum() <= DeviceSheetConstants.MAX_BATCH_NUMBER;
     }
 
     private String getCellValue(Cell cell) {
