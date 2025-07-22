@@ -995,6 +995,7 @@ public class EntityService implements EntityServiceProvider {
             f.in(!entityIds.isEmpty(), EntityPO.Fields.id, entityIds.toArray());
             f.in(!attachTargetIds.isEmpty(), EntityPO.Fields.attachTargetId, attachTargetIds.toArray());
             f.ne(!hasEntityCustomViewPermission, EntityPO.Fields.attachTargetId, IntegrationConstants.SYSTEM_INTEGRATION_ID);
+            f.eq(EntityPO.Fields.visible, true);
 
             if (entityParentCondition != null) {
                 if (ComparisonOperator.IS_EMPTY.equals(entityParentCondition.getOperator())) {
