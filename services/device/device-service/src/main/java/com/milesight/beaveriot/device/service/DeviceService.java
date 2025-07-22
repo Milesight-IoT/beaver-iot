@@ -188,11 +188,10 @@ public class DeviceService implements IDeviceFacade {
             Integration integration = integrationMap.get(d.getIntegration());
             if (integration == null) {
                 d.setDeletable(true);
-                return;
+            } else {
+                d.setDeletable(StringUtils.hasLength(integration.getEntityIdentifierDeleteDevice()));
+                d.setIntegrationName(integration.getName());
             }
-
-            d.setDeletable(StringUtils.hasLength(integration.getEntityIdentifierDeleteDevice()));
-            d.setIntegrationName(integration.getName());
 
             DeviceGroupPO groupPO = deviceGroupMap.get(Long.valueOf(d.getId()));
             if (groupPO != null) {
