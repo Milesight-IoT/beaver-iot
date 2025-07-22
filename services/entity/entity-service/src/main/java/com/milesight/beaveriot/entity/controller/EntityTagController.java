@@ -63,7 +63,7 @@ public class EntityTagController {
         return ResponseBuilder.success();
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.ENTITY_DATA_EDIT, OperationPermissionCode.ENTITY_CUSTOM_EDIT})
+    @OperationPermission(codes = {OperationPermissionCode.ENTITY_DATA_EDIT})
     @PostMapping("/mapping")
     public ResponseBody<Void> mapping(@RequestBody @Valid EntityTagMappingRequest request) {
         entityTagService.handleEntityTagMappings(request.getOperation(), request.getEntityIds(), request.getRemovedTagIds(), request.getAddedTagIds());
