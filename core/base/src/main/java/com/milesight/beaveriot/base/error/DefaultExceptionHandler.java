@@ -73,7 +73,7 @@ public class DefaultExceptionHandler {
     @ResponseBody
     @ExceptionHandler(ServiceException.class)
     public ResponseEntity<Object> serviceExceptionHandler(ServiceException e) {
-        log.debug("Cause ServiceException Detail:", e);
+        log.error("Cause ServiceException Detail:", e);
         return ResponseEntity.status(e.getStatus()).body(ResponseBuilder.fail(e));
     }
 

@@ -207,7 +207,16 @@ public class DeviceSheetParser {
                     value = column.getEnums().get(strValue);
                 }
 
-                createDeviceRequest.getParamEntities().put(columnMetaData.getKey(), entity.getValueType().convertValue(value));
+                try {
+                    createDeviceRequest.getParamEntities().put(columnMetaData.getKey(), entity.getValueType().convertValue(value));
+                } catch (IllegalArgumentException e) {
+                    throw ServiceException.with(DeviceErrorCode.DEVICE_LIST_SHEET_PARSING_VALUE_ERROR).args(Map.of(
+                            "expected_type", entity.getValueType(),
+                            "entity_key", entity.getKey(),
+                            "entity_name", entity.getName()
+                    )).build();
+                }
+
             }
 
             createDeviceRequests.add(createDeviceRequest);
