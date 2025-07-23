@@ -70,7 +70,11 @@ public class DeviceSheetErrorApplier {
             }
 
             cell = row.createCell(errorColIndex);
+            CellStyle cellStyle = workbook.createCellStyle();
+            cellStyle.setWrapText(true);
+            cell.setCellStyle(cellStyle);
             cell.setCellValue(detail.getMsg());
+
             keepRows.add(rowIndex);
         }
 

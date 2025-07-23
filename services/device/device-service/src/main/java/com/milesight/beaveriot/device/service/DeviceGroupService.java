@@ -107,12 +107,15 @@ public class DeviceGroupService {
 
     public void updateDeviceGroup(Long id, CreateDeviceGroupRequest request) {
         DeviceGroupPO deviceGroupPO = getDeviceGroup(id);
-        Optional<DeviceGroupPO> deviceGroupPOOptional = deviceGroupRepository.findOne(f -> f.eq(DeviceGroupPO.Fields.name, request.getName()));
-        if (deviceGroupPOOptional.isPresent()) {
-            throw ServiceException.with(DeviceErrorCode.DEVICE_GROUP_NAME_EXISTS).build();
+        if (!Objects.equals(deviceGroupPO.getName(), request.getName())) {
+            Optional<DeviceGroupPO> deviceGroupPOOptional = deviceGroupRepository.findOne(f -> f.eq(DeviceGroupPO.Fields.name, request.getName()));
+            if (deviceGroupPOOptional.isPresent()) {
+                throw ServiceException.with(DeviceErrorCode.DEVICE_GROUP_NAME_EXISTS).build();
+            }
+
+            deviceGroupPO.setName(request.getName());
         }
 
-        deviceGroupPO.setName(request.getName());
         deviceGroupRepository.save(deviceGroupPO);
     }
 
