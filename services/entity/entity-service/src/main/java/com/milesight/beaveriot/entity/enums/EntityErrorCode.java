@@ -14,6 +14,7 @@ public enum EntityErrorCode implements ErrorCodeSpec {
 
     ENTITY_NOT_FOUND(HttpStatus.NOT_FOUND.value()),
     ENTITY_TAG_NOT_FOUND(HttpStatus.NOT_FOUND.value()),
+    ENTITY_TAG_NAME_ALREADY_EXISTS(HttpStatus.BAD_REQUEST.value()),
     NUMBER_OF_ENTITY_TAGS_EXCEEDED(HttpStatus.BAD_REQUEST.value()),
     NUMBER_OF_TAGS_PER_ENTITY_EXCEEDED(HttpStatus.BAD_REQUEST.value()),
     ;

@@ -13,6 +13,8 @@ import org.springframework.data.repository.query.Param;
 @Tenant
 public interface EntityTagRepository extends BaseJpaRepository<EntityTagPO, Long> {
 
+    boolean existsByName(String name);
+
     @Query(value = """
                     SELECT t.*, COUNT(m.id) AS taggedEntitiesCount
                     FROM t_entity_tag t

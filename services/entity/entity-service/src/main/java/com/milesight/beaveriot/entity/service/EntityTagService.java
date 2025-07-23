@@ -29,6 +29,7 @@ import org.springframework.util.StringUtils;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -73,6 +74,10 @@ public class EntityTagService {
             throw new ServiceException(EntityErrorCode.NUMBER_OF_ENTITY_TAGS_EXCEEDED);
         }
 
+        if (entityTagRepository.existsByName(request.getName())) {
+            throw new ServiceException(EntityErrorCode.ENTITY_TAG_NAME_ALREADY_EXISTS);
+        }
+
         val entityTag = EntityTagPO.builder()
                 .id(SnowflakeUtil.nextId())
                 .name(request.getName())
@@ -86,6 +91,12 @@ public class EntityTagService {
     public void update(Long id, EntityTagUpdateRequest request) {
         EntityTagPO entityTagPO = entityTagRepository.findById(id)
                 .orElseThrow(() -> new ServiceException(ErrorCode.DATA_NO_FOUND));
+
+        if (!Objects.equals(request.getName(), entityTagPO.getName())
+                && entityTagRepository.existsByName(request.getName())) {
+            throw new ServiceException(EntityErrorCode.ENTITY_TAG_NAME_ALREADY_EXISTS);
+        }
+
         entityTagPO.setName(request.getName());
         entityTagPO.setDescription(request.getDescription());
         entityTagPO.setColor(request.getColor());
