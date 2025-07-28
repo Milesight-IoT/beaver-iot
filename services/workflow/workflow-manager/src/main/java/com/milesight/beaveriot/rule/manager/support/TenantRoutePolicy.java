@@ -4,6 +4,7 @@ import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.constants.ExchangeContextKeys;
 import com.milesight.beaveriot.context.security.TenantContext;
+import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
 import org.apache.camel.Route;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 
 import java.text.MessageFormat;
+import java.util.Objects;
 
 /**
  * author: Luxb
@@ -57,21 +59,31 @@ public class TenantRoutePolicy implements RoutePolicy {
         if (NumberUtils.isCreatable(workflowId)) {
             String tenantId = WorkflowTenantCache.INSTANCE.get(workflowId);
             if (!ObjectUtils.isEmpty(tenantId)) {
-                if (tenantWorkflowRateLimiter.acquire(tenantId)) {
-                    try {
-                        TenantContext.setTenantId(tenantId);
-                        if (ObjectUtils.isEmpty(exchange.getProperty(ExchangeContextKeys.SOURCE_TENANT_ID))) {
-                            exchange.setProperty(ExchangeContextKeys.SOURCE_TENANT_ID, tenantId);
+                String rootFlowId = exchange.getProperty(ExchangeHeaders.EXCHANGE_ROOT_FLOW_ID, exchange.getFromRouteId(), String.class);
+                if (Objects.equals(rootFlowId, workflowId)) {
+                    if (tenantWorkflowRateLimiter.acquire(tenantId)) {
+                        try {
+                            doExchangeBegin(tenantId, route, exchange);
+                        } finally {
+                            tenantWorkflowRateLimiter.release(tenantId);
                         }
-                    } finally {
-                        tenantWorkflowRateLimiter.release(tenantId);
+                    } else {
+                        String errorMessage = MessageFormat.format("Failed occurred during acquiring workflow semaphore for tenant {0}", tenantId);
+                        log.error(errorMessage);
+                        throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), errorMessage).build();
                     }
                 } else {
-                    String errorMessage = MessageFormat.format("Failed occurred during acquiring workflow semaphore for tenant {0}", tenantId);
-                    log.error(errorMessage);
-                    throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), errorMessage).build();
+                    doExchangeBegin(tenantId, route, exchange);
                 }
             }
+        }
+    }
+
+    @SuppressWarnings("unused")
+    private void doExchangeBegin(String tenantId, Route route, Exchange exchange) {
+        TenantContext.setTenantId(tenantId);
+        if (ObjectUtils.isEmpty(exchange.getProperty(ExchangeContextKeys.SOURCE_TENANT_ID))) {
+            exchange.setProperty(ExchangeContextKeys.SOURCE_TENANT_ID, tenantId);
         }
     }
 
