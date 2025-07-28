@@ -154,9 +154,6 @@ workflow:
     timeout: 3000
     tenant-concurrency:
       free: 5
-      vip1: 10
-      vip2: 20
-      vip3: 30
 
 websocket:
   enabled: true

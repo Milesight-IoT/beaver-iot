@@ -87,9 +87,6 @@ public class TenantWorkflowRateLimiter {
     }
 
     public enum TenantType {
-        FREE,
-        VIP1,
-        VIP2,
-        VIP3
+        FREE
     }
 }
