@@ -20,6 +20,7 @@ public class RedisSemaphore implements DistributedSemaphore {
     @Override
     public void initPermits(String key, int permits) {
         RSemaphore semaphore = redissonClient.getSemaphore(key);
+        semaphore.delete();
         semaphore.trySetPermits(permits);
     }
 
