@@ -79,7 +79,7 @@ public class TenantWorkflowRateLimiter {
     @SuppressWarnings("unused")
     private TenantType getTenantTypeByTenantId(String tenantId) {
         // Get tenant type from tenantId
-        return TenantType.FREE;
+        return TenantType.DEFAULT;
     }
 
     private int getSemaphorePermitsByTenantType(TenantType tenantType) {
@@ -87,6 +87,6 @@ public class TenantWorkflowRateLimiter {
     }
 
     public enum TenantType {
-        FREE
+        DEFAULT
     }
 }
