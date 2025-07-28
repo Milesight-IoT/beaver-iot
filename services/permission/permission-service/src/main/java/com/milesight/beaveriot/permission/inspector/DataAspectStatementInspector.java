@@ -28,6 +28,9 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -48,12 +51,36 @@ public class DataAspectStatementInspector implements StatementInspector {
             .expireAfterAccess(7, TimeUnit.DAYS)
             .build();
 
+    private static final int DEFAULT_THREAD_SIZE = (Runtime.getRuntime().availableProcessors() + 1) / 2;
+
+    private static final ExecutorService jsqlParserExecutor = new ThreadPoolExecutor(
+            DEFAULT_THREAD_SIZE,
+            DEFAULT_THREAD_SIZE,
+            0L,
+            TimeUnit.MILLISECONDS,
+            new LinkedBlockingQueue<>(),
+            r -> {
+                Thread thread = new Thread(r);
+                thread.setName("jsqlParser-" + thread.getId());
+                thread.setDaemon(true);
+                return thread;
+            });
+
+    static {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (!jsqlParserExecutor.isShutdown()) {
+                log.debug("jsqlParserExecutor is shutting down...");
+                jsqlParserExecutor.shutdown();
+            }
+        }, "jsqlParser-shutdown-hook"));
+    }
+
     @Override
     @SneakyThrows
     public String inspect(String sql) {
         SqlInfo cachedSql = sqlTemplateCache.getIfPresent(sql);
         if (cachedSql == null) {
-            Statement statement = CCJSqlParserUtil.parse(sql);
+            Statement statement = CCJSqlParserUtil.parse(sql, jsqlParserExecutor, null);
             TableInfo tableInfo = getTableInfo(statement);
             String tableName = tableInfo.tableName;
             doTenantInspect(statement);
