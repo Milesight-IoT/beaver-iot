@@ -40,8 +40,9 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.redisson</groupId>
-            <artifactId>redisson-spring-boot-starter</artifactId>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>cluster</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 

@@ -1,8 +1,8 @@
-package com.milesight.beaveriot.rule.manager.semaphore.config;
+package com.milesight.beaveriot.semaphore.autoconfigure;
 
-import com.milesight.beaveriot.rule.manager.semaphore.DistributedSemaphore;
-import com.milesight.beaveriot.rule.manager.semaphore.local.LocalSemaphore;
-import com.milesight.beaveriot.rule.manager.semaphore.redis.RedisSemaphore;
+import com.milesight.beaveriot.semaphore.DistributedSemaphore;
+import com.milesight.beaveriot.semaphore.local.LocalSemaphore;
+import com.milesight.beaveriot.semaphore.redis.RedisSemaphore;
 import org.redisson.api.RedissonClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

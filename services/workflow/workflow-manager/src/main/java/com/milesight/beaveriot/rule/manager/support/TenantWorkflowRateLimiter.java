@@ -3,7 +3,7 @@ package com.milesight.beaveriot.rule.manager.support;
 import com.google.common.collect.Maps;
 import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
 import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
-import com.milesight.beaveriot.rule.manager.semaphore.DistributedSemaphore;
+import com.milesight.beaveriot.semaphore.DistributedSemaphore;
 import com.milesight.beaveriot.user.dto.TenantDTO;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import lombok.extern.slf4j.Slf4j;

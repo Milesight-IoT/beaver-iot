@@ -1,7 +1,7 @@
-package com.milesight.beaveriot.rule.manager.semaphore.local;
+package com.milesight.beaveriot.semaphore.local;
 
 import com.google.common.collect.Maps;
-import com.milesight.beaveriot.rule.manager.semaphore.DistributedSemaphore;
+import com.milesight.beaveriot.semaphore.DistributedSemaphore;
 
 import java.time.Duration;
 import java.util.Map;

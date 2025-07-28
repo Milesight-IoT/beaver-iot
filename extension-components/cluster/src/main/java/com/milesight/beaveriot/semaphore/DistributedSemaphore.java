@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.rule.manager.semaphore;
+package com.milesight.beaveriot.semaphore;
 
 import java.time.Duration;
 

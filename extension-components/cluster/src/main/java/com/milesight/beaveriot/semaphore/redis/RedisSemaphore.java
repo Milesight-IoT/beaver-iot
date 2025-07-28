@@ -1,6 +1,6 @@
-package com.milesight.beaveriot.rule.manager.semaphore.redis;
+package com.milesight.beaveriot.semaphore.redis;
 
-import com.milesight.beaveriot.rule.manager.semaphore.DistributedSemaphore;
+import com.milesight.beaveriot.semaphore.DistributedSemaphore;
 import org.redisson.api.RSemaphore;
 import org.redisson.api.RedissonClient;
 
