@@ -155,8 +155,7 @@ public class DeviceSheetGenerator {
         cell.setCellValue(column.getName());
         cell.setCellStyle(generateDeviceHeaderStyle(column));
         this.resolveInputConstraint(columnIndex, column);
-        getDeviceSheet().autoSizeColumn(columnIndex);
-        getDeviceSheet().setColumnWidth(columnIndex, getDeviceSheet().getColumnWidth(columnIndex) + DeviceSheetConstants.ADDITIONAL_COLUMN_WIDTH);
+        getDeviceSheet().setColumnWidth(columnIndex, (column.getName().length() * 256) + DeviceSheetConstants.ADDITIONAL_COLUMN_WIDTH);
 
         // add column meta data
         this.addColumnMeta(columnIndex, column);
@@ -180,7 +179,7 @@ public class DeviceSheetGenerator {
         String name = "opt_" + SnowflakeUtil.nextId();
         namedRange.setNameName(name);
         CellReference startRef = new CellReference(0, optUsage, true, true);
-        CellReference endRef = new CellReference(options.size() - 1, optUsage, true, true);
+        CellReference endRef = new CellReference(Math.max(options.size() - 1, 0), optUsage, true, true);
         namedRange.setRefersToFormula(String.format("'%s'!%s:%s",
                 getHiddenOptionSheet().getSheetName(),
                 startRef.formatAsString(),

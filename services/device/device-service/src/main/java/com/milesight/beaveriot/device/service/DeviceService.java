@@ -49,7 +49,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -117,7 +116,6 @@ public class DeviceService implements IDeviceFacade {
         return integrationServiceProvider.getIntegration(integrationIdentifier);
     }
 
-    @Transactional(rollbackFor = Exception.class)
     public void createDevice(CreateDeviceRequest createDeviceRequest) {
         String integrationIdentifier = createDeviceRequest.getIntegration();
         Integration integrationConfig = self.getIntegration(integrationIdentifier);
@@ -271,7 +269,6 @@ public class DeviceService implements IDeviceFacade {
         return responseDataList;
     }
 
-    @Transactional(rollbackFor = Exception.class)
     public void updateDevice(Long deviceId, UpdateDeviceRequest updateDeviceRequest) {
         Optional<DevicePO> findResult = deviceRepository.findByIdWithDataPermission(deviceId);
         if (findResult.isEmpty()) {
@@ -291,7 +288,6 @@ public class DeviceService implements IDeviceFacade {
         eventBus.publish(DeviceEvent.of(DeviceEvent.EventType.UPDATED, deviceConverter.convertPO(device)));
     }
 
-    @Transactional(rollbackFor = Exception.class)
     public void batchDeleteDevices(List<String> deviceIdList) {
         if (deviceIdList.isEmpty()) {
             return;
