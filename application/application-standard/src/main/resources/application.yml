@@ -148,6 +148,13 @@ camel:
           - "python"
           - "mvel"
 
+workflow:
+  rate-limit:
+    enabled: false
+    timeout: 3000
+    tenant-concurrency:
+      default: 5
+
 websocket:
   enabled: true
   port: ${WEBSOCKET_PORT:9201}
