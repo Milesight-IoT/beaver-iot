@@ -5,6 +5,7 @@ import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
 import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
 import com.milesight.beaveriot.semaphore.DistributedSemaphore;
 import jakarta.annotation.PreDestroy;
+import lombok.Data;
 import org.redisson.api.RPermitExpirableSemaphore;
 import org.redisson.api.RedissonClient;
 
@@ -23,8 +24,7 @@ import java.util.concurrent.TimeUnit;
 public class RedisSemaphore implements DistributedSemaphore {
     private static final long DEFAULT_LEASE_TIME = 15000;
     private static final long DEFAULT_WATCH_PERIOD = 10000;
-    private static final Map<String, ScheduledExecutorService> keyWatchDogs = Maps.newConcurrentMap();
-    private static final Map<String, Set<String>> keyPermitIds = Maps.newConcurrentMap();
+    private static final Map<String, WatchDog> keyWatchDogs = Maps.newConcurrentMap();
     private final RedissonClient redissonClient;
 
     public RedisSemaphore(RedissonClient redissonClient) {
@@ -54,25 +54,16 @@ public class RedisSemaphore implements DistributedSemaphore {
     }
 
     private void startWatchDog(String key, String permitId) {
-        Set<String> permitIds = keyPermitIds.computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet());
-        permitIds.add(permitId);
-
-        if (!keyWatchDogs.containsKey(key)) {
-            RPermitExpirableSemaphore semaphore = redissonClient.getPermitExpirableSemaphore(key);
-            ScheduledExecutorService watchDog = Executors.newSingleThreadScheduledExecutor();
-            watchDog.scheduleAtFixedRate(() -> {
-                Set<String> thePermitIds = keyPermitIds.get(key);
-                thePermitIds.forEach(eachPermitId -> semaphore.updateLeaseTime(eachPermitId, DEFAULT_LEASE_TIME, TimeUnit.MILLISECONDS));
-            }, 0, DEFAULT_WATCH_PERIOD, TimeUnit.MILLISECONDS);
-            keyWatchDogs.put(key, watchDog);
-        }
+        RPermitExpirableSemaphore semaphore = redissonClient.getPermitExpirableSemaphore(key);
+        WatchDog watchDog = keyWatchDogs.computeIfAbsent(key, k -> WatchDog.create(semaphore));
+        watchDog.getPermitIds().add(permitId);
     }
 
     @Override
     public void release(String key, String permitId) {
-        if (keyPermitIds.containsKey(key)) {
-            Set<String> permitIds = keyPermitIds.get(key);
-            permitIds.remove(permitId);
+        if (keyWatchDogs.containsKey(key)) {
+            WatchDog watchDog = keyWatchDogs.get(key);
+            watchDog.getPermitIds().remove(permitId);
         }
 
         RPermitExpirableSemaphore semaphore = redissonClient.getPermitExpirableSemaphore(key);
@@ -81,8 +72,27 @@ public class RedisSemaphore implements DistributedSemaphore {
 
     @PreDestroy
     public void destroy() {
-        for (ScheduledExecutorService watchDog : keyWatchDogs.values()) {
-            watchDog.shutdown();
+        for (WatchDog watchDog : keyWatchDogs.values()) {
+            watchDog.getLeaseReNewer().shutdown();
+        }
+    }
+
+    @Data
+    public static class WatchDog {
+        private Set<String> permitIds;
+        private ScheduledExecutorService leaseReNewer;
+        private RPermitExpirableSemaphore semaphore;
+
+        public static WatchDog create(RPermitExpirableSemaphore semaphore) {
+            WatchDog watchDog = new WatchDog();
+            watchDog.setSemaphore(semaphore);
+            watchDog.setPermitIds(ConcurrentHashMap.newKeySet());
+            ScheduledExecutorService leaseReNewer = Executors.newSingleThreadScheduledExecutor();
+            leaseReNewer.scheduleAtFixedRate(() -> watchDog.getPermitIds().forEach(eachPermitId ->
+                    semaphore.updateLeaseTime(eachPermitId, DEFAULT_LEASE_TIME, TimeUnit.MILLISECONDS)),
+                    0, DEFAULT_WATCH_PERIOD, TimeUnit.MILLISECONDS);
+            watchDog.setLeaseReNewer(leaseReNewer);
+            return watchDog;
         }
     }
 }
