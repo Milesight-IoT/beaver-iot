@@ -12,6 +12,7 @@ public class ValidationUtils {
     private static final String REGEX_NUMBER = "^-?\\d+(\\.\\d+)?$";
     private static final String REGEX_INTEGER = "^-?\\d+$";
     private static final String REGEX_POSITIVE_INTEGER = "^[1-9]\\d*$";
+    private static final String REGEX_NON_NEGATIVE_INTEGER = "^\\d+$";
 
     public static boolean isHex(String text) {
         return matches(text, REGEX_HEX);
@@ -35,6 +36,10 @@ public class ValidationUtils {
 
     public static boolean isPositiveInteger(String text) {
         return matches(text, REGEX_POSITIVE_INTEGER);
+    }
+
+    public static boolean isNonNegativeInteger(String text) {
+        return matches(text, REGEX_NON_NEGATIVE_INTEGER);
     }
 
     public static boolean matches(String text, String regex) {
