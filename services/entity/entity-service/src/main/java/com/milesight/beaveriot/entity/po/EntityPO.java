@@ -2,6 +2,7 @@ package com.milesight.beaveriot.entity.po;
 
 import com.milesight.beaveriot.base.enums.EntityErrorCode;
 import com.milesight.beaveriot.base.error.ErrorHolder;
+import com.milesight.beaveriot.base.utils.NumberUtils;
 import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.base.utils.ValidationUtils;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
@@ -357,7 +358,8 @@ public class EntityPO {
     private void validateAttributeMinAndMax(String entityKey, Map<String, Object> entityData, List<ErrorHolder> errors) {
         boolean isMinValid = true;
         Object min = valueAttribute.get(AttributeBuilder.ATTRIBUTE_MIN);
-        if (min != null && !ValidationUtils.isNumber(min.toString())) {
+        Double minValue = NumberUtils.parseDouble(min);
+        if (min != null && minValue == null) {
             isMinValid = false;
             errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_ATTRIBUTE_MIN_INVALID.getErrorCode(),
                     EntityErrorCode.ENTITY_ATTRIBUTE_MIN_INVALID.formatMessage(entityKey),
@@ -366,7 +368,8 @@ public class EntityPO {
 
         boolean isMaxValid = true;
         Object max = valueAttribute.get(AttributeBuilder.ATTRIBUTE_MAX);
-        if (max != null && !ValidationUtils.isNumber(max.toString())) {
+        Double maxValue = NumberUtils.parseDouble(max);
+        if (max != null && maxValue == null) {
             isMaxValid = false;
             errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_ATTRIBUTE_MAX_INVALID.getErrorCode(),
                     EntityErrorCode.ENTITY_ATTRIBUTE_MAX_INVALID.formatMessage(entityKey),
@@ -374,7 +377,7 @@ public class EntityPO {
         }
 
         if (min != null && max != null && isMinValid && isMaxValid) {
-            if (Double.parseDouble(min.toString()) > Double.parseDouble(max.toString())) {
+            if (minValue > maxValue) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_ATTRIBUTE_MIN_GREATER_THAN_MAX.getErrorCode(),
                         EntityErrorCode.ENTITY_ATTRIBUTE_MIN_GREATER_THAN_MAX.formatMessage(entityKey, min, max),
                         buildExtraData(entityData, Map.of(
