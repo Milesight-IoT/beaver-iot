@@ -50,13 +50,39 @@ public class ErrorHolder {
         return new ErrorHolder(errorCode, errorMessage, args);
     }
 
+    private static final int MAX_CAUSE_DEPTH = 10;
+
+    private static Throwable tryGetKnownCause(Throwable cause) {
+        Throwable knownCause = cause;
+        int i = 0;
+        do {
+            if (knownCause instanceof ServiceException || knownCause instanceof MultipleErrorException) {
+                // known
+                return knownCause;
+            }
+
+            if (knownCause.getCause() == null) {
+                // not found, return raw
+                return cause;
+            } else {
+                // continue to find
+                knownCause = knownCause.getCause();
+            }
+
+            i++;
+        } while (i < MAX_CAUSE_DEPTH);
+
+        return cause;
+    }
+
     public static List<ErrorHolder> of(List<Throwable> causes) {
         if(ObjectUtils.isEmpty(causes)){
             return Collections.emptyList();
         }
-        return causes.stream().map(cause -> {
+        return causes.stream().map(throwable -> {
             String errorCode = ErrorCode.SERVER_ERROR.getErrorCode();
             Object args = null;
+            Throwable cause = tryGetKnownCause(throwable);
             if (cause instanceof ServiceException serviceException) {
                 errorCode = serviceException.getErrorCode();
                 args = serviceException.getArgs();
