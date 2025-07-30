@@ -535,19 +535,19 @@ public class EntityService implements EntityServiceProvider {
             return Page.empty();
         }
         Consumer<Filterable> filterable = f -> f.isNull(isExcludeChildren, EntityPO.Fields.parent)
-                .in(entityQuery.getEntityType() != null && !entityQuery.getEntityType().isEmpty(), EntityPO.Fields.type, entityQuery.getEntityType() == null ? null : entityQuery.getEntityType().toArray())
-                .in(entityQuery.getEntityIds() != null && !entityQuery.getEntityIds().isEmpty(), EntityPO.Fields.id, entityQuery.getEntityIds() == null ? null : entityQuery.getEntityIds().toArray())
-                .in(entityQuery.getEntityValueType() != null && !entityQuery.getEntityValueType().isEmpty(), EntityPO.Fields.valueType, entityQuery.getEntityValueType() == null ? null : entityQuery.getEntityValueType().toArray())
-                .in(entityQuery.getEntityAccessMod() != null && !entityQuery.getEntityAccessMod().isEmpty(), EntityPO.Fields.accessMod, entityQuery.getEntityAccessMod() == null ? null : entityQuery.getEntityAccessMod().toArray())
-                .in(entityQuery.getEntityKeys() != null && !entityQuery.getEntityKeys().isEmpty(), EntityPO.Fields.key, entityQuery.getEntityKeys() == null ? null : entityQuery.getEntityKeys().toArray())
-                .in(entityQuery.getEntityNames() != null && !entityQuery.getEntityNames().isEmpty(), EntityPO.Fields.name, entityQuery.getEntityNames() == null ? null : entityQuery.getEntityNames().toArray())
+                .in(!CollectionUtils.isEmpty(entityQuery.getEntityType()), EntityPO.Fields.type, toArray(entityQuery.getEntityType()))
+                .in(!CollectionUtils.isEmpty(entityQuery.getEntityIds()), EntityPO.Fields.id, toArray(entityQuery.getEntityIds()))
+                .in(!CollectionUtils.isEmpty(entityQuery.getEntityValueType()), EntityPO.Fields.valueType, toArray(entityQuery.getEntityValueType()))
+                .in(!CollectionUtils.isEmpty(entityQuery.getEntityAccessMod()), EntityPO.Fields.accessMod, toArray(entityQuery.getEntityAccessMod()))
+                .in(!CollectionUtils.isEmpty(entityQuery.getEntityKeys()), EntityPO.Fields.key, toArray(entityQuery.getEntityKeys()))
+                .in(!CollectionUtils.isEmpty(entityQuery.getEntityNames()), EntityPO.Fields.name, toArray(entityQuery.getEntityNames()))
                 .eq(Boolean.TRUE.equals(entityQuery.getCustomized()), EntityPO.Fields.attachTargetId, IntegrationConstants.SYSTEM_INTEGRATION_ID)
                 .ne(Boolean.FALSE.equals(entityQuery.getCustomized()), EntityPO.Fields.attachTargetId, IntegrationConstants.SYSTEM_INTEGRATION_ID)
                 .eq(!Boolean.TRUE.equals(entityQuery.getShowHidden()), EntityPO.Fields.visible, true)
-                .in(!sourceTargetIds.isEmpty(), EntityPO.Fields.attachTargetId, sourceTargetIds.toArray())
+                .in(!CollectionUtils.isEmpty(sourceTargetIds), EntityPO.Fields.attachTargetId, toArray(sourceTargetIds))
                 .or(f1 -> f1.likeIgnoreCase(StringUtils.hasText(entityQuery.getKeyword()), EntityPO.Fields.name, entityQuery.getKeyword())
                         .likeIgnoreCase(StringUtils.hasText(entityQuery.getKeyword()) && !Boolean.TRUE.equals(entityQuery.getNotScanKey()), EntityPO.Fields.key, entityQuery.getKeyword())
-                        .in(!attachTargetIds.isEmpty(), EntityPO.Fields.attachTargetId, attachTargetIds.toArray()));
+                        .in(!CollectionUtils.isEmpty(attachTargetIds), EntityPO.Fields.attachTargetId, toArray(attachTargetIds)));
         List<EntityPO> entityPOList = new ArrayList<>();
         if (!Boolean.TRUE.equals(entityQuery.getCustomized())) {
             try {
@@ -940,7 +940,7 @@ public class EntityService implements EntityServiceProvider {
     }
 
     public List<EntityPO> listEntityPOById(List<Long> entityIds) {
-        return entityRepository.findAllWithDataPermission(filterable -> filterable.in(EntityPO.Fields.id, entityIds.toArray()));
+        return entityRepository.findAllWithDataPermission(filterable -> filterable.in(EntityPO.Fields.id, toArray(entityIds)));
     }
 
     public Page<EntityResponse> advancedSearch(EntityAdvancedSearchQuery entityQuery) {
@@ -951,35 +951,54 @@ public class EntityService implements EntityServiceProvider {
         val columnToCondition = entityQuery.getEntityFilter();
 
         val integrationNameCondition = columnToCondition.get(EntitySearchColumn.INTEGRATION_NAME);
-        val integrationAndDeviceIds = getIntegrationAndDeviceIdsByIntegrationNameCondition(integrationNameCondition);
-        if (integrationAndDeviceIds == null) {
+        val integrationIds = getIntegrationAndDeviceIdsByIntegrationNameCondition(integrationNameCondition);
+        if (integrationIds != null && integrationIds.isEmpty()) {
             return Page.empty();
         }
-        val attachTargetIds = new HashSet<>(integrationAndDeviceIds);
+
+        Set<String> intersectionDeviceIds = null;
+        val attachTargetIds = new HashSet<>();
+        if (integrationIds != null) {
+            attachTargetIds.addAll(integrationIds);
+            val integrationDeviceIds = getDeviceIdsByIntegrationId(integrationIds);
+            if (!integrationDeviceIds.isEmpty()) {
+                intersectionDeviceIds = new HashSet<>(integrationDeviceIds);
+            }
+        }
 
         val deviceNameCondition = columnToCondition.get(EntitySearchColumn.DEVICE_NAME);
         val deviceIds = getDeviceIdsByDeviceNameCondition(deviceNameCondition);
-        if (deviceIds == null) {
-            return Page.empty();
+        if (deviceIds != null) {
+            if (deviceIds.isEmpty()) {
+                return Page.empty();
+            } else {
+                intersectionDeviceIds = doIntersection(intersectionDeviceIds, deviceIds);
+            }
         }
-        attachTargetIds.addAll(deviceIds);
 
         val deviceGroupNameCondition = columnToCondition.get(EntitySearchColumn.DEVICE_GROUP);
         val deviceIdsByGroupName = getDeviceIdsByDeviceGroupNameCondition(deviceGroupNameCondition);
-        if (deviceIdsByGroupName == null) {
-            return Page.empty();
+        if (deviceIdsByGroupName != null) {
+            if (deviceIdsByGroupName.isEmpty()) {
+                return Page.empty();
+            } else {
+                intersectionDeviceIds = doIntersection(intersectionDeviceIds, deviceIdsByGroupName);
+            }
         }
-        attachTargetIds.addAll(deviceIdsByGroupName);
+
+        if (!CollectionUtils.isEmpty(intersectionDeviceIds)) {
+            attachTargetIds.addAll(intersectionDeviceIds);
+        }
 
         val entityParentCondition = columnToCondition.get(EntitySearchColumn.ENTITY_PARENT_NAME);
         val parentEntityKeys = getEntityIdsByEntityParentNameCondition(entityParentCondition);
-        if (parentEntityKeys == null) {
+        if (parentEntityKeys != null && parentEntityKeys.isEmpty()) {
             return Page.empty();
         }
 
         val tagCondition = columnToCondition.get(EntitySearchColumn.ENTITY_TAGS);
         val entityIds = getEntityIdsByEntityTagCondition(tagCondition);
-        if (entityIds == null) {
+        if (entityIds != null && entityIds.isEmpty()) {
             return Page.empty();
         }
 
@@ -994,8 +1013,8 @@ public class EntityService implements EntityServiceProvider {
             });
 
             f.eq(EntityPO.Fields.visible, true);
-            f.in(!entityIds.isEmpty(), EntityPO.Fields.id, entityIds.toArray());
-            f.in(!attachTargetIds.isEmpty(), EntityPO.Fields.attachTargetId, attachTargetIds.toArray());
+            f.in(!CollectionUtils.isEmpty(entityIds), EntityPO.Fields.id, toArray(entityIds));
+            f.in(!CollectionUtils.isEmpty(attachTargetIds), EntityPO.Fields.attachTargetId, toArray(attachTargetIds));
             f.ne(!hasEntityCustomViewPermission, EntityPO.Fields.attachTargetId, IntegrationConstants.SYSTEM_INTEGRATION_ID);
 
             if (entityParentCondition != null) {
@@ -1004,10 +1023,10 @@ public class EntityService implements EntityServiceProvider {
                 } else if (ComparisonOperator.IS_NOT_EMPTY.equals(entityParentCondition.getOperator())) {
                     f.isNotNull(EntityPO.Fields.parent);
                 } else if (ComparisonOperator.NOT_CONTAINS.equals(entityParentCondition.getOperator())) {
-                    f.or(f1 -> f1.in(!parentEntityKeys.isEmpty(), EntityPO.Fields.parent, parentEntityKeys.toArray())
+                    f.or(f1 -> f1.in(!CollectionUtils.isEmpty(parentEntityKeys), EntityPO.Fields.parent, toArray(parentEntityKeys))
                             .isNull(EntityPO.Fields.parent));
                 } else {
-                    f.in(!parentEntityKeys.isEmpty(), EntityPO.Fields.parent, parentEntityKeys.toArray());
+                    f.in(!CollectionUtils.isEmpty(parentEntityKeys), EntityPO.Fields.parent, toArray(parentEntityKeys));
                 }
             }
         };
@@ -1016,12 +1035,31 @@ public class EntityService implements EntityServiceProvider {
         return convertEntityPOListToFullEntityResponses(entityPOPage);
     }
 
+    @Nullable
+    private static <T> Object[] toArray(Collection<T> collection) {
+        if (collection == null) {
+            return null;
+        }
+        return collection.toArray();
+    }
+
+    @NonNull
+    private static Set<String> doIntersection(Set<String> source, Collection<String> target) {
+        if (source == null) {
+            source = new HashSet<>(target);
+        } else {
+            source.retainAll(target);
+        }
+        return source;
+    }
+
+    @Nullable
     private List<Long> getEntityIdsByEntityTagCondition(EntityAdvancedSearchCondition tagCondition) {
         if (tagCondition == null) {
-            return Collections.emptyList();
+            return null;
         }
 
-        val entityIds = switch (tagCondition.getOperator()) {
+        return switch (tagCondition.getOperator()) {
             case EQ -> entityTagService.findEntityIdsByTagEquals(tagCondition.getValues());
             case CONTAINS -> entityTagService.findEntityIdsByTagContains(tagCondition.getValues());
             case NOT_CONTAINS -> entityTagService.findEntityIdsByTagNotContains(tagCondition.getValues());
@@ -1031,59 +1069,45 @@ public class EntityService implements EntityServiceProvider {
             default ->
                     throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Invalid operator").build();
         };
-
-        if (entityIds.isEmpty()) {
-            return null;
-        }
-        return entityIds;
     }
 
+    @Nullable
     private List<String> getEntityIdsByEntityParentNameCondition(EntityAdvancedSearchCondition entityParentCondition) {
         if (entityParentCondition == null || CollectionUtils.isEmpty(entityParentCondition.getValues())) {
-            return Collections.emptyList();
+            return null;
         }
 
         val operator = entityParentCondition.getOperator();
         if (ComparisonOperator.IS_EMPTY.equals(operator) || ComparisonOperator.IS_NOT_EMPTY.equals(operator)) {
-            return Collections.emptyList();
+            return null;
         }
 
-        val parentEntityKeys = entityRepository.findAllWithDataPermission(filterable -> {
+        return entityRepository.findAllWithDataPermission(filterable -> {
                     buildTextFilterable(filterable, entityParentCondition.getOperator(), EntityPO.Fields.name, entityParentCondition.getValues());
                     filterable.isNull(EntityPO.Fields.parent);
                 })
                 .stream()
                 .map(EntityPO::getKey)
                 .collect(Collectors.toList());
-
-        if (parentEntityKeys.isEmpty()) {
-            return null;
-        }
-        return parentEntityKeys;
     }
 
     @Nullable
     private List<String> getDeviceIdsByDeviceNameCondition(EntityAdvancedSearchCondition deviceNameCondition) {
         if (deviceNameCondition == null || CollectionUtils.isEmpty(deviceNameCondition.getValues())) {
-            return Collections.emptyList();
+            return null;
         }
 
         val keyword = deviceNameCondition.getValues().get(0);
-        val deviceIds = deviceFacade.fuzzySearchDeviceIdsByName(deviceNameCondition.getOperator(), keyword)
+        return deviceFacade.fuzzySearchDeviceIdsByName(deviceNameCondition.getOperator(), keyword)
                 .stream()
                 .map(String::valueOf)
                 .toList();
-
-        if (deviceIds.isEmpty()) {
-            return null;
-        }
-        return deviceIds;
     }
 
     @Nullable
     private List<String> getDeviceIdsByDeviceGroupNameCondition(EntityAdvancedSearchCondition deviceGroupNameCondition) {
         if (deviceGroupNameCondition == null || CollectionUtils.isEmpty(deviceGroupNameCondition.getValues())) {
-            return Collections.emptyList();
+            return null;
         }
 
         val operator = deviceGroupNameCondition.getOperator();
@@ -1091,33 +1115,20 @@ public class EntityService implements EntityServiceProvider {
             throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Unsupported operator: " + operator).build();
         }
 
-        val deviceIds = deviceFacade.findDeviceIdsByGroupNameIn(deviceGroupNameCondition.getValues())
+        return deviceFacade.findDeviceIdsByGroupNameIn(deviceGroupNameCondition.getValues())
                 .stream()
                 .map(String::valueOf)
                 .toList();
-
-        if (deviceIds.isEmpty()) {
-            return null;
-        }
-        return deviceIds;
     }
 
     @Nullable
     private List<String> getIntegrationAndDeviceIdsByIntegrationNameCondition(EntityAdvancedSearchCondition integrationNameCondition) {
         if (integrationNameCondition == null || CollectionUtils.isEmpty(integrationNameCondition.getValues())) {
-            return Collections.emptyList();
+            return null;
         }
-
         val operator = integrationNameCondition.getOperator();
         val keyword = integrationNameCondition.getValues().get(0);
-        val integrationIds = searchIntegrationIdsByName(operator, keyword);
-
-        if (integrationIds.isEmpty()) {
-            return null;
-        } else {
-            List<String> deviceIds = getDeviceIdsByIntegrationId(integrationIds);
-            return Stream.concat(deviceIds.stream(), integrationIds.stream()).toList();
-        }
+        return searchIntegrationIdsByName(operator, keyword);
     }
 
     @NonNull
@@ -1126,6 +1137,7 @@ public class EntityService implements EntityServiceProvider {
         if (integrationDevices == null || integrationDevices.isEmpty()) {
             return Collections.emptyList();
         }
+
         return integrationDevices.stream()
                 .map(DeviceNameDTO::getId)
                 .map(String::valueOf)
