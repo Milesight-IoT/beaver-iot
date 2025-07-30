@@ -236,6 +236,10 @@ public class DeviceSheetParser {
             }
         }
 
+        if (createDeviceRequests.isEmpty()) {
+            throw ServiceException.with(DeviceErrorCode.DEVICE_LIST_SHEET_NO_DEVICE).build();
+        }
+
         result.setCreateDeviceRequests(createDeviceRequests);
         result.setRowId(rowIdList);
         return result;
