@@ -292,7 +292,7 @@ public class EntityPO {
             return;
         }
 
-        if (!ValidationUtils.isPositiveInteger(fractionDigits.toString())) {
+        if (!ValidationUtils.isNonNegativeInteger(fractionDigits.toString())) {
             errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_ATTRIBUTE_FRACTION_DIGITS_INVALID.getErrorCode(),
                     EntityErrorCode.ENTITY_ATTRIBUTE_FRACTION_DIGITS_INVALID.formatMessage(entityKey),
                     entityData));

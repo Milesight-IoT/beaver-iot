@@ -38,7 +38,7 @@ public enum EntityErrorCode implements ErrorCodeSpec {
     ENTITY_ATTRIBUTE_LENGTH_RANGE_INVALID(HttpStatus.BAD_REQUEST.value(), "entity_attribute_length_range_invalid",
             "Entity {0} attribute length range is invalid. It must be in the format ''positive integer,positive integer,...'' like ''3,5,7''"),
     ENTITY_ATTRIBUTE_FRACTION_DIGITS_INVALID(HttpStatus.BAD_REQUEST.value(), "entity_attribute_fraction_digits_invalid",
-            "Entity {0} attribute fraction digits must be a positive integer"),
+            "Entity {0} attribute fraction digits must be a non-negative integer"),
     ENTITY_ATTRIBUTE_DEFAULT_VALUE_INVALID(HttpStatus.BAD_REQUEST.value(), "entity_attribute_default_value_invalid",
             "Entity {0} attribute default value does not match the value type {1}"),
     ENTITY_ATTRIBUTE_OPTIONAL_INVALID(HttpStatus.BAD_REQUEST.value(), "entity_attribute_optional_invalid",
