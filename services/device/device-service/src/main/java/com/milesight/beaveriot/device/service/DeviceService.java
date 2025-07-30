@@ -22,10 +22,7 @@ import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
-import com.milesight.beaveriot.device.model.request.CreateDeviceRequest;
-import com.milesight.beaveriot.device.model.request.MoveDeviceToGroupRequest;
-import com.milesight.beaveriot.device.model.request.SearchDeviceRequest;
-import com.milesight.beaveriot.device.model.request.UpdateDeviceRequest;
+import com.milesight.beaveriot.device.model.request.*;
 import com.milesight.beaveriot.device.model.response.DeviceDetailResponse;
 import com.milesight.beaveriot.device.model.response.DeviceEntityData;
 import com.milesight.beaveriot.device.model.response.DeviceResponseData;
@@ -109,7 +106,7 @@ public class DeviceService implements IDeviceFacade {
     @Autowired
     private DeviceService self;
 
-    public static final String TENANT_PARAM_DEVICE_GROUP_NAME = "DEVICE_GROUP_NAME";
+    public static final String TENANT_PARAM_DEVICE_GROUP_ID = "DEVICE_GROUP_ID";
 
     @IntegrationPermission
     public Integration getIntegration(String integrationIdentifier) {
@@ -142,14 +139,22 @@ public class DeviceService implements IDeviceFacade {
         payload.putContext(DEVICE_TEMPLATE_KEY_ON_ADD, createDeviceRequest.getTemplate());
 
         boolean hasGroup = StringUtils.hasText(createDeviceRequest.getGroupName());
-        TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_NAME, hasGroup ? createDeviceRequest.getGroupName() : null);
+        Long deviceGroupId = null;
+        if (hasGroup) {
+            CreateDeviceGroupRequest createDeviceGroupRequest = new CreateDeviceGroupRequest();
+            createDeviceGroupRequest.setName(createDeviceRequest.getGroupName());
+            DeviceGroupPO deviceGroupPO = deviceGroupService.getOrCreateDeviceGroup(createDeviceGroupRequest, false);
+            deviceGroupId = deviceGroupPO.getId();
+        }
+
+        TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_ID, deviceGroupId);
 
         try {
             // call service for adding
             entityValueServiceProvider.saveValuesAndPublishSync(payload);
         } finally {
             if (hasGroup) {
-                TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_NAME, null);
+                TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_ID, null);
             }
         }
     }

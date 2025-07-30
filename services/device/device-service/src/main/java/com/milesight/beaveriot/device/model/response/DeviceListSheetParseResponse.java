@@ -14,4 +14,6 @@ import java.util.List;
 @Data
 public class DeviceListSheetParseResponse {
     List<CreateDeviceRequest> createDeviceRequests;
+
+    List<Integer> rowId;
 }

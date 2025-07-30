@@ -176,12 +176,14 @@ public class DeviceSheetParser {
         Map<String, Entity> entityMap = entities.stream().collect(Collectors.toMap(Entity::getKey, Function.identity()));
         DeviceListSheetParseResponse result = new DeviceListSheetParseResponse();
         List<CreateDeviceRequest> createDeviceRequests = new ArrayList<>();
+        List<Integer> rowIdList = new ArrayList<>();
         Map<String, DeviceSheetColumn> columnKeyMapping = this.deviceListColumns.stream().collect(Collectors.toMap(DeviceSheetColumn::getKey, Function.identity()));
 
         for (int i = 1; i <= this.getDeviceListSheet().getLastRowNum(); i++) {
             CreateDeviceRequest createDeviceRequest = new CreateDeviceRequest();
             createDeviceRequest.setIntegration(integrationId);
             Row row = this.getDeviceListSheet().getRow(i);
+            boolean rowHasValue = false;
             for (ColumnMetaData columnMetaData : this.getColumnMetaList()) {
                 Cell cell = row.getCell(columnMetaData.getColIndex());
                 if (columnMetaData.getKey().equals(DeviceSheetConstants.DEVICE_NAME_COL_KEY)) {
@@ -201,10 +203,18 @@ public class DeviceSheetParser {
 
                 Entity entity = entityMap.get(columnMetaData.getKey());
                 String strValue = getCellValue(cell);
+                if (strValue == null || strValue.isEmpty()) {
+                    continue;
+                }
+
                 Object value = strValue;
                 DeviceSheetColumn column = columnKeyMapping.get(columnMetaData.getKey());
                 if (column.getEnums() != null) {
                     value = column.getEnums().get(strValue);
+                }
+
+                if (value == null) {
+                    continue;
                 }
 
                 try {
@@ -217,12 +227,17 @@ public class DeviceSheetParser {
                     )).build();
                 }
 
+                rowHasValue = true;
             }
 
-            createDeviceRequests.add(createDeviceRequest);
+            if (rowHasValue) {
+                createDeviceRequests.add(createDeviceRequest);
+                rowIdList.add(row.getRowNum() - 1);
+            }
         }
 
         result.setCreateDeviceRequests(createDeviceRequests);
+        result.setRowId(rowIdList);
         return result;
     }
 }

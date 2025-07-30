@@ -16,10 +16,15 @@ public class TenantId implements Serializable {
 
     private final String tenantId;
 
-    private final Map<String, Object> tenantParams = new HashMap<>();
+    private final Map<String, Object> tenantParams;
 
     public TenantId(String tenantId) {
         this.tenantId = tenantId;
+        this.tenantParams = new HashMap<>();
     }
 
+    public TenantId(TenantId t) {
+        this.tenantId = t.getTenantId();
+        this.tenantParams = new HashMap<>(t.getTenantParams());
+    }
 }
