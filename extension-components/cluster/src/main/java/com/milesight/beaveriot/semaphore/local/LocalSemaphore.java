@@ -21,20 +21,18 @@ public class LocalSemaphore implements DistributedSemaphore {
     }
 
     @Override
-    public boolean acquire(String key, Duration timeout) {
+    public String acquire(String key, Duration timeout) {
         Semaphore semaphore = semaphores.get(key);
         try {
-            return semaphore.tryAcquire(timeout.toNanos(), TimeUnit.NANOSECONDS);
-        } catch (Exception e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
-            return false;
+            return semaphore.tryAcquire(timeout.toNanos(), TimeUnit.NANOSECONDS) ? key : null;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
+        return null;
     }
 
     @Override
-    public void release(String key) {
+    public void release(String key, String permitId) {
         Semaphore semaphore = semaphores.get(key);
         if (semaphore != null) {
             semaphore.release();
