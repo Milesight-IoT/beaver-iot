@@ -73,6 +73,8 @@ public class TenantContext {
         TenantId oldTenant = tenantThreadLocal.get();
         if (oldTenant == null || !tenantId.equals(oldTenant.getTenantId())) {
             tenantThreadLocal.set(new TenantId(tenantId));
+        } else {
+            tenantThreadLocal.set(new TenantId(oldTenant));
         }
     }
 

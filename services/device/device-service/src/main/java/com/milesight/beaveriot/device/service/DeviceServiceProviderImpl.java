@@ -124,13 +124,9 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
         entityServiceProvider.batchSave(device.getEntities());
 
         deviceService.evictIntegrationIdToDeviceCache(device.getIntegrationId());
-
-        String groupName = (String) TenantContext.tryGetTenantParam(DeviceService.TENANT_PARAM_DEVICE_GROUP_NAME).orElse(null);
-        if (groupName != null) {
-            CreateDeviceGroupRequest createDeviceGroupRequest = new CreateDeviceGroupRequest();
-            createDeviceGroupRequest.setName(groupName);
-            DeviceGroupPO deviceGroupPO = deviceGroupService.getOrCreateDeviceGroup(createDeviceGroupRequest, false);
-            deviceGroupService.moveDevicesToGroupId(deviceGroupPO.getId(), List.of(devicePO.getId()));
+        Long deviceGroupId = (Long) TenantContext.tryGetTenantParam(DeviceService.TENANT_PARAM_DEVICE_GROUP_ID).orElse(null);
+        if (deviceGroupId != null) {
+            deviceGroupService.moveDevicesToGroupId(deviceGroupId, List.of(devicePO.getId()));
         }
     }
 
