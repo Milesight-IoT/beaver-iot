@@ -24,11 +24,12 @@ import java.util.concurrent.TimeUnit;
 public class RedisSemaphore implements DistributedSemaphore {
     private static final long DEFAULT_LEASE_TIME = 15000;
     private static final long DEFAULT_WATCH_PERIOD = 10000;
-    private static final Map<String, WatchDog> keyWatchDogs = Maps.newConcurrentMap();
+    private final Map<String, WatchDog> keyWatchDogs;
     private final RedissonClient redissonClient;
 
     public RedisSemaphore(RedissonClient redissonClient) {
         this.redissonClient = redissonClient;
+        this.keyWatchDogs = Maps.newConcurrentMap();
     }
 
     @DistributedLock(name = "semaphore-init-#{#p0}", lockAtLeastFor = "0s", lockAtMostFor = "1s", scope = LockScope.GLOBAL, throwOnLockFailure = false)
