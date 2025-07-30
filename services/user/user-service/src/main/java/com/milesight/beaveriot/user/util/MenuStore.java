@@ -69,7 +69,7 @@ public class MenuStore {
                 .collect(Collectors.toList());
     }
 
-    public static List<MenuResponse> initMenuTrees() {
+    private static List<MenuResponse> initMenuTrees() {
         val menus = getAllMenus();
         if (menus.isEmpty()) {
             return new ArrayList<>();
