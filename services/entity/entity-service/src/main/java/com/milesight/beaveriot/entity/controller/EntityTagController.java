@@ -43,20 +43,20 @@ public class EntityTagController {
         return ResponseBuilder.success(new EntityTagNumberResponse(number));
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.ENTITY_TAG_EDIT})
+    @OperationPermission(codes = {OperationPermissionCode.ENTITY_TAG_MANAGE})
     @PostMapping
     public ResponseBody<EntityTagResponse> create(@RequestBody @Valid EntityTagUpdateRequest request) {
         return ResponseBuilder.success(entityTagService.create(request));
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.ENTITY_TAG_EDIT})
+    @OperationPermission(codes = {OperationPermissionCode.ENTITY_TAG_MANAGE})
     @PutMapping("/{tagId}")
     public ResponseBody<Void> update(@PathVariable("tagId") Long tagId, @RequestBody @Valid EntityTagUpdateRequest request) {
         entityTagService.update(tagId, request);
         return ResponseBuilder.success();
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.ENTITY_TAG_EDIT})
+    @OperationPermission(codes = {OperationPermissionCode.ENTITY_TAG_MANAGE})
     @PostMapping("/delete")
     public ResponseBody<Void> delete(@RequestBody @Valid EntityTagDeleteRequest request) {
         entityTagService.delete(request.getIds());

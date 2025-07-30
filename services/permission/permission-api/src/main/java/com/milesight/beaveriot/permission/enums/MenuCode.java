@@ -16,7 +16,7 @@ public enum MenuCode implements MenuItem {
     ENTITY_DATA(4000L, ENTITY),
     WORKFLOW(5000L),
     INTEGRATION(6000L),
-    CREDENTIALS(8000L),
+    SETTINGS(8000L),
     TAG(9000L),
     ;
 
