@@ -36,8 +36,8 @@ public enum OperationPermissionCode implements MenuItem {
 
     INTEGRATION_VIEW(6001L, "integration.view", MenuCode.INTEGRATION),
 
-    CREDENTIALS_VIEW(8001L, "credentials.view", MenuCode.SETTINGS),
-    CREDENTIALS_EDIT(8002L, "credentials.edit", MenuCode.SETTINGS),
+    CREDENTIALS_VIEW(8001L, "credentials.view", MenuCode.CREDENTIALS),
+    CREDENTIALS_EDIT(8002L, "credentials.edit", MenuCode.CREDENTIALS),
 
     ENTITY_TAG_VIEW(9001L, "entity_tag.view", MenuCode.TAG),
     ENTITY_TAG_MANAGE(9002L, "entity_tag.manage", MenuCode.TAG),
