@@ -1,8 +1,6 @@
 package com.milesight.beaveriot.semaphore.aspect;
 
 import com.milesight.beaveriot.base.annotations.semaphore.SemaphoreScope;
-import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
-import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.security.TenantContext;
@@ -59,11 +57,12 @@ public class DistributedSemaphoreAspect {
             key = getKey(distributedSemaphore.name(), TenantContext.getTenantId());
         }
         Object result;
-        if (this.distributedSemaphore.acquire(key, Duration.ofMillis(distributedSemaphore.timeout()))) {
+        String permitId = this.distributedSemaphore.acquire(key, Duration.ofMillis(distributedSemaphore.timeout()));
+        if (permitId != null) {
             try {
                 result = joinPoint.proceed();
             } finally {
-                this.distributedSemaphore.release(key);
+                this.distributedSemaphore.release(key, permitId);
             }
         } else {
             String errorMessage = MessageFormat.format("Failed occurred during acquiring semaphore {0}", key);
@@ -73,7 +72,6 @@ public class DistributedSemaphoreAspect {
         return result;
     }
 
-    @DistributedLock(name = "semaphore-init-#{#p0}", lockAtLeastFor = "0s", lockAtMostFor = "1s", scope = LockScope.GLOBAL, throwOnLockFailure = false)
     public void initDistributedSemaphore(String key, int permits) {
         distributedSemaphore.initPermits(key, permits);
     }

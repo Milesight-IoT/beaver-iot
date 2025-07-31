@@ -61,11 +61,12 @@ public class TenantRoutePolicy implements RoutePolicy {
             if (!ObjectUtils.isEmpty(tenantId)) {
                 String rootFlowId = exchange.getProperty(ExchangeHeaders.EXCHANGE_ROOT_FLOW_ID, exchange.getFromRouteId(), String.class);
                 if (Objects.equals(rootFlowId, workflowId)) {
-                    if (tenantWorkflowRateLimiter.acquire(tenantId)) {
+                    String permitId = tenantWorkflowRateLimiter.acquire(tenantId);
+                    if (permitId != null) {
                         try {
                             doExchangeBegin(tenantId, route, exchange);
                         } finally {
-                            tenantWorkflowRateLimiter.release(tenantId);
+                            tenantWorkflowRateLimiter.release(tenantId, permitId);
                         }
                     } else {
                         String errorMessage = MessageFormat.format("Failed occurred during acquiring workflow semaphore for tenant {0}", tenantId);

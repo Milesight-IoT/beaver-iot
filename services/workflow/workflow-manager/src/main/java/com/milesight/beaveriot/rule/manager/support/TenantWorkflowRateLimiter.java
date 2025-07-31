@@ -1,8 +1,6 @@
 package com.milesight.beaveriot.rule.manager.support;
 
 import com.google.common.collect.Maps;
-import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
-import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
 import com.milesight.beaveriot.semaphore.DistributedSemaphore;
 import com.milesight.beaveriot.user.dto.TenantDTO;
 import com.milesight.beaveriot.user.facade.IUserFacade;
@@ -35,18 +33,18 @@ public class TenantWorkflowRateLimiter {
         initTenantSemaphore();
     }
 
-    public boolean acquire(String tenantId) {
+    public String acquire(String tenantId) {
         if (!workflowRateLimitConfig.isEnabled()) {
-            return true;
+            return "";
         }
         return distributedSemaphore.acquire(getKey(tenantId), Duration.ofMillis(workflowRateLimitConfig.getTimeout()));
     }
 
-    public void release(String tenantId) {
+    public void release(String tenantId, String permitId) {
         if (!workflowRateLimitConfig.isEnabled()) {
             return;
         }
-        distributedSemaphore.release(getKey(tenantId));
+        distributedSemaphore.release(getKey(tenantId), permitId);
     }
 
     private void initTenantTypeSemaphorePermitsMap() {
@@ -67,7 +65,6 @@ public class TenantWorkflowRateLimiter {
         }
     }
 
-    @DistributedLock(name = "workflow-semaphore-init-#{#p0}", lockAtLeastFor = "0s", lockAtMostFor = "1s", scope = LockScope.GLOBAL, throwOnLockFailure = false)
     private void initWorkflowSemaphore(String tenantId, int semaphorePermits) {
         distributedSemaphore.initPermits(getKey(tenantId), semaphorePermits);
     }

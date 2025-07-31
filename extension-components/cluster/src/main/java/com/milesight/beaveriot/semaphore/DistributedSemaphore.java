@@ -8,6 +8,6 @@ import java.time.Duration;
  **/
 public interface DistributedSemaphore {
     void initPermits(String key, int permits);
-    boolean acquire(String key, Duration timeout);
-    void release(String key);
+    String acquire(String key, Duration timeout);
+    void release(String key, String permitId);
 }
