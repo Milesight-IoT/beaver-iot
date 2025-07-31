@@ -1,8 +1,6 @@
 package com.milesight.beaveriot.semaphore.redis;
 
 import com.google.common.collect.Maps;
-import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
-import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
 import com.milesight.beaveriot.semaphore.DistributedSemaphore;
 import jakarta.annotation.PreDestroy;
 import lombok.Data;
@@ -13,10 +11,8 @@ import org.redisson.api.RedissonClient;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * author: Luxb
@@ -24,19 +20,24 @@ import java.util.concurrent.TimeUnit;
  **/
 @Slf4j
 public class RedisSemaphore implements DistributedSemaphore {
-    private static final long DEFAULT_LEASE_TIME = 15000;
-    private static final long DEFAULT_WATCH_PERIOD = 10000;
+    private static final Duration DEFAULT_PERIOD_WATCH = Duration.ofSeconds(10);
+    private static final Duration DEFAULT_DURATION_LEASE = Duration.ofSeconds(DEFAULT_PERIOD_WATCH.getSeconds() * 2);
+    private static final Duration DEFAULT_DURATION_IDLE = Duration.ofMinutes(5);
+    private static final Duration DEFAULT_PERIOD_MANAGER = Duration.ofMinutes(5);
     private final Map<String, WatchDog> keyWatchDogs;
     private final ScheduledExecutorService sharedLeaseReNewer;
+    private final ScheduledExecutorService watchDogManager;
     private final RedissonClient redissonClient;
 
     public RedisSemaphore(RedissonClient redissonClient) {
         this.redissonClient = redissonClient;
         this.keyWatchDogs = Maps.newConcurrentMap();
         this.sharedLeaseReNewer = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
+        this.watchDogManager = Executors.newSingleThreadScheduledExecutor();
+        this.watchDogManager.scheduleAtFixedRate(() -> keyWatchDogs.values().forEach(WatchDog::checkIfIdle),
+                0, DEFAULT_PERIOD_MANAGER.toMinutes(), TimeUnit.MINUTES);
     }
 
-    @DistributedLock(name = "semaphore-init-#{#p0}", lockAtLeastFor = "0s", lockAtMostFor = "1s", scope = LockScope.GLOBAL, throwOnLockFailure = false)
     @Override
     public void initPermits(String key, int permits) {
         RPermitExpirableSemaphore semaphore = redissonClient.getPermitExpirableSemaphore(key);
@@ -47,7 +48,7 @@ public class RedisSemaphore implements DistributedSemaphore {
     public String acquire(String key, Duration timeout) {
         RPermitExpirableSemaphore semaphore = redissonClient.getPermitExpirableSemaphore(key);
         try {
-            String permitId = semaphore.tryAcquire(timeout.toMillis(), DEFAULT_LEASE_TIME, TimeUnit.MILLISECONDS);
+            String permitId = semaphore.tryAcquire(timeout.toMillis(), DEFAULT_DURATION_LEASE.toMillis(), TimeUnit.MILLISECONDS);
             if (permitId != null) {
                 startWatchDog(semaphore, permitId);
             }
@@ -77,17 +78,24 @@ public class RedisSemaphore implements DistributedSemaphore {
     @PreDestroy
     public void destroy() {
         for (WatchDog watchDog : keyWatchDogs.values()) {
+            watchDog.stop();
             watchDog.clearPermitIds();
         }
         keyWatchDogs.clear();
-        if (!sharedLeaseReNewer.isShutdown()) {
-            sharedLeaseReNewer.shutdown();
+
+        destroyTask(watchDogManager);
+        destroyTask(sharedLeaseReNewer);
+    }
+
+    private void destroyTask(ScheduledExecutorService service) {
+        if (!service.isShutdown()) {
+            service.shutdown();
             try {
-                if (!sharedLeaseReNewer.awaitTermination(5, TimeUnit.SECONDS)) {
-                    sharedLeaseReNewer.shutdownNow();
+                if (!service.awaitTermination(5, TimeUnit.SECONDS)) {
+                    service.shutdownNow();
                 }
             } catch (InterruptedException e) {
-                sharedLeaseReNewer.shutdownNow();
+                service.shutdownNow();
                 Thread.currentThread().interrupt();
             }
         }
@@ -97,33 +105,99 @@ public class RedisSemaphore implements DistributedSemaphore {
     public static class WatchDog {
         private Set<String> permitIds;
         private RPermitExpirableSemaphore semaphore;
+        private ScheduledExecutorService sharedLeaseReNewer;
+        private volatile ScheduledFuture<?> future;
+        private volatile long lastActiveTime;
+        private final ReentrantReadWriteLock lock;
+        private final Duration idleTimeout;
 
-        private WatchDog() {}
+        private WatchDog() {
+            lock = new ReentrantReadWriteLock();
+            idleTimeout = DEFAULT_DURATION_IDLE;
+            updateLastActiveTime();
+        }
 
         public static WatchDog create(ScheduledExecutorService sharedLeaseReNewer, RPermitExpirableSemaphore semaphore) {
             WatchDog watchDog = new WatchDog();
             watchDog.setSemaphore(semaphore);
             watchDog.setPermitIds(ConcurrentHashMap.newKeySet());
-            sharedLeaseReNewer.scheduleAtFixedRate(() -> watchDog.getPermitIds().forEach(permitId -> {
-                try {
-                    semaphore.updateLeaseTime(permitId, DEFAULT_LEASE_TIME, TimeUnit.MILLISECONDS);
-                } catch (Exception e) {
-                    log.warn("Failed to renew lease for semaphore {} permit: {}", semaphore.getName(), permitId, e);
-                }
-            }), 0, DEFAULT_WATCH_PERIOD, TimeUnit.MILLISECONDS);
+            watchDog.setSharedLeaseReNewer(sharedLeaseReNewer);
+            watchDog.start();
             return watchDog;
         }
 
+        public void start() {
+            if (future != null) {
+                return;
+            }
+
+            lock.writeLock().lock();
+            try {
+                // Double-check: ensure future is still null before starting
+                if (future == null) {
+                    future = sharedLeaseReNewer.scheduleAtFixedRate(() -> permitIds.forEach(permitId -> {
+                        try {
+                            semaphore.updateLeaseTime(permitId, DEFAULT_DURATION_LEASE.toMillis(), TimeUnit.MILLISECONDS);
+                        } catch (Exception e) {
+                            log.warn("Failed to renew lease for semaphore {} permit: {}", semaphore.getName(), permitId, e);
+                        }
+                    }), 0, DEFAULT_PERIOD_WATCH.toMillis(), TimeUnit.MILLISECONDS);
+                }
+            } finally {
+                lock.writeLock().unlock();
+            }
+        }
+
+        private void updateLastActiveTime() {
+            lastActiveTime = System.currentTimeMillis();
+        }
+
         public void addPermitId(String permitId) {
-            this.permitIds.add(permitId);
+            permitIds.add(permitId);
+            updateLastActiveTime();
+            start();
         }
 
         public void removePermitId(String permitId) {
-            this.permitIds.remove(permitId);
+            permitIds.remove(permitId);
+            updateLastActiveTime();
         }
 
         public void clearPermitIds() {
-            this.permitIds.clear();
+            permitIds.clear();
+        }
+
+        public boolean isPermitsEmpty() {
+            return permitIds.isEmpty();
+        }
+
+        public boolean isIdle() {
+            return System.currentTimeMillis() - getLastActiveTime() > idleTimeout.toMillis();
+        }
+
+        public void stop() {
+            if (future == null) {
+                return;
+            }
+
+            lock.writeLock().lock();
+            try {
+                // Double-check: ensure it's still idle and permits empty before stopping
+                if (isIdle() && isPermitsEmpty()) {
+                    if (future != null && !future.isCancelled()) {
+                        future.cancel(false);
+                        future = null;
+                    }
+                }
+            } finally {
+                lock.writeLock().unlock();
+            }
+        }
+
+        public void checkIfIdle() {
+            if (isIdle() && isPermitsEmpty()) {
+                stop();
+            }
         }
     }
 }
