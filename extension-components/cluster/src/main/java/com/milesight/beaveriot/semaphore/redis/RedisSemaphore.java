@@ -12,7 +12,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * author: Luxb
@@ -108,11 +108,11 @@ public class RedisSemaphore implements DistributedSemaphore {
         private ScheduledExecutorService sharedLeaseReNewer;
         private volatile ScheduledFuture<?> future;
         private volatile long lastActiveTime;
-        private final ReentrantReadWriteLock lock;
+        private final ReentrantLock lock;
         private final Duration idleTimeout;
 
         private WatchDog() {
-            lock = new ReentrantReadWriteLock();
+            lock = new ReentrantLock();
             idleTimeout = DEFAULT_DURATION_IDLE;
             updateLastActiveTime();
         }
@@ -131,7 +131,7 @@ public class RedisSemaphore implements DistributedSemaphore {
                 return;
             }
 
-            lock.writeLock().lock();
+            lock.lock();
             try {
                 // Double-check: ensure future is still null before starting
                 if (future == null) {
@@ -144,7 +144,7 @@ public class RedisSemaphore implements DistributedSemaphore {
                     }), 0, DEFAULT_PERIOD_WATCH.toMillis(), TimeUnit.MILLISECONDS);
                 }
             } finally {
-                lock.writeLock().unlock();
+                lock.unlock();
             }
         }
 
@@ -180,7 +180,7 @@ public class RedisSemaphore implements DistributedSemaphore {
                 return;
             }
 
-            lock.writeLock().lock();
+            lock.lock();
             try {
                 // Double-check: ensure it's still idle and permits empty before stopping
                 if (isIdle() && isPermitsEmpty()) {
@@ -190,7 +190,7 @@ public class RedisSemaphore implements DistributedSemaphore {
                     }
                 }
             } finally {
-                lock.writeLock().unlock();
+                lock.unlock();
             }
         }
 
