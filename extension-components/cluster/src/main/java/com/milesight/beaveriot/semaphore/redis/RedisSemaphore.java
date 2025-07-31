@@ -78,8 +78,8 @@ public class RedisSemaphore implements DistributedSemaphore {
     @PreDestroy
     public void destroy() {
         for (WatchDog watchDog : keyWatchDogs.values()) {
-            watchDog.stop();
             watchDog.clearPermitIds();
+            watchDog.stop(true);
         }
         keyWatchDogs.clear();
 
@@ -176,6 +176,10 @@ public class RedisSemaphore implements DistributedSemaphore {
         }
 
         public void stop() {
+            stop(false);
+        }
+
+        public void stop(boolean isForce) {
             if (future == null) {
                 return;
             }
@@ -183,7 +187,7 @@ public class RedisSemaphore implements DistributedSemaphore {
             lock.lock();
             try {
                 // Double-check: ensure it's still idle and permits empty before stopping
-                if (isIdle() && isPermitsEmpty()) {
+                if (isForce || isIdle() && isPermitsEmpty()) {
                     if (future != null && !future.isCancelled()) {
                         future.cancel(false);
                         future = null;
