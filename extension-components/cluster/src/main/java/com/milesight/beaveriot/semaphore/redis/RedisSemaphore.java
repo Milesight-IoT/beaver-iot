@@ -199,8 +199,12 @@ public class RedisSemaphore implements DistributedSemaphore {
         }
 
         public void checkIfIdle() {
-            if (isIdle() && isPermitsEmpty()) {
-                stop();
+            try {
+                if (isIdle() && isPermitsEmpty()) {
+                    stop();
+                }
+            } catch (Exception e) {
+                log.error("Error occurred while checking if the watchdog is idle for semaphore {}", semaphore.getName(), e);
             }
         }
     }
