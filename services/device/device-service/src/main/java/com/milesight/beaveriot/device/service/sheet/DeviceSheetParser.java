@@ -59,16 +59,6 @@ public class DeviceSheetParser {
         if (getDeviceListSheet().getLastRowNum() < 1) {
             throw ServiceException.with(DeviceErrorCode.DEVICE_LIST_SHEET_NO_DEVICE).build();
         }
-
-        if (getDeviceListSheet().getLastRowNum() > DeviceSheetConstants.MAX_BATCH_NUMBER) {
-            throw ServiceException
-                    .with(DeviceErrorCode.DEVICE_LIST_SHEET_DEVICE_OVER_LIMITATION)
-                    .args(Map.of(
-                            "limiation", DeviceSheetConstants.MAX_BATCH_NUMBER,
-                            "detected", getDeviceListSheet().getLastRowNum()
-                    ))
-                    .build();
-        }
     }
 
     private Sheet getDeviceListSheet() {
@@ -233,6 +223,16 @@ public class DeviceSheetParser {
             if (rowHasValue) {
                 createDeviceRequests.add(createDeviceRequest);
                 rowIdList.add(row.getRowNum() - 1);
+
+                if (createDeviceRequests.size() > DeviceSheetConstants.MAX_BATCH_NUMBER) {
+                    throw ServiceException
+                            .with(DeviceErrorCode.DEVICE_LIST_SHEET_DEVICE_OVER_LIMITATION)
+                            .args(Map.of(
+                                    "limitation", DeviceSheetConstants.MAX_BATCH_NUMBER,
+                                    "detected", getDeviceListSheet().getLastRowNum()
+                            ))
+                            .build();
+                }
             }
         }
 
