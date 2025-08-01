@@ -80,6 +80,9 @@ spring:
         core-size: 8
         max-size: 16
         queue-capacity: 10000
+  # i18n
+  messages:
+    basename: i18n/messages
 
 management:
   endpoints:
