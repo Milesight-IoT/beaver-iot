@@ -24,6 +24,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import java.net.BindException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletionException;
 
 /**
  * @author leon
@@ -101,13 +102,9 @@ public class DefaultExceptionHandler {
         return ResponseBuilder.fail(ErrorCode.SERVER_ERROR, e.getMessage());
     }
 
-    @ResponseBody
-    @ExceptionHandler({CamelExecutionException.class})
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ResponseEntity<Object> handleException(CamelExecutionException e) {
-        log.error("Cause CamelExecutionException {}", e.getMessage());
-        Throwable cause = e.getCause();
+    private ResponseEntity<Object> getErrorResponse(Throwable cause) {
         if (cause != null) {
+            cause = ErrorHolder.tryGetKnownCause(cause);
             if (cause instanceof ServiceException serviceException) {
                 return ResponseEntity.status(serviceException.getStatus()).body(ResponseBuilder.fail(serviceException));
             } else if (cause instanceof EventBusExecutionException eventBusExecutionException) {
@@ -115,8 +112,20 @@ public class DefaultExceptionHandler {
             } else if (cause instanceof BaseException) {
                 return ResponseEntity.status(ErrorCode.SERVER_ERROR.getStatus()).body(ResponseBuilder.fail(ErrorCode.SERVER_ERROR.getErrorCode(), cause.getMessage()));
             }
+
+            return ResponseEntity.status(ErrorCode.SERVER_ERROR.getStatus()).body(ResponseBuilder.fail(ErrorCode.SERVER_ERROR, cause.getMessage()));
         }
-        return ResponseEntity.status(ErrorCode.SERVER_ERROR.getStatus()).body(ResponseBuilder.fail(ErrorCode.SERVER_ERROR, cause.getMessage()));
+
+        return ResponseEntity.status(ErrorCode.SERVER_ERROR.getStatus()).body(ResponseBuilder.fail(ErrorCode.SERVER_ERROR));
+    }
+
+    @ResponseBody
+    @ExceptionHandler({CamelExecutionException.class})
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ResponseEntity<Object> handleCamelException(CamelExecutionException e) {
+        log.error("Cause CamelExecutionException {}", e.getMessage());
+        Throwable cause = e.getCause();
+        return getErrorResponse(cause);
     }
 
     @ResponseBody
@@ -129,9 +138,9 @@ public class DefaultExceptionHandler {
     @ResponseBody
     @ExceptionHandler({RuntimeException.class})
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public com.milesight.beaveriot.base.response.ResponseBody<Object> handleException(RuntimeException e) {
+    public ResponseEntity<Object> handleException(RuntimeException e) {
         log.error("Cause RuntimeException :", e);
-        return ResponseBuilder.fail(ErrorCode.SERVER_ERROR, e.getMessage());
+        return getErrorResponse(e);
     }
 
     @ResponseBody
