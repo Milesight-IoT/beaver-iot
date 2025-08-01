@@ -177,12 +177,17 @@ public class DeviceSheetParser {
             for (ColumnMetaData columnMetaData : this.getColumnMetaList()) {
                 Cell cell = row.getCell(columnMetaData.getColIndex());
                 if (columnMetaData.getKey().equals(DeviceSheetConstants.DEVICE_NAME_COL_KEY)) {
-                    createDeviceRequest.setName(getCellValue(cell));
+                    String deviceName = getCellValue(cell);
+                    if (StringUtils.hasText(deviceName)) {
+                        createDeviceRequest.setName(deviceName);
+                        rowHasValue = true;
+                    }
                     continue;
                 } else if (columnMetaData.getKey().equals(DeviceSheetConstants.DEVICE_GROUP_COL_KEY)) {
-                    String groupName = getCellValue(cell);
-                    if (StringUtils.hasText(groupName.trim())) {
+                    String groupName = getCellValue(cell).trim();
+                    if (StringUtils.hasText(groupName)) {
                         createDeviceRequest.setGroupName(groupName);
+                        rowHasValue = true;
                     }
                     continue;
                 }
