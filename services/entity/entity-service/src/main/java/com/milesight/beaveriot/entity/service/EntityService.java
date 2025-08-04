@@ -853,7 +853,7 @@ public class EntityService implements EntityServiceProvider {
                 .flatMap(entity -> entity.getChildren() == null
                         ? Stream.of(entity)
                         : Stream.concat(Stream.of(entity), entity.getChildren().stream()))
-                .collect(Collectors.toMap(keyMapper, Function.identity()));
+                .collect(Collectors.toMap(keyMapper, Function.identity(), (f, l) -> l));
         return keys.stream()
                 .map(entityMap::get)
                 .filter(Objects::nonNull)
