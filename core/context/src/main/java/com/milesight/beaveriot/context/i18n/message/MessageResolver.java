@@ -57,6 +57,17 @@ public class MessageResolver {
         return fullBasename;
     }
 
+    /**
+     * Retrieves a localized message based on the message code, arguments, default message, and locale.
+     * If the message for the given code is not found, the default message is returned.
+     * If the default message is null, the message code itself is returned.
+     *
+     * @param code the message code, must not be null
+     * @param args an array of arguments for message placeholders, may be null
+     * @param defaultMessage the default message to return if no message is found, may be null
+     * @param locale the locale to use for message resolution; if null, the current thread's locale is used
+     * @return the resolved message string
+     */
     public String message(String code, Object[] args, String defaultMessage, Locale locale) {
         try {
             if (locale == null) {
@@ -68,22 +79,68 @@ public class MessageResolver {
         }
     }
 
+    /**
+     * Retrieves a localized message using the message code, arguments, and default message,
+     * using the current thread's locale.
+     *
+     * @param code the message code, must not be null
+     * @param args an array of arguments for message placeholders, may be null
+     * @param defaultMessage the default message to return if no message is found, may be null
+     * @return the resolved message string
+     * @see #message(String, Object[], String, Locale)
+     */
     public String message(String code, Object[] args, String defaultMessage) {
         return message(code, args, defaultMessage, null);
     }
 
+    /**
+     * Retrieves a localized message using the message code, arguments, and locale,
+     * with no default message specified.
+     *
+     * @param code the message code, must not be null
+     * @param args an array of arguments for message placeholders, may be null
+     * @param locale the locale to use for message resolution; if null, the current thread's locale is used
+     * @return the resolved message string (or the code if no message is found and no default is provided)
+     * @see #message(String, Object[], String, Locale)
+     */
     public String message(String code, Object[] args, Locale locale) {
         return message(code, args, null, locale);
     }
 
+    /**
+     * Retrieves a localized message using the message code and arguments,
+     * with no default message and using the current thread's locale.
+     *
+     * @param code the message code, must not be null
+     * @param args an array of arguments for message placeholders, may be null
+     * @return the resolved message string (or the code if no message is found)
+     * @see #message(String, Object[], String, Locale)
+     */
     public String message(String code, Object[] args) {
         return message(code, args, null, null);
     }
 
+    /**
+     * Retrieves a localized message using the message code and locale,
+     * with no message arguments and no default message.
+     *
+     * @param code the message code, must not be null
+     * @param locale the locale to use for message resolution; if null, the current thread's locale is used
+     * @return the resolved message string (or the code if no message is found)
+     * @see #message(String, Object[], String, Locale)
+     */
     public String message(String code, Locale locale) {
         return message(code, null, null, locale);
     }
 
+    /**
+     * Retrieves a localized message using only the message code,
+     * with no arguments, no default message, and using the current thread's locale.
+     *
+     * @param code the message code, must not be null
+     * @return the resolved message string (or the code if no message is found)
+     * @see #message(String, Object[], String, Locale)
+     */
     public String message(String code) {
         return message(code, null, null, null);
     }
