@@ -1,8 +1,9 @@
-
 server:
   port: 9200
 
 spring:
+  main:
+    allow-bean-definition-overriding: true
   liquibase:
     enabled: true
     change-log: 'classpath*:db/${DB_TYPE:h2}/changelog.yaml'
@@ -15,8 +16,8 @@ spring:
       jakarta.persistence.query.timeout: "${JAVAX_PERSISTENCE_QUERY_TIMEOUT:30000}" # General timeout for JDBC queries
       hibernate.type.wrapper_array_handling: ALLOW
       hibernate.naming.physical-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
-#      hibernate.hbm2ddl.auto: update
-#      hibernate.dialect: org.hibernate.dialect.H2Dialect
+  #      hibernate.hbm2ddl.auto: update
+  #      hibernate.dialect: org.hibernate.dialect.H2Dialect
   datasource:
     url: "${SPRING_DATASOURCE_URL:jdbc:h2:file:~/beaver-iot/h2/beaver-dev;AUTO_SERVER=TRUE}"
     username: "${SPRING_DATASOURCE_USERNAME:sa}"
@@ -27,8 +28,8 @@ spring:
       enabled: ${SPRING_H2_CONSOLE_ENABLED:true}
       path: /public/h2-console
   cache:
-#    type: caffeine
-#    cache-names: "demo:cache1,demo:oss:cache2"
+    #    type: caffeine
+    #    cache-names: "demo:cache1,demo:oss:cache2"
     caffeine:
       spec: maximumSize=50000,expireAfterAccess=10m
     redis:
@@ -37,14 +38,14 @@ spring:
       time-to-live: 10m
     specs:
       time-to-lives:
-          [ "resource:data-pre-sign" ]: ${resource.pre_sign_expire}
-          [ "resource:data" ]: 2m
-          [ "user:menus"] : 1h
-          [ "entity:permission" ] : 1h
-          [ "device:permission"] : 1h
-          [ "dashboard:permission" ] : 1h
-          [ "integration:permission" ] : 1h
-          [ "entity:latest-value" ] : 15m
+        '[resource:data-pre-sign]': ${resource.pre_sign_expire}
+        '[resource:data]': 2m
+        '[user:menus]': 1h
+        '[entity:permission]': 1h
+        '[device:permission]': 1h
+        '[dashboard:permission]': 1h
+        '[integration:permission]': 1h
+        '[entity:latest-value]': 15m
 
   redis:
     ssl: ${REDIS_SSL:false}
@@ -70,12 +71,22 @@ spring:
         codec:
           class: "org.redisson.codec.JsonJacksonCodec"
         transportMode: "NIO"
-  task:
-    execution:
-      pool:
-        core-size: 8
-        max-size: 16
-        queue-capacity: 10000
+
+task:
+  executor:
+    max-queue-capacity: 1024
+    pool:
+      default:
+        core-size: 16
+        max-size: 32
+        queue-size: 256
+      mqtt:
+        max-size: 32
+      mqtt-subscriber:
+        core-size: 32
+        max-size: 64
+        rejectedPolicy: block_policy
+
 
 management:
   endpoints:
@@ -163,8 +174,6 @@ mqtt:
     ws_path: /mqtt
     ws_port: 8083
     wss_port: 8084
-    listener:
-      parallelism: 1
     moquette:
       port: ${mqtt.broker.mqtt_port:1883}
       host: 0.0.0.0

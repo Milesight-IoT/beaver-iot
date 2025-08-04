@@ -11,7 +11,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.task.ThreadPoolTaskExecutorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 /**
@@ -34,7 +33,6 @@ public class IntegrationAutoConfiguration {
 
     @Bean
     @ConditionalOnBean(ThreadPoolTaskExecutorBuilder.class)
-    @Primary
     public ThreadPoolTaskExecutor integrationTaskExecutor(ThreadPoolTaskExecutorBuilder builder) {
         return builder.build();
     }
