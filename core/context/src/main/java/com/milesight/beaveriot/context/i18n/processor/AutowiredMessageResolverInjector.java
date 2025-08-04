@@ -40,10 +40,10 @@ public class AutowiredMessageResolverInjector implements BeanPostProcessor {
 
                     field.setAccessible(true);
 
-                    String module = ann.value();
-                    MessageResolver resolver = StringUtils.isEmpty(module)
-                            ? messageResolverFactory.getDefault()
-                            : messageResolverFactory.getResolver(module);
+                    String moduleName = ann.value();
+                    MessageResolver resolver = StringUtils.isEmpty(moduleName)
+                            ? messageResolverFactory.getDefaultResolver()
+                            : messageResolverFactory.getResolver(moduleName);
 
                     field.set(bean, resolver);
                 } catch (Exception e) {

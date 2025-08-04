@@ -16,6 +16,7 @@ public class MessageResolverFactory {
         this.config = config;
         this.applicationContext = applicationContext;
     }
+
     /**
      * Returns a message resolver for the specified module.
      *
@@ -72,7 +73,7 @@ public class MessageResolverFactory {
      *
      * @return the default message resolver (singleton)
      */
-    public MessageResolver getDefault() {
+    public MessageResolver getDefaultResolver() {
         return getResolver(null);
     }
 
