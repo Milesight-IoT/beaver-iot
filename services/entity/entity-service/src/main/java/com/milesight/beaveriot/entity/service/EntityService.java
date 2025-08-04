@@ -951,7 +951,7 @@ public class EntityService implements EntityServiceProvider {
         val columnToCondition = entityQuery.getEntityFilter();
 
         val integrationNameCondition = columnToCondition.get(EntitySearchColumn.INTEGRATION_NAME);
-        val integrationIds = getIntegrationAndDeviceIdsByIntegrationNameCondition(integrationNameCondition);
+        val integrationIds = getIntegrationIdsByIntegrationNameCondition(integrationNameCondition);
         if (integrationIds != null && integrationIds.isEmpty()) {
             return Page.empty();
         }
@@ -973,6 +973,10 @@ public class EntityService implements EntityServiceProvider {
                 return Page.empty();
             } else {
                 intersectionDeviceIds = doIntersection(intersectionDeviceIds, deviceIds);
+                if (intersectionDeviceIds.isEmpty()) {
+                    return Page.empty();
+                }
+                attachTargetIds.clear();
             }
         }
 
@@ -983,6 +987,10 @@ public class EntityService implements EntityServiceProvider {
                 return Page.empty();
             } else {
                 intersectionDeviceIds = doIntersection(intersectionDeviceIds, deviceIdsByGroupName);
+                if (intersectionDeviceIds.isEmpty()) {
+                    return Page.empty();
+                }
+                attachTargetIds.clear();
             }
         }
 
@@ -1122,7 +1130,7 @@ public class EntityService implements EntityServiceProvider {
     }
 
     @Nullable
-    private List<String> getIntegrationAndDeviceIdsByIntegrationNameCondition(EntityAdvancedSearchCondition integrationNameCondition) {
+    private List<String> getIntegrationIdsByIntegrationNameCondition(EntityAdvancedSearchCondition integrationNameCondition) {
         if (integrationNameCondition == null || CollectionUtils.isEmpty(integrationNameCondition.getValues())) {
             return null;
         }
@@ -1147,15 +1155,18 @@ public class EntityService implements EntityServiceProvider {
     @NonNull
     private List<String> searchIntegrationIdsByName(ComparisonOperator operator, String keyword) {
         return integrationServiceProvider.findIntegrations(integration -> switch (operator) {
-            case EQ -> Objects.equals(integration.getName(), keyword);
-            case NE -> !Objects.equals(integration.getName(), keyword);
-            case CONTAINS -> integration.getName().toLowerCase().contains(keyword.toLowerCase());
-            case NOT_CONTAINS -> !integration.getName().toLowerCase().contains(keyword.toLowerCase());
-            case START_WITH -> integration.getName().toLowerCase().startsWith(keyword.toLowerCase());
-            case END_WITH -> integration.getName().toLowerCase().endsWith(keyword.toLowerCase());
-            default ->
-                    throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Unsupported operator: " + operator).build();
-        }).stream().map(Integration::getId).toList();
+                    case EQ -> Objects.equals(integration.getName(), keyword);
+                    case NE -> !Objects.equals(integration.getName(), keyword);
+                    case CONTAINS -> integration.getName().toLowerCase().contains(keyword.toLowerCase());
+                    case NOT_CONTAINS -> !integration.getName().toLowerCase().contains(keyword.toLowerCase());
+                    case START_WITH -> integration.getName().toLowerCase().startsWith(keyword.toLowerCase());
+                    case END_WITH -> integration.getName().toLowerCase().endsWith(keyword.toLowerCase());
+                    default ->
+                            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Unsupported operator: " + operator).build();
+                })
+                .stream()
+                .map(Integration::getId)
+                .toList();
     }
 
     private void buildTextFilterable(Filterable filterable, ComparisonOperator operator, String columnName, List<String> values) {
