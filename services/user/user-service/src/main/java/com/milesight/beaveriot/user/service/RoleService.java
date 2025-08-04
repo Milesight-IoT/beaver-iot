@@ -734,17 +734,15 @@ public class RoleService {
     @Transactional(rollbackFor = Throwable.class)
     public void associateMenu(Long roleId, RoleMenuRequest roleMenuRequest) {
         roleMenuRepository.deleteByRoleId(roleId);
-
-        List<Long> requestMenuIds = roleMenuRequest.getMenuIds();
-        if (requestMenuIds == null || requestMenuIds.isEmpty()) {
-            return;
-
-        }
-
         List<Long> userIds = getUserRolePOsByRoleId(roleId).stream()
                 .map(UserRolePO::getUserId)
                 .toList();
         self.evictUserMenusCache(userIds);
+
+        List<Long> requestMenuIds = roleMenuRequest.getMenuIds();
+        if (requestMenuIds == null || requestMenuIds.isEmpty()) {
+            return;
+        }
 
         Set<Long> menuIds = new HashSet<>(requestMenuIds);
         List<RoleMenuPO> roleMenuPOs = MenuStore.getAllMenus()
