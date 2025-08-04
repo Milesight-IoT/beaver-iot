@@ -23,6 +23,26 @@ public class MessageResolver {
         ReloadableResourceBundleMessageSource source = new ReloadableResourceBundleMessageSource();
 
         String basename = config.getBasename();
+        String fullBasename = injectModuleName(basename, moduleName);
+        source.setBasename(fullBasename);
+
+        source.setDefaultLocale(Locale.ROOT);
+
+        if (config.getEncoding() != null) {
+            source.setDefaultEncoding(config.getEncoding());
+        }
+
+        if (config.getCacheDuration() != null) {
+            source.setCacheSeconds(config.getCacheDuration());
+        }
+
+        if (config.getFallbackToSystemLocale() != null) {
+            source.setFallbackToSystemLocale(config.getFallbackToSystemLocale());
+        }
+        return source;
+    }
+
+    private String injectModuleName(String basename, String moduleName) {
         String fullBasename;
         if (StringUtils.hasText(moduleName)) {
             int lastSlash = basename.lastIndexOf('/');
@@ -34,19 +54,7 @@ public class MessageResolver {
         } else {
             fullBasename = basename;
         }
-
-        source.setBasename(fullBasename);
-        source.setDefaultLocale(Locale.ROOT);
-        if (config.getEncoding() != null) {
-            source.setDefaultEncoding(config.getEncoding());
-        }
-        if (config.getCacheDuration() != null) {
-            source.setCacheSeconds(config.getCacheDuration());
-        }
-        if (config.getFallbackToSystemLocale() != null) {
-            source.setFallbackToSystemLocale(config.getFallbackToSystemLocale());
-        }
-        return source;
+        return fullBasename;
     }
 
     public String message(String code, Object[] args, String defaultMessage, Locale locale) {
