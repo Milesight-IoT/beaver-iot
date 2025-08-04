@@ -132,11 +132,15 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
         Set<String> allParentKeys = new HashSet<>();
         exchangeEntities.forEach((key, entity) -> {
             String parentKey = entity.getParentKey();
-            if (parentKey != null && (allParentKeys.isEmpty() || !allParentKeys.contains(parentKey))) {
+            if (parentKey == null) {
+                entity.getChildren().forEach(childEntity -> allChildrenEntities.put(childEntity.getKey(), childEntity));
+                allParentKeys.add(key);
+                return;
+            }
+
+            if (!allParentKeys.contains(parentKey)) {
                 Entity parentEntity = entityServiceProvider.findByKey(parentKey);
-                parentEntity.getChildren().forEach(childEntity -> {
-                    allChildrenEntities.put(childEntity.getKey(), childEntity);
-                });
+                parentEntity.getChildren().forEach(childEntity -> allChildrenEntities.put(childEntity.getKey(), childEntity));
                 allParentKeys.add(parentKey);
             }
         });
