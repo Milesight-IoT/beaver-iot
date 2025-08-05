@@ -134,6 +134,11 @@ public class DeviceService implements IDeviceFacade {
         }
 
         ExchangePayload payload = createDeviceRequest.getParamEntities();
+        if (payload.isEmpty()) {
+            String addDeviceEntityKey = integrationConfig.getEntityKeyAddDevice();
+            payload.computeIfAbsent(addDeviceEntityKey, k -> Map.of());
+        }
+
         payload.validate();
         payload.putContext(DEVICE_NAME_ON_ADD, createDeviceRequest.getName());
         payload.putContext(DEVICE_TEMPLATE_KEY_ON_ADD, createDeviceRequest.getTemplate());

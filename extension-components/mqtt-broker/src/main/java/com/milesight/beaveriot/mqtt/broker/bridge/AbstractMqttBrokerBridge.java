@@ -9,6 +9,7 @@ import com.milesight.beaveriot.mqtt.broker.bridge.listener.event.MqttMessageEven
 import lombok.*;
 import lombok.extern.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
 
 import java.util.List;
@@ -26,6 +27,7 @@ public abstract class AbstractMqttBrokerBridge implements MqttBrokerBridge {
     @Autowired
     protected MqttBrokerSettings mqttBrokerSettings;
 
+    @Qualifier("mqtt")
     @Autowired
     private TaskExecutor executor;
 

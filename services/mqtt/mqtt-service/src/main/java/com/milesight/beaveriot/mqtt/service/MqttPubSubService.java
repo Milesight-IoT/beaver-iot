@@ -23,9 +23,10 @@ import io.moquette.broker.subscriptions.Token;
 import io.moquette.broker.subscriptions.Topic;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import jakarta.annotation.PostConstruct;
-import lombok.*;
 import lombok.extern.slf4j.*;
+import lombok.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.task.TaskExecutor;
@@ -41,7 +42,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Order(10000)
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class MqttPubSubService implements MqttAdminPubSubServiceProvider, CommandLineRunner {
 
     private static final String SINGLE_LEVEL_WILDCARD = "+";
@@ -70,16 +70,19 @@ public class MqttPubSubService implements MqttAdminPubSubServiceProvider, Comman
      */
     private static final CopyOnWriteArraySet<MqttDisconnectEventListener> disconnectEventListeners = new CopyOnWriteArraySet<>();
 
-    private final MqttBrokerBridge mqttBrokerBridge;
-
-    private final CredentialsServiceProvider credentialsServiceProvider;
-
-    private final AtomicBoolean isReady = new AtomicBoolean(false);
-
     private static final ConcurrentLinkedQueue<UnreadyInboundMessage> blockedInboundMessages = new ConcurrentLinkedQueue<>();
 
     private static final ConcurrentLinkedQueue<UnreadyOutboundMessage> blockedOutboundMessages = new ConcurrentLinkedQueue<>();
 
+    private final AtomicBoolean isReady = new AtomicBoolean(false);
+
+    @Autowired
+    private MqttBrokerBridge mqttBrokerBridge;
+
+    @Autowired
+    private CredentialsServiceProvider credentialsServiceProvider;
+
+    @Qualifier("mqtt-subscriber")
     @Autowired
     private TaskExecutor executor;
 

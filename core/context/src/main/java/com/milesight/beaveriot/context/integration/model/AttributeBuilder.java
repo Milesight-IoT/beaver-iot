@@ -21,6 +21,7 @@ public class AttributeBuilder {
     public static final String ATTRIBUTE_ENUM = "enum";
     public static final String ATTRIBUTE_FORMAT = "format";
     public static final String ATTRIBUTE_FORMAT_VALUE_HEX = "HEX";
+    public static final String ATTRIBUTE_FORMAT_VALUE_IMAGE = "IMAGE";
     public static final String ATTRIBUTE_FORMAT_VALUE_IMAGE_URL = "IMAGE:URL";
     public static final String ATTRIBUTE_FORMAT_VALUE_IMAGE_BASE64 = "IMAGE:BASE64";
     public static final String ATTRIBUTE_FORMAT_VALUE_REGEX = "REGEX";

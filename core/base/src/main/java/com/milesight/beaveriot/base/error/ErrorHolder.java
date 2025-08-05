@@ -52,7 +52,7 @@ public class ErrorHolder {
 
     private static final int MAX_CAUSE_DEPTH = 10;
 
-    private static Throwable tryGetKnownCause(Throwable cause) {
+    public static Throwable tryGetKnownCause(Throwable cause) {
         Throwable knownCause = cause;
         int i = 0;
         do {

@@ -2,6 +2,8 @@ server:
   port: 9200
 
 spring:
+  main:
+    allow-bean-definition-overriding: true
   jackson:
     default-property-inclusion: non_null
     property-naming-strategy: SNAKE_CASE
@@ -36,7 +38,7 @@ spring:
         webAllowOthers: true
   cache:
     #    type: caffeine
-#    cache-names: "resource:data-pre-sign"
+    #    cache-names: "resource:data-pre-sign"
     caffeine:
       spec: maximumSize=50000,expireAfterWrite=${spring.cache.specs.time-to-live:1h}
     redis:
@@ -46,9 +48,9 @@ spring:
     specs:
       time-to-live: 1h
       time-to-lives:
-        [ "resource:data-pre-sign" ]: ${resource.pre_sign_expire}
-        [ "resource:data" ]: 2m
-        [ "entity:latest-value" ] : 15m
+        '[resource:data-pre-sign]': ${resource.pre_sign_expire}
+        '[resource:data]': 2m
+        '[entity:latest-value]': 15m
 
   redis:
     ssl: ${REDIS_SSL:false}
@@ -74,15 +76,24 @@ spring:
         codec:
           class: "org.redisson.codec.JsonJacksonCodec"
         transportMode: "NIO"
-  task:
-    execution:
-      pool:
-        core-size: 8
-        max-size: 16
-        queue-capacity: 10000
   # i18n
   messages:
     basename: i18n/messages
+
+task:
+  executor:
+    max-queue-capacity: 1024
+    pool:
+      default:
+        core-size: 16
+        max-size: 32
+        queue-size: 256
+      mqtt:
+        max-size: 32
+      mqtt-subscriber:
+        core-size: 32
+        max-size: 64
+        rejectedPolicy: block_policy
 
 management:
   endpoints:
@@ -198,11 +209,11 @@ resource:
   storage: ${RESOURCE_STORAGE:db}
   pre_sign_expire: 15m
   s3:
-     endpoint: ${RESOURCE_STORAGE_S3_ENDPOINT:} # starts with http / https
-     region: ${RESOURCE_STORAGE_S3_REGION:}
-     access_key: ${RESOURCE_STORAGE_S3_ACCESS_KEY:}
-     access_secret: ${RESOURCE_STORAGE_S3_ACCESS_SECRET:}
-     bucket: ${RESOURCE_STORAGE_S3_BUCKET:}
+    endpoint: ${RESOURCE_STORAGE_S3_ENDPOINT:} # starts with http / https
+    region: ${RESOURCE_STORAGE_S3_REGION:}
+    access_key: ${RESOURCE_STORAGE_S3_ACCESS_KEY:}
+    access_secret: ${RESOURCE_STORAGE_S3_ACCESS_SECRET:}
+    bucket: ${RESOURCE_STORAGE_S3_BUCKET:}
 
 logging:
   level:

@@ -64,12 +64,7 @@ public class DeviceSheetErrorApplier {
                 throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "Missed row: " + detail.getId()).build();
             }
 
-            Cell cell = row.getCell(errorColIndex);
-            if (cell != null) {
-                throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "Duplicated row: " + detail.getId()).build();
-            }
-
-            cell = row.createCell(errorColIndex);
+            Cell cell = row.createCell(errorColIndex);
             CellStyle cellStyle = workbook.createCellStyle();
             cellStyle.setWrapText(true);
             cell.setCellStyle(cellStyle);
