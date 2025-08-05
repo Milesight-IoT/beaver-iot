@@ -366,6 +366,8 @@ public class Entity implements IdentityKey, Cloneable {
         boolean isValid = true;
         if (AttributeBuilder.ATTRIBUTE_FORMAT_VALUE_HEX.equals(format)) {
             isValid = ValidationUtils.isHex(stringValue);
+        } else if (AttributeBuilder.ATTRIBUTE_FORMAT_VALUE_IMAGE.equals(format)) {
+            isValid = ValidationUtils.isURL(stringValue) || ValidationUtils.isImageBase64(stringValue);
         } else if (AttributeBuilder.ATTRIBUTE_FORMAT_VALUE_IMAGE_URL.equals(format)) {
             isValid = ValidationUtils.isURL(stringValue);
         } else if (AttributeBuilder.ATTRIBUTE_FORMAT_VALUE_IMAGE_BASE64.equals(format)) {
