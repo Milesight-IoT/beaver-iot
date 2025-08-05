@@ -1,30 +1,22 @@
 package com.milesight.beaveriot.base.error;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.BaseException;
 import com.milesight.beaveriot.base.exception.EventBusExecutionException;
 import com.milesight.beaveriot.base.exception.MultipleErrorException;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
-import com.milesight.beaveriot.base.enums.ErrorCode;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.slf4j.*;
 import org.apache.camel.CamelExecutionException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.CollectionUtils;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.ObjectError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-
-import java.net.BindException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletionException;
 
 /**
  * @author leon
@@ -50,25 +42,11 @@ public class DefaultExceptionHandler {
     }
 
     @ResponseBody
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public com.milesight.beaveriot.base.response.ResponseBody<Object> methodArgumentNotValidExceptionHandler(MethodArgumentNotValidException e) {
-        log.error("Cause MethodArgumentNotValidException: ", e);
-        List<ObjectError> objectErrors = extractBindingErrors(e);
-        return CollectionUtils.isEmpty(objectErrors) ?
-                ResponseBuilder.fail(ErrorCode.PARAMETER_VALIDATION_FAILED, e.getMessage()) :
-                ResponseBuilder.fail(ErrorCode.PARAMETER_VALIDATION_FAILED, objectErrors);
-    }
-
-    @ResponseBody
     @ExceptionHandler(BindException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public com.milesight.beaveriot.base.response.ResponseBody<Object> bindExceptionHandler(BindException e) {
-        log.debug("Cause BindException Detail:", e);
-        List<ObjectError> objectErrors = extractBindingErrors(e);
-        return CollectionUtils.isEmpty(objectErrors) ?
-                ResponseBuilder.fail(ErrorCode.PARAMETER_VALIDATION_FAILED, e.getMessage()) :
-                ResponseBuilder.fail(ErrorCode.PARAMETER_VALIDATION_FAILED, objectErrors);
+    public com.milesight.beaveriot.base.response.ResponseBody<Object> methodArgumentNotValidExceptionHandler(BindException e) {
+        log.error("Cause BindException: ", e);
+        return BindingResultResolver.convertToErrorResponse(e);
     }
 
     @ResponseBody
@@ -149,24 +127,6 @@ public class DefaultExceptionHandler {
     public com.milesight.beaveriot.base.response.ResponseBody<Object> handleException(Throwable e) {
         log.error("Cause Throwable : ", e);
         return ResponseBuilder.fail(ErrorCode.SERVER_ERROR, e.getMessage());
-    }
-
-    private BindingResult extractBindingResult(Throwable error) {
-        if (error instanceof BindingResult bindingResult) {
-            return bindingResult;
-        }
-        if (error instanceof MethodArgumentNotValidException methodArgumentNotValidException) {
-            return methodArgumentNotValidException.getBindingResult();
-        }
-        return null;
-    }
-
-    private List<ObjectError> extractBindingErrors(Throwable error) {
-        BindingResult result = extractBindingResult(error);
-        if (result != null && result.hasErrors()) {
-            return result.getAllErrors();
-        }
-        return new ArrayList<>();
     }
 
 }
