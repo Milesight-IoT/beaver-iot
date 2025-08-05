@@ -200,13 +200,53 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     }
 
     private List<DeviceTemplateModel.Definition.InputJsonObject> getDeviceIdInputJsonObjects(DeviceTemplateModel deviceTemplateModel) {
-        return deviceTemplateModel.getDefinition().getInput().getProperties().stream().filter(
-                DeviceTemplateModel.Definition.InputJsonObject::isDeviceId).toList();
+        return getDeviceIdInputJsonObjects(deviceTemplateModel.getDefinition().getInput().getProperties());
+    }
+
+    private List<DeviceTemplateModel.Definition.InputJsonObject> getDeviceIdInputJsonObjects(List<DeviceTemplateModel.Definition.InputJsonObject> properties) {
+        if (CollectionUtils.isEmpty(properties)) {
+            return Collections.emptyList();
+        }
+
+        List<DeviceTemplateModel.Definition.InputJsonObject> deviceIdInputJsonObjects = new ArrayList<>();
+        for (DeviceTemplateModel.Definition.InputJsonObject property : properties) {
+            if (DeviceTemplateModel.JsonType.OBJECT.equals(property.getType())) {
+                List<DeviceTemplateModel.Definition.InputJsonObject> childDeviceIdInputJsonObjects = getDeviceIdInputJsonObjects(property.getProperties());
+                if (!CollectionUtils.isEmpty(childDeviceIdInputJsonObjects)) {
+                    deviceIdInputJsonObjects.addAll(childDeviceIdInputJsonObjects);
+                }
+            } else {
+                if (property.isDeviceId()) {
+                    deviceIdInputJsonObjects.add(property);
+                }
+            }
+        }
+        return deviceIdInputJsonObjects;
     }
 
     private List<DeviceTemplateModel.Definition.InputJsonObject> getDeviceNameInputJsonObjects(DeviceTemplateModel deviceTemplateModel) {
-        return deviceTemplateModel.getDefinition().getInput().getProperties().stream().filter(
-                DeviceTemplateModel.Definition.InputJsonObject::isDeviceName).toList();
+        return getDeviceNameInputJsonObjects(deviceTemplateModel.getDefinition().getInput().getProperties());
+    }
+
+    private List<DeviceTemplateModel.Definition.InputJsonObject> getDeviceNameInputJsonObjects(List<DeviceTemplateModel.Definition.InputJsonObject> properties) {
+        if (CollectionUtils.isEmpty(properties)) {
+            return Collections.emptyList();
+        }
+
+        List<DeviceTemplateModel.Definition.InputJsonObject> deviceIdInputJsonObjects = new ArrayList<>();
+        for (DeviceTemplateModel.Definition.InputJsonObject property : properties) {
+            if (DeviceTemplateModel.JsonType.OBJECT.equals(property.getType())) {
+                List<DeviceTemplateModel.Definition.InputJsonObject> childDeviceIdInputJsonObjects = getDeviceNameInputJsonObjects(property.getProperties());
+                if (!CollectionUtils.isEmpty(childDeviceIdInputJsonObjects)) {
+                    deviceIdInputJsonObjects.addAll(childDeviceIdInputJsonObjects);
+                }
+            } else {
+                if (property.isDeviceName()) {
+                    deviceIdInputJsonObjects.add(property);
+                }
+            }
+        }
+        return deviceIdInputJsonObjects;
     }
 
     public DeviceTemplateOutputResult output(String deviceKey, ExchangePayload payload) {
