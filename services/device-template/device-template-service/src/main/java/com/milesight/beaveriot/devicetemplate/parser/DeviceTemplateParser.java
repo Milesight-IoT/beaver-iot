@@ -138,12 +138,6 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             JsonNode jsonNode = mapper.readTree(jsonData);
 
             DeviceTemplateModel deviceTemplateModel = parse(deviceTemplate.getContent());
-            String deviceIdKey = getDeviceIdKey(deviceTemplateModel);
-            String deviceNameKey = getDeviceNameKey(deviceTemplateModel);
-
-            if (deviceIdKey == null || jsonNode.get(deviceIdKey) == null) {
-                throw ServiceException.with(ServerErrorCode.DEVICE_ID_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_ID_NOT_FOUND.formatMessage(deviceIdKey)).build();
-            }
 
             Map<String, JsonNode> flatJsonDataMap = new HashMap<>();
             flattenJsonData(jsonNode, flatJsonDataMap, "");
@@ -151,12 +145,19 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             Map<String, DeviceTemplateModel.Definition.InputJsonObject> flatJsonInputDescriptionMap = new HashMap<>();
             flattenJsonInputDescription(deviceTemplateModel.getDefinition().getInput().getProperties(), flatJsonInputDescriptionMap, "");
 
+            String deviceIdKey = getDeviceIdKey(flatJsonInputDescriptionMap);
+            String deviceNameKey = getDeviceNameKey(flatJsonInputDescriptionMap);
+
+            if (deviceIdKey == null || flatJsonDataMap.get(deviceIdKey) == null) {
+                throw ServiceException.with(ServerErrorCode.DEVICE_ID_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_ID_NOT_FOUND.formatMessage(deviceIdKey)).build();
+            }
+
             // Validate json data
             validateJsonData(flatJsonDataMap, flatJsonInputDescriptionMap);
 
             // Build device
-            String deviceId = jsonNode.get(deviceIdKey).asText();
-            String deviceName = (deviceNameKey == null || jsonNode.get(deviceNameKey) == null) ? deviceId : jsonNode.get(deviceNameKey).asText();
+            String deviceId = flatJsonDataMap.get(deviceIdKey).asText();
+            String deviceName = (deviceNameKey == null || flatJsonDataMap.get(deviceNameKey) == null) ? deviceId : flatJsonDataMap.get(deviceNameKey).asText();
             Device device = buildDevice(integration, deviceId, deviceName, deviceTemplate.getKey());
 
             // Build device entities
@@ -181,22 +182,12 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         }
     }
 
-    private String getDeviceIdKey(DeviceTemplateModel deviceTemplateModel) {
-        List<DeviceTemplateModel.Definition.InputJsonObject> deviceIdInputJsonObjects = getDeviceIdInputJsonObjects(deviceTemplateModel);
-        String deviceIdKey = null;
-        if (!deviceIdInputJsonObjects.isEmpty()) {
-            deviceIdKey = deviceIdInputJsonObjects.get(0).getKey();
-        }
-        return deviceIdKey;
+    private String getDeviceIdKey(Map<String, DeviceTemplateModel.Definition.InputJsonObject> flatJsonInputDescriptionMap) {
+        return flatJsonInputDescriptionMap.entrySet().stream().filter(entry -> entry.getValue().isDeviceId()).map(Map.Entry::getKey).findFirst().orElse(null);
     }
 
-    private String getDeviceNameKey(DeviceTemplateModel deviceTemplateModel) {
-        List<DeviceTemplateModel.Definition.InputJsonObject> deviceNameInputJsonObjects = getDeviceNameInputJsonObjects(deviceTemplateModel);
-        String deviceNameKey = null;
-        if (!deviceNameInputJsonObjects.isEmpty()) {
-            deviceNameKey = deviceNameInputJsonObjects.get(0).getKey();
-        }
-        return deviceNameKey;
+    private String getDeviceNameKey(Map<String, DeviceTemplateModel.Definition.InputJsonObject> flatJsonInputDescriptionMap) {
+        return flatJsonInputDescriptionMap.entrySet().stream().filter(entry -> entry.getValue().isDeviceName()).map(Map.Entry::getKey).findFirst().orElse(null);
     }
 
     private List<DeviceTemplateModel.Definition.InputJsonObject> getDeviceIdInputJsonObjects(DeviceTemplateModel deviceTemplateModel) {
