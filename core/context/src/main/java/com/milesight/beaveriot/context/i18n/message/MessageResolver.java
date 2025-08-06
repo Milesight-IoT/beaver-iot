@@ -15,6 +15,7 @@ import java.util.Locale;
  * create: 2025/8/1 9:04
  **/
 public class MessageResolver {
+    private final static String INTEGRATIONS_KEYWORD = "integrations";
     private final MessageSource messageSource;
 
     public MessageResolver(MessageSourceConfig config, String integrationId, String moduleName) {
@@ -63,7 +64,7 @@ public class MessageResolver {
         }
 
         if (StringUtils.hasText(integrationId)) {
-            resultPath.append("integrations/").append(integrationId).append("/");
+            resultPath.append(INTEGRATIONS_KEYWORD).append("/").append(integrationId).append("/");
         }
 
         if (StringUtils.hasText(moduleName)) {
