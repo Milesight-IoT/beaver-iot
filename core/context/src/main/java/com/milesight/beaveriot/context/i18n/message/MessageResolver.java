@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.context.i18n.message;
 
+import com.milesight.beaveriot.context.i18n.config.MessageConfig;
 import com.milesight.beaveriot.context.i18n.locale.LocaleContext;
 import org.springframework.context.MessageSource;
 import org.springframework.context.NoSuchMessageException;
@@ -15,15 +16,15 @@ import java.util.Locale;
 public class MessageResolver {
     private final MessageSource messageSource;
 
-    public MessageResolver(MessageConfig config, String moduleName) {
-        this.messageSource = createMessageSource(config, moduleName);
+    public MessageResolver(MessageConfig config, String integrationId, String moduleName) {
+        this.messageSource = createMessageSource(config, integrationId, moduleName);
     }
 
-    private ReloadableResourceBundleMessageSource createMessageSource(MessageConfig config, String moduleName) {
+    private ReloadableResourceBundleMessageSource createMessageSource(MessageConfig config, String integrationId, String moduleName) {
         ReloadableResourceBundleMessageSource source = new ReloadableResourceBundleMessageSource();
 
         String basename = config.getBasename();
-        String fullBasename = injectModuleName(basename, moduleName);
+        String fullBasename = injectBasename(basename, integrationId, moduleName);
         source.setBasename(fullBasename);
 
         source.setDefaultLocale(Locale.ROOT);
@@ -42,19 +43,32 @@ public class MessageResolver {
         return source;
     }
 
-    private String injectModuleName(String basename, String moduleName) {
-        String fullBasename;
-        if (StringUtils.hasText(moduleName)) {
-            int lastSlash = basename.lastIndexOf('/');
-            if (lastSlash == -1) {
-                fullBasename = moduleName + "/" + basename;
-            } else {
-                fullBasename = basename.substring(0, lastSlash + 1) + moduleName + "/" + basename.substring(lastSlash + 1);
-            }
-        } else {
-            fullBasename = basename;
+    private String injectBasename(String basename, String integrationId, String moduleName) {
+        if (!StringUtils.hasText(moduleName) && !StringUtils.hasText(integrationId)) {
+            return basename;
         }
-        return fullBasename;
+
+        int firstSlash = basename.indexOf('/');
+        String prefix = (firstSlash == -1) ? "" : basename.substring(0, firstSlash + 1);
+        String remainder = (firstSlash == -1) ? basename : basename.substring(firstSlash + 1);
+
+        StringBuilder resultPath = new StringBuilder();
+
+        if (StringUtils.hasText(prefix)) {
+            resultPath.append(prefix);
+        }
+
+        if (StringUtils.hasText(integrationId)) {
+            resultPath.append("integrations/").append(integrationId).append("/");
+        }
+
+        if (StringUtils.hasText(moduleName)) {
+            resultPath.append(moduleName).append("/");
+        }
+
+        resultPath.append(remainder);
+
+        return resultPath.toString();
     }
 
     /**

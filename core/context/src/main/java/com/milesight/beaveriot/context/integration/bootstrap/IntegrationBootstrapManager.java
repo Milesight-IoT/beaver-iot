@@ -4,6 +4,7 @@ import com.milesight.beaveriot.base.exception.BootstrapException;
 import com.milesight.beaveriot.base.exception.ConfigurationException;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
+import com.milesight.beaveriot.context.i18n.injector.IntegrationAutowiredMessageResolverInjector;
 import com.milesight.beaveriot.context.integration.IntegrationContext;
 import com.milesight.beaveriot.context.integration.entity.EntityLoader;
 import com.milesight.beaveriot.context.integration.model.Integration;
@@ -37,11 +38,13 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
     private final IntegrationContext integrationContext = new IntegrationContext();
     private final ObjectProvider<EntityLoader> entityLoaders;
     private final ObjectProvider<IntegrationBootstrap> integrationBootstrapList;
+    private final IntegrationAutowiredMessageResolverInjector integrationAutowiredMessageResolverInjector;
     private final IntegrationServiceProvider integrationStorageProvider;
 
-    public IntegrationBootstrapManager(ObjectProvider<EntityLoader> entityLoaders, ObjectProvider<IntegrationBootstrap> integrationBootstraps, IntegrationServiceProvider integrationStorageProvider) {
+    public IntegrationBootstrapManager(ObjectProvider<EntityLoader> entityLoaders, ObjectProvider<IntegrationBootstrap> integrationBootstraps, IntegrationAutowiredMessageResolverInjector integrationAutowiredMessageResolverInjector, IntegrationServiceProvider integrationStorageProvider) {
         this.entityLoaders = entityLoaders;
         this.integrationBootstrapList = integrationBootstraps;
+        this.integrationAutowiredMessageResolverInjector = integrationAutowiredMessageResolverInjector;
         this.integrationStorageProvider = integrationStorageProvider;
         this.propertySourceFactory = new YamlPropertySourceFactory();
     }
@@ -64,6 +67,8 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
                 Integration integration = buildIntegrationConfig(integrationBootstrap.getClass(), integrationEnvironment);
 
                 loadIntegrationEntityConfig(integration, integrationEnvironment);
+
+                injectIntegrationMessageResolver(integration);
 
                 integrationBootstrap.onPrepared(integration);
 
@@ -169,6 +174,10 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
                 throw new BootstrapException("Failed to load entity config", e);
             }
         });
+    }
+
+    private void injectIntegrationMessageResolver(Integration integration) {
+        integrationAutowiredMessageResolverInjector.injectMessageResolver(integration);
     }
 
     @Override

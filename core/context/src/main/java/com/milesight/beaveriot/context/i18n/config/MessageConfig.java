@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.context.i18n.message;
+package com.milesight.beaveriot.context.i18n.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

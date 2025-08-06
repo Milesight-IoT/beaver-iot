@@ -1,34 +1,28 @@
-package com.milesight.beaveriot.context.i18n.processor;
+package com.milesight.beaveriot.context.i18n.support;
 
 import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.context.i18n.annotation.AutowiredMessageResolver;
 import com.milesight.beaveriot.context.i18n.message.MessageResolver;
-import com.milesight.beaveriot.context.i18n.message.MessageResolverFactory;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.aop.framework.AopProxyUtils;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 
-@Slf4j
+/**
+ * author: Luxb
+ * create: 2025/8/5 17:54
+ **/
 @Component
-public class AutowiredMessageResolverInjector implements BeanPostProcessor {
+public class MessageResolverBeanSupporter {
     private final MessageResolverFactory messageResolverFactory;
 
-    public AutowiredMessageResolverInjector(MessageResolverFactory messageResolverFactory) {
+    public MessageResolverBeanSupporter(MessageResolverFactory messageResolverFactory) {
         this.messageResolverFactory = messageResolverFactory;
     }
 
-    @Override
-    public Object postProcessBeforeInitialization(@NonNull Object bean, @NonNull String beanName) throws BeansException {
-        Class<?> targetClass = AopProxyUtils.ultimateTargetClass(bean);
-        injectMessageResolvers(bean, targetClass);
-        return bean;
+    public void injectMessageResolvers(Object bean, Class<?> clazz) {
+        injectMessageResolvers(bean, clazz, null);
     }
 
-    private void injectMessageResolvers(Object bean, Class<?> clazz) {
+    public void injectMessageResolvers(Object bean, Class<?> clazz, String integrationId) {
         ReflectionUtils.doWithFields(clazz, field -> {
             AutowiredMessageResolver ann = field.getAnnotation(AutowiredMessageResolver.class);
             if (ann != null) {
@@ -42,8 +36,8 @@ public class AutowiredMessageResolverInjector implements BeanPostProcessor {
 
                     String moduleName = ann.value();
                     MessageResolver resolver = StringUtils.isEmpty(moduleName)
-                            ? messageResolverFactory.getDefaultResolver()
-                            : messageResolverFactory.getResolver(moduleName);
+                            ? messageResolverFactory.getDefaultResolver(integrationId)
+                            : messageResolverFactory.getResolver(integrationId, moduleName);
 
                     field.set(bean, resolver);
                 } catch (Exception e) {
@@ -51,10 +45,5 @@ public class AutowiredMessageResolverInjector implements BeanPostProcessor {
                 }
             }
         });
-    }
-
-    @Override
-    public Object postProcessAfterInitialization(@NonNull Object bean, @NonNull String beanName) throws BeansException {
-        return bean;
     }
 }
