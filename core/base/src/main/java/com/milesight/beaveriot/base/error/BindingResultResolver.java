@@ -4,7 +4,6 @@ import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.enums.ValidationErrorCode;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
-import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.StringUtils;
 import lombok.extern.slf4j.*;
 import org.springframework.validation.BindingResult;
@@ -16,6 +15,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -43,26 +43,19 @@ public class BindingResultResolver {
         }
 
         for (var fieldError : fieldErrors) {
-            var annotationName = fieldError.getCode();
-            var errorCode = ValidationErrorCode.fromValidationCode(annotationName);
-            if (errorCode == null) {
-                continue;
-            }
-
             var args = new HashMap<String, Object>();
-            var rejectedValue = fieldError.getRejectedValue();
-            args.put("rejected_value", rejectedValue == null ? "null" : JsonUtils.toJSON(rejectedValue));
-
             var fieldName = fieldError.getField();
-            args.put("field", StringUtils.toSnakeCase(fieldName));
-
             var nestedPath = StringUtils.toSnakeCase(bindingResult.getNestedPath() + fieldName);
             args.put("path", nestedPath);
 
+            var annotationName = fieldError.getCode();
             collectAnnotationValues(target, fieldName, annotationName, args);
 
+            var errorCode = Optional.ofNullable(ValidationErrorCode.fromValidationCode(annotationName))
+                    .map(ValidationErrorCode::getErrorCode)
+                    .orElseGet(ErrorCode.PARAMETER_VALIDATION_FAILED::getErrorCode);
             var errorMessage = fieldError.getDefaultMessage();
-            var errorHolder = ErrorHolder.of(errorCode.getErrorCode(), errorMessage, args);
+            var errorHolder = ErrorHolder.of(errorCode, errorMessage, args);
             errorHolders.add(errorHolder);
         }
 
@@ -82,7 +75,6 @@ public class BindingResultResolver {
                     if (simpleName.equals(annotationName)) {
                         var methods = getAnnotationMethods(annotation.annotationType());
                         for (var method : methods) {
-                            // method.setAccessible(true);
                             var value = method.invoke(annotation);
                             args.put(StringUtils.toSnakeCase(method.getName()), value);
                         }
