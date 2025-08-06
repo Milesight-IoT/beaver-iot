@@ -79,6 +79,7 @@ spring:
   # i18n
   messages:
     basename: i18n/messages
+    cache-duration: 3600
 
 task:
   executor:

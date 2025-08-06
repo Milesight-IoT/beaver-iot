@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.context.i18n.support;
 
 import com.milesight.beaveriot.base.utils.StringUtils;
-import com.milesight.beaveriot.context.i18n.config.MessageConfig;
+import com.milesight.beaveriot.context.i18n.config.MessageSourceConfig;
 import com.milesight.beaveriot.context.i18n.message.MessageResolver;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Component;
@@ -16,10 +16,10 @@ import java.util.Optional;
 @Component
 public class MessageResolverFactory {
     private final static String KEY_GLOBAL = "<GLOBAL>";
-    private final MessageConfig config;
+    private final MessageSourceConfig config;
     private final ConfigurableApplicationContext applicationContext;
 
-    public MessageResolverFactory(MessageConfig config, ConfigurableApplicationContext applicationContext) {
+    public MessageResolverFactory(MessageSourceConfig config, ConfigurableApplicationContext applicationContext) {
         this.config = config;
         this.applicationContext = applicationContext;
     }

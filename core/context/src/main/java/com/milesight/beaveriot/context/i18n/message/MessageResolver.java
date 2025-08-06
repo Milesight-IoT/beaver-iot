@@ -1,12 +1,13 @@
 package com.milesight.beaveriot.context.i18n.message;
 
-import com.milesight.beaveriot.context.i18n.config.MessageConfig;
+import com.milesight.beaveriot.context.i18n.config.MessageSourceConfig;
 import com.milesight.beaveriot.context.i18n.locale.LocaleContext;
 import org.springframework.context.MessageSource;
 import org.springframework.context.NoSuchMessageException;
-import org.springframework.context.support.ReloadableResourceBundleMessageSource;
+import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.util.StringUtils;
 
+import java.time.Duration;
 import java.util.Locale;
 
 /**
@@ -16,31 +17,34 @@ import java.util.Locale;
 public class MessageResolver {
     private final MessageSource messageSource;
 
-    public MessageResolver(MessageConfig config, String integrationId, String moduleName) {
+    public MessageResolver(MessageSourceConfig config, String integrationId, String moduleName) {
         this.messageSource = createMessageSource(config, integrationId, moduleName);
     }
 
-    private ReloadableResourceBundleMessageSource createMessageSource(MessageConfig config, String integrationId, String moduleName) {
-        ReloadableResourceBundleMessageSource source = new ReloadableResourceBundleMessageSource();
+    private MessageSource createMessageSource(MessageSourceConfig config, String integrationId, String moduleName) {
+        ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
 
         String basename = config.getBasename();
         String fullBasename = injectBasename(basename, integrationId, moduleName);
-        source.setBasename(fullBasename);
+        messageSource.setBasename(fullBasename);
 
-        source.setDefaultLocale(Locale.ROOT);
+        messageSource.setDefaultLocale(Locale.ROOT);
 
         if (config.getEncoding() != null) {
-            source.setDefaultEncoding(config.getEncoding());
+            messageSource.setDefaultEncoding(config.getEncoding().name());
         }
 
-        if (config.getCacheDuration() != null) {
-            source.setCacheSeconds(config.getCacheDuration());
+        messageSource.setFallbackToSystemLocale(config.isFallbackToSystemLocale());
+
+        Duration cacheDuration = config.getCacheDuration();
+        if (cacheDuration != null) {
+            messageSource.setCacheMillis(cacheDuration.toMillis());
         }
 
-        if (config.getFallbackToSystemLocale() != null) {
-            source.setFallbackToSystemLocale(config.getFallbackToSystemLocale());
-        }
-        return source;
+        messageSource.setAlwaysUseMessageFormat(config.isAlwaysUseMessageFormat());
+
+        messageSource.setUseCodeAsDefaultMessage(config.isUseCodeAsDefaultMessage());
+        return messageSource;
     }
 
     private String injectBasename(String basename, String integrationId, String moduleName) {
