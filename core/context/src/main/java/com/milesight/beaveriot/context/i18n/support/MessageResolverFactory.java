@@ -15,6 +15,7 @@ import java.util.Optional;
 @SuppressWarnings("unused")
 @Component
 public class MessageResolverFactory {
+    private final static String KEY_GLOBAL = "<GLOBAL>";
     private final MessageConfig config;
     private final ConfigurableApplicationContext applicationContext;
 
@@ -165,7 +166,7 @@ public class MessageResolverFactory {
         return (StringUtils.isEmpty(integrationId) && StringUtils.isEmpty(moduleName))
                 ? "defaultMessageResolver"
                 : MessageResolver.class.getSimpleName() + ":" +
-                Optional.ofNullable(integrationId).orElse("") + ":" +
-                Optional.ofNullable(moduleName).orElse("");
+                Optional.ofNullable(integrationId).orElse(KEY_GLOBAL) + ":" +
+                Optional.ofNullable(moduleName).orElse(KEY_GLOBAL);
     }
 }
