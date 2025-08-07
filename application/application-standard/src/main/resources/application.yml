@@ -76,6 +76,10 @@ spring:
         codec:
           class: "org.redisson.codec.JsonJacksonCodec"
         transportMode: "NIO"
+  # i18n
+  messages:
+    basename: i18n/messages
+    cache-duration: 3600
 
 task:
   executor:
@@ -84,13 +88,13 @@ task:
       default:
         core-size: 16
         max-size: 32
-        queue-size: 256
+        queue-capacity: 256
       mqtt:
         max-size: 32
       mqtt-subscriber:
         core-size: 32
         max-size: 64
-        rejectedPolicy: block_policy
+        rejected-policy: block_policy
 
 management:
   endpoints:
