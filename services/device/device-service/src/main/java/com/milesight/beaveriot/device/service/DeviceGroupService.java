@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -51,6 +52,7 @@ public class DeviceGroupService {
     DeviceGroupMappingRepository deviceGroupMappingRepository;
 
     @DistributedLock(name = "device-group-#{#p0.name}", waitForLock = "5s")
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public DeviceGroupPO getOrCreateDeviceGroup(CreateDeviceGroupRequest request, boolean mustCreate) {
         Optional<DeviceGroupPO> deviceGroupPOOptional = deviceGroupRepository.findOne(f -> f.eq(DeviceGroupPO.Fields.name, request.getName()));
         if (deviceGroupPOOptional.isPresent()) {
