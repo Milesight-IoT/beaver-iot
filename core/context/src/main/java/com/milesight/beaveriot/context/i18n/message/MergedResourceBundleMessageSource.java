@@ -12,16 +12,18 @@ import org.springframework.util.CollectionUtils;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * author: Luxb
  * create: 2025/8/7 10:48
  **/
 public class MergedResourceBundleMessageSource extends ReloadableResourceBundleMessageSource {
+    private static final Field cachedPropertiesField;
     private static final String XML_EXTENSION = ".xml";
     private final List<String> fileExtensions = List.of(".properties", XML_EXTENSION);
     private final PathMatchingResourcePatternResolver pathMatchingResourcePatternResolver;
-    private static final Field cachedPropertiesField;
+    private final ConcurrentMap<String, PropertiesHolder> cachedProperties;
 
     static {
         try {
@@ -34,6 +36,7 @@ public class MergedResourceBundleMessageSource extends ReloadableResourceBundleM
 
     public MergedResourceBundleMessageSource(PathMatchingResourcePatternResolver pathMatchingResourcePatternResolver) {
         this.pathMatchingResourcePatternResolver = pathMatchingResourcePatternResolver;
+        this.cachedProperties = getCachedProperties();
     }
 
     /**
@@ -76,9 +79,9 @@ public class MergedResourceBundleMessageSource extends ReloadableResourceBundleM
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, PropertiesHolder> getCachedProperties() {
+    private ConcurrentMap<String, PropertiesHolder> getCachedProperties() {
         try {
-            return (Map<String, PropertiesHolder>) cachedPropertiesField.get(this);
+            return (ConcurrentMap<String, PropertiesHolder>) cachedPropertiesField.get(this);
         } catch (IllegalAccessException e) {
             throw new IllegalStateException("Cannot access 'cachedProperties' field due to access restriction", e);
         }
@@ -101,7 +104,6 @@ public class MergedResourceBundleMessageSource extends ReloadableResourceBundleM
             propHolder = new PropertiesHolder();
         }
 
-        Map<String, PropertiesHolder> cachedProperties = getCachedProperties();
         cachedProperties.put(filename, propHolder);
         return propHolder;
     }
