@@ -10,8 +10,6 @@ import com.milesight.beaveriot.context.integration.model.event.DeviceEvent;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.device.constants.DeviceDataFieldConstants;
-import com.milesight.beaveriot.device.model.request.CreateDeviceGroupRequest;
-import com.milesight.beaveriot.device.po.DeviceGroupPO;
 import com.milesight.beaveriot.device.po.DevicePO;
 import com.milesight.beaveriot.device.repository.DeviceRepository;
 import com.milesight.beaveriot.device.support.DeviceConverter;
