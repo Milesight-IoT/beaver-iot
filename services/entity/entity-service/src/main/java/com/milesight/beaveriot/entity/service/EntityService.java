@@ -373,7 +373,9 @@ public class EntityService implements EntityServiceProvider {
                     || dataEntityPO.getType() != entityPO.getType()
                     || !dataEntityPO.getName().equals(entityPO.getName())
                     || !dataEntityPO.getVisible().equals(entityPO.getVisible())
-                    || !Objects.equals(dataEntityPO.getDescription(), entityPO.getDescription())) {
+                    || !Objects.equals(dataEntityPO.getDescription(), entityPO.getDescription())
+                    || !Objects.equals(dataEntityPO.getAttachTarget(), entityPO.getAttachTarget())
+                    || !Objects.equals(dataEntityPO.getAttachTargetId(), entityPO.getAttachTargetId())) {
                 entityPOList.add(entityPO);
             }
         });
