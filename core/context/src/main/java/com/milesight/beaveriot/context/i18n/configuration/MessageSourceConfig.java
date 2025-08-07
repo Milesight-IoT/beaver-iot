@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.context.i18n.config;
+package com.milesight.beaveriot.context.i18n.configuration;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
