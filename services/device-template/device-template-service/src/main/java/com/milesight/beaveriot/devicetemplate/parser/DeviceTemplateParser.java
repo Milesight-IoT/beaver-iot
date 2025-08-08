@@ -11,6 +11,8 @@ import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.DeviceTemplateServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
+import com.milesight.beaveriot.context.i18n.locale.LocaleContext;
+import com.milesight.beaveriot.context.i18n.message.MergedResourceBundleMessageSource;
 import com.milesight.beaveriot.context.integration.model.*;
 import com.milesight.beaveriot.context.integration.model.config.EntityConfig;
 import com.milesight.beaveriot.context.model.DeviceTemplateModel;
@@ -18,10 +20,7 @@ import com.milesight.beaveriot.context.model.response.DeviceTemplateInputResult;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateOutputResult;
 import com.milesight.beaveriot.devicetemplate.enums.ServerErrorCode;
 import com.milesight.beaveriot.devicetemplate.facade.IDeviceTemplateParserFacade;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion;
-import com.networknt.schema.ValidationMessage;
+import com.networknt.schema.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -29,6 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StreamUtils;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.parser.ParserException;
+import org.yaml.snakeyaml.scanner.ScannerException;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -45,11 +46,13 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     private final IntegrationServiceProvider integrationServiceProvider;
     private final DeviceServiceProvider deviceServiceProvider;
     private final DeviceTemplateServiceProvider deviceTemplateServiceProvider;
+    private final MergedResourceBundleMessageSource messageSource;
 
-    public DeviceTemplateParser(IntegrationServiceProvider integrationServiceProvider, DeviceServiceProvider deviceServiceProvider, DeviceTemplateServiceProvider deviceTemplateServiceProvider) {
+    public DeviceTemplateParser(IntegrationServiceProvider integrationServiceProvider, DeviceServiceProvider deviceServiceProvider, DeviceTemplateServiceProvider deviceTemplateServiceProvider, MergedResourceBundleMessageSource messageSource) {
         this.integrationServiceProvider = integrationServiceProvider;
         this.deviceServiceProvider = deviceServiceProvider;
         this.deviceTemplateServiceProvider = deviceTemplateServiceProvider;
+        this.messageSource = messageSource;
     }
 
     @Override
@@ -79,15 +82,22 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             }
 
             JsonSchemaFactory factory = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7))
-                    .objectMapper(mapper)
                     .build();
-            JsonSchema schema = factory.getSchema(schemaInputStream);
+            JsonSchema schema = factory.getSchema(schemaInputStream, InputFormat.YAML,
+                    SchemaValidatorsConfig.builder()
+                            .locale(LocaleContext.getLocale())
+                            .pathType(PathType.JSON_PATH)
+                            .build());
             Set<ValidationMessage> errors = schema.validate(jsonData);
 
             if (!errors.isEmpty()) {
                 StringBuilder sb = new StringBuilder();
-                sb.append("Validate error:").append(System.lineSeparator());
-                errors.forEach(error -> sb.append(error.getMessage()).append(System.lineSeparator()));
+                errors.forEach(error -> {
+                    if (!sb.isEmpty()) {
+                        sb.append(System.lineSeparator());
+                    }
+                    sb.append(error.getMessage());
+                });
                 throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_VALIDATE_ERROR.getErrorCode(), sb.toString()).build();
             }
 
@@ -95,18 +105,22 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             DeviceTemplateModel deviceTemplateModel = parse(deviceTemplateContent);
             List<DeviceTemplateModel.Definition.InputJsonObject> deviceIdInputJsonObjects = getDeviceIdInputJsonObjects(deviceTemplateModel);
             if (deviceIdInputJsonObjects.size() != 1) {
-                semanticErrorMessage.add(ValidationConstants.ERROR_MESSAGE_DEVICE_ID);
+                semanticErrorMessage.add(messageSource.getMessage(ValidationConstants.ERROR_MESSAGE_CODE_DEVICE_ID));
             }
 
             List<DeviceTemplateModel.Definition.InputJsonObject> deviceNameInputJsonObjects = getDeviceNameInputJsonObjects(deviceTemplateModel);
             if (deviceNameInputJsonObjects.size() > 1) {
-                semanticErrorMessage.add(ValidationConstants.ERROR_MESSAGE_DEVICE_NAME);
+                semanticErrorMessage.add(messageSource.getMessage(ValidationConstants.ERROR_MESSAGE_CODE_DEVICE_NAME));
             }
 
             if (!semanticErrorMessage.isEmpty()) {
                 StringBuilder sb = new StringBuilder();
-                sb.append("Validate error:").append(System.lineSeparator());
-                semanticErrorMessage.forEach(errorMessage -> sb.append(errorMessage).append(System.lineSeparator()));
+                semanticErrorMessage.forEach(errorMessage -> {
+                    if (!sb.isEmpty()) {
+                        sb.append(System.lineSeparator());
+                    }
+                    sb.append(errorMessage);
+                });
                 throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_VALIDATE_ERROR.getErrorCode(), sb.toString()).build();
             }
             return true;
@@ -114,15 +128,19 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             log.error(e.getMessage());
             if (e instanceof ServiceException) {
                 throw (ServiceException) e;
+            } else if (e instanceof ScannerException || e instanceof ParserException) {
+                throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_VALIDATE_ERROR.getErrorCode(), messageSource.getMessage(ValidationConstants.ERROR_MESSAGE_CODE_YAML_SYNTAX)).build();
             } else {
-                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+                throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_VALIDATE_ERROR.getErrorCode(), messageSource.getMessage(ValidationConstants.ERROR_MESSAGE_CODE_SERVER_ERROR)).detailMessage(e.getMessage()).build();
             }
         }
     }
 
     private static class ValidationConstants {
-        public static final String ERROR_MESSAGE_DEVICE_ID = "$.definition.input.properties: exactly one property must serve as a device id identifier (is_device_id = true)";
-        public static final String ERROR_MESSAGE_DEVICE_NAME = "$.definition.input.properties: at most one property can serve as a device name identifier (is_device_name = true)";
+        public static final String ERROR_MESSAGE_CODE_DEVICE_ID = "device-template-service.error.message.validation.device.id";
+        public static final String ERROR_MESSAGE_CODE_DEVICE_NAME = "device-template-service.error.message.validation.device.name";
+        public static final String ERROR_MESSAGE_CODE_YAML_SYNTAX = "device-template-service.error.message.validation.yaml.syntax";
+        public static final String ERROR_MESSAGE_CODE_SERVER_ERROR = "device-template-service.error.message.validation.server.error";
     }
 
     @Transactional(rollbackFor = Exception.class)
