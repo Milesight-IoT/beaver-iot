@@ -45,6 +45,8 @@ public class BindingResultResolver {
         for (var fieldError : fieldErrors) {
             var args = new HashMap<String, Object>();
             var fieldName = fieldError.getField();
+            args.put("field", StringUtils.toSnakeCase(fieldName));
+
             var nestedPath = StringUtils.toSnakeCase(bindingResult.getNestedPath() + fieldName);
             args.put("path", nestedPath);
 
