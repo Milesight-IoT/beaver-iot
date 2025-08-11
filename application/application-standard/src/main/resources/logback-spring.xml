@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
 
     <property name="LOG_HOME" value="${HOME}/beaver-iot/logs"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} -%5p ${PID:-} [%mdc{traceId}][%thread] %-5level %logger{36} - %msg%n
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %clr(-%5p){} %clr(${PID:-}){magenta} [%mdc{traceId}][%thread] %clr(%logger{36}){cyan} - %msg%n
             </pattern>
         </encoder>
     </appender>
@@ -18,7 +19,7 @@
             <maxFileSize>100MB</maxFileSize>  <!-- Maximum 50MB per file-->
         </rollingPolicy>
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} -%5p ${PID:-} [%mdc{traceId}][%thread] %-5level %logger{36} - %msg%n
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} -%5p ${PID:-} [%mdc{traceId}][%thread] %logger{36} - %msg%n
             </pattern>
         </encoder>
     </appender>
