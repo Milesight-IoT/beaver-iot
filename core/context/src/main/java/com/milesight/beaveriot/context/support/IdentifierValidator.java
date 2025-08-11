@@ -10,8 +10,8 @@ import java.util.regex.Pattern;
  * @author leon
  */
 public class IdentifierValidator {
-
-    private static final Pattern pattern = Pattern.compile("^[A-Za-z0-9_@#$\\-/\\[\\]]+$");
+    public static final String regex = "^[A-Za-z0-9_@#$\\-/\\[\\]]+$";
+    private static final Pattern pattern = Pattern.compile(regex);
 
     private IdentifierValidator() {
     }
