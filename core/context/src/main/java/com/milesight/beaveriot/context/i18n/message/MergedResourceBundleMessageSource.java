@@ -158,7 +158,7 @@ public class MergedResourceBundleMessageSource extends ReloadableResourceBundleM
         }
 
         if (!CollectionUtils.isEmpty(propertiesList)) {
-            Properties mergedProps = getMergeProperties(propertiesList);
+            Properties mergedProps = getMergedProperties(propertiesList);
             propHolder = new PropertiesHolder(mergedProps, latestFileTimestamp);
         } else {
             // Empty holder representing "not valid".
@@ -169,7 +169,7 @@ public class MergedResourceBundleMessageSource extends ReloadableResourceBundleM
         return propHolder;
     }
 
-    private Properties getMergeProperties(List<Properties> propertiesList) {
+    private Properties getMergedProperties(List<Properties> propertiesList) {
         Properties mergedProps = new Properties();
         for (Properties props : propertiesList) {
             for (String key : props.stringPropertyNames()) {
