@@ -58,6 +58,13 @@
             <artifactId>spring-boot-starter-undertow</artifactId>
         </dependency>
 
+        <!-- test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -220,17 +227,17 @@
             <version>${project.version}</version>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>com.milesight.beaveriot.integrations</groupId>-->
-<!--            <artifactId>mqtt-device</artifactId>-->
-<!--            <version>${project.version}</version>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>com.milesight.beaveriot.integrations</groupId>
+            <artifactId>mqtt-device</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>com.milesight.beaveriot.integrations</groupId>-->
-<!--            <artifactId>camthink-ai-inference</artifactId>-->
-<!--            <version>${project.version}</version>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>com.milesight.beaveriot.integrations</groupId>
+            <artifactId>camthink-ai-inference</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- unit test -->
         <!--<dependency>
