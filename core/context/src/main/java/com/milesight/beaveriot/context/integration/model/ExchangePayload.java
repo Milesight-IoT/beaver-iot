@@ -102,8 +102,8 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
             hashCode = currentHashCode;
             List<ErrorHolder> errors = new ArrayList<>();
 
-            Map<String, Entity> allChildrenEntities = getAllChildrenEntities();
-            allChildrenEntities.forEach((key, entity) -> {
+            Map<String, Entity> allEntities = getAllEntities();
+            allEntities.forEach((key, entity) -> {
                 Object value = get(key);
                 List<ErrorHolder> entityErrors = entity.validateValue(value);
                 if (!entityErrors.isEmpty()) {
@@ -124,23 +124,30 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
         return true;
     }
 
-    private Map<String, Entity> getAllChildrenEntities() {
+    private Map<String, Entity> getAllEntities() {
         EntityServiceProvider entityServiceProvider = SpringContext.getBean(EntityServiceProvider.class);
 
         Map<String, Entity> exchangeEntities = getExchangeEntities();
-        Map<String, Entity> allChildrenEntities = new HashMap<>();
-        Set<String> allParentKeys = new HashSet<>();
+        Map<String, Entity> allEntities = new HashMap<>();
+        Map<String, Entity> allParentEntities = new HashMap<>();
         exchangeEntities.forEach((key, entity) -> {
+            if (allEntities.containsKey(key)) {
+                return;
+            }
+            allEntities.put(key, entity);
+
             String parentKey = Optional.ofNullable(entity.getParentKey()).orElse(key);
-            if (allParentKeys.contains(parentKey)) {
+            Entity parentEntity = entity.getParentKey() == null ? entity : allParentEntities.computeIfAbsent(parentKey, k -> entityServiceProvider.findByKey(parentKey));
+            if (parentEntity == null) {
                 return;
             }
 
-            Entity parentEntity = entity.getParentKey() == null ? entity : entityServiceProvider.findByKey(parentKey);
-            parentEntity.getChildren().forEach(childEntity -> allChildrenEntities.put(childEntity.getKey(), childEntity));
-            allParentKeys.add(parentKey);
+            allEntities.putIfAbsent(parentKey, parentEntity);
+            if (!CollectionUtils.isEmpty(parentEntity.getChildren())) {
+                parentEntity.getChildren().forEach(childEntity -> allEntities.putIfAbsent(childEntity.getKey(), childEntity));
+            }
         });
-        return allChildrenEntities;
+        return allEntities;
     }
 
     @Override
