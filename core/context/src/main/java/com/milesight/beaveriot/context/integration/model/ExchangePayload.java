@@ -6,6 +6,7 @@ import com.milesight.beaveriot.base.exception.MultipleErrorException;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.constants.ExchangeContextKeys;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
+import com.milesight.beaveriot.context.integration.enums.EntityValueType;
 import com.milesight.beaveriot.context.integration.proxy.ExchangePayloadProxy;
 import com.milesight.beaveriot.context.support.SpringContext;
 import com.milesight.beaveriot.eventbus.api.IdentityKey;
@@ -102,8 +103,8 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
             hashCode = currentHashCode;
             List<ErrorHolder> errors = new ArrayList<>();
 
-            Map<String, Entity> allChildrenEntities = getAllChildrenEntities();
-            allChildrenEntities.forEach((key, entity) -> {
+            Map<String, Entity> allEntities = getAllEntities();
+            allEntities.forEach((key, entity) -> {
                 Object value = get(key);
                 List<ErrorHolder> entityErrors = entity.validateValue(value);
                 if (!entityErrors.isEmpty()) {
@@ -124,11 +125,11 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
         return true;
     }
 
-    private Map<String, Entity> getAllChildrenEntities() {
+    private Map<String, Entity> getAllEntities() {
         EntityServiceProvider entityServiceProvider = SpringContext.getBean(EntityServiceProvider.class);
 
         Map<String, Entity> exchangeEntities = getExchangeEntities();
-        Map<String, Entity> allChildrenEntities = new HashMap<>();
+        Map<String, Entity> allEntities = new HashMap<>();
         Set<String> allParentKeys = new HashSet<>();
         exchangeEntities.forEach((key, entity) -> {
             String parentKey = Optional.ofNullable(entity.getParentKey()).orElse(key);
@@ -137,10 +138,16 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
             }
 
             Entity parentEntity = entity.getParentKey() == null ? entity : entityServiceProvider.findByKey(parentKey);
-            parentEntity.getChildren().forEach(childEntity -> allChildrenEntities.put(childEntity.getKey(), childEntity));
+            if (EntityValueType.OBJECT.equals(parentEntity.getValueType())) {
+                if (!CollectionUtils.isEmpty(parentEntity.getChildren())) {
+                    parentEntity.getChildren().forEach(childEntity -> allEntities.put(childEntity.getKey(), childEntity));
+                }
+            } else {
+                allEntities.put(parentKey, parentEntity);
+            }
             allParentKeys.add(parentKey);
         });
-        return allChildrenEntities;
+        return allEntities;
     }
 
     @Override
