@@ -220,17 +220,17 @@
             <version>${project.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.milesight.beaveriot.integrations</groupId>
-            <artifactId>mqtt-device</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.milesight.beaveriot.integrations</groupId>-->
+<!--            <artifactId>mqtt-device</artifactId>-->
+<!--            <version>${project.version}</version>-->
+<!--        </dependency>-->
 
-        <dependency>
-            <groupId>com.milesight.beaveriot.integrations</groupId>
-            <artifactId>camthink-ai-inference</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.milesight.beaveriot.integrations</groupId>-->
+<!--            <artifactId>camthink-ai-inference</artifactId>-->
+<!--            <version>${project.version}</version>-->
+<!--        </dependency>-->
 
         <!-- unit test -->
         <!--<dependency>
