@@ -33,7 +33,7 @@
     </licenses>
 
     <properties>
-        <beaver-iot.version>1.2.3</beaver-iot.version>
+        <beaver-iot.version>1.2.4</beaver-iot.version>
         <revision>${beaver-iot.version}</revision>
         <snapshot-repository-id>central-portal-snapshots</snapshot-repository-id>
         <snapshot-repository-url>https://central.sonatype.com/repository/maven-snapshots/</snapshot-repository-url>
