@@ -207,6 +207,10 @@ public class Entity implements IdentityKey, Cloneable {
         String entityName = getName();
         Map<String, Object> entityData = Map.of(ExtraDataConstants.KEY_ENTITY_KEY, entityKey, ExtraDataConstants.KEY_ENTITY_NAME, entityName);
         try {
+            if (EntityValueType.OBJECT.equals(valueType)) {
+                return errors;
+            }
+
             if (isOptional() && (value == null || value.toString().isEmpty())) {
                 return errors;
             }
