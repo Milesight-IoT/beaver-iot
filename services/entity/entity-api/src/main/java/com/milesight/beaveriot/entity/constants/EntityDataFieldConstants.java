@@ -27,6 +27,7 @@ public class EntityDataFieldConstants {
     public static final String CUSTOM_ENTITY_ATTRIBUTE_IS_ENUM = "is_enum";
 
     public static final Set<String> CUSTOM_ENTITY_ALLOWED_ATTRIBUTES = Set.of(
+            AttributeBuilder.ATTRIBUTE_OPTIONAL,    // for workflow trigger
             AttributeBuilder.ATTRIBUTE_ENUM,
             AttributeBuilder.ATTRIBUTE_UNIT,
             AttributeBuilder.ATTRIBUTE_MIN_LENGTH,
