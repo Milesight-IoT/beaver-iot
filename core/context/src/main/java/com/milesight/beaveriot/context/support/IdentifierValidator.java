@@ -20,7 +20,7 @@ public class IdentifierValidator {
         Assert.notNull(identifier, "identifier must not be null");
         Matcher matcher = pattern.matcher(identifier);
         if (!matcher.matches()) {
-            throw new IllegalArgumentException("identifier must be a string that matches the pattern ^[A-Za-z0-9_@#$\\-/[]]+$ :" + identifier);
+            throw new IllegalArgumentException("identifier must be a string that matches the pattern ^[A-Za-z0-9_@#$\\-/[]:]+$ :" + identifier);
         }
     }
 
