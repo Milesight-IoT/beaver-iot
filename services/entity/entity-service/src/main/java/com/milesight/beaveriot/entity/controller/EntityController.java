@@ -121,8 +121,9 @@ public class EntityController {
      */
     @OperationPermission(codes = {OperationPermissionCode.ENTITY_CUSTOM_ADD})
     @PostMapping
-    public ResponseBody<EntityMetaResponse> createCustomEntity(@RequestBody @Valid EntityCreateRequest entityCreateRequest) {
-        return ResponseBuilder.success(entityService.createCustomEntity(entityCreateRequest));
+    public ResponseBody<Void> createCustomEntity(@RequestBody @Valid EntityCreateRequest entityCreateRequest) {
+        entityService.createCustomEntity(entityCreateRequest);
+        return ResponseBuilder.success();
     }
 
     /**
@@ -133,8 +134,9 @@ public class EntityController {
      */
     @OperationPermission(codes = {OperationPermissionCode.ENTITY_DATA_EDIT, OperationPermissionCode.ENTITY_CUSTOM_EDIT})
     @PutMapping("/{entityId}")
-    public ResponseBody<EntityMetaResponse> update(@PathVariable("entityId") Long entityId, @RequestBody @Valid EntityModifyRequest entityModifyRequest) {
-        return ResponseBuilder.success(entityService.updateEntityBasicInfo(entityId, entityModifyRequest));
+    public ResponseBody<Void> update(@PathVariable("entityId") Long entityId, @RequestBody @Valid EntityModifyRequest entityModifyRequest) {
+        entityService.updateEntityBasicInfo(entityId, entityModifyRequest);
+        return ResponseBuilder.success();
     }
 
     /**

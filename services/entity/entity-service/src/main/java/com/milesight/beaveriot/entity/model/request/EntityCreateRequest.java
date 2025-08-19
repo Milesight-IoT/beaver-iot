@@ -37,8 +37,4 @@ public class EntityCreateRequest {
     private EntityValueType valueType;
 
     private Boolean visible;
-
-    @Size(max = EntityDataFieldConstants.CUSTOM_ENTITY_IDENTIFIER_MAX_LENGTH)
-    private String parentIdentifier;
-
 }
