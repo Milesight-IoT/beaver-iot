@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author leon
@@ -43,11 +44,21 @@ public enum EntityValueType {
         if (value == null) {
             return null;
         }
+
         switch (this) {
             case STRING:
                 return value instanceof String ? value : JsonUtils.cast(value, String.class);
             case LONG:
-                return value instanceof Long ? value : JsonUtils.cast(value, Double.class).longValue();
+                if (value instanceof Long) {
+                    return value;
+                }
+
+                Double convertedValue = JsonUtils.cast(value, Double.class);
+                if (convertedValue == null) {
+                    return null;
+                }
+
+                return convertedValue.longValue();
             case DOUBLE:
                 return value instanceof Double ? value : JsonUtils.cast(value, Double.class);
             case BOOLEAN:

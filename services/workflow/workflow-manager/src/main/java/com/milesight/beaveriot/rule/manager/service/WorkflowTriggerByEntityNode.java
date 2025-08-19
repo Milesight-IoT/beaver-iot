@@ -18,6 +18,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -61,16 +62,23 @@ public class WorkflowTriggerByEntityNode implements ProcessorNode<Exchange> {
         Map<String, Entity> keyToEntity = serviceEntity.getChildren().stream().collect(Collectors.toMap(Entity::getKey, (childEntity -> childEntity)));
         Object exchangeData = exchange.getIn().getBody();
         if (exchangeData instanceof Map) {
-            Map<String, Object> nextExchange = ((Map<String, Object>) exchangeData)
-                    .entrySet()
-                    .stream()
-                    .filter(stringObjectEntry -> !stringObjectEntry.getKey().equals(serviceEntity.getKey()))
-                    .collect(Collectors.toMap(
-                    (Entry<String, Object> entry) -> keyToEntity.get(entry.getKey()).getIdentifier(),
-                    (Entry<String, Object> entry) -> Optional.ofNullable(keyToEntity.get(entry.getKey()).getValueType())
-                            .orElse(EntityValueType.OBJECT)
-                            .convertValue(entry.getValue())
-            ));
+            final Map<String, Object> nextExchange = new HashMap<>();
+            ((Map<String, Object>) exchangeData).forEach((k, v) -> {
+                if (k.equals(serviceEntity.getKey())) {
+                    return;
+                }
+
+                Entity entity = keyToEntity.get(k);
+                Object convertedValue = Optional.ofNullable(entity.getValueType())
+                        .orElse(EntityValueType.OBJECT)
+                        .convertValue(v);
+                if (convertedValue == null) {
+                    return;
+                }
+
+                nextExchange.put(entity.getIdentifier(), convertedValue);
+            });
+
             Map<String, Object> transmitCamelProperties = ExchangeContextHelper.getTransmitCamelContext(exchange.getProperties());
             Object result = ruleEngineExecutor.executeWithResponse("direct:" + workflowPO.getId(), nextExchange, transmitCamelProperties);
             exchange.getIn().setBody(result);
