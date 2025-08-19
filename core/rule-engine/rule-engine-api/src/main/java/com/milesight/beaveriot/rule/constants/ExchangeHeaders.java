@@ -62,6 +62,8 @@ public interface ExchangeHeaders {
 
     String EXCHANGE_OUTPUT_PROCESSOR = "CamelOutputProcessor";
 
+    String EXCHANGE_IS_LAST_EXECUTE = "CamelIsLastExecute";
+
     public static boolean containsMapProperty(Exchange exchange, String propertyName, String mapKey) {
         Object property = exchange.getProperty(propertyName);
         return property != null && property instanceof Map<?,?> propertyMap && propertyMap.containsKey(mapKey);

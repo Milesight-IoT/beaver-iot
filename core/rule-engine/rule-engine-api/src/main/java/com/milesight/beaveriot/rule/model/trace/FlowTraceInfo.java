@@ -23,6 +23,8 @@ public class FlowTraceInfo {
 
     private String message;
 
+    private boolean isLastExecute;
+
     private List<NodeTraceInfo> traceInfos = new ArrayList<>();
 
     public boolean isEmpty() {

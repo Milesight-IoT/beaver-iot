@@ -208,6 +208,7 @@ public class ScheduledTaskExecutor {
 
     private void triggerTaskCallback(ScheduledTask scheduledTask, ZonedDateTime taskExecutionDateTime, ScheduledTaskCallback callback) {
         val nextExecution = scheduler.createNextTask(scheduledTask, taskExecutionDateTime);
+        scheduledTask.setNextScheduledTask(nextExecution);
         markAsTriggered(scheduledTask);
 
         if (taskExecutionDateTime.toEpochSecond() - scheduledTask.getExecutionEpochSecond() > TASK_EXPIRATION) {

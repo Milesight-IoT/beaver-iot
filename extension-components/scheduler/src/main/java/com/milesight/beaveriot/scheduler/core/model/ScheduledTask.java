@@ -35,4 +35,7 @@ public class ScheduledTask {
     @NonNull
     private Long triggeredAt;
 
+    @Nullable
+    private ScheduledTask nextScheduledTask;
+
 }

@@ -132,6 +132,7 @@ public class RuleEngineTracer extends DefaultTracer {
             }
             // if trace for test, do not publish event
             Boolean traceForTest = exchange.getProperty(ExchangeHeaders.TRACE_FOR_TEST, false, boolean.class);
+            flowTraceResponse.setLastExecute(Boolean.TRUE.equals(exchange.getProperty(ExchangeHeaders.EXCHANGE_IS_LAST_EXECUTE)));
             if (Boolean.FALSE.equals(traceForTest)) {
                 applicationEventPublisher.publishEvent(flowTraceResponse);
             }

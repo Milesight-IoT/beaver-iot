@@ -16,6 +16,7 @@ import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.pubsub.MessagePubSub;
 import com.milesight.beaveriot.rule.RuleEngineComponentManager;
 import com.milesight.beaveriot.rule.RuleEngineLifecycleManager;
+import com.milesight.beaveriot.rule.manager.enums.WorkflowManagerErrorCode;
 import com.milesight.beaveriot.rule.manager.model.event.BaseWorkflowEvent;
 import com.milesight.beaveriot.rule.manager.model.event.WorkflowDeployEvent;
 import com.milesight.beaveriot.rule.manager.model.event.WorkflowRemoveEvent;
@@ -34,6 +35,7 @@ import com.milesight.beaveriot.rule.model.trace.NodeTraceInfo;
 import com.milesight.beaveriot.rule.support.JsonHelper;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.camel.FailedToStartRouteException;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -90,6 +92,9 @@ public class WorkflowService {
                 try {
                     WorkflowDeployEvent workflowDeployEvent = new WorkflowDeployEvent(workflowPO.getTenantId(), workflowPO.getId().toString(), workflowPO.getName(), workflowPO.getDesignData());
                     this.deployFlow(workflowDeployEvent);
+                } catch (FailedToStartRouteException e) {
+                    log.error("Workflow failed to be started. Closing: {} {} {}", workflowPO.getId(), workflowPO.getName(), e.getMessage());
+                    this.updateStatus(workflowPO, false);
                 } catch (Exception e) {
                     log.error("Load Workflow Error: {} {} {}", workflowPO.getId(), workflowPO.getName(), e.getMessage());
                 } finally {
@@ -222,7 +227,14 @@ public class WorkflowService {
         }
         String tenantId = ObjectUtils.isEmpty(deployEvent.getTenantId()) ? TenantContext.getTenantId() : deployEvent.getTenantId();
         TenantContext.setTenantId(tenantId);
-        ruleEngineLifecycleManager.deployFlow(ruleFlowConfig);
+        try {
+            ruleEngineLifecycleManager.deployFlow(ruleFlowConfig);
+        } catch (FailedToStartRouteException e) {
+            throw ServiceException
+                    .with(WorkflowManagerErrorCode.WORKFLOW_MISCONFIGURED)
+                    .build();
+        }
+
         WorkflowTenantCache.INSTANCE.put(deployEvent.getId().toString(), tenantId);
     }
 
@@ -252,6 +264,10 @@ public class WorkflowService {
 
         WorkflowPO wp = getById(flowId);
 
+        this.updateStatus(wp, status);
+    }
+
+    protected void updateStatus(WorkflowPO wp, boolean status) {
         if (wp.getEnabled().equals(status)) {
             return;
         }

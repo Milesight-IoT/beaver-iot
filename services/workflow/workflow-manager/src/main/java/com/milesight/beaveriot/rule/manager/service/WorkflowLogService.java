@@ -13,15 +13,12 @@ import com.milesight.beaveriot.rule.manager.po.WorkflowLogPO;
 import com.milesight.beaveriot.rule.manager.po.WorkflowPO;
 import com.milesight.beaveriot.rule.manager.repository.WorkflowLogDataRepository;
 import com.milesight.beaveriot.rule.manager.repository.WorkflowLogRepository;
-import com.milesight.beaveriot.rule.manager.repository.WorkflowRepository;
 import com.milesight.beaveriot.rule.model.trace.FlowTraceInfo;
 import com.milesight.beaveriot.rule.model.trace.NodeTraceInfo;
 import com.milesight.beaveriot.rule.support.JsonHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -32,9 +29,6 @@ import java.util.List;
 public class WorkflowLogService {
     @Autowired
     WorkflowService workflowService;
-
-    @Autowired
-    WorkflowRepository workflowRepository;
 
     @Autowired
     WorkflowLogRepository workflowLogRepository;
@@ -95,27 +89,11 @@ public class WorkflowLogService {
         workflowLogDataRepository.deleteAllByIdInBatch(workflowIdList);
     }
 
-    @EventListener
-    @Async
-    public void onFlowLogEvent(FlowTraceInfo event) {
-        Long flowId = null;
-        try {
-            flowId = Long.valueOf(event.getFlowId());
-        } catch (NumberFormatException e) {
-            log.error("Parse flow id error: {}",event.getFlowId());
-            return;
-        }
-
-        WorkflowPO workflowPO = workflowRepository.findById(flowId).orElse(null);
-        if (workflowPO == null) {
-            log.error("Cannot find flow {}", flowId);
-            return;
-        }
-
+    public void saveLog(FlowTraceInfo event, WorkflowPO workflowPO) {
         WorkflowLogPO workflowLogPO = new WorkflowLogPO();
         workflowLogPO.setId(SnowflakeUtil.nextId());
         workflowLogPO.setStatus(event.getStatus().toString());
-        workflowLogPO.setFlowId(flowId);
+        workflowLogPO.setFlowId(workflowPO.getId());
         workflowLogPO.setStartTime(event.getStartTime());
         workflowLogPO.setTimeCost((int) event.getTimeCost());
         workflowLogPO.setTenantId(workflowPO.getTenantId());

@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.rule.components.timer;
 
 import com.cronutils.model.Cron;
+import com.milesight.beaveriot.rule.constants.ExchangeHeaders;
 import com.milesight.beaveriot.scheduler.core.Scheduler;
 import com.milesight.beaveriot.scheduler.core.model.ScheduleRule;
 import com.milesight.beaveriot.scheduler.core.model.ScheduleSettings;
@@ -39,6 +40,7 @@ public class SimpleTimerConsumer extends DefaultConsumer {
                 exchange.getIn().setBody(Map.of(
                         "executionEpochSecond", scheduledTask.getExecutionEpochSecond(),
                         "timezone", scheduledTask.getScheduleSettings().getScheduleRule().getTimezone()));
+                exchange.setProperty(ExchangeHeaders.EXCHANGE_IS_LAST_EXECUTE, scheduledTask.getNextScheduledTask() == null);
                 getProcessor().process(exchange);
             } catch (Exception e) {
                 log.error("run task failed: {}", scheduledTask.getTaskKey(), e);
