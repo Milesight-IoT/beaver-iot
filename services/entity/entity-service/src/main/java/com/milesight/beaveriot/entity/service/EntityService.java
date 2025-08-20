@@ -881,64 +881,50 @@ public class EntityService implements EntityServiceProvider {
      * @return entity metadata
      */
     @Transactional(rollbackFor = Throwable.class)
-    public EntityMetaResponse updateEntityBasicInfo(Long entityId, EntityModifyRequest entityModifyRequest) {
+    public void updateEntityBasicInfo(Long entityId, EntityModifyRequest entityModifyRequest) {
         if (!StringUtils.hasText(entityModifyRequest.getName()) && CollectionUtils.isEmpty(entityModifyRequest.getValueAttribute())) {
             throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("name and valueAttribute can not be empty").build();
         }
 
-        EntityPO entityPO = entityRepository.findById(entityId)
-                .orElseThrow(ServiceException.with(ErrorCode.DATA_NO_FOUND).detailMessage("entity not found")::build);
+        Entity entity = this.findById(entityId);
+        if (entity == null) {
+            throw ServiceException.with(ErrorCode.DATA_NO_FOUND).detailMessage("entity not found").build();
+        }
+
         if (entityModifyRequest.getName() != null) {
-            entityPO.setName(entityModifyRequest.getName());
+            entity.setName(entityModifyRequest.getName());
         }
 
-        // Only custom entity can update attribute
-        if (!CollectionUtils.isEmpty(entityModifyRequest.getValueAttribute()) && entityPO.checkIsCustomizedEntity()) {
-            entityPO.setValueAttribute(entityModifyRequest.getValueAttribute());
-            List<ErrorHolder> errors = entityPO.validate();
-            if (!CollectionUtils.isEmpty(errors)) {
-                throw MultipleErrorException.with(HttpStatus.BAD_REQUEST.value(), "Validate entity error", errors);
-            }
+        // Only custom property entities' attribute can be updated
+        if (
+                !CollectionUtils.isEmpty(entityModifyRequest.getValueAttribute())
+                && entity.getIntegrationId().equals(IntegrationConstants.SYSTEM_INTEGRATION_ID)
+                && entity.getType().equals(EntityType.PROPERTY)
+        ) {
+            entity.setAttributes(entityModifyRequest.getValueAttribute());
         }
 
-        entityRepository.save(entityPO);
-
-        return convertEntityPOToEntityMetaResponse(entityPO);
+        this.batchSave(List.of(entity));
     }
 
     @Transactional(rollbackFor = Throwable.class)
-    public EntityMetaResponse createCustomEntity(EntityCreateRequest entityCreateRequest) {
-        String parentKey = entityCreateRequest.getParentIdentifier() != null
-                ? getCustomEntityKey(entityCreateRequest.getParentIdentifier())
-                : null;
-        String key = parentKey != null
-                ? getEntityKey(parentKey, entityCreateRequest.getIdentifier())
-                : getCustomEntityKey(entityCreateRequest.getIdentifier());
-        if (key == null) {
-            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("identifier is empty").build();
+    public void createCustomEntity(EntityCreateRequest entityCreateRequest) {
+        EntityBuilder entityBuilder = new EntityBuilder(IntegrationConstants.SYSTEM_INTEGRATION_ID)
+                .id(SnowflakeUtil.nextId())
+                .identifier(entityCreateRequest.getIdentifier())
+                .valueType(entityCreateRequest.getValueType())
+                .visible(entityCreateRequest.getVisible() == null || entityCreateRequest.getVisible())
+                .attributes(entityCreateRequest.getValueAttribute());
+
+        if (entityCreateRequest.getType().equals(EntityType.PROPERTY)) {
+            entityBuilder.property(entityCreateRequest.getName(), entityCreateRequest.getAccessMod());
+        } else {
+            throw ServiceException
+                    .with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "Invalid custom type to create: " + entityCreateRequest.getType())
+                    .build();
         }
 
-        EntityPO entityPO = new EntityPO();
-        entityPO.setId(SnowflakeUtil.nextId());
-        entityPO.setName(entityCreateRequest.getName());
-        entityPO.setType(entityCreateRequest.getType());
-        entityPO.setAccessMod(entityCreateRequest.getAccessMod());
-        entityPO.setValueAttribute(entityCreateRequest.getValueAttribute());
-        entityPO.setValueType(entityCreateRequest.getValueType());
-        entityPO.setKey(key);
-        entityPO.setParent(parentKey);
-        entityPO.setVisible(entityCreateRequest.getVisible() == null || entityCreateRequest.getVisible());
-        entityPO.setTenantId(TenantContext.getTenantId());
-        entityPO.setUserId(SecurityUserContext.getUserId());
-        entityPO.setAttachTarget(AttachTargetType.INTEGRATION);
-        entityPO.setAttachTargetId(IntegrationConstants.SYSTEM_INTEGRATION_ID);
-        List<ErrorHolder> errors = entityPO.validate();
-        if (!CollectionUtils.isEmpty(errors)) {
-            throw MultipleErrorException.with(HttpStatus.BAD_REQUEST.value(), "Validate entity error", errors);
-        }
-
-        entityPO = entityRepository.save(entityPO);
-        return convertEntityPOToEntityMetaResponse(entityPO);
+        self().batchSave(List.of(entityBuilder.build()));
     }
 
     public List<EntityPO> listEntityPOById(List<Long> entityIds) {
@@ -1198,13 +1184,6 @@ public class EntityService implements EntityServiceProvider {
             return null;
         }
         return String.format("%s.integration.%s", IntegrationConstants.SYSTEM_INTEGRATION_ID, identifier);
-    }
-
-    private String getEntityKey(String parent, String identifier) {
-        if (parent == null || identifier == null) {
-            return null;
-        }
-        return String.format("%s.%s", parent, identifier);
     }
 
     private EntityService self() {
