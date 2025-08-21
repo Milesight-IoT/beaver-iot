@@ -5,6 +5,7 @@
 
 [![Discord](https://img.shields.io/discord/1270281746687983626.svg?label=Discord&logo=discord&colorB=7289da)](https://discord.gg/vNFxbwfErm)
 [![Maven Central](https://img.shields.io/maven-central/v/com.milesight.beaveriot/beaver-iot.svg)](https://central.sonatype.com/search?q=beaver-iot&smo=true)
+[![Docker Pulls](https://img.shields.io/docker/pulls/milesight/beaver-iot)](https://hub.docker.com/r/milesight/beaver-iot)
 [![Publish Snapshot Package](https://github.com/Milesight-IoT/beaver-iot/actions/workflows/snapshot-publish.yml/badge.svg)](https://github.com/Milesight-IoT/beaver-iot/actions/workflows/snapshot-publish.yml)
 [![Publish Release Package](https://github.com/Milesight-IoT/beaver-iot/actions/workflows/release-publish.yml/badge.svg)](https://github.com/Milesight-IoT/beaver-iot/actions/workflows/release-publish.yml)
 
@@ -27,7 +28,7 @@ This repository is the backend core of Beaver IoT and does not include integrati
 
 To start a Beaver IoT Application quickly, please refer to [Beaver IoT Documentation](https://www.milesight.com/beaver-iot/).
 
-Relative projects:
+Related projects:
 * [Beaver IoT Integrations](https://github.com/Milesight-IoT/beaver-iot-integrations)
 * [Beaver IoT Frontend](https://github.com/Milesight-IoT/beaver-iot-web)
 * [Beaver IoT Docker](https://github.com/Milesight-IoT/beaver-iot-docker)
