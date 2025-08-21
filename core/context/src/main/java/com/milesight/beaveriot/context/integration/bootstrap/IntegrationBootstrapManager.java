@@ -2,10 +2,13 @@ package com.milesight.beaveriot.context.integration.bootstrap;
 
 import com.milesight.beaveriot.base.exception.BootstrapException;
 import com.milesight.beaveriot.base.exception.ConfigurationException;
+import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
+import com.milesight.beaveriot.context.api.TenantServiceProvider;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.integration.IntegrationContext;
 import com.milesight.beaveriot.context.integration.entity.EntityLoader;
+import com.milesight.beaveriot.context.integration.entity.EntityTemplateConfig;
 import com.milesight.beaveriot.context.integration.model.Integration;
 import com.milesight.beaveriot.context.integration.model.config.IntegrationConfig;
 import com.milesight.beaveriot.context.support.YamlPropertySourceFactory;
@@ -16,6 +19,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.context.properties.bind.BindResult;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
 import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.StandardEnvironment;
@@ -38,15 +42,28 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
     private final ObjectProvider<EntityLoader> entityLoaders;
     private final ObjectProvider<IntegrationBootstrap> integrationBootstrapList;
     private final IntegrationServiceProvider integrationStorageProvider;
+    private final Environment environment;
+    private final TenantServiceProvider tenantServiceProvider;
+    private final EntityTemplateServiceProvider entityTemplateServiceProvider;
 
-    public IntegrationBootstrapManager(ObjectProvider<EntityLoader> entityLoaders, ObjectProvider<IntegrationBootstrap> integrationBootstraps, IntegrationServiceProvider integrationStorageProvider) {
+    public IntegrationBootstrapManager(ObjectProvider<EntityLoader> entityLoaders,
+                                       ObjectProvider<IntegrationBootstrap> integrationBootstraps,
+                                       IntegrationServiceProvider integrationStorageProvider,
+                                       Environment environment,
+                                       TenantServiceProvider tenantServiceProvider,
+                                       EntityTemplateServiceProvider entityTemplateServiceProvider) {
         this.entityLoaders = entityLoaders;
         this.integrationBootstrapList = integrationBootstraps;
         this.integrationStorageProvider = integrationStorageProvider;
+        this.environment = environment;
+        this.tenantServiceProvider = tenantServiceProvider;
+        this.entityTemplateServiceProvider = entityTemplateServiceProvider;
         this.propertySourceFactory = new YamlPropertySourceFactory();
     }
 
     public void onStarted() {
+        // Initialize entity templates before starting integrations
+        initializeEntityTemplates();
 
         // Add default integration: "system"
         integrationContext.cacheIntegration(
@@ -95,6 +112,15 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
         });
 
         log.info("IntegrationBootstrapManager started, contains integrations : {}", integrationContext.getAllIntegrations().keySet());
+    }
+
+    private void initializeEntityTemplates() {
+        EntityTemplateConfig entityTemplateConfig = Binder.get(environment).bind(EntityTemplateConfig.PROPERTY_PREFIX, EntityTemplateConfig.class).orElse(null);
+        if (entityTemplateConfig != null) {
+            tenantServiceProvider.runWithAllTenants(() ->
+                    entityTemplateServiceProvider.batchSave(entityTemplateConfig.getInitialEntityTemplates())
+            );
+        }
     }
 
     public IntegrationContext getIntegrationContext() {

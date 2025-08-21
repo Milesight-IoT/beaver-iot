@@ -156,6 +156,11 @@
         </dependency>
         <dependency>
             <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>entity-template-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
             <artifactId>credentials-service</artifactId>
             <version>${project.version}</version>
         </dependency>

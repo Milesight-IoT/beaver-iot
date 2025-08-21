@@ -1,0 +1,104 @@
+package com.milesight.beaveriot.context.integration.model;
+
+import com.milesight.beaveriot.base.utils.StringUtils;
+import com.milesight.beaveriot.context.integration.enums.AccessMod;
+import com.milesight.beaveriot.context.integration.enums.EntityType;
+import com.milesight.beaveriot.context.integration.enums.EntityValueType;
+import lombok.Data;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * author: Luxb
+ * create: 2025/8/19 10:13
+ **/
+@Data
+public class EntityTemplate {
+    private Long id;
+    private String identifier;
+    private String name;
+    private EntityType type;
+    private AccessMod accessMod;
+    private String parentIdentifier;
+    private EntityValueType valueType;
+    private Map<String, Object> attributes;
+    private String description;
+    private Boolean visible = true;
+    private List<EntityTemplate> children;
+
+    public String getKey() {
+        return StringUtils.isEmpty(parentIdentifier) ? identifier : parentIdentifier + "." + identifier;
+    }
+
+    public String getParentKey() {
+        return parentIdentifier;
+    }
+
+    public Entity toEntity(String integrationId) {
+        return toEntity(integrationId, null);
+    }
+
+    public Entity toEntity(String integrationId, String deviceKey) {
+        return toEntity(null, integrationId, deviceKey);
+    }
+
+    public Entity toEntity(String name, String integrationId, String deviceKey) {
+        return toEntity(name, null, integrationId, deviceKey);
+    }
+
+    public Entity toEntity(String name, String description, String integrationId, String deviceKey) {
+        String entityName = StringUtils.isEmpty(name) ? this.name : name;
+        String entityDescription = StringUtils.isEmpty(description) ? this.description : description;
+
+        EntityBuilder entityBuilder = new EntityBuilder(integrationId, deviceKey);
+        entityBuilder.identifier(identifier)
+                .description(entityDescription)
+                .valueType(valueType)
+                .visible(visible)
+                .attributes(attributes)
+                .parentIdentifier(parentIdentifier);
+
+        switch (type) {
+            case PROPERTY -> entityBuilder.property(entityName, accessMod);
+            case SERVICE -> entityBuilder.service(entityName);
+            case EVENT -> entityBuilder.event(entityName);
+        }
+
+        if (!CollectionUtils.isEmpty(children)) {
+            entityBuilder.children(children.stream().map(child -> {
+                child.applyParentConfig(this);
+                return child.toEntity(integrationId, deviceKey);
+            }).toList());
+        }
+        return entityBuilder.build();
+    }
+
+    public void addChild(EntityTemplate child) {
+        if (CollectionUtils.isEmpty(children)) {
+            children = new ArrayList<>();
+        }
+        child.applyParentConfig(this);
+        children.add(child);
+    }
+
+    public void initializeChildren() {
+        if (!CollectionUtils.isEmpty(children)) {
+            children.forEach(child -> child.applyParentConfig(this));
+        }
+    }
+
+    public void applyParentConfig(EntityTemplate parent) {
+        parentIdentifier = parent.getIdentifier();
+        if (ObjectUtils.isEmpty(type)) {
+            type = parent.getType();
+        }
+        if (ObjectUtils.isEmpty(accessMod)) {
+            accessMod = parent.getAccessMod();
+        }
+        visible = parent.getVisible();
+    }
+}
