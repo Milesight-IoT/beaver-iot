@@ -6,9 +6,12 @@ import com.milesight.beaveriot.entity.po.EntityHistoryPO;
 import com.milesight.beaveriot.permission.aspect.Tenant;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,8 +24,14 @@ import java.util.Map;
 public interface EntityHistoryRepository extends BaseJpaRepository<EntityHistoryPO, Long> {
 
     @Modifying
-    @org.springframework.data.jpa.repository.Query("delete from EntityHistoryPO d where d.entityId in :entityIds")
-    void deleteByEntityIds(@Param("entityIds") List<Long> entityIds);
+    void deleteByEntityIdIn(@Param("entityIds") List<Long> entityIds);
+
+    Page<EntityHistoryPO> findByEntityIdInAndTimestampBetween(
+            Collection<Long> entityIds,
+            Long startTimestamp,
+            Long endTimestamp,
+            Pageable pageable
+    );
 
     default List<EntityHistoryPO> findByUnionUnique(EntityManager entityManager, List<EntityHistoryUnionQuery> queries) {
         String dynamicQuery = generateDynamicQuery(queries);
