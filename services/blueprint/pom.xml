@@ -2,16 +2,16 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
     <parent>
+        <artifactId>services</artifactId>
         <groupId>com.milesight.beaveriot</groupId>
-        <artifactId>beaver-iot</artifactId>
         <version>${revision}</version>
     </parent>
+    <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>services</artifactId>
+    <artifactId>blueprint</artifactId>
     <packaging>pom</packaging>
-    <name>services</name>
+    <name>blueprint</name>
     <description>An open-source platform designed for rapid and intuitive IoT application development.</description>
     <url>https://github.com/milesight-iot/beaver-iot</url>
     <scm>
@@ -21,6 +21,9 @@
         <name>Milesight</name>
         <url>https://www.milesight.com</url>
     </organization>
+    <modules>
+        <module>blueprint-service</module>
+    </modules>
     <developers>
         <developer>
             <id>Simon</id>
@@ -34,22 +37,6 @@
             <url>https://opensource.org/license/MIT</url>
         </license>
     </licenses>
-
-    <modules>
-        <module>dashboard</module>
-        <module>user</module>
-        <module>device</module>
-        <module>authentication</module>
-        <module>integration</module>
-        <module>entity</module>
-        <module>workflow</module>
-        <module>permission</module>
-        <module>credentials</module>
-        <module>mqtt</module>
-        <module>resource-manager</module>
-        <module>device-template</module>
-        <module>blueprint</module>
-    </modules>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
