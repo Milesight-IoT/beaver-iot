@@ -38,6 +38,7 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <okhttp3.version>4.12.0</okhttp3.version>
     </properties>
 
     <dependencies>
@@ -57,6 +58,11 @@
             <optional>true</optional>
         </dependency>
         <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>data-jpa</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
@@ -64,6 +70,16 @@
             <groupId>com.milesight.beaveriot</groupId>
             <artifactId>context</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>scheduler</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>${okhttp3.version}</version>
         </dependency>
     </dependencies>
 
