@@ -1,21 +1,27 @@
 package com.milesight.beaveriot.device.support;
 
+import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.EntityTemplate;
+import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * author: Luxb
  * create: 2025/8/19 10:12
  **/
+@Component
 public abstract class DeviceAssembler {
-    abstract List<EntityTemplate> getCommonEntityTemplates();
+    private final EntityTemplateServiceProvider entityTemplateServiceProvider;
+
+    protected DeviceAssembler(EntityTemplateServiceProvider entityTemplateServiceProvider) {
+        this.entityTemplateServiceProvider = entityTemplateServiceProvider;
+    }
+
+    abstract List<String> getCommonEntityKeys();
 
     public void assemble(Device device) {
         List<EntityTemplate> entityTemplates = getCommonEntityTemplates();
@@ -23,6 +29,14 @@ public abstract class DeviceAssembler {
             List<Entity> commonEntities = entityTemplates.stream().map(entityTemplate -> entityTemplate.toEntity(device.getIntegrationId(), device.getKey())).toList();
             device.setEntities(merge(device.getEntities(), commonEntities));
         }
+    }
+
+    protected List<EntityTemplate> getCommonEntityTemplates() {
+        List<String> commonEntityKeys = getCommonEntityKeys();
+        if (CollectionUtils.isEmpty(commonEntityKeys)) {
+            return null;
+        }
+        return entityTemplateServiceProvider.findByKeys(commonEntityKeys);
     }
 
     private List<Entity> merge(List<Entity> originEntities, List<Entity> commonEntities) {

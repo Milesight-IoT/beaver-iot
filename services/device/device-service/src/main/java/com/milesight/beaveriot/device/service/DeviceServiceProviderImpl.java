@@ -13,7 +13,7 @@ import com.milesight.beaveriot.device.constants.DeviceDataFieldConstants;
 import com.milesight.beaveriot.device.po.DevicePO;
 import com.milesight.beaveriot.device.repository.DeviceRepository;
 import com.milesight.beaveriot.device.support.DeviceConverter;
-import com.milesight.beaveriot.device.support.GlobalDeviceAssembler;
+import com.milesight.beaveriot.device.support.CommonDeviceAssembler;
 import com.milesight.beaveriot.eventbus.EventBus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -48,7 +48,7 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
     DeviceGroupService deviceGroupService;
 
     @Autowired
-    GlobalDeviceAssembler globalDeviceAssembler;
+    CommonDeviceAssembler commonDeviceAssembler;
 
     @Override
     public void save(Device device) {
@@ -123,7 +123,8 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
 
         device.setId(devicePO.getId());
 
-        globalDeviceAssembler.assemble(device);
+        // assemble device with common entities
+        commonDeviceAssembler.assemble(device);
 
         entityServiceProvider.batchSave(device.getEntities());
 

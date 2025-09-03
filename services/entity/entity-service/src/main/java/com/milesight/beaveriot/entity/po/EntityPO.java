@@ -150,6 +150,7 @@ public class EntityPO {
                 validateAttributeDefaultValue(entityKey, entityData, errors);
                 validateAttributeOptional(entityKey, entityData, errors);
                 validateAttributeEnum(entityKey, entityData, errors);
+                validateAttributeImportant(entityKey, entityData, errors);
             }
 
             if (checkIsCustomizedEntity()) {
@@ -384,6 +385,19 @@ public class EntityPO {
                                 AttributeBuilder.ATTRIBUTE_MIN, min, AttributeBuilder.ATTRIBUTE_MAX, max
                         ))));
             }
+        }
+    }
+
+    private void validateAttributeImportant(String entityKey, Map<String, Object> entityData, List<ErrorHolder> errors) {
+        Object important = valueAttribute.get(AttributeBuilder.ATTRIBUTE_IMPORTANT);
+        if (important == null) {
+            return;
+        }
+
+        if (!(important instanceof Boolean)) {
+            errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_ATTRIBUTE_IMPORTANT_INVALID.getErrorCode(),
+                    EntityErrorCode.ENTITY_ATTRIBUTE_IMPORTANT_INVALID.formatMessage(entityKey),
+                    entityData));
         }
     }
 }

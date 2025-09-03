@@ -161,6 +161,25 @@ public class Entity implements IdentityKey, Cloneable {
         return Boolean.TRUE.equals(getAttributes().get(AttributeBuilder.ATTRIBUTE_OPTIONAL));
     }
 
+    public void setImportant(Boolean important) {
+        if (important == null) {
+            return;
+        }
+
+        if (getAttributes() == null) {
+            setAttributes(new HashMap<>());
+        }
+        getAttributes().put(AttributeBuilder.ATTRIBUTE_IMPORTANT, important);
+    }
+
+    public boolean isImportant() {
+        if (getAttributes() == null) {
+            return false;
+        }
+
+        return Boolean.TRUE.equals(getAttributes().get(AttributeBuilder.ATTRIBUTE_IMPORTANT));
+    }
+
     @Override
     public Entity clone() {
         Entity entity = new Entity();

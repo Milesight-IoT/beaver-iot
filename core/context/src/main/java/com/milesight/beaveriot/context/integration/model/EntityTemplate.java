@@ -38,6 +38,10 @@ public class EntityTemplate {
         return parentIdentifier;
     }
 
+    public Entity toEntity() {
+        return toEntity(null);
+    }
+
     public Entity toEntity(String integrationId) {
         return toEntity(integrationId, null);
     }

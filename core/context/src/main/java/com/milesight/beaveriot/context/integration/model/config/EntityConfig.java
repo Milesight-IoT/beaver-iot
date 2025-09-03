@@ -1,10 +1,14 @@
 package com.milesight.beaveriot.context.integration.model.config;
 
+import com.milesight.beaveriot.base.utils.StringUtils;
+import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.EntityBuilder;
+import com.milesight.beaveriot.context.integration.model.EntityTemplate;
+import com.milesight.beaveriot.context.support.SpringContext;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,7 +21,7 @@ import java.util.Map;
 @Getter
 @Setter
 public class EntityConfig {
-
+    private static final EntityTemplateServiceProvider entityTemplateServiceProvider = SpringContext.getBean(EntityTemplateServiceProvider.class);
     private String name;
     private String identifier;
     private AccessMod accessMod;
@@ -26,27 +30,41 @@ public class EntityConfig {
     private Map<String, Object> attributes;
     private List<Entity> children;
     private Boolean visible = true;
+    private Boolean important;
+    private String entityRef;
 
     public Entity toEntity() {
-        EntityBuilder entityBuilder = new EntityBuilder();
-        switch (type) {
-            case PROPERTY:
-                entityBuilder.property(name, accessMod);
-                break;
-            case SERVICE:
-                entityBuilder.service(name);
-                break;
-            case EVENT:
-                entityBuilder.event(name);
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported entity type: " + type);
+        Entity entity;
+        if (StringUtils.isEmpty(entityRef)) {
+            EntityBuilder entityBuilder = new EntityBuilder();
+            switch (type) {
+                case PROPERTY:
+                    entityBuilder.property(name, accessMod);
+                    break;
+                case SERVICE:
+                    entityBuilder.service(name);
+                    break;
+                case EVENT:
+                    entityBuilder.event(name);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unsupported entity type: " + type);
+            }
+            entity = entityBuilder.identifier(identifier)
+                    .valueType(valueType)
+                    .attributes(attributes)
+                    .children(children)
+                    .visible(visible)
+                    .build();
+        } else {
+            EntityTemplate entityTemplate = entityTemplateServiceProvider.findByKey(entityRef);
+            if (entityTemplate == null) {
+                throw new IllegalArgumentException("Could not find entity key: '" + entityRef + "' in the entity template");
+            }
+            entity = entityTemplate.toEntity();
         }
-        return entityBuilder.identifier(identifier)
-                .valueType(valueType)
-                .attributes(attributes)
-                .children(children)
-                .visible(visible)
-                .build();
+
+        entity.setImportant(important);
+        return entity;
     }
 }

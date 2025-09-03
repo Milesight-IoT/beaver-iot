@@ -29,6 +29,7 @@ public class AttributeBuilder {
     public static final String ATTRIBUTE_OPTIONAL = "optional";
     public static final String ATTRIBUTE_LENGTH_RANGE = "length_range";
     public static final String ATTRIBUTE_DEFAULT_VALUE = "default_value";
+    public static final String ATTRIBUTE_IMPORTANT = "important";
 
     private final Map<String, Object> attributes = new HashMap<>();
 
