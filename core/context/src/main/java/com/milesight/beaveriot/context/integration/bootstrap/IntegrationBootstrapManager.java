@@ -4,12 +4,15 @@ import com.milesight.beaveriot.base.exception.BootstrapException;
 import com.milesight.beaveriot.base.exception.ConfigurationException;
 import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
+import com.milesight.beaveriot.context.api.ResourceFingerprintServiceProvider;
 import com.milesight.beaveriot.context.api.TenantServiceProvider;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.integration.IntegrationContext;
 import com.milesight.beaveriot.context.integration.entity.EntityLoader;
 import com.milesight.beaveriot.context.integration.entity.EntityTemplateConfig;
 import com.milesight.beaveriot.context.integration.model.Integration;
+import com.milesight.beaveriot.context.integration.model.ResourceFingerprint;
+import com.milesight.beaveriot.context.integration.model.ResourceFingerprintType;
 import com.milesight.beaveriot.context.integration.model.config.IntegrationConfig;
 import com.milesight.beaveriot.context.support.YamlPropertySourceFactory;
 import lombok.SneakyThrows;
@@ -45,19 +48,21 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
     private final Environment environment;
     private final TenantServiceProvider tenantServiceProvider;
     private final EntityTemplateServiceProvider entityTemplateServiceProvider;
+    private final ResourceFingerprintServiceProvider resourceFingerprintServiceProvider;
 
     public IntegrationBootstrapManager(ObjectProvider<EntityLoader> entityLoaders,
                                        ObjectProvider<IntegrationBootstrap> integrationBootstraps,
                                        IntegrationServiceProvider integrationStorageProvider,
                                        Environment environment,
                                        TenantServiceProvider tenantServiceProvider,
-                                       EntityTemplateServiceProvider entityTemplateServiceProvider) {
+                                       EntityTemplateServiceProvider entityTemplateServiceProvider, ResourceFingerprintServiceProvider resourceFingerprintServiceProvider) {
         this.entityLoaders = entityLoaders;
         this.integrationBootstrapList = integrationBootstraps;
         this.integrationStorageProvider = integrationStorageProvider;
         this.environment = environment;
         this.tenantServiceProvider = tenantServiceProvider;
         this.entityTemplateServiceProvider = entityTemplateServiceProvider;
+        this.resourceFingerprintServiceProvider = resourceFingerprintServiceProvider;
         this.propertySourceFactory = new YamlPropertySourceFactory();
     }
 
@@ -116,10 +121,29 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
 
     private void initializeEntityTemplates() {
         EntityTemplateConfig entityTemplateConfig = Binder.get(environment).bind(EntityTemplateConfig.PROPERTY_PREFIX, EntityTemplateConfig.class).orElse(null);
-        if (entityTemplateConfig != null) {
+        if (entityTemplateConfig == null) {
+            return;
+        }
+
+        String hash = com.milesight.beaveriot.base.utils.ObjectUtils.md5Sum(entityTemplateConfig.getInitialEntityTemplates());
+        if (hash == null) {
+            return;
+        }
+
+        ResourceFingerprint resourceFingerprint = resourceFingerprintServiceProvider.getResourceFingerprint(ResourceFingerprintType.TYPE_ENTITY_TEMPLATE, IntegrationConstants.SYSTEM_INTEGRATION_ID);
+        if (resourceFingerprint == null) {
+            resourceFingerprint = ResourceFingerprint.builder()
+                    .type(ResourceFingerprintType.TYPE_ENTITY_TEMPLATE)
+                    .integration(IntegrationConstants.SYSTEM_INTEGRATION_ID)
+                    .build();
+        }
+
+        if (!hash.equals(resourceFingerprint.getHash())) {
             tenantServiceProvider.runWithAllTenants(() ->
                     entityTemplateServiceProvider.batchSave(entityTemplateConfig.getInitialEntityTemplates())
             );
+            resourceFingerprint.setHash(hash);
+            resourceFingerprintServiceProvider.save(resourceFingerprint);
         }
     }
 
