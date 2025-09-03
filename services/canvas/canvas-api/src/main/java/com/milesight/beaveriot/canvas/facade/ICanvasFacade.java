@@ -1,7 +1,8 @@
 package com.milesight.beaveriot.canvas.facade;
 
 import com.milesight.beaveriot.canvas.enums.CanvasAttachType;
-import com.milesight.beaveriot.canvas.model.CanvasDTO;
+import com.milesight.beaveriot.canvas.model.dto.CanvasDTO;
+import com.milesight.beaveriot.canvas.model.request.CanvasUpdateRequest;
 
 import java.util.List;
 
@@ -13,6 +14,8 @@ import java.util.List;
  */
 public interface ICanvasFacade {
     CanvasDTO createCanvas(String name, CanvasAttachType attachType, String attachId);
+
+    void updateCanvas(Long canvasId, CanvasUpdateRequest canvasUpdateRequest);
 
     void deleteCanvasByAttach(CanvasAttachType attachType, List<String> attachIdList);
 

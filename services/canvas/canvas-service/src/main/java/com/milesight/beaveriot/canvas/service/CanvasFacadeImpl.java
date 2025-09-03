@@ -2,9 +2,9 @@ package com.milesight.beaveriot.canvas.service;
 
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.canvas.enums.CanvasAttachType;
-import com.milesight.beaveriot.canvas.enums.CanvasOp;
 import com.milesight.beaveriot.canvas.facade.ICanvasFacade;
-import com.milesight.beaveriot.canvas.model.CanvasDTO;
+import com.milesight.beaveriot.canvas.model.dto.CanvasDTO;
+import com.milesight.beaveriot.canvas.model.request.CanvasUpdateRequest;
 import com.milesight.beaveriot.canvas.po.CanvasPO;
 import com.milesight.beaveriot.canvas.repository.CanvasRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +36,11 @@ public class CanvasFacadeImpl implements ICanvasFacade {
         canvasPO.setAttachId(attachId);
         canvasRepository.save(canvasPO);
         return covertPOToDTO(canvasPO);
+    }
+
+    @Override
+    public void updateCanvas(Long canvasId, CanvasUpdateRequest canvasUpdateRequest) {
+        canvasService.updateCanvas(canvasId, canvasUpdateRequest);
     }
 
     private CanvasDTO covertPOToDTO(CanvasPO canvasPO) {

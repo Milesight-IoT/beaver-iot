@@ -1,6 +1,13 @@
 package com.milesight.beaveriot.base.utils;
 
 import com.milesight.beaveriot.base.constants.StringConstant;
+import lombok.SneakyThrows;
+import org.springframework.lang.Nullable;
+
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @author leon
@@ -148,6 +155,28 @@ public class StringUtils {
 
     public static String lowerFirst(String name) {
         return Character.toLowerCase(name.charAt(0)) + name.substring(1);
+    }
+
+    public static String copyToString(@Nullable InputStream in) {
+        return copyToString(in, StandardCharsets.UTF_8);
+    }
+
+    @SneakyThrows
+    public static String copyToString(@Nullable InputStream in, Charset charset) {
+        if (in == null) {
+            return "";
+        } else {
+            StringBuilder out = new StringBuilder();
+            InputStreamReader reader = new InputStreamReader(in, charset);
+            char[] buffer = new char[8192];
+
+            int charsRead;
+            while((charsRead = reader.read(buffer)) != -1) {
+                out.append(buffer, 0, charsRead);
+            }
+
+            return out.toString();
+        }
     }
 
 }

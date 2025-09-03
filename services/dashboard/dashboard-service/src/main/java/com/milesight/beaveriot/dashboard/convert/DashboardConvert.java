@@ -1,6 +1,6 @@
 package com.milesight.beaveriot.dashboard.convert;
 
-import com.milesight.beaveriot.canvas.model.CanvasDTO;
+import com.milesight.beaveriot.canvas.model.dto.CanvasDTO;
 import com.milesight.beaveriot.dashboard.dto.DashboardDTO;
 import com.milesight.beaveriot.dashboard.model.response.DashboardCanvasItemResponse;
 import com.milesight.beaveriot.dashboard.model.response.DashboardListItemResponse;

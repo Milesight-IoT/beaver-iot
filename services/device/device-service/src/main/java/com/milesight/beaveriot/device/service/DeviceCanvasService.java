@@ -5,7 +5,7 @@ import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.canvas.enums.CanvasAttachType;
 import com.milesight.beaveriot.canvas.facade.ICanvasFacade;
-import com.milesight.beaveriot.canvas.model.CanvasDTO;
+import com.milesight.beaveriot.canvas.model.dto.CanvasDTO;
 import com.milesight.beaveriot.device.model.response.DeviceCanvasResponse;
 import com.milesight.beaveriot.device.po.DevicePO;
 import com.milesight.beaveriot.device.repository.DeviceRepository;
