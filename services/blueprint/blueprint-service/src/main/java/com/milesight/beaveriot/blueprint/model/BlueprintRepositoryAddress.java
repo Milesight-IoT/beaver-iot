@@ -22,15 +22,6 @@ public class BlueprintRepositoryAddress {
     private String branch;
     private String key;
 
-    public BlueprintRepositoryAddress() {
-    }
-
-    public BlueprintRepositoryAddress(String home, String branch) {
-        this.home = home;
-        this.branch = branch;
-        this.updateKey();
-    }
-
     public void setHome(String home) {
         this.home = home;
         this.updateKey();
@@ -64,13 +55,6 @@ public class BlueprintRepositoryAddress {
                     BlueprintRepositoryAddressErrorCode.BLUEPRINT_REPOSITORY_ADDRESS_HOME_INVALID.formatMessage(BlueprintRepositoryAddressValidator.REGEX_ADDRESS_HOME),
                     Map.of(ExtraDataConstants.KEY_REGEX, BlueprintRepositoryAddressValidator.REGEX_ADDRESS_HOME)));
         }
-
-        if (!BlueprintRepositoryAddressValidator.validateBranch(branch)) {
-            errors.add(ErrorHolder.of(BlueprintRepositoryAddressErrorCode.BLUEPRINT_REPOSITORY_ADDRESS_BRANCH_INVALID.getErrorCode(),
-                    BlueprintRepositoryAddressErrorCode.BLUEPRINT_REPOSITORY_ADDRESS_BRANCH_INVALID.formatMessage(BlueprintRepositoryAddressValidator.REGEX_ADDRESS_BRANCH),
-                    Map.of(ExtraDataConstants.KEY_REGEX, BlueprintRepositoryAddressValidator.REGEX_ADDRESS_BRANCH)));
-        }
-
         return errors;
     }
 
@@ -110,19 +94,9 @@ public class BlueprintRepositoryAddress {
     public static class BlueprintRepositoryAddressValidator {
         public static final String REGEX_ADDRESS_HOME = "^https://github\\.com/([a-zA-Z\\d](?:[a-zA-Z\\d]|-(?=[a-zA-Z\\d])){0,38})/([a-zA-Z\\d](?:[a-zA-Z\\d._-]*[a-zA-Z\\d])?)\\.git$";
         public static final Pattern PATTERN_HOME = Pattern.compile(REGEX_ADDRESS_HOME);
-        public static final String REGEX_ADDRESS_BRANCH = "^(?!/)(?!.*/$)(?!.*\\.\\.)(?!.*\\.lock$)(?!.*[ ~^:?*\\[\\\\%])[a-zA-Z0-9][a-zA-Z0-9._-]*(?:/[a-zA-Z0-9._-]+)*$";
 
         public static boolean validateHome(String home) {
             return home.matches(REGEX_ADDRESS_HOME);
         }
-
-        public static boolean validateBranch(String branch) {
-            return branch.matches(REGEX_ADDRESS_BRANCH);
-        }
-    }
-
-    public static void main(String[] args) {
-        System.out.println(BlueprintRepositoryAddressValidator.validateHome("https://github.com/Luxb/Milesight-Blueprint-Repository.git"));
-        System.out.println(BlueprintRepositoryAddressValidator.validateHome("https://github.com/-Luxb/a"));
     }
 }
