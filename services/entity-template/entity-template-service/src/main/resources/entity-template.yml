@@ -1,0 +1,25 @@
+entity-template:
+  initial-entity-templates:
+    - identifier: 'location'      # entity template identifier
+      name: 'Location'            # entity template name
+      value_type: object          # entity value type
+      type: property              # entity type
+      access_mod: RW
+      children:
+        - identifier: 'address'
+          name: 'Address'
+          value_type: string
+        - identifier: 'longitude'
+          name: 'Longitude'
+          value_type: double
+        - identifier: 'latitude'
+          name: 'Latitude'
+          value_type: double
+    - identifier: 'status'        # entity template identifier
+      name: 'Status'              # entity template name
+      value_type: string          # entity value type
+      type: property              # entity type
+      access_mod: R
+      attributes:
+        Online: 'Online'
+        Offline: 'Offline'

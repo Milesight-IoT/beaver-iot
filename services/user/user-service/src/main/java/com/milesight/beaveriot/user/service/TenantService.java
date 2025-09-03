@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.user.service;
 
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
+import com.milesight.beaveriot.context.api.TenantServiceProvider;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.user.constants.UserConstants;
 import com.milesight.beaveriot.user.enums.TenantStatus;
@@ -16,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
  * @author loong
  */
 @Service
-public class TenantService {
+public class TenantService implements TenantServiceProvider {
 
     @Autowired
     TenantRepository tenantRepository;
@@ -45,4 +46,15 @@ public class TenantService {
         }
     }
 
+    @Override
+    public void runWithAllTenants(Runnable runnable) {
+        tenantRepository.findAll().forEach(tenant -> {
+            try {
+                TenantContext.setTenantId(tenant.getId());
+                runnable.run();
+            } finally {
+                TenantContext.clear();
+            }
+        });
+    }
 }

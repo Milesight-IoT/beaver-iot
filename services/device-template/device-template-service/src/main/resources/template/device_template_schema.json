@@ -199,10 +199,14 @@
             "fraction_digits": {"type": "integer"},
             "format": {"type": "string"},
             "enum": {"type": "object"},
-            "optional": {"type": "boolean"}
+            "optional": {"type": "boolean"},
+            "important": {"type": "boolean"}
           }
         },
         "visible": {
+          "type": "boolean"
+        },
+        "important": {
           "type": "boolean"
         },
         "children": {
@@ -217,23 +221,37 @@
       "allOf": [
         { "$ref": "#/definitions/BaseEntity" },
         {
-          "required": ["identifier", "name", "type", "value_type"]
-        },
-        {
-          "if": {
-            "properties": {
-              "value_type": { "const": "object" }
+          "oneOf": [
+            {
+              "required": ["identifier", "name", "type", "value_type"],
+              "properties": {
+                "identifier": { "type": "string" },
+                "name": { "type": "string" },
+                "type": { "type": "string" },
+                "value_type": { "type": "string" }
+              },
+              "if": {
+                "properties": {
+                  "value_type": { "const": "object" }
+                },
+                "required": ["value_type"]
+              },
+              "then": {
+                "required": ["children"]
+              },
+              "else": {
+                "not": {
+                  "required": ["children"]
+                }
+              }
             },
-            "required": ["value_type"]
-          },
-          "then": {
-            "required": ["children"]
-          },
-          "else": {
-            "not": {
-              "required": ["children"]
+            {
+              "required": ["entity_ref"],
+              "properties": {
+                "entity_ref": { "type": "string" }
+              }
             }
-          }
+          ]
         },
         {
           "if": {
