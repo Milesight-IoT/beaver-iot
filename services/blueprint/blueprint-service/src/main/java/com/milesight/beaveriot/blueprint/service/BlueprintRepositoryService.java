@@ -44,6 +44,10 @@ public class BlueprintRepositoryService {
     @SuppressWarnings("unused")
     @CacheEvict(cacheNames = Constants.CACHE_NAME_REPOSITORY, key = "#p0 + '@' + #p1")
     public void evictCacheBlueprintRepository(String home, String branch) {
+        log.debug("Evict cache: {}, key: {}@{}",
+                Constants.CACHE_NAME_REPOSITORY,
+                home,
+                branch);
     }
 
     public BlueprintRepository getCurrentBlueprintRepository() {

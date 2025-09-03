@@ -87,8 +87,8 @@ public class BlueprintRepositoryAddress {
     }
 
     public static class Constants {
-        public static final String FORMAT_MANIFEST = "https://raw.githubusercontent.com/%s/%s/%s/manifest.yaml";
-        public static final String FORMAT_CODE_ZIP = "https://github.com/%s/%s/archive/%s.zip";
+        public static final String FORMAT_MANIFEST = "https://raw.githubusercontent.com/%s/%s/refs/heads/%s/manifest.yaml";
+        public static final String FORMAT_CODE_ZIP = "https://github.com/%s/%s/archive/refs/heads/%s.zip";
     }
 
     public static class BlueprintRepositoryAddressValidator {

@@ -9,6 +9,7 @@ import com.milesight.beaveriot.context.api.BlueprintRepositoryResourceProvider;
 import com.milesight.beaveriot.context.integration.model.BlueprintDevice;
 import com.milesight.beaveriot.context.integration.model.BlueprintDeviceVendor;
 import com.milesight.beaveriot.context.support.SpringContext;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import java.util.List;
  * create: 2025/9/2 9:55
  **/
 @SuppressWarnings("unused")
+@Slf4j
 @Service
 public class BlueprintRepositoryResourceResolver implements BlueprintRepositoryResourceProvider {
     private final BlueprintRepositoryService blueprintRepositoryService;
@@ -32,12 +34,20 @@ public class BlueprintRepositoryResourceResolver implements BlueprintRepositoryR
 
     @Override
     public List<BlueprintDeviceVendor> getDeviceVendors() {
-        return self().getDeviceVendors(blueprintRepositoryService.getCurrentBlueprintRepository());
+        try {
+            return self().getDeviceVendors(blueprintRepositoryService.getCurrentBlueprintRepository());
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @Override
     public List<BlueprintDevice> getDevices(String vendor) {
-        return self().getDevices(blueprintRepositoryService.getCurrentBlueprintRepository(), vendor);
+        try {
+            return self().getDevices(blueprintRepositoryService.getCurrentBlueprintRepository(), vendor);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @Override
@@ -64,7 +74,7 @@ public class BlueprintRepositoryResourceResolver implements BlueprintRepositoryR
         return getResourceContent(blueprintRepositoryService.getCurrentBlueprintRepository(), vendor, relativePath);
     }
 
-    @Cacheable(cacheNames = Constants.CACHE_NAME_DEVICE_VENDORS, key = "#p0.home + '@' + #p0.branch", unless = "#result == null")
+    @Cacheable(cacheNames = Constants.CACHE_NAME_DEVICE_VENDORS, key = "#p0.home + '@' + #p0.branch + ':' + #p0.currentVersion + ':all'", unless = "#result == null")
     public List<BlueprintDeviceVendor> getDeviceVendors(BlueprintRepository blueprintRepository) {
         if (blueprintRepository == null) {
             return null;
@@ -83,11 +93,16 @@ public class BlueprintRepositoryResourceResolver implements BlueprintRepositoryR
         return vendors.getVendors();
     }
 
-    @CacheEvict(cacheNames = Constants.CACHE_NAME_DEVICE_VENDORS, key = "#p0.home + '@' + #p0.branch")
+    @CacheEvict(cacheNames = Constants.CACHE_NAME_DEVICE_VENDORS, key = "#p0.home + '@' + #p0.branch + ':' + #p0.currentVersion + ':all'")
     public void evictCacheDeviceVendors(BlueprintRepository blueprintRepository) {
+        log.debug("Evict cache: {}, key: {}@{}:{}",
+                Constants.CACHE_NAME_DEVICE_VENDORS,
+                blueprintRepository.getHome(),
+                blueprintRepository.getBranch(),
+                blueprintRepository.getCurrentVersion());
     }
 
-    @Cacheable(cacheNames = Constants.CACHE_NAME_DEVICES, key = "#p0.home + '@' + #p0.branch + ':' + #p1", unless = "#result == null")
+    @Cacheable(cacheNames = Constants.CACHE_NAME_DEVICES, key = "#p0.home + '@' + #p0.branch + ':' + #p0.currentVersion + ':' + #p1", unless = "#result == null")
     public List<BlueprintDevice> getDevices(BlueprintRepository blueprintRepository, String vendor) {
         BlueprintDeviceVendor vendorDef = getDeviceVendor(blueprintRepository, vendor);
         if (vendorDef == null) {
@@ -103,8 +118,13 @@ public class BlueprintRepositoryResourceResolver implements BlueprintRepositoryR
         return devices.getDevices();
     }
 
-    @CacheEvict(cacheNames = Constants.CACHE_NAME_DEVICES, key = "#p0.home + '@' + #p0.branch + ':' + #p1")
+    @CacheEvict(cacheNames = Constants.CACHE_NAME_DEVICES, key = "#p0.home + '@' + #p0.branch + ':' + #p0.currentVersion + ':' + #p1")
     public void evictCacheDevices(BlueprintRepository blueprintRepository, String vendor) {
+        log.debug("Evict cache: {}, key: {}@{}:{}",
+                Constants.CACHE_NAME_DEVICE_VENDORS,
+                blueprintRepository.getHome(),
+                blueprintRepository.getBranch(),
+                blueprintRepository.getCurrentVersion());
     }
 
     public String getResourceContent(BlueprintRepository blueprintRepository, String vendor, String relativePath) {
@@ -136,17 +156,21 @@ public class BlueprintRepositoryResourceResolver implements BlueprintRepositoryR
             return null;
         }
 
-        List<BlueprintDeviceVendor> vendors = self().getDeviceVendors(blueprintRepository);
-        if (vendors == null) {
+        try {
+            List<BlueprintDeviceVendor> vendors = self().getDeviceVendors(blueprintRepository);
+            if (vendors == null) {
+                return null;
+            }
+
+            for (BlueprintDeviceVendor eachVendor : vendors) {
+                if (vendor.equals(eachVendor.getId())) {
+                    return eachVendor;
+                }
+            }
+            return null;
+        } catch (Exception e) {
             return null;
         }
-
-        for (BlueprintDeviceVendor eachVendor : vendors) {
-            if (vendor.equals(eachVendor.getId())) {
-                return eachVendor;
-            }
-        }
-        return null;
     }
 
     private String getWorkDirByVendor(BlueprintRepository blueprintRepository, String vendor) {

@@ -172,12 +172,13 @@ public class BlueprintRepositorySyncer {
             blueprintRepositoryResourceService.deleteAllByRepositoryIdAndRepositoryVersion(blueprintRepository.getId(), manifest.getVersion());
             blueprintRepositoryResourceService.batchSave(blueprintRepositoryResources);
 
+            BlueprintRepository oldBlueprintRepository = BlueprintRepository.clone(blueprintRepository);
             blueprintRepository.setCurrentVersion(manifest.getVersion());
             blueprintRepository.setSyncedAt(System.currentTimeMillis());
             blueprintRepository.setSyncStatus(BlueprintRepositorySyncStatus.SYNCED);
             blueprintRepositoryService.save(blueprintRepository);
 
-            evictCaches(blueprintRepository);
+            evictCaches(oldBlueprintRepository);
         } catch (IOException e) {
             throwSyncFailedExceptionAndUpdateBlueprintRepository(blueprintRepository, BlueprintRepositoryErrorCode.BLUEPRINT_REPOSITORY_SYNC_FAILED);
         }

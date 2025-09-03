@@ -19,4 +19,15 @@ public class BlueprintRepository {
     private String remoteVersion;
     private BlueprintRepositorySyncStatus syncStatus;
     private Long syncedAt;
+
+    public static BlueprintRepository clone(BlueprintRepository blueprintRepository) {
+        return BlueprintRepository.builder()
+                .id(blueprintRepository.getId())
+                .home(blueprintRepository.getHome())
+                .branch(blueprintRepository.getBranch())
+                .currentVersion(blueprintRepository.getCurrentVersion())
+                .remoteVersion(blueprintRepository.getRemoteVersion())
+                .syncStatus(blueprintRepository.getSyncStatus())
+                .syncedAt(blueprintRepository.getSyncedAt()).build();
+    }
 }

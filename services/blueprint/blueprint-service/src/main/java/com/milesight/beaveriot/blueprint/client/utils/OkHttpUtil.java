@@ -3,8 +3,8 @@ package com.milesight.beaveriot.blueprint.client.utils;
 import com.milesight.beaveriot.blueprint.client.response.ClientResponse;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-
 import okhttp3.*;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
