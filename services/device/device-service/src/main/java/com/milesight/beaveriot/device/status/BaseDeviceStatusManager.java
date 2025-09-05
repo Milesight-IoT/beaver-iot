@@ -8,8 +8,10 @@ import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -19,7 +21,8 @@ import java.util.function.Function;
  * author: Luxb
  * create: 2025/9/4 10:27
  **/
-public abstract class AbstractDeviceStatusManager {
+@Slf4j
+public abstract class BaseDeviceStatusManager {
     protected static final String IDENTIFIER_DEVICE_STATUS = "status";
     protected static final String STATUS_VALUE_ONLINE = "Online";
     protected static final String STATUS_VALUE_OFFLINE = "Offline";
@@ -29,7 +32,7 @@ public abstract class AbstractDeviceStatusManager {
     protected final EntityValueServiceProvider entityValueServiceProvider;
     protected final Map<String, DeviceStatusConfig> integrationDeviceStatusConfigs = new ConcurrentHashMap<>();
 
-    public AbstractDeviceStatusManager(DeviceServiceProvider deviceServiceProvider, EntityServiceProvider entityServiceProvider, EntityValueServiceProvider entityValueServiceProvider) {
+    public BaseDeviceStatusManager(DeviceServiceProvider deviceServiceProvider, EntityServiceProvider entityServiceProvider, EntityValueServiceProvider entityValueServiceProvider) {
         this.deviceServiceProvider = deviceServiceProvider;
         this.entityServiceProvider = entityServiceProvider;
         this.entityValueServiceProvider = entityValueServiceProvider;
@@ -74,7 +77,7 @@ public abstract class AbstractDeviceStatusManager {
             offlineUpdater = this::updateDeviceStatusToOffline;
         }
         if (offlineSecondsFetcher == null) {
-            offlineSecondsFetcher = this::getDeviceOfflineSeconds;
+            offlineSecondsFetcher = this::getDeviceDefaultOfflineSeconds;
         }
         DeviceStatusConfig config = DeviceStatusConfig.of(onlineUpdater, offlineUpdater, offlineSecondsFetcher);
         integrationDeviceStatusConfigs.put(integrationId, config);
@@ -106,6 +109,14 @@ public abstract class AbstractDeviceStatusManager {
      */
     public abstract void dataUploaded(Device device, ExchangePayload payload);
 
+    protected void deviceOnlineCallback(Device device, long expirationTime) {
+        log.debug("Device(id={}, key={}) status updated to online, expiration time: {}", device.getId(), device.getKey(), expirationTime);
+    }
+
+    protected void deviceOfflineCallback(Device device) {
+        log.debug("Device(id={}, key={}) status updated to offline", device.getId(), device.getKey());
+    }
+
     public void updateDeviceStatusToOnline(Device device) {
         updateDeviceStatus(device, STATUS_VALUE_ONLINE);
     }
@@ -114,26 +125,32 @@ public abstract class AbstractDeviceStatusManager {
         updateDeviceStatus(device, STATUS_VALUE_OFFLINE);
     }
 
-    protected void updateDeviceStatusToOfflineByDeviceKey(String deviceKey) {
-        Device device = deviceServiceProvider.findByKey(deviceKey);
+    protected AvailableDeviceData getAvailableDeviceDataByDeviceId(Long deviceId) {
+        Device device = deviceServiceProvider.findById(deviceId);
         if (device == null) {
-            return;
+            return null;
         }
 
         DeviceStatusConfig deviceStatusConfig = integrationDeviceStatusConfigs.get(device.getIntegrationId());
         if (deviceStatusConfig == null) {
-            return;
+            return null;
         }
 
-        deviceStatusConfig.getOfflineUpdater().accept(device);
+        return AvailableDeviceData.of(device, deviceStatusConfig);
     }
 
-    protected long getDeviceOfflineSeconds(Device device) {
+    protected long getDeviceOfflineSeconds(Device device, DeviceStatusConfig config) {
+        return Optional.ofNullable(config.getOfflineSecondsFetcher())
+                .map(f -> f.apply(device))
+                .orElse(DEFAULT_OFFLINE_SECONDS);
+    }
+
+    protected long getDeviceDefaultOfflineSeconds(Device device) {
         return DEFAULT_OFFLINE_SECONDS;
     }
 
     protected void updateDeviceStatusToOnline(Device device, ExchangePayload payload) {
-        updateDeviceStatus(device, STATUS_VALUE_ONLINE);
+        updateDeviceStatusToOnline(device);
     }
 
     protected void updateDeviceStatus(Device device, String deviceStatus) {
@@ -154,6 +171,19 @@ public abstract class AbstractDeviceStatusManager {
             config.setOfflineUpdater(offlineUpdater);
             config.setOfflineSecondsFetcher(offlineSecondsFetcher);
             return config;
+        }
+    }
+
+    @Data
+    public static class AvailableDeviceData {
+        private Device device;
+        private DeviceStatusConfig deviceStatusConfig;
+
+        public static AvailableDeviceData of(Device device, DeviceStatusConfig deviceStatusConfig) {
+            AvailableDeviceData data = new AvailableDeviceData();
+            data.setDevice(device);
+            data.setDeviceStatusConfig(deviceStatusConfig);
+            return data;
         }
     }
 }

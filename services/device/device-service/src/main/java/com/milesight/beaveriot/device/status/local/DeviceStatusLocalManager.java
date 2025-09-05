@@ -5,24 +5,22 @@ import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
-import com.milesight.beaveriot.device.status.AbstractDeviceStatusManager;
+import com.milesight.beaveriot.device.status.BaseDeviceStatusManager;
 import com.milesight.beaveriot.device.status.DeviceStatusManager;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.*;
-import java.util.function.Function;
 
 /**
  * author: Luxb
  * create: 2025/7/21 14:46
  **/
 @SuppressWarnings("unused")
-public class DeviceStatusLocalManager extends AbstractDeviceStatusManager implements DeviceStatusManager {
+public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements DeviceStatusManager {
     private final ScheduledExecutorService scheduler;
-    private final Map<String, ScheduledFuture<?>> deviceTimerFutures = new ConcurrentHashMap<>();
+    private final Map<Long, ScheduledFuture<?>> deviceTimerFutures = new ConcurrentHashMap<>();
 
     public DeviceStatusLocalManager(DeviceServiceProvider deviceServiceProvider, EntityServiceProvider entityServiceProvider, EntityValueServiceProvider entityValueServiceProvider) {
         super(deviceServiceProvider, entityServiceProvider, entityValueServiceProvider);
@@ -44,11 +42,8 @@ public class DeviceStatusLocalManager extends AbstractDeviceStatusManager implem
     protected void afterRegister(String integrationId, DeviceStatusConfig config) {
         List<Device> devices = deviceServiceProvider.findAll(integrationId);
         if (config != null && !CollectionUtils.isEmpty(devices)) {
-            Function<Device, Long> offlineSecondsFetcher = config.getOfflineSecondsFetcher();
             devices.forEach(device -> {
-                long offlineSeconds = Optional.ofNullable(offlineSecondsFetcher)
-                        .map(f -> f.apply(device))
-                        .orElse(DEFAULT_OFFLINE_SECONDS);
+                long offlineSeconds = getDeviceOfflineSeconds(device, config);
                 startOfflineCountdown(device, offlineSeconds);
             });
         }
@@ -57,36 +52,48 @@ public class DeviceStatusLocalManager extends AbstractDeviceStatusManager implem
     @Override
     public void dataUploaded(Device device, ExchangePayload payload) {
         cancelOfflineCountdown(device);
-        DeviceStatusConfig config = integrationDeviceStatusConfigs.get(device.getIntegrationId());
+
+        AvailableDeviceData availableDeviceData = getAvailableDeviceDataByDeviceId(device.getId());
+        if (availableDeviceData == null) {
+            return;
+        }
+
+        DeviceStatusConfig config = availableDeviceData.getDeviceStatusConfig();
         config.getOnlineUpdater().accept(device, payload);
-        long offlineSeconds = Optional.ofNullable(config.getOfflineSecondsFetcher())
-                .map(f -> f.apply(device))
-                .orElse(DEFAULT_OFFLINE_SECONDS);
+
+        long offlineSeconds = getDeviceOfflineSeconds(device, config);
         startOfflineCountdown(device, offlineSeconds);
+        deviceOnlineCallback(device, System.currentTimeMillis() / 1000 + offlineSeconds);
     }
 
     private void startOfflineCountdown(Device device, long offlineSeconds) {
-        if (deviceTimerFutures.containsKey(device.getKey())) {
+        if (deviceTimerFutures.containsKey(device.getId())) {
             return;
         }
 
         ScheduledFuture<?> future = scheduler.schedule(() ->
-                doUpdateDeviceStatusToOffline(device.getKey())
+                doUpdateDeviceStatusToOffline(device)
                 , offlineSeconds, TimeUnit.SECONDS);
-        deviceTimerFutures.put(device.getKey(), future);
+        deviceTimerFutures.put(device.getId(), future);
     }
 
-    private void doUpdateDeviceStatusToOffline(String deviceKey) {
-        deviceTimerFutures.remove(deviceKey);
+    private void doUpdateDeviceStatusToOffline(Device device) {
+        deviceTimerFutures.remove(device.getId());
 
-        updateDeviceStatusToOfflineByDeviceKey(deviceKey);
+        AvailableDeviceData availableDeviceData = getAvailableDeviceDataByDeviceId(device.getId());
+        if (availableDeviceData == null) {
+            return;
+        }
+
+        availableDeviceData.getDeviceStatusConfig().getOfflineUpdater().accept(device);
+        deviceOfflineCallback(device);
     }
 
     private void cancelOfflineCountdown(Device device) {
-        ScheduledFuture<?> future = deviceTimerFutures.get(device.getKey());
+        ScheduledFuture<?> future = deviceTimerFutures.get(device.getId());
         if (future != null) {
             future.cancel(false);
-            deviceTimerFutures.remove(device.getKey());
+            deviceTimerFutures.remove(device.getId());
         }
     }
 
