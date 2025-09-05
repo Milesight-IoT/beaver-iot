@@ -17,7 +17,7 @@ import java.util.function.Consumer;
 
 @Tenant
 public interface DeviceRepository extends BaseJpaRepository<DevicePO, Long> {
-    public List<DevicePO> findByIdIn(List<Long> ids);
+    List<DevicePO> findByIdIn(List<Long> ids);
 
     @Query("SELECT r.integration, COUNT(r) FROM DevicePO r WHERE r.integration IN :integrations GROUP BY r.integration")
     List<Object[]> countByIntegrations(@Param("integrations") List<String> integrations);
@@ -43,5 +43,5 @@ public interface DeviceRepository extends BaseJpaRepository<DevicePO, Long> {
     }
 
     @DataPermission(type = DataPermissionType.DEVICE, column = "id")
-    void deleteAllByTemplate(String template);
+    List<DevicePO> findAllByTemplate(String template);
 }
