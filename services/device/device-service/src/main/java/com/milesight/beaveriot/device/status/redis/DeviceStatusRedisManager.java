@@ -141,7 +141,7 @@ public class DeviceStatusRedisManager extends BaseDeviceStatusManager implements
         long expirationTime = System.currentTimeMillis() + offlineSeconds * 1000;
         deviceExpirationTimeMap.put(device.getId(), expirationTime);
         delayedQueue.offer(device.getId(), offlineSeconds, TimeUnit.SECONDS);
-        deviceOnlineCallback(device, expirationTime / 1000);
+        deviceOnlineCallback(device, expirationTime);
     }
 
     private void handleStatusToOffline(AvailableDeviceData availableDeviceData) {

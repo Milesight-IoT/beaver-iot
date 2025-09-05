@@ -62,8 +62,9 @@ public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements
         config.getOnlineUpdater().accept(device, payload);
 
         long offlineSeconds = getDeviceOfflineSeconds(device, config);
+        long expirationTime = System.currentTimeMillis() + offlineSeconds * 1000;
         startOfflineCountdown(device, offlineSeconds);
-        deviceOnlineCallback(device, System.currentTimeMillis() / 1000 + offlineSeconds);
+        deviceOnlineCallback(device, expirationTime);
     }
 
     private void startOfflineCountdown(Device device, long offlineSeconds) {

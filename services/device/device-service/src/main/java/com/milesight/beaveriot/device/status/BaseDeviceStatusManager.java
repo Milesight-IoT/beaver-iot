@@ -110,7 +110,7 @@ public abstract class BaseDeviceStatusManager {
     public abstract void dataUploaded(Device device, ExchangePayload payload);
 
     protected void deviceOnlineCallback(Device device, long expirationTime) {
-        log.debug("Device(id={}, key={}) status updated to online, expiration time: {}", device.getId(), device.getKey(), expirationTime);
+        log.debug("Device(id={}, key={}) status updated to online, expiration time: {}", device.getId(), device.getKey(), expirationTime / 1000);
     }
 
     protected void deviceOfflineCallback(Device device) {
