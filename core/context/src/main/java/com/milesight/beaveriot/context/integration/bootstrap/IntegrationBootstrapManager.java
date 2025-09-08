@@ -2,11 +2,17 @@ package com.milesight.beaveriot.context.integration.bootstrap;
 
 import com.milesight.beaveriot.base.exception.BootstrapException;
 import com.milesight.beaveriot.base.exception.ConfigurationException;
+import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
+import com.milesight.beaveriot.context.api.ResourceFingerprintServiceProvider;
+import com.milesight.beaveriot.context.api.TenantServiceProvider;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.integration.IntegrationContext;
 import com.milesight.beaveriot.context.integration.entity.EntityLoader;
+import com.milesight.beaveriot.context.integration.entity.EntityTemplateConfig;
 import com.milesight.beaveriot.context.integration.model.Integration;
+import com.milesight.beaveriot.context.integration.model.ResourceFingerprint;
+import com.milesight.beaveriot.context.integration.model.ResourceFingerprintType;
 import com.milesight.beaveriot.context.integration.model.config.IntegrationConfig;
 import com.milesight.beaveriot.context.support.YamlPropertySourceFactory;
 import lombok.SneakyThrows;
@@ -16,6 +22,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.context.properties.bind.BindResult;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
 import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.StandardEnvironment;
@@ -38,15 +45,30 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
     private final ObjectProvider<EntityLoader> entityLoaders;
     private final ObjectProvider<IntegrationBootstrap> integrationBootstrapList;
     private final IntegrationServiceProvider integrationStorageProvider;
+    private final Environment environment;
+    private final TenantServiceProvider tenantServiceProvider;
+    private final EntityTemplateServiceProvider entityTemplateServiceProvider;
+    private final ResourceFingerprintServiceProvider resourceFingerprintServiceProvider;
 
-    public IntegrationBootstrapManager(ObjectProvider<EntityLoader> entityLoaders, ObjectProvider<IntegrationBootstrap> integrationBootstraps, IntegrationServiceProvider integrationStorageProvider) {
+    public IntegrationBootstrapManager(ObjectProvider<EntityLoader> entityLoaders,
+                                       ObjectProvider<IntegrationBootstrap> integrationBootstraps,
+                                       IntegrationServiceProvider integrationStorageProvider,
+                                       Environment environment,
+                                       TenantServiceProvider tenantServiceProvider,
+                                       EntityTemplateServiceProvider entityTemplateServiceProvider, ResourceFingerprintServiceProvider resourceFingerprintServiceProvider) {
         this.entityLoaders = entityLoaders;
         this.integrationBootstrapList = integrationBootstraps;
         this.integrationStorageProvider = integrationStorageProvider;
+        this.environment = environment;
+        this.tenantServiceProvider = tenantServiceProvider;
+        this.entityTemplateServiceProvider = entityTemplateServiceProvider;
+        this.resourceFingerprintServiceProvider = resourceFingerprintServiceProvider;
         this.propertySourceFactory = new YamlPropertySourceFactory();
     }
 
     public void onStarted() {
+        // Initialize entity templates before starting integrations
+        initializeEntityTemplates();
 
         // Add default integration: "system"
         integrationContext.cacheIntegration(
@@ -95,6 +117,34 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
         });
 
         log.info("IntegrationBootstrapManager started, contains integrations : {}", integrationContext.getAllIntegrations().keySet());
+    }
+
+    private void initializeEntityTemplates() {
+        EntityTemplateConfig entityTemplateConfig = Binder.get(environment).bind(EntityTemplateConfig.PROPERTY_PREFIX, EntityTemplateConfig.class).orElse(null);
+        if (entityTemplateConfig == null) {
+            return;
+        }
+
+        String hash = com.milesight.beaveriot.base.utils.ObjectUtils.md5Sum(entityTemplateConfig.getInitialEntityTemplates());
+        if (hash == null) {
+            return;
+        }
+
+        ResourceFingerprint resourceFingerprint = resourceFingerprintServiceProvider.getResourceFingerprint(ResourceFingerprintType.TYPE_ENTITY_TEMPLATE, IntegrationConstants.SYSTEM_INTEGRATION_ID);
+        if (resourceFingerprint == null) {
+            resourceFingerprint = ResourceFingerprint.builder()
+                    .type(ResourceFingerprintType.TYPE_ENTITY_TEMPLATE)
+                    .integration(IntegrationConstants.SYSTEM_INTEGRATION_ID)
+                    .build();
+        }
+
+        if (!hash.equals(resourceFingerprint.getHash())) {
+            tenantServiceProvider.runWithAllTenants(() ->
+                    entityTemplateServiceProvider.batchSave(entityTemplateConfig.getInitialEntityTemplates())
+            );
+            resourceFingerprint.setHash(hash);
+            resourceFingerprintServiceProvider.save(resourceFingerprint);
+        }
     }
 
     public IntegrationContext getIntegrationContext() {

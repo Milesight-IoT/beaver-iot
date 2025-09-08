@@ -29,8 +29,9 @@ import com.milesight.beaveriot.entity.repository.EntityLatestRepository;
 import com.milesight.beaveriot.entity.repository.EntityRepository;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
 import jakarta.persistence.EntityManager;
-import lombok.*;
-import lombok.extern.slf4j.*;
+import lombok.Data;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -41,16 +42,7 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.OptionalDouble;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -443,10 +435,12 @@ public class EntityValueService implements EntityValueServiceProvider {
             return Page.empty();
         }
 
-        Page<EntityHistoryPO> entityHistoryPage = entityHistoryRepository.findAll(f -> f.in(EntityHistoryPO.Fields.entityId, entityIdsWithPermission.toArray())
-                        .ge(EntityHistoryPO.Fields.timestamp, entityHistoryQuery.getStartTimestamp())
-                        .le(EntityHistoryPO.Fields.timestamp, entityHistoryQuery.getEndTimestamp()),
-                entityHistoryQuery.toPageable());
+        Page<EntityHistoryPO> entityHistoryPage = entityHistoryRepository.findByEntityIdInAndTimestampBetween(
+                entityIdsWithPermission,
+                entityHistoryQuery.getStartTimestamp(),
+                entityHistoryQuery.getEndTimestamp(),
+                entityHistoryQuery.toPageable()
+        );
         if (entityHistoryPage == null || entityHistoryPage.getContent().isEmpty()) {
             return Page.empty();
         }

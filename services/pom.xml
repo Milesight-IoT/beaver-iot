@@ -48,6 +48,7 @@
         <module>mqtt</module>
         <module>resource-manager</module>
         <module>device-template</module>
+        <module>entity-template</module>
         <module>blueprint</module>
     </modules>
 

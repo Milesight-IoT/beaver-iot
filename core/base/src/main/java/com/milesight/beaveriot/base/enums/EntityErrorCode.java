@@ -55,6 +55,8 @@ public enum EntityErrorCode implements ErrorCodeSpec {
             "Entity {0} attribute is_enum must be a boolean"),
     ENTITY_ATTRIBUTE_UNIT_TOO_LONG(HttpStatus.BAD_REQUEST.value(), "entity_attribute_unit_too_long",
             "Entity {0} attribute unit is too long, which exceeds the maximum allowed length {1}"),
+    ENTITY_ATTRIBUTE_IMPORTANT_INVALID(HttpStatus.BAD_REQUEST.value(), "entity_attribute_important_invalid",
+            "Entity {0} attribute important must be a boolean"),
     ENTITY_VALIDATION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), "entity_validation_error",
             "Entity {0} validation error: {1}"),
     /**

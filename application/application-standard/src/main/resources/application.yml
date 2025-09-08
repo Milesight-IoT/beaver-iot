@@ -2,6 +2,9 @@ server:
   port: 9200
 
 spring:
+  config:
+    import:
+      - optional:classpath:entity-template.yml
   main:
     allow-bean-definition-overriding: true
   jackson:

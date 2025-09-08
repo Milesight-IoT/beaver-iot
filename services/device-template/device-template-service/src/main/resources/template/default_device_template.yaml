@@ -16,9 +16,6 @@ definition:
       - key: humidity                  # json key
         type: double                   # data type
         entity_mapping: 'humidity'     # entity identifier
-      - key: status                    # json key
-        type: long                     # data type
-        entity_mapping: 'status'       # entity identifier
       - key: time                      # json key
         type: string                   # data type
         entity_mapping: 'time'         # entity identifier
@@ -53,24 +50,17 @@ initial_entities:
     access_mod: R
     attributes:
       unit: '℃'
+    important: true
   - identifier: 'humidity'     # entity identifier
     name: 'humidity'           # entity name
-    value_type: double           # entity value type
+    value_type: double         # entity value type
     type: property             # entity type
     access_mod: R
     attributes:
       unit: '%'
-  - identifier: 'status'      # entity identifier
-    name: 'status'            # entity name
-    value_type: long          # entity value type
-    type: property            # entity type
-    access_mod: R
-    attributes:
-      enum:
-        0: 'Offline'
-        1: 'Online'
   - identifier: 'time'     # entity identifier
     name: 'time'           # entity name
     value_type: string     # entity value type
     type: property         # entity type
     access_mod: R
+  - entity_ref: 'location' # entity key reference in entity template
