@@ -3,14 +3,14 @@ package com.milesight.beaveriot.blueprint.component;
 import com.milesight.beaveriot.blueprint.config.BlueprintRepositoryConfig;
 import com.milesight.beaveriot.blueprint.model.BlueprintRepositoryAddress;
 import com.milesight.beaveriot.blueprint.service.BlueprintRepositoryAddressService;
+import com.milesight.beaveriot.context.api.BlueprintRepositorySyncSchedulerProvider;
 import com.milesight.beaveriot.scheduler.core.Scheduler;
 import com.milesight.beaveriot.scheduler.core.model.ScheduleRule;
 import com.milesight.beaveriot.scheduler.core.model.ScheduleSettings;
 import com.milesight.beaveriot.scheduler.core.model.ScheduleType;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
@@ -26,8 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * create: 2025/9/1 9:56
  **/
 @Slf4j
-@Component
-public class BlueprintRepositorySyncScheduler {
+@Service
+public class BlueprintRepositorySyncScheduler implements BlueprintRepositorySyncSchedulerProvider {
     private final BlueprintRepositoryConfig blueprintRepositoryConfig;
     private final Scheduler scheduler;
     private final BlueprintRepositoryAddressService blueprintRepositoryAddressService;
@@ -41,9 +41,11 @@ public class BlueprintRepositorySyncScheduler {
         this.blueprintRepositorySyncer = blueprintRepositorySyncer;
     }
 
-    @PostConstruct
+    @Override
     public void start() {
-        log.info("------------------------------start scheduler---------------------------");
+        // Synchronize the blueprint repository once immediately when the application starts.
+        syncBlueprintRepositories();
+
         ScheduleRule rule = new ScheduleRule();
         rule.setPeriodSecond(blueprintRepositoryConfig.getSyncFrequency().toSeconds());
         ScheduleSettings settings = new ScheduleSettings();

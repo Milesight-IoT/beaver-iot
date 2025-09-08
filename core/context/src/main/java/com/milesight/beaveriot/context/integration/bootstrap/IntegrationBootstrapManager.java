@@ -2,10 +2,7 @@ package com.milesight.beaveriot.context.integration.bootstrap;
 
 import com.milesight.beaveriot.base.exception.BootstrapException;
 import com.milesight.beaveriot.base.exception.ConfigurationException;
-import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
-import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
-import com.milesight.beaveriot.context.api.ResourceFingerprintServiceProvider;
-import com.milesight.beaveriot.context.api.TenantServiceProvider;
+import com.milesight.beaveriot.context.api.*;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.integration.IntegrationContext;
 import com.milesight.beaveriot.context.integration.entity.EntityLoader;
@@ -49,13 +46,16 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
     private final TenantServiceProvider tenantServiceProvider;
     private final EntityTemplateServiceProvider entityTemplateServiceProvider;
     private final ResourceFingerprintServiceProvider resourceFingerprintServiceProvider;
+    private final BlueprintRepositorySyncSchedulerProvider blueprintRepositorySyncSchedulerProvider;
 
     public IntegrationBootstrapManager(ObjectProvider<EntityLoader> entityLoaders,
                                        ObjectProvider<IntegrationBootstrap> integrationBootstraps,
                                        IntegrationServiceProvider integrationStorageProvider,
                                        Environment environment,
                                        TenantServiceProvider tenantServiceProvider,
-                                       EntityTemplateServiceProvider entityTemplateServiceProvider, ResourceFingerprintServiceProvider resourceFingerprintServiceProvider) {
+                                       EntityTemplateServiceProvider entityTemplateServiceProvider,
+                                       ResourceFingerprintServiceProvider resourceFingerprintServiceProvider,
+                                       BlueprintRepositorySyncSchedulerProvider blueprintRepositorySyncSchedulerProvider) {
         this.entityLoaders = entityLoaders;
         this.integrationBootstrapList = integrationBootstraps;
         this.integrationStorageProvider = integrationStorageProvider;
@@ -63,12 +63,16 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
         this.tenantServiceProvider = tenantServiceProvider;
         this.entityTemplateServiceProvider = entityTemplateServiceProvider;
         this.resourceFingerprintServiceProvider = resourceFingerprintServiceProvider;
+        this.blueprintRepositorySyncSchedulerProvider = blueprintRepositorySyncSchedulerProvider;
         this.propertySourceFactory = new YamlPropertySourceFactory();
     }
 
     public void onStarted() {
         // Initialize entity templates before starting integrations
         initializeEntityTemplates();
+
+        // Start blueprint repository synchronization scheduled task
+        blueprintRepositorySyncSchedulerProvider.start();
 
         // Add default integration: "system"
         integrationContext.cacheIntegration(
