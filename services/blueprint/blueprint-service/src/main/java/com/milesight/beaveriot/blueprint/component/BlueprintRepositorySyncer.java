@@ -188,11 +188,11 @@ public class BlueprintRepositorySyncer {
 
     private void evictCaches(BlueprintRepository blueprintRepository) {
         List<BlueprintDeviceVendor> deviceVendors = blueprintRepositoryResourceResolver.getDeviceVendors();
+        blueprintRepositoryService.evictCacheBlueprintRepository(blueprintRepository.getHome(), blueprintRepository.getBranch());
+        blueprintRepositoryResourceResolver.evictCacheDeviceVendors(blueprintRepository);
         if (!CollectionUtils.isEmpty(deviceVendors)) {
             deviceVendors.forEach(vendor -> blueprintRepositoryResourceResolver.evictCacheDevices(blueprintRepository, vendor.getId()));
         }
-        blueprintRepositoryResourceResolver.evictCacheDeviceVendors(blueprintRepository);
-        blueprintRepositoryService.evictCacheBlueprintRepository(blueprintRepository.getHome(), blueprintRepository.getBranch());
     }
 
     private void throwSyncFailedExceptionAndUpdateBlueprintRepository(BlueprintRepository blueprintRepository, ErrorCodeSpec errorCodeSpec) throws ServiceException {
