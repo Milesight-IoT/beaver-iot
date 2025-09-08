@@ -225,9 +225,9 @@ application:
 blueprint:
   repository:
     default_address:
-      home: https://github.com/pandalxb/beaver-iot-blueprint.git
+      home: https://github.com/zakersimonjack/beaver-iot-blueprint.git
       branch: main
-    sync_frequency: 20s
+    sync_frequency: 1d
 
 logging:
   level:
