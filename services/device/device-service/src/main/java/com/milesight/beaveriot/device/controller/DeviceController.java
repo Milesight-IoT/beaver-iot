@@ -1,7 +1,14 @@
 package com.milesight.beaveriot.device.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
+import com.milesight.beaveriot.context.api.CodecExecutorServiceProvider;
+import com.milesight.beaveriot.context.api.DeviceCodecExecutorProvider;
 import com.milesight.beaveriot.device.model.request.*;
 import com.milesight.beaveriot.device.model.response.DeviceDetailResponse;
 import com.milesight.beaveriot.device.model.response.DeviceResponseData;
@@ -13,6 +20,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Base64;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/device")
 public class DeviceController {
@@ -20,6 +30,8 @@ public class DeviceController {
     @Autowired
     DeviceService deviceService;
 
+    @Autowired
+    CodecExecutorServiceProvider codecExecutorServiceProvider;
     @OperationPermission(codes = OperationPermissionCode.DEVICE_ADD)
     @PostMapping
     public ResponseBody<String> createDevice(@RequestBody @Valid CreateDeviceRequest createDeviceRequest) {
@@ -29,8 +41,23 @@ public class DeviceController {
 
     @OperationPermission(codes = OperationPermissionCode.DEVICE_VIEW)
     @PostMapping("/search")
-    public ResponseBody<Page<DeviceResponseData>> searchDevice(@RequestBody @Valid SearchDeviceRequest searchDeviceRequest) {
+    public ResponseBody<Page<DeviceResponseData>> searchDevice(@RequestBody @Valid SearchDeviceRequest searchDeviceRequest) throws JsonProcessingException {
+        DeviceCodecExecutorProvider deviceCodecExecutor = codecExecutorServiceProvider.getDeviceCodecExecutor("milesight", "uc512_di");
+        testUplink(deviceCodecExecutor);
+        testDownload(deviceCodecExecutor);
         return ResponseBuilder.success(deviceService.searchDevice(searchDeviceRequest));
+    }
+
+    private void testUplink(DeviceCodecExecutorProvider deviceCodecExecutor) throws JsonProcessingException {
+        ObjectMapper JSON = JsonMapper.builder().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).build();
+        JsonNode json = JSON.readTree("{\"valve_1_pulse\":13}");
+        byte[] result = deviceCodecExecutor.encode(json, Map.of("fPort", 1));
+        System.out.println("-------------:" + Base64.getEncoder().encodeToString(result));
+    }
+
+    private void testDownload(DeviceCodecExecutorProvider deviceCodecExecutor) {
+        JsonNode result = deviceCodecExecutor.decode(Base64.getDecoder().decode("CXsAAAMBAATIAQAAAAUBAAbIQgAAAA=="), Map.of("fPort", 85));
+        System.out.println("-------------:" + result);
     }
 
     @OperationPermission(codes = OperationPermissionCode.DEVICE_EDIT)

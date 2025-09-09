@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 
@@ -67,6 +68,19 @@ public class BlueprintRepositoryResourceResolver implements BlueprintRepositoryR
             }
         }
         return null;
+    }
+
+    public String getDeviceTemplateContent(String vendor, String model) {
+        BlueprintDevice device = getDevice(vendor, model);
+        if (device == null) {
+            return null;
+        }
+
+        if (StringUtils.isEmpty(device.getDevice())) {
+            return null;
+        }
+
+        return getResourceContent(vendor, device.getDevice());
     }
 
     @Override
@@ -127,6 +141,33 @@ public class BlueprintRepositoryResourceResolver implements BlueprintRepositoryR
                 blueprintRepository.getCurrentVersion());
     }
 
+    public BlueprintDeviceCodecs getBlueprintDeviceCodecs(String vendor, String codecRelativePath) {
+        String codecsContent = getResourceContent(vendor, codecRelativePath);
+        return YamlConverter.from(codecsContent, BlueprintDeviceCodecs.class);
+    }
+
+    public BlueprintDeviceCodec getBlueprintDeviceCodec(String vendor, String codecRelativePath, String codecId) {
+        BlueprintDeviceCodecs blueprintDeviceCodecs = getBlueprintDeviceCodecs(vendor, codecRelativePath);
+        if (blueprintDeviceCodecs == null) {
+            return null;
+        }
+
+        if (CollectionUtils.isEmpty(blueprintDeviceCodecs.getCodecs())) {
+            return null;
+        }
+
+        if (codecId == null) {
+            return null;
+        }
+
+        for (BlueprintDeviceCodec eachCodec : blueprintDeviceCodecs.getCodecs()) {
+            if (codecId.equals(eachCodec.getId())) {
+                return eachCodec;
+            }
+        }
+        return null;
+    }
+
     public String getResourceContent(BlueprintRepository blueprintRepository, String vendor, String relativePath) {
         String workDir = getWorkDirByVendor(blueprintRepository, vendor);
         String resourcePath = getResourcePath(workDir, relativePath);
@@ -171,6 +212,10 @@ public class BlueprintRepositoryResourceResolver implements BlueprintRepositoryR
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public String getWorkDirByVendor(String vendor) {
+        return getWorkDirByVendor(blueprintRepositoryService.getCurrentBlueprintRepository(), vendor);
     }
 
     private String getWorkDirByVendor(BlueprintRepository blueprintRepository, String vendor) {

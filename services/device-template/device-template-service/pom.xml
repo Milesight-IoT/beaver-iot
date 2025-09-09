@@ -80,6 +80,11 @@
             <artifactId>device-service</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>blueprint-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
 </project>
