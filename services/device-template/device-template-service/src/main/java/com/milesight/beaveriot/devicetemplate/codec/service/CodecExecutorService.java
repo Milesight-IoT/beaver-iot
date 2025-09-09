@@ -1,8 +1,8 @@
 package com.milesight.beaveriot.devicetemplate.codec.service;
 
 import com.milesight.beaveriot.base.utils.StringUtils;
-import com.milesight.beaveriot.blueprint.component.BlueprintRepositoryResourceResolver;
-import com.milesight.beaveriot.blueprint.model.BlueprintDeviceCodec;
+import com.milesight.beaveriot.blueprint.library.component.BlueprintLibraryResourceResolver;
+import com.milesight.beaveriot.blueprint.library.model.BlueprintDeviceCodec;
 import com.milesight.beaveriot.context.api.CodecExecutorServiceProvider;
 import com.milesight.beaveriot.context.api.DeviceTemplateParserProvider;
 import com.milesight.beaveriot.context.model.DeviceTemplateModel;
@@ -22,17 +22,17 @@ import java.util.function.Supplier;
  **/
 @Service
 public class CodecExecutorService implements CodecExecutorServiceProvider {
-    private final BlueprintRepositoryResourceResolver blueprintRepositoryResourceResolver;
+    private final BlueprintLibraryResourceResolver blueprintLibraryResourceResolver;
     private final DeviceTemplateParserProvider deviceTemplateParserProvider;
 
-    public CodecExecutorService(BlueprintRepositoryResourceResolver blueprintRepositoryResourceResolver, DeviceTemplateParserProvider deviceTemplateParserProvider) {
-        this.blueprintRepositoryResourceResolver = blueprintRepositoryResourceResolver;
+    public CodecExecutorService(BlueprintLibraryResourceResolver blueprintLibraryResourceResolver, DeviceTemplateParserProvider deviceTemplateParserProvider) {
+        this.blueprintLibraryResourceResolver = blueprintLibraryResourceResolver;
         this.deviceTemplateParserProvider = deviceTemplateParserProvider;
     }
 
     @Override
     public DeviceCodecExecutorService getDeviceCodecExecutor(String vendor, String model) {
-        String deviceTemplateContent = blueprintRepositoryResourceResolver.getDeviceTemplateContent(vendor, model);
+        String deviceTemplateContent = blueprintLibraryResourceResolver.getDeviceTemplateContent(vendor, model);
         if (deviceTemplateContent == null) {
             return null;
         }
@@ -47,7 +47,7 @@ public class CodecExecutorService implements CodecExecutorServiceProvider {
             return null;
         }
 
-        BlueprintDeviceCodec blueprintDeviceCodec = blueprintRepositoryResourceResolver.getBlueprintDeviceCodec(vendor, codec.getRef(), codec.getId());
+        BlueprintDeviceCodec blueprintDeviceCodec = blueprintLibraryResourceResolver.getBlueprintDeviceCodec(vendor, codec.getRef(), codec.getId());
         if (blueprintDeviceCodec == null) {
             return null;
         }
@@ -76,7 +76,7 @@ public class CodecExecutorService implements CodecExecutorServiceProvider {
     private <T extends CodecExecutorChain> T createCodecExecutorChain(String vendor, Supplier<T> chainBuilder, List<BlueprintDeviceCodec.Codec> chain) {
         T codecExecutorChain = chainBuilder.get();
         for (BlueprintDeviceCodec.Codec codec : chain) {
-            String code = blueprintRepositoryResourceResolver.getResourceContent(vendor, codec.getScript());
+            String code = blueprintLibraryResourceResolver.getResourceContent(vendor, codec.getScript());
             if (StringUtils.isEmpty(code)) {
                 return null;
             }

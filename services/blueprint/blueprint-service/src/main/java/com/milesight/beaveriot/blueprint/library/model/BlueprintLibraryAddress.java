@@ -1,0 +1,102 @@
+package com.milesight.beaveriot.blueprint.library.model;
+
+import com.milesight.beaveriot.base.error.ErrorHolder;
+import com.milesight.beaveriot.base.utils.StringUtils;
+import com.milesight.beaveriot.blueprint.library.enums.BlueprintLibraryAddressErrorCode;
+import lombok.Data;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+
+/**
+ * author: Luxb
+ * create: 2025/9/1 10:03
+ **/
+@Data
+public class BlueprintLibraryAddress {
+    private String home;
+    private String branch;
+    private String key;
+
+    public void setHome(String home) {
+        this.home = home;
+        this.updateKey();
+    }
+
+    public void setBranch(String branch) {
+        this.branch = branch;
+        this.updateKey();
+    }
+
+    private void updateKey() {
+        key = String.format("%s@%s", home, branch);
+    }
+
+    public List<ErrorHolder> validate() {
+        List<ErrorHolder> errors = new ArrayList<>();
+        if (StringUtils.isEmpty(home)) {
+            errors.add(ErrorHolder.of(BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_HOME_EMPTY.getErrorCode(),
+                    BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_HOME_EMPTY.getErrorMessage()));
+            return errors;
+        }
+
+        if (StringUtils.isEmpty(branch)) {
+            errors.add(ErrorHolder.of(BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_BRANCH_EMPTY.getErrorCode(),
+                    BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_BRANCH_EMPTY.getErrorMessage()));
+            return errors;
+        }
+
+        if (!BlueprintLibraryAddressValidator.validateHome(home)) {
+            errors.add(ErrorHolder.of(BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_HOME_INVALID.getErrorCode(),
+                    BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_HOME_INVALID.formatMessage(BlueprintLibraryAddressValidator.REGEX_ADDRESS_HOME),
+                    Map.of(ExtraDataConstants.KEY_REGEX, BlueprintLibraryAddressValidator.REGEX_ADDRESS_HOME)));
+        }
+        return errors;
+    }
+
+    public String getRawManifestUrl() {
+        Matcher matcher = BlueprintLibraryAddressValidator.PATTERN_HOME.matcher(home);
+        if (matcher.matches()) {
+            String username = matcher.group(1);
+            String repository = matcher.group(2);
+            return String.format(Constants.FORMAT_MANIFEST,
+                    username, repository, branch);
+        } else {
+            return null;
+        }
+    }
+
+    public String getCodeZipUrl() {
+        Matcher matcher = BlueprintLibraryAddressValidator.PATTERN_HOME.matcher(home);
+        if (matcher.matches()) {
+            String username = matcher.group(1);
+            String repository = matcher.group(2);
+            return String.format(Constants.FORMAT_CODE_ZIP,
+                    username, repository, branch);
+        } else {
+            return null;
+        }
+    }
+
+    private static class ExtraDataConstants {
+        public static final String KEY_REGEX = "regex";
+    }
+
+    public static class Constants {
+        public static final String FORMAT_MANIFEST = "https://raw.githubusercontent.com/%s/%s/refs/heads/%s/manifest.yaml";
+        public static final String FORMAT_CODE_ZIP = "https://github.com/%s/%s/archive/refs/heads/%s.zip";
+    }
+
+    public static class BlueprintLibraryAddressValidator {
+        public static final String REGEX_ADDRESS_HOME = "^https://github\\.com/([a-zA-Z\\d](?:[a-zA-Z\\d]|-(?=[a-zA-Z\\d])){0,38})/([a-zA-Z\\d](?:[a-zA-Z\\d._-]*[a-zA-Z\\d])?)\\.git$";
+        public static final Pattern PATTERN_HOME = Pattern.compile(REGEX_ADDRESS_HOME);
+
+        public static boolean validateHome(String home) {
+            return home.matches(REGEX_ADDRESS_HOME);
+        }
+    }
+}

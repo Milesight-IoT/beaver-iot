@@ -223,7 +223,7 @@ application:
   version: ${beaver-iot.version}
 
 blueprint:
-  repository:
+  library:
     default_address:
       home: https://github.com/zakersimonjack/beaver-iot-blueprint.git
       branch: main

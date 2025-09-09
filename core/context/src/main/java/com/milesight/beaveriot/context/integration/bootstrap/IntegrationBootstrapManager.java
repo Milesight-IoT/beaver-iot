@@ -46,7 +46,7 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
     private final TenantServiceProvider tenantServiceProvider;
     private final EntityTemplateServiceProvider entityTemplateServiceProvider;
     private final ResourceFingerprintServiceProvider resourceFingerprintServiceProvider;
-    private final BlueprintRepositorySyncSchedulerProvider blueprintRepositorySyncSchedulerProvider;
+    private final BlueprintLibrarySyncSchedulerProvider blueprintLibrarySyncSchedulerProvider;
 
     public IntegrationBootstrapManager(ObjectProvider<EntityLoader> entityLoaders,
                                        ObjectProvider<IntegrationBootstrap> integrationBootstraps,
@@ -55,7 +55,7 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
                                        TenantServiceProvider tenantServiceProvider,
                                        EntityTemplateServiceProvider entityTemplateServiceProvider,
                                        ResourceFingerprintServiceProvider resourceFingerprintServiceProvider,
-                                       BlueprintRepositorySyncSchedulerProvider blueprintRepositorySyncSchedulerProvider) {
+                                       BlueprintLibrarySyncSchedulerProvider blueprintLibrarySyncSchedulerProvider) {
         this.entityLoaders = entityLoaders;
         this.integrationBootstrapList = integrationBootstraps;
         this.integrationStorageProvider = integrationStorageProvider;
@@ -63,7 +63,7 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
         this.tenantServiceProvider = tenantServiceProvider;
         this.entityTemplateServiceProvider = entityTemplateServiceProvider;
         this.resourceFingerprintServiceProvider = resourceFingerprintServiceProvider;
-        this.blueprintRepositorySyncSchedulerProvider = blueprintRepositorySyncSchedulerProvider;
+        this.blueprintLibrarySyncSchedulerProvider = blueprintLibrarySyncSchedulerProvider;
         this.propertySourceFactory = new YamlPropertySourceFactory();
     }
 
@@ -71,8 +71,8 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
         // Initialize entity templates before starting integrations
         initializeEntityTemplates();
 
-        // Start blueprint repository synchronization scheduled task
-        blueprintRepositorySyncSchedulerProvider.start();
+        // Start blueprint library synchronization scheduled task
+        blueprintLibrarySyncSchedulerProvider.start();
 
         // Add default integration: "system"
         integrationContext.cacheIntegration(

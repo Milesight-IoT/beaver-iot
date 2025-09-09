@@ -29,7 +29,7 @@ public class IntegrationAutoConfiguration {
                                                                    TenantServiceProvider tenantServiceProvider,
                                                                    EntityTemplateServiceProvider entityTemplateServiceProvider,
                                                                    ResourceFingerprintServiceProvider resourceFingerprintServiceProvider,
-                                                                   BlueprintRepositorySyncSchedulerProvider blueprintRepositorySyncSchedulerProvider) {
+                                                                   BlueprintLibrarySyncSchedulerProvider blueprintLibrarySyncSchedulerProvider) {
         return new IntegrationBootstrapManager(entityLoaders,
                 integrationBootstraps,
                 integrationStorageProvider,
@@ -37,7 +37,7 @@ public class IntegrationAutoConfiguration {
                 tenantServiceProvider,
                 entityTemplateServiceProvider,
                 resourceFingerprintServiceProvider,
-                blueprintRepositorySyncSchedulerProvider);
+                blueprintLibrarySyncSchedulerProvider);
     }
 
     @Bean
