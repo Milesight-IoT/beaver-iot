@@ -8,6 +8,7 @@ import lombok.Getter;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * author: Luxb
@@ -15,8 +16,10 @@ import java.util.List;
  **/
 @Data
 public class DeviceTemplateModel {
+    private Map<String, Object> metadata;
     private Definition definition;
     private List<EntityConfig> initialEntities;
+    private Codec codec;
 
     @Getter
     public enum JsonType {
@@ -82,5 +85,11 @@ public class DeviceTemplateModel {
             private Object value;
             private List<OutputJsonObject> properties;
         }
+    }
+
+    @Data
+    public static class Codec {
+        private String id;
+        private String ref;
     }
 }

@@ -4,6 +4,7 @@ import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.DeviceServiceProvider;
+import com.milesight.beaveriot.context.api.DeviceStatusServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.event.DeviceEvent;
@@ -13,11 +14,14 @@ import com.milesight.beaveriot.device.constants.DeviceDataFieldConstants;
 import com.milesight.beaveriot.device.po.DevicePO;
 import com.milesight.beaveriot.device.repository.DeviceRepository;
 import com.milesight.beaveriot.device.support.DeviceConverter;
+import com.milesight.beaveriot.device.support.CommonDeviceAssembler;
 import com.milesight.beaveriot.eventbus.EventBus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
 import java.util.List;
@@ -45,6 +49,13 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
 
     @Autowired
     DeviceGroupService deviceGroupService;
+
+    @Autowired
+    CommonDeviceAssembler commonDeviceAssembler;
+
+    @Lazy
+    @Autowired
+    DeviceStatusServiceProvider deviceStatusServiceProvider;
 
     @Override
     public void save(Device device) {
@@ -119,6 +130,9 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
 
         device.setId(devicePO.getId());
 
+        // assemble device with common entities
+        commonDeviceAssembler.assemble(device);
+
         entityServiceProvider.batchSave(device.getEntities());
 
         deviceService.evictIntegrationIdToDeviceCache(device.getIntegrationId());
@@ -133,6 +147,7 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
         Device device = findById(id);
         Assert.notNull(device, "Delete failed. Cannot find device " + id.toString());
         deviceService.deleteDevice(device);
+        deviceStatusServiceProvider.deviceDeleted(device);
     }
 
     @Override
@@ -216,7 +231,16 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
 
     @Override
     public void deleteByDeviceTemplateKey(String deviceTemplateKey) {
-        deviceRepository.deleteAllByTemplate(deviceTemplateKey);
+        List<DevicePO> devicePOs = deviceRepository.findAllByTemplate(deviceTemplateKey);
+        if (CollectionUtils.isEmpty(devicePOs)) {
+            return;
+        }
+
+        List<Device> devices = deviceConverter.convertPO(devicePOs);
+        devices.forEach(device -> {
+            deviceService.deleteDevice(device);
+            deviceStatusServiceProvider.deviceDeleted(device);
+        });
     }
 
     @Override

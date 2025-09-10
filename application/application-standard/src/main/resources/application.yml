@@ -2,6 +2,9 @@ server:
   port: 9200
 
 spring:
+  config:
+    import:
+      - optional:classpath:entity-template.yml
   main:
     allow-bean-definition-overriding: true
   jackson:
@@ -215,6 +218,16 @@ resource:
     access_key: ${RESOURCE_STORAGE_S3_ACCESS_KEY:}
     access_secret: ${RESOURCE_STORAGE_S3_ACCESS_SECRET:}
     bucket: ${RESOURCE_STORAGE_S3_BUCKET:}
+
+application:
+  version: ${beaver-iot.version}
+
+blueprint:
+  library:
+    default_address:
+      home: https://github.com/zakersimonjack/beaver-iot-blueprint.git
+      branch: main
+    sync_frequency: 1d
 
 logging:
   level:
