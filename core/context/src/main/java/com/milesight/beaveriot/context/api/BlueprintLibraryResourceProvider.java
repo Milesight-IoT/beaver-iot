@@ -11,7 +11,11 @@ import java.util.List;
  **/
 public interface BlueprintLibraryResourceProvider {
     List<BlueprintDeviceVendor> getDeviceVendors();
+    BlueprintDeviceVendor getDeviceVendor(String vendor);
     List<BlueprintDevice> getDevices(String vendor);
     BlueprintDevice getDevice(String vendor, String model);
     String getResourceContent(String vendor, String relativePath);
+    String getResourceContent(String resourcePath);
+    String getResourcePath(String basePath, String relativePath);
+    String getDeviceTemplateContent(String vendor, String model);
 }

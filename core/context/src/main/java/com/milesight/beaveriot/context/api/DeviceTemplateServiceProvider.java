@@ -22,6 +22,8 @@ public interface DeviceTemplateServiceProvider {
 
     DeviceTemplate findByKey(String deviceTemplateKey);
 
+    DeviceTemplate findByVendorAndModel(String vendor, String model);
+
     List<DeviceTemplate> findByKeys(List<String> deviceTemplateKey);
 
     DeviceTemplate findByIdentifier(String identifier, String integrationId);

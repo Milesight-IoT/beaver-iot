@@ -43,6 +43,25 @@ public class BlueprintLibraryResourceResolver implements BlueprintLibraryResourc
     }
 
     @Override
+    public BlueprintDeviceVendor getDeviceVendor(String vendor) {
+        if (vendor == null) {
+            return null;
+        }
+
+        List<BlueprintDeviceVendor> deviceVendors = self().getDeviceVendors();
+        if (deviceVendors == null) {
+            return null;
+        }
+
+        for (BlueprintDeviceVendor eachVendor : deviceVendors) {
+            if (vendor.equals(eachVendor.getId())) {
+                return eachVendor;
+            }
+        }
+        return null;
+    }
+
+    @Override
     public List<BlueprintDevice> getDevices(String vendor) {
         try {
             return self().getDevices(blueprintLibraryService.getCurrentBlueprintLibrary(), vendor);
@@ -70,6 +89,7 @@ public class BlueprintLibraryResourceResolver implements BlueprintLibraryResourc
         return null;
     }
 
+    @Override
     public String getDeviceTemplateContent(String vendor, String model) {
         BlueprintDevice device = getDevice(vendor, model);
         if (device == null) {
@@ -178,7 +198,8 @@ public class BlueprintLibraryResourceResolver implements BlueprintLibraryResourc
         return SpringContext.getBean(BlueprintLibraryResourceResolver.class);
     }
 
-    private String getResourcePath(String basePath, String relativePath) {
+    @Override
+    public String getResourcePath(String basePath, String relativePath) {
         if (StringUtils.isEmpty(basePath) || StringUtils.isEmpty(relativePath)) {
             return null;
         }
@@ -233,6 +254,11 @@ public class BlueprintLibraryResourceResolver implements BlueprintLibraryResourc
             return null;
         }
         return YamlConverter.from(content, BlueprintLibraryManifest.class);
+    }
+
+    @Override
+    public String getResourceContent(String resourcePath) {
+        return getResourceContent(blueprintLibraryService.getCurrentBlueprintLibrary(), resourcePath);
     }
 
     private String getResourceContent(BlueprintLibrary blueprintLibrary, String resourcePath) {

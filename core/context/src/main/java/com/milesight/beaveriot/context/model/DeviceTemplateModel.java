@@ -2,9 +2,11 @@ package com.milesight.beaveriot.context.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.context.integration.model.config.EntityConfig;
 import lombok.Data;
 import lombok.Getter;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -20,6 +22,7 @@ public class DeviceTemplateModel {
     private Definition definition;
     private List<EntityConfig> initialEntities;
     private Codec codec;
+    private Blueprint blueprint;
 
     @Getter
     public enum JsonType {
@@ -91,5 +94,48 @@ public class DeviceTemplateModel {
     public static class Codec {
         private String id;
         private String ref;
+    }
+
+    @Data
+    public static class Blueprint {
+        private String dir;
+        private Map<String, Value> values;
+
+        @Data
+        public static class Value {
+            public static final String TYPE_ENTITY = "entity";
+            private String type;
+            private String identifier;
+            private Object value;
+
+            public boolean validate() {
+                if (StringUtils.isEmpty(type)) {
+                    return false;
+                }
+
+                if (TYPE_ENTITY.equals(type)) {
+                    return !StringUtils.isEmpty(identifier);
+                }
+
+                return value != null;
+            }
+        }
+
+        public boolean validate() {
+            if (StringUtils.isEmpty(dir)) {
+                return false;
+            }
+
+            if (CollectionUtils.isEmpty(values)) {
+                return false;
+            }
+
+            for (Value value : values.values()) {
+                if (!value.validate()) {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 }

@@ -33,6 +33,12 @@ public class DeviceTemplate implements IdentityKey {
     @Setter
     private Long updatedAt;
 
+    @Setter
+    private String vendor;
+
+    @Setter
+    private String model;
+
     protected DeviceTemplate() {
     }
 
