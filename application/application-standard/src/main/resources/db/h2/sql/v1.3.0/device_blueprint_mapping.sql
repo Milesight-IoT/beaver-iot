@@ -11,5 +11,4 @@ CREATE TABLE `t_device_blueprint_mapping` (
     CONSTRAINT uk_device_blueprint_mapping_device_id_blueprint_id UNIQUE (device_id, blueprint_id)
 );
 
-CREATE INDEX idx_device_blueprint_mapping_device_id ON `t_device_blueprint_mapping` (device_id);
 CREATE INDEX idx_device_blueprint_mapping_tenant_id ON `t_device_blueprint_mapping` (tenant_id);
