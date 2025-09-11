@@ -13,6 +13,7 @@ public enum OperationPermissionCode implements MenuItem {
     DASHBOARD_VIEW(1001L, "dashboard.view", MenuCode.DASHBOARD),
     DASHBOARD_ADD(1002L, "dashboard.add", MenuCode.DASHBOARD),
     DASHBOARD_EDIT(1003L, "dashboard.edit", MenuCode.DASHBOARD),
+    DASHBOARD_DELETE(1004L, "dashboard.delete", MenuCode.DASHBOARD),
 
     DEVICE_VIEW(2001L, "device.view", MenuCode.DEVICE),
     DEVICE_ADD(2002L, "device.add", MenuCode.DEVICE),

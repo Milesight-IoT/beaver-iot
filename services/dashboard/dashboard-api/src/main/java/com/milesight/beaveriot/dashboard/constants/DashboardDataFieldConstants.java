@@ -8,10 +8,7 @@ package com.milesight.beaveriot.dashboard.constants;
  */
 public class DashboardDataFieldConstants {
     private DashboardDataFieldConstants() {}
+    public static final int DASHBOARD_NAME_MAX_LENGTH = 25;
 
-    public static final int WIDGET_MAX_DATA_SIZE = 50 * 1024; // 50KB
-
-    public static final int WIDGET_MAX_COUNT_PER_DASHBOARD = 120;
-
-    public static final int ENTITY_MAX_COUNT_PER_DASHBOARD = 1000;
+    public static final int DASHBOARD_DESCRIPTION_MAX_LENGTH = 64;
 }

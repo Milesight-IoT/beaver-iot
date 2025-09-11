@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 public enum DashboardErrorCode implements ErrorCodeSpec {
 
     DASHBOARD_NAME_EXIST,
+    DASHBOARD_PRESET_COVER_NOT_EXIST,
     ;
 
     private final String errorCode;
