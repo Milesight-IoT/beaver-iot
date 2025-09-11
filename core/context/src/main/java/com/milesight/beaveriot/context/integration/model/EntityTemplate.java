@@ -4,6 +4,7 @@ import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
+import com.milesight.beaveriot.context.support.function.SpELTemplateEvaluator;
 import lombok.Data;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
@@ -55,6 +56,8 @@ public class EntityTemplate {
     }
 
     public Entity toEntity(String name, String description, String integrationId, String deviceKey) {
+        renderSelf();
+
         String entityName = StringUtils.isEmpty(name) ? this.name : name;
         String entityDescription = StringUtils.isEmpty(description) ? this.description : description;
 
@@ -79,6 +82,20 @@ public class EntityTemplate {
             }).toList());
         }
         return entityBuilder.build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void renderSelf() {
+        SpELTemplateEvaluator evaluator = SpELTemplateEvaluator.getInstance();
+        name = (String) evaluator.evaluate(name);
+        description = (String) evaluator.evaluate(description);
+        if (attributes != null && attributes.get(AttributeBuilder.ATTRIBUTE_ENUM) != null) {
+            Map<String, String> enums = (Map<String, String>) attributes.get(AttributeBuilder.ATTRIBUTE_ENUM);
+            enums.forEach((key, value) -> {
+                String newValue = (String) evaluator.evaluate(value);
+                enums.put(key, newValue);
+            });
+        }
     }
 
     public void addChild(EntityTemplate child) {
