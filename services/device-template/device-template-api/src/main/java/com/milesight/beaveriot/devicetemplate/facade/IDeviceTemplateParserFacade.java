@@ -15,7 +15,9 @@ public interface IDeviceTemplateParserFacade {
     String defaultContent();
     DeviceTemplateModel parse(String deviceTemplateContent);
     DeviceTemplateInputResult input(String integration, Long deviceTemplateId, Object data);
+    DeviceTemplateInputResult input(String integration, Long deviceTemplateId, String deviceIdentifier, String deviceName, Object data);
     DeviceTemplateInputResult input(String integration, Long deviceTemplateId, Object data, Map<String, Object> codecArgContext);
+    DeviceTemplateInputResult input(String integration, Long deviceTemplateId, String deviceIdentifier, String deviceName, Object data, Map<String, Object> codecArgContext);
     DeviceTemplateInputResult input(String deviceKey, Object data, Map<String, Object> codecArgContext);
     DeviceTemplateOutputResult output(String deviceKey, ExchangePayload payload);
     DeviceTemplateOutputResult output(String deviceKey, ExchangePayload payload, Map<String, Object> codecArgContext);

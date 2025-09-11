@@ -42,8 +42,18 @@ public class DeviceTemplateParserProviderImpl implements DeviceTemplateParserPro
     }
 
     @Override
+    public DeviceTemplateInputResult input(String integration, Long deviceTemplateId, String deviceIdentifier, String deviceName, Object data) {
+        return deviceTemplateParser.input(integration, deviceTemplateId, deviceIdentifier, deviceName, data);
+    }
+
+    @Override
     public DeviceTemplateInputResult input(String integration, Long deviceTemplateId, Object data, Map<String, Object> codecArgContext) {
         return deviceTemplateParser.input(integration, deviceTemplateId, data, codecArgContext);
+    }
+
+    @Override
+    public DeviceTemplateInputResult input(String integration, Long deviceTemplateId, String deviceIdentifier, String deviceName, Object data, Map<String, Object> codecArgContext) {
+        return deviceTemplateParser.input(integration, deviceTemplateId, deviceIdentifier, deviceName, data, codecArgContext);
     }
 
     @Override
