@@ -318,11 +318,14 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             // Build device and device entities
             device = buildDeviceAndDeviceEntities(integration, deviceIdentifier, deviceName, deviceTemplate, deviceTemplateModel);
 
-            if (deviceTemplateModel.getBlueprint() != null) {
-                Device existDevice = deviceServiceProvider.findByKey(device.getKey());
-                if (existDevice != null) {
-                    device.setName(existDevice.getName());
-                }
+            Device existDevice = deviceServiceProvider.findByKey(device.getKey());
+            if (existDevice != null) {
+                device.setId(existDevice.getId());
+                device.setName(existDevice.getName());
+            }
+
+            DeviceTemplateModel.Blueprint blueprint = deviceTemplateModel.getBlueprint();
+            if (blueprint != null) {
                 // Save device
                 deviceServiceProvider.save(device);
 

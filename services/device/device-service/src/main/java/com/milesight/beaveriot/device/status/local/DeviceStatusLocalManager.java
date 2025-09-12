@@ -2,9 +2,9 @@ package com.milesight.beaveriot.device.status.local;
 
 import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
+import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
-import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.device.status.BaseDeviceStatusManager;
 import com.milesight.beaveriot.device.status.DeviceStatusManager;
 import org.springframework.util.CollectionUtils;
@@ -22,18 +22,21 @@ public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements
     private final ScheduledExecutorService scheduler;
     private final Map<Long, ScheduledFuture<?>> deviceTimerFutures = new ConcurrentHashMap<>();
 
-    public DeviceStatusLocalManager(DeviceServiceProvider deviceServiceProvider, EntityServiceProvider entityServiceProvider, EntityValueServiceProvider entityValueServiceProvider) {
-        super(deviceServiceProvider, entityServiceProvider, entityValueServiceProvider);
+    public DeviceStatusLocalManager(DeviceServiceProvider deviceServiceProvider,
+                                    EntityServiceProvider entityServiceProvider,
+                                    EntityValueServiceProvider entityValueServiceProvider,
+                                    EntityTemplateServiceProvider entityTemplateServiceProvider) {
+        super(deviceServiceProvider, entityServiceProvider, entityValueServiceProvider, entityTemplateServiceProvider);
         this.scheduler = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors() * 2);
     }
 
     @Override
-    protected void init() {
+    protected void onInit() {
 
     }
 
     @Override
-    protected void destroy() {
+    protected void onDestroy() {
         deviceTimerFutures.values().forEach(future -> future.cancel(true));
         scheduler.shutdown();
     }
@@ -50,16 +53,17 @@ public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements
     }
 
     @Override
-    public void dataUploaded(Device device, ExchangePayload payload) {
-        cancelOfflineCountdown(device);
-
+    public void online(Device device) {
         AvailableDeviceData availableDeviceData = getAvailableDeviceDataByDeviceId(device.getId());
         if (availableDeviceData == null) {
+            updateDeviceStatusToOnline(device);
             return;
         }
 
+        cancelOfflineCountdown(device);
+
         DeviceStatusConfig config = availableDeviceData.getDeviceStatusConfig();
-        config.getOnlineUpdater().accept(device, payload);
+        config.getOnlineUpdater().accept(device);
 
         long offlineSeconds = getDeviceOfflineSeconds(device, config);
         long expirationTime = System.currentTimeMillis() + offlineSeconds * 1000;
@@ -99,7 +103,7 @@ public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements
     }
 
     @Override
-    public void deviceDeleted(Device device) {
+    public void deregister(Device device) {
         cancelOfflineCountdown(device);
     }
 }

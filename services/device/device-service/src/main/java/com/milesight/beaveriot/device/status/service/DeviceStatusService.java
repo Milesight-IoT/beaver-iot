@@ -1,12 +1,9 @@
 package com.milesight.beaveriot.device.status.service;
 
 import com.milesight.beaveriot.context.integration.model.Device;
-import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.device.status.DeviceStatusManager;
 import org.springframework.stereotype.Service;
 
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -21,35 +18,19 @@ public class DeviceStatusService {
         this.deviceStatusManager = deviceStatusManager;
     }
 
-    public void register(String integrationId) {
-        deviceStatusManager.register(integrationId);
+    public void register(String integrationId, Function<Device, Long> offlineTimeoutFetcher) {
+        deviceStatusManager.register(integrationId, offlineTimeoutFetcher);
     }
 
-    public void register(String integrationId, Function<Device, Long> offlineSecondsFetcher) {
-        deviceStatusManager.register(integrationId, offlineSecondsFetcher);
+    public void deregister(Device device) {
+        deviceStatusManager.deregister(device);
     }
 
-    public void register(String integrationId, BiConsumer<Device, ExchangePayload> onlineUpdater, Consumer<Device> offlineUpdater, Function<Device, Long> offlineSecondsFetcher) {
-        deviceStatusManager.register(integrationId, onlineUpdater, offlineUpdater, offlineSecondsFetcher);
+    public void online(Device device) {
+        deviceStatusManager.online(device);
     }
 
-    public void dataUploaded(Device device) {
-        deviceStatusManager.dataUploaded(device);
-    }
-
-    public void dataUploaded(Device device, ExchangePayload payload) {
-        deviceStatusManager.dataUploaded(device, payload);
-    }
-
-    public void updateDeviceStatusToOnline(Device device) {
-        deviceStatusManager.updateDeviceStatusToOnline(device);
-    }
-
-    public void updateDeviceStatusToOffline(Device device) {
-        deviceStatusManager.updateDeviceStatusToOffline(device);
-    }
-
-    public void deviceDeleted(Device device) {
-        deviceStatusManager.deviceDeleted(device);
+    public void offline(Device device) {
+        deviceStatusManager.offline(device);
     }
 }
