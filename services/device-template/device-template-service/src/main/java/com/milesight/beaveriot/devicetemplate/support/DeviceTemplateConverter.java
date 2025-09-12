@@ -26,6 +26,8 @@ public class DeviceTemplateConverter {
                     .identifier(deviceTemplatePO.getIdentifier())
                     .id(deviceTemplatePO.getId())
                     .additional(deviceTemplatePO.getAdditionalData())
+                    .vendor(deviceTemplatePO.getVendor())
+                    .model(deviceTemplatePO.getModel())
                     .build();
             deviceTemplate.setCreatedAt(deviceTemplatePO.getCreatedAt());
             deviceTemplate.setUpdatedAt(deviceTemplatePO.getUpdatedAt());

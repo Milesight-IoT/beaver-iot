@@ -89,10 +89,14 @@ public class CodecExecutor {
                 args.add(convertArg(context, data));
                 payloadCount++;
             } else {
-                if (!argContext.containsKey(argument.getId())) {
-                    throw new IllegalArgumentException("ArgContext cannot find id: " + argument.getId());
+                if (argContext == null) {
+                    args.add(null);
+                } else {
+                    if (!argContext.containsKey(argument.getId())) {
+                        throw new IllegalArgumentException("ArgContext cannot find id: " + argument.getId());
+                    }
+                    args.add(convertArg(context, argContext.get(argument.getId())));
                 }
-                args.add(convertArg(context, argContext.get(argument.getId())));
             }
         }
 

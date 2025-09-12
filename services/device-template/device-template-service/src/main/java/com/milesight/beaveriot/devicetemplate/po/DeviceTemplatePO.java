@@ -56,4 +56,10 @@ public class DeviceTemplatePO {
     @Column(name = "updated_at")
     @LastModifiedDate
     private Long updatedAt;
+
+    @Column(name = "vendor")
+    private String vendor;
+
+    @Column(name = "model")
+    private String model;
 }

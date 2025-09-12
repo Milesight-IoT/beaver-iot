@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
 import java.util.*;
@@ -72,7 +73,7 @@ public class DeviceTemplateServiceProviderImpl implements DeviceTemplateServiceP
             }
         }
 
-        // set device data
+        // set device template data
         if (!deviceTemplate.getName().equals(deviceTemplatePO.getName())) {
             deviceTemplatePO.setName(deviceTemplate.getName());
             shouldUpdate = true;
@@ -88,6 +89,16 @@ public class DeviceTemplateServiceProviderImpl implements DeviceTemplateServiceP
 
         if (!deviceTemplateAdditionalDataEqual(deviceTemplate.getAdditional(), deviceTemplatePO.getAdditionalData())) {
             deviceTemplatePO.setAdditionalData(deviceTemplate.getAdditional());
+            shouldUpdate = true;
+        }
+
+        if (!Objects.equals(deviceTemplate.getVendor(), deviceTemplatePO.getVendor())) {
+            deviceTemplatePO.setVendor(deviceTemplate.getVendor());
+            shouldUpdate = true;
+        }
+
+        if (!Objects.equals(deviceTemplate.getModel(), deviceTemplatePO.getModel())) {
+            deviceTemplatePO.setModel(deviceTemplate.getModel());
             shouldUpdate = true;
         }
 
@@ -179,6 +190,16 @@ public class DeviceTemplateServiceProviderImpl implements DeviceTemplateServiceP
                 )
                 .map(deviceTemplateConverter::convertPO)
                 .orElse(null);
+    }
+
+    @Override
+    public DeviceTemplate findByVendorAndModel(String vendor, String model) {
+        List<DeviceTemplatePO> deviceTemplatePOs = deviceTemplateRepository.findByVendorAndModel(vendor, model);
+        if (CollectionUtils.isEmpty(deviceTemplatePOs)) {
+            return null;
+        }
+
+        return deviceTemplateConverter.convertPO(deviceTemplatePOs.get(0));
     }
 
     @Override

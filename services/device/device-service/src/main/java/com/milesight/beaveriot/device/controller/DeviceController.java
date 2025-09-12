@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/device")
 public class DeviceController {
-
     @Autowired
     DeviceService deviceService;
 

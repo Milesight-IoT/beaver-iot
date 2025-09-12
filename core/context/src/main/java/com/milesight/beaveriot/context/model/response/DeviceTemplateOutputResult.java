@@ -8,5 +8,5 @@ import lombok.Data;
  **/
 @Data
 public class DeviceTemplateOutputResult {
-    private String output;
+    private Object output;
 }

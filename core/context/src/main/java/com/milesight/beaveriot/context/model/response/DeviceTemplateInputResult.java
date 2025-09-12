@@ -12,4 +12,5 @@ import lombok.Data;
 public class DeviceTemplateInputResult {
     private Device device;
     private ExchangePayload payload;
+    private boolean isDeviceAutoSaved = false;
 }

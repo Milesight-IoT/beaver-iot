@@ -16,6 +16,8 @@ import java.util.function.Consumer;
 public interface DeviceTemplateRepository extends BaseJpaRepository<DeviceTemplatePO, Long> {
     List<DeviceTemplatePO> findByIdIn(List<Long> ids);
 
+    List<DeviceTemplatePO> findByVendorAndModel(String vendor, String model);
+
     @Query("SELECT r.integration, COUNT(r) FROM DeviceTemplatePO r WHERE r.integration IN :integrations GROUP BY r.integration")
     List<Object[]> countByIntegrations(@Param("integrations") List<String> integrations);
 
