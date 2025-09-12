@@ -49,6 +49,7 @@
         <module>resource-manager</module>
         <module>device-template</module>
         <module>entity-template</module>
+        <module>canvas</module>
     </modules>
 
     <properties>

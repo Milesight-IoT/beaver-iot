@@ -4,6 +4,7 @@ import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
+import com.milesight.beaveriot.permission.service.PermissionService;
 import com.milesight.beaveriot.user.dto.MenuDTO;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.aspectj.lang.JoinPoint;
@@ -32,6 +33,9 @@ public class OperationPermissionAspect {
     @Autowired
     IUserFacade userFacade;
 
+    @Autowired
+    PermissionService permissionService;
+
     @Pointcut("@annotation(OperationPermission)")
     public void pointCut() {
     }
@@ -41,22 +45,7 @@ public class OperationPermissionAspect {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         OperationPermission operationPermission = signature.getMethod().getAnnotation(OperationPermission.class);
         if (operationPermission != null) {
-            OperationPermissionCode[] codes = operationPermission.codes();
-            if (codes != null && codes.length > 0) {
-                Long userId = SecurityUserContext.getUserId();
-                if (userId == null) {
-                    throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not logged in").build();
-                }
-                List<MenuDTO> menuDTOList = userFacade.getMenusByUserId(userId);
-                if (menuDTOList == null || menuDTOList.isEmpty()) {
-                    throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have permission").build();
-                }
-                List<String> operationPermissionCodes = Arrays.stream(codes).map(OperationPermissionCode::getCode).toList();
-                boolean hasPermission = menuDTOList.stream().anyMatch(menuDTO -> operationPermissionCodes.contains(menuDTO.getMenuCode()));
-                if (!hasPermission) {
-                    throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have permission").build();
-                }
-            }
+            permissionService.checkMenuPermission(operationPermission.codes());
         }
     }
 }

@@ -3,8 +3,10 @@ package com.milesight.beaveriot.device.controller;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.device.model.request.*;
+import com.milesight.beaveriot.device.model.response.DeviceCanvasResponse;
 import com.milesight.beaveriot.device.model.response.DeviceDetailResponse;
 import com.milesight.beaveriot.device.model.response.DeviceResponseData;
+import com.milesight.beaveriot.device.service.DeviceCanvasService;
 import com.milesight.beaveriot.device.service.DeviceService;
 import com.milesight.beaveriot.permission.aspect.OperationPermission;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
@@ -19,6 +21,9 @@ public class DeviceController {
 
     @Autowired
     DeviceService deviceService;
+
+    @Autowired
+    DeviceCanvasService deviceCanvasService;
 
     @OperationPermission(codes = OperationPermissionCode.DEVICE_ADD)
     @PostMapping
@@ -58,5 +63,11 @@ public class DeviceController {
     public ResponseBody<Void> updateDevice(@RequestBody @Valid MoveDeviceToGroupRequest request) {
         deviceService.moveDeviceToGroup(request);
         return ResponseBuilder.success();
+    }
+
+    @OperationPermission(codes = OperationPermissionCode.DEVICE_VIEW)
+    @GetMapping("/{deviceId}/canvas")
+    public ResponseBody<DeviceCanvasResponse> getDeviceCanvas(@PathVariable("deviceId") Long deviceId) {
+        return ResponseBuilder.success(deviceCanvasService.getOrCreateDeviceCanvas(deviceId));
     }
 }

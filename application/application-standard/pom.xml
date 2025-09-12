@@ -136,6 +136,11 @@
         </dependency>
         <dependency>
             <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>canvas-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
             <artifactId>authentication-service</artifactId>
             <version>${project.version}</version>
         </dependency>

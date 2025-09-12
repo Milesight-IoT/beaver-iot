@@ -1,10 +1,7 @@
 package com.milesight.beaveriot.dashboard.po;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.milesight.beaveriot.dashboard.enums.DashboardCoverType;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.DynamicInsert;
@@ -29,6 +26,11 @@ public class DashboardPO {
     private String tenantId;
     private Long userId;
     private String name;
+    private Long mainCanvasId;
+    private String description;
+    @Enumerated(EnumType.STRING)
+    private DashboardCoverType coverType;
+    private String coverData;
     @CreatedDate
     private Long createdAt;
     @LastModifiedDate

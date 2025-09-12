@@ -1,8 +1,9 @@
 package com.milesight.beaveriot.dashboard.convert;
 
+import com.milesight.beaveriot.canvas.model.CanvasDTO;
 import com.milesight.beaveriot.dashboard.dto.DashboardDTO;
+import com.milesight.beaveriot.dashboard.model.response.DashboardCanvasItemResponse;
 import com.milesight.beaveriot.dashboard.model.response.DashboardListItemResponse;
-import com.milesight.beaveriot.dashboard.model.response.DashboardResponse;
 import com.milesight.beaveriot.dashboard.po.DashboardPO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -22,9 +23,6 @@ public interface DashboardConvert {
     @Mapping(source = "id", target = "dashboardId")
     DashboardListItemResponse convertListItemResponse(DashboardPO dashboardPO);
 
-    @Mapping(source = "id", target = "dashboardId")
-    DashboardResponse convertResponse(DashboardPO dashboardPO);
-
     List<DashboardListItemResponse> convertResponseList(List<DashboardPO> dashboardPOList);
 
     @Mapping(source = "id", target = "dashboardId")
@@ -32,5 +30,9 @@ public interface DashboardConvert {
     DashboardDTO convertDTO(DashboardPO dashboardPO);
 
     List<DashboardDTO> convertDTOList(List<DashboardPO> dashboardPOList);
+
+    @Mapping(source = "id", target = "canvasId")
+    @Mapping(target = "id", ignore = true)
+    DashboardCanvasItemResponse convertCanvasResponse(CanvasDTO canvasDTOList);
 
 }
