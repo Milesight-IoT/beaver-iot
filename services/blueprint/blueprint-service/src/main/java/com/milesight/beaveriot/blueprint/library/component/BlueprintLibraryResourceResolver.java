@@ -28,7 +28,7 @@ public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResour
     private final BlueprintLibraryService blueprintLibraryService;
     private final BlueprintLibraryResourceService blueprintLibraryResourceService;
 
-    public BlueprintLibraryResourceResolver(BlueprintLibraryService blueprintLibraryService, com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryResourceService blueprintLibraryResourceService) {
+    public BlueprintLibraryResourceResolver(BlueprintLibraryService blueprintLibraryService, BlueprintLibraryResourceService blueprintLibraryResourceService) {
         this.blueprintLibraryService = blueprintLibraryService;
         this.blueprintLibraryResourceService = blueprintLibraryResourceService;
     }
