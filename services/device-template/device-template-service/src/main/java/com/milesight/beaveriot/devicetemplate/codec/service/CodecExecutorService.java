@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.devicetemplate.codec.service;
 
 import com.milesight.beaveriot.base.utils.StringUtils;
-import com.milesight.beaveriot.blueprint.library.component.BlueprintLibraryResourceResolverResolver;
+import com.milesight.beaveriot.blueprint.library.component.BlueprintLibraryResourceResolver;
 import com.milesight.beaveriot.blueprint.library.model.BlueprintDeviceCodec;
 import com.milesight.beaveriot.context.api.CodecExecutorServiceProvider;
 import com.milesight.beaveriot.context.api.DeviceTemplateParserProvider;
@@ -22,10 +22,10 @@ import java.util.function.Supplier;
  **/
 @Service
 public class CodecExecutorService implements CodecExecutorServiceProvider {
-    private final BlueprintLibraryResourceResolverResolver blueprintLibraryResourceResolver;
+    private final BlueprintLibraryResourceResolver blueprintLibraryResourceResolver;
     private final DeviceTemplateParserProvider deviceTemplateParserProvider;
 
-    public CodecExecutorService(BlueprintLibraryResourceResolverResolver blueprintLibraryResourceResolver, DeviceTemplateParserProvider deviceTemplateParserProvider) {
+    public CodecExecutorService(BlueprintLibraryResourceResolver blueprintLibraryResourceResolver, DeviceTemplateParserProvider deviceTemplateParserProvider) {
         this.blueprintLibraryResourceResolver = blueprintLibraryResourceResolver;
         this.deviceTemplateParserProvider = deviceTemplateParserProvider;
     }

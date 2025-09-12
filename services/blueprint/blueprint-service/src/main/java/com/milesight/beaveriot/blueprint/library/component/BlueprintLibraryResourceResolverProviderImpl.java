@@ -13,9 +13,9 @@ import java.util.List;
  **/
 @Service
 public class BlueprintLibraryResourceResolverProviderImpl implements BlueprintLibraryResourceResolverProvider {
-    private final BlueprintLibraryResourceResolverResolver blueprintLibraryResourceResolver;
+    private final BlueprintLibraryResourceResolver blueprintLibraryResourceResolver;
 
-    public BlueprintLibraryResourceResolverProviderImpl(BlueprintLibraryResourceResolverResolver blueprintLibraryResourceResolver) {
+    public BlueprintLibraryResourceResolverProviderImpl(BlueprintLibraryResourceResolver blueprintLibraryResourceResolver) {
         this.blueprintLibraryResourceResolver = blueprintLibraryResourceResolver;
     }
 

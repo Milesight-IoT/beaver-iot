@@ -38,10 +38,10 @@ public class BlueprintLibrarySyncer {
     private final BlueprintLibraryAddressService blueprintLibraryAddressService;
     private final BlueprintLibraryService blueprintLibraryService;
     private final com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryResourceService blueprintLibraryResourceService;
-    private final BlueprintLibraryResourceResolverResolver blueprintLibraryResourceResolver;
+    private final BlueprintLibraryResourceResolver blueprintLibraryResourceResolver;
     private final ApplicationProperties applicationProperties;
 
-    public BlueprintLibrarySyncer(BlueprintLibraryAddressService blueprintLibraryAddressService, BlueprintLibraryService blueprintLibraryService, com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryResourceService blueprintLibraryResourceService, BlueprintLibraryResourceResolverResolver blueprintLibraryResourceResolver, ApplicationProperties applicationProperties) {
+    public BlueprintLibrarySyncer(BlueprintLibraryAddressService blueprintLibraryAddressService, BlueprintLibraryService blueprintLibraryService, com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryResourceService blueprintLibraryResourceService, BlueprintLibraryResourceResolver blueprintLibraryResourceResolver, ApplicationProperties applicationProperties) {
         this.blueprintLibraryAddressService = blueprintLibraryAddressService;
         this.blueprintLibraryService = blueprintLibraryService;
         this.blueprintLibraryResourceService = blueprintLibraryResourceService;

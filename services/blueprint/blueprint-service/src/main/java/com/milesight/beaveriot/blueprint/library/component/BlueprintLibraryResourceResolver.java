@@ -24,11 +24,11 @@ import java.util.List;
 @SuppressWarnings("unused")
 @Slf4j
 @Service
-public class BlueprintLibraryResourceResolverResolver implements IBlueprintLibraryResourceResolverFacade {
+public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResourceResolverFacade {
     private final BlueprintLibraryService blueprintLibraryService;
     private final BlueprintLibraryResourceService blueprintLibraryResourceService;
 
-    public BlueprintLibraryResourceResolverResolver(BlueprintLibraryService blueprintLibraryService, com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryResourceService blueprintLibraryResourceService) {
+    public BlueprintLibraryResourceResolver(BlueprintLibraryService blueprintLibraryService, com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryResourceService blueprintLibraryResourceService) {
         this.blueprintLibraryService = blueprintLibraryService;
         this.blueprintLibraryResourceService = blueprintLibraryResourceService;
     }
@@ -194,8 +194,8 @@ public class BlueprintLibraryResourceResolverResolver implements IBlueprintLibra
         return getResourceContent(blueprintLibrary, resourcePath);
     }
 
-    public BlueprintLibraryResourceResolverResolver self() {
-        return SpringContext.getBean(BlueprintLibraryResourceResolverResolver.class);
+    public BlueprintLibraryResourceResolver self() {
+        return SpringContext.getBean(BlueprintLibraryResourceResolver.class);
     }
 
     @Override
