@@ -115,7 +115,7 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
                 isValid = true;
             } else {
                 isValid = false;
-                validationErrorException = MultipleErrorException.with(HttpStatus.BAD_REQUEST.value(), "Validate exchange payload error", errors);
+                validationErrorException = MultipleErrorException.with(HttpStatus.BAD_REQUEST.value(), "Invalid entity value", errors);
                 throw validationErrorException;
             }
         } else if (!isValid) {
