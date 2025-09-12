@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.dashboard.model;
+package com.milesight.beaveriot.canvas.model.dto;
 
 import lombok.*;
 
@@ -12,7 +12,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class DashboardExchangePayload implements Serializable {
+public class CanvasExchangePayload implements Serializable {
 
     private List<String> entityIds;
 
