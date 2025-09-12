@@ -7,7 +7,9 @@ import com.milesight.beaveriot.base.enums.ComparisonOperator;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.Sorts;
-import com.milesight.beaveriot.context.api.*;
+import com.milesight.beaveriot.context.api.EntityServiceProvider;
+import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
+import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
 import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.context.integration.model.Device;
@@ -37,7 +39,7 @@ import com.milesight.beaveriot.permission.aspect.IntegrationPermission;
 import com.milesight.beaveriot.user.dto.UserDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
-import lombok.extern.slf4j.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -50,23 +52,12 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.DEVICE_NAME_ON_ADD;
-import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.DEVICE_ON_DELETE;
-import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.DEVICE_TEMPLATE_KEY_ON_ADD;
+import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.*;
 
 @Service
 @Slf4j
@@ -515,7 +506,7 @@ public class DeviceService implements IDeviceFacade {
         entityServiceProvider.deleteByTargetId(device.getId().toString());
         deviceGroupService.removeDevices(List.of(device.getId()));
 
-        deviceStatusService.deviceDeleted(device);
+        deviceStatusService.deregister(device);
         deviceBlueprintMappingService.deleteByDeviceId(device.getId());
 
         deviceRepository.deleteById(device.getId());

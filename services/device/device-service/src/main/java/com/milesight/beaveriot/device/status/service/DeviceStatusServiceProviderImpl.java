@@ -2,11 +2,8 @@ package com.milesight.beaveriot.device.status.service;
 
 import com.milesight.beaveriot.context.api.DeviceStatusServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
-import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import org.springframework.stereotype.Service;
 
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -22,37 +19,17 @@ public class DeviceStatusServiceProviderImpl implements DeviceStatusServiceProvi
     }
 
     @Override
-    public void register(String integrationId) {
-        deviceStatusService.register(integrationId);
+    public void register(String integrationId, Function<Device, Long> offlineTimeoutFetcher) {
+        deviceStatusService.register(integrationId, offlineTimeoutFetcher);
     }
 
     @Override
-    public void register(String integrationId, Function<Device, Long> offlineSecondsFetcher) {
-        deviceStatusService.register(integrationId, offlineSecondsFetcher);
+    public void online(Device device) {
+        deviceStatusService.online(device);
     }
 
     @Override
-    public void register(String integrationId, BiConsumer<Device, ExchangePayload> onlineUpdater, Consumer<Device> offlineUpdater, Function<Device, Long> offlineSecondsFetcher) {
-        deviceStatusService.register(integrationId, onlineUpdater, offlineUpdater, offlineSecondsFetcher);
-    }
-
-    @Override
-    public void dataUploaded(Device device) {
-        deviceStatusService.dataUploaded(device);
-    }
-
-    @Override
-    public void dataUploaded(Device device, ExchangePayload payload) {
-        deviceStatusService.dataUploaded(device, payload);
-    }
-
-    @Override
-    public void updateDeviceStatusToOnline(Device device) {
-        deviceStatusService.updateDeviceStatusToOnline(device);
-    }
-
-    @Override
-    public void updateDeviceStatusToOffline(Device device) {
-        deviceStatusService.updateDeviceStatusToOffline(device);
+    public void offline(Device device) {
+        deviceStatusService.offline(device);
     }
 }
