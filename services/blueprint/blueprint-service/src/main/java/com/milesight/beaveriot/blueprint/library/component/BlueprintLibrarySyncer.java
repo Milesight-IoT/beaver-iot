@@ -9,7 +9,6 @@ import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.blueprint.library.client.utils.OkHttpUtil;
 import com.milesight.beaveriot.blueprint.library.enums.BlueprintLibraryErrorCode;
 import com.milesight.beaveriot.blueprint.library.model.*;
-import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryResourceService;
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryService;
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryAddressService;
 import com.milesight.beaveriot.context.application.ApplicationProperties;
@@ -38,11 +37,11 @@ import java.util.zip.ZipInputStream;
 public class BlueprintLibrarySyncer {
     private final BlueprintLibraryAddressService blueprintLibraryAddressService;
     private final BlueprintLibraryService blueprintLibraryService;
-    private final BlueprintLibraryResourceService blueprintLibraryResourceService;
-    private final BlueprintLibraryResourceResolver blueprintLibraryResourceResolver;
+    private final com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryResourceService blueprintLibraryResourceService;
+    private final BlueprintLibraryResourceResolverResolver blueprintLibraryResourceResolver;
     private final ApplicationProperties applicationProperties;
 
-    public BlueprintLibrarySyncer(BlueprintLibraryAddressService blueprintLibraryAddressService, BlueprintLibraryService blueprintLibraryService, BlueprintLibraryResourceService blueprintLibraryResourceService, BlueprintLibraryResourceResolver blueprintLibraryResourceResolver, ApplicationProperties applicationProperties) {
+    public BlueprintLibrarySyncer(BlueprintLibraryAddressService blueprintLibraryAddressService, BlueprintLibraryService blueprintLibraryService, com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryResourceService blueprintLibraryResourceService, BlueprintLibraryResourceResolverResolver blueprintLibraryResourceResolver, ApplicationProperties applicationProperties) {
         this.blueprintLibraryAddressService = blueprintLibraryAddressService;
         this.blueprintLibraryService = blueprintLibraryService;
         this.blueprintLibraryResourceService = blueprintLibraryResourceService;

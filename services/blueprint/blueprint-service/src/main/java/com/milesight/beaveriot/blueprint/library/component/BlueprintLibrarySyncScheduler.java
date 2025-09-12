@@ -3,13 +3,14 @@ package com.milesight.beaveriot.blueprint.library.component;
 import com.milesight.beaveriot.blueprint.library.config.BlueprintLibraryConfig;
 import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryAddress;
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryAddressService;
-import com.milesight.beaveriot.context.api.BlueprintLibrarySyncSchedulerProvider;
 import com.milesight.beaveriot.scheduler.core.Scheduler;
 import com.milesight.beaveriot.scheduler.core.model.ScheduleRule;
 import com.milesight.beaveriot.scheduler.core.model.ScheduleSettings;
 import com.milesight.beaveriot.scheduler.core.model.ScheduleType;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -27,7 +28,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  **/
 @Slf4j
 @Service
-public class BlueprintLibrarySyncScheduler implements BlueprintLibrarySyncSchedulerProvider {
+@Order(0)
+public class BlueprintLibrarySyncScheduler implements CommandLineRunner {
     private final BlueprintLibraryConfig blueprintLibraryConfig;
     private final Scheduler scheduler;
     private final BlueprintLibraryAddressService blueprintLibraryAddressService;
@@ -42,6 +44,11 @@ public class BlueprintLibrarySyncScheduler implements BlueprintLibrarySyncSchedu
     }
 
     @Override
+    public void run(String... args) {
+        // Start blueprint library synchronization scheduled task
+        start();
+    }
+
     public void start() {
         // Synchronize the blueprint library once immediately when the application starts.
         syncBlueprintLibraries();

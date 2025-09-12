@@ -3,7 +3,6 @@ package com.milesight.beaveriot.device.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
-import com.milesight.beaveriot.context.api.CodecExecutorServiceProvider;
 import com.milesight.beaveriot.device.model.request.*;
 import com.milesight.beaveriot.device.model.response.DeviceDetailResponse;
 import com.milesight.beaveriot.device.model.response.DeviceResponseData;
@@ -20,9 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class DeviceController {
     @Autowired
     DeviceService deviceService;
-
-    @Autowired
-    CodecExecutorServiceProvider codecExecutorServiceProvider;
+    
     @OperationPermission(codes = OperationPermissionCode.DEVICE_ADD)
     @PostMapping
     public ResponseBody<String> createDevice(@RequestBody @Valid CreateDeviceRequest createDeviceRequest) {

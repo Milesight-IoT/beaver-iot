@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.blueprint.library.support;
 
-import com.milesight.beaveriot.context.api.BlueprintLibraryResourceProvider;
-import com.milesight.beaveriot.context.support.TemplateLoader;
+import com.milesight.beaveriot.blueprint.library.component.BlueprintLibraryResourceResolverResolver;
+import com.milesight.beaveriot.blueprint.support.TemplateLoader;
 import com.milesight.beaveriot.context.support.SpringContext;
 
 import java.io.ByteArrayInputStream;
@@ -13,17 +13,17 @@ import java.nio.charset.StandardCharsets;
  * create: 2025/9/9 15:09
  **/
 public class DefaultTemplateLoader implements TemplateLoader {
-    private final BlueprintLibraryResourceProvider blueprintLibraryResourceProvider;
+    private final BlueprintLibraryResourceResolverResolver blueprintLibraryResourceResolver;
     private final String blueprintPath;
     public DefaultTemplateLoader(String blueprintPath) {
         this.blueprintPath = blueprintPath;
-        this.blueprintLibraryResourceProvider = SpringContext.getBean(BlueprintLibraryResourceProvider.class);
+        this.blueprintLibraryResourceResolver = SpringContext.getBean(BlueprintLibraryResourceResolverResolver.class);
     }
     @Override
     public InputStream loadTemplate(String relativePath) {
         try {
-            String resourcePath = blueprintLibraryResourceProvider.getResourcePath(blueprintPath, relativePath);
-            String content = blueprintLibraryResourceProvider.getResourceContent(resourcePath);
+            String resourcePath = blueprintLibraryResourceResolver.getResourcePath(blueprintPath, relativePath);
+            String content = blueprintLibraryResourceResolver.getResourceContent(resourcePath);
             if (content == null) {
                 throw new IllegalArgumentException("Resource content is null for path: " + resourcePath);
             }

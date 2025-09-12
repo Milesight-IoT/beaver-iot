@@ -7,9 +7,7 @@ import com.milesight.beaveriot.base.enums.ComparisonOperator;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.Sorts;
-import com.milesight.beaveriot.context.api.EntityServiceProvider;
-import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
-import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
+import com.milesight.beaveriot.context.api.*;
 import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.context.integration.model.Device;
@@ -30,6 +28,7 @@ import com.milesight.beaveriot.device.po.DeviceGroupMappingPO;
 import com.milesight.beaveriot.device.po.DeviceGroupPO;
 import com.milesight.beaveriot.device.po.DevicePO;
 import com.milesight.beaveriot.device.repository.DeviceRepository;
+import com.milesight.beaveriot.device.status.service.DeviceStatusService;
 import com.milesight.beaveriot.device.support.DeviceConverter;
 import com.milesight.beaveriot.devicetemplate.dto.DeviceTemplateDTO;
 import com.milesight.beaveriot.devicetemplate.facade.IDeviceTemplateFacade;
@@ -102,6 +101,13 @@ public class DeviceService implements IDeviceFacade {
 
     @Autowired
     DeviceGroupService deviceGroupService;
+
+    @Lazy
+    @Autowired
+    private DeviceStatusService deviceStatusService;
+
+    @Autowired
+    private DeviceBlueprintMappingService deviceBlueprintMappingService;
 
     @Lazy
     @Autowired
@@ -508,6 +514,9 @@ public class DeviceService implements IDeviceFacade {
     public void deleteDevice(Device device) {
         entityServiceProvider.deleteByTargetId(device.getId().toString());
         deviceGroupService.removeDevices(List.of(device.getId()));
+
+        deviceStatusService.deviceDeleted(device);
+        deviceBlueprintMappingService.deleteByDeviceId(device.getId());
 
         deviceRepository.deleteById(device.getId());
         self.evictIntegrationIdToDeviceCache(device.getIntegrationId());

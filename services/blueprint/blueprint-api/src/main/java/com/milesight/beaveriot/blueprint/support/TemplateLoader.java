@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.context.support;
+package com.milesight.beaveriot.blueprint.support;
 
 import java.io.InputStream;
 

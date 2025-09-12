@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.context.api;
+package com.milesight.beaveriot.blueprint.facade;
 
 import com.milesight.beaveriot.context.integration.model.BlueprintDevice;
 import com.milesight.beaveriot.context.integration.model.BlueprintDeviceVendor;
@@ -9,7 +9,7 @@ import java.util.List;
  * author: Luxb
  * create: 2025/9/2 17:23
  **/
-public interface BlueprintLibraryResourceProvider {
+public interface IBlueprintLibraryResourceResolverFacade {
     List<BlueprintDeviceVendor> getDeviceVendors();
     BlueprintDeviceVendor getDeviceVendor(String vendor);
     List<BlueprintDevice> getDevices(String vendor);
