@@ -21,5 +21,6 @@ entity-template:
       type: property              # entity type
       access_mod: R
       attributes:
-        Online: 'Online'
-        Offline: 'Offline'
+        enum:
+          Online: ${ fn.i18n('entity-template-service.entity.status.online') }
+          Offline: ${ fn.i18n('entity-template-service.entity.status.offline') }
