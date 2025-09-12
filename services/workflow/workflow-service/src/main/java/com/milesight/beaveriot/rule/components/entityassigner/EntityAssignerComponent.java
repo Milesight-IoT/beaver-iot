@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.rule.components.entityassigner;
 
+import com.milesight.beaveriot.base.exception.MultipleErrorException;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
@@ -14,6 +15,7 @@ import lombok.Data;
 import org.apache.camel.Exchange;
 import org.apache.camel.spi.UriParam;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
 import java.util.Map;
@@ -47,10 +49,32 @@ public class EntityAssignerComponent implements ProcessorNode<Exchange> {
         if (!ObjectUtils.isEmpty(propertyEntities)) {
             ExchangePayload propertyPayload = ExchangePayload.create(propertyEntities);
             ExchangeContextHelper.initializeExchangeContext(propertyPayload, exchange);
+            validatePayload(propertyPayload);
             entityValueServiceProvider.saveValuesAndPublishAsync(propertyPayload);
 
             exchange.getIn().setBody(propertyPayload);
         }
     }
 
+    private void validatePayload(ExchangePayload payload) {
+        try {
+            payload.validate();
+        } catch (Exception e) {
+            String message;
+            if (e instanceof MultipleErrorException multipleErrorException) {
+                if (CollectionUtils.isEmpty(multipleErrorException.getErrors())) {
+                    message = multipleErrorException.getMessage();
+                } else {
+                    StringBuilder builder = new StringBuilder();
+                    builder.append(multipleErrorException.getMessage()).append(":");
+                    multipleErrorException.getErrors().forEach(errorHolder ->
+                            builder.append(System.lineSeparator()).append(errorHolder.getErrorMessage()));
+                    message = builder.toString();
+                }
+            } else {
+                message = e.getMessage();
+            }
+            throw new RuntimeException(message);
+        }
+    }
 }
