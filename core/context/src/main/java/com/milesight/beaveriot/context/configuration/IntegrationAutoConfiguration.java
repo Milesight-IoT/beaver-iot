@@ -1,6 +1,9 @@
 package com.milesight.beaveriot.context.configuration;
 
-import com.milesight.beaveriot.context.api.*;
+import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
+import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
+import com.milesight.beaveriot.context.api.ResourceFingerprintServiceProvider;
+import com.milesight.beaveriot.context.api.TenantServiceProvider;
 import com.milesight.beaveriot.context.integration.bootstrap.IntegrationBootstrap;
 import com.milesight.beaveriot.context.integration.bootstrap.IntegrationBootstrapManager;
 import com.milesight.beaveriot.context.integration.entity.EntityLoader;
@@ -22,6 +25,20 @@ public class IntegrationAutoConfiguration {
 
     @Bean(destroyMethod = "onDestroy")
     @ConditionalOnMissingBean
+    public IntegrationBootstrapManager integrationBootstrapManager(ObjectProvider<EntityLoader> entityLoaders,
+                                                                   ObjectProvider<IntegrationBootstrap> integrationBootstraps,
+                                                                   IntegrationServiceProvider integrationStorageProvider,
+                                                                   Environment environment,
+                                                                   TenantServiceProvider tenantServiceProvider,
+                                                                   EntityTemplateServiceProvider entityTemplateServiceProvider,
+                                                                   ResourceFingerprintServiceProvider resourceFingerprintServiceProvider) {
+        return new IntegrationBootstrapManager(entityLoaders,
+                integrationBootstraps,
+                integrationStorageProvider,
+                environment,
+                tenantServiceProvider,
+                entityTemplateServiceProvider,
+                resourceFingerprintServiceProvider);
     public IntegrationBootstrapManager integrationBootstrapManager(ObjectProvider<EntityLoader> entityLoaders,
                                                                    ObjectProvider<IntegrationBootstrap> integrationBootstraps,
                                                                    IntegrationServiceProvider integrationStorageProvider,

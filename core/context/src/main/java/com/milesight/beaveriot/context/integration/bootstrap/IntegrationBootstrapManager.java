@@ -53,8 +53,7 @@ public class IntegrationBootstrapManager implements CommandLineRunner {
                                        IntegrationServiceProvider integrationStorageProvider,
                                        Environment environment,
                                        TenantServiceProvider tenantServiceProvider,
-                                       EntityTemplateServiceProvider entityTemplateServiceProvider,
-                                       ResourceFingerprintServiceProvider resourceFingerprintServiceProvider,
+                                       EntityTemplateServiceProvider entityTemplateServiceProvider, ResourceFingerprintServiceProvider resourceFingerprintServiceProvider,
                                        BlueprintLibrarySyncSchedulerProvider blueprintLibrarySyncSchedulerProvider) {
         this.entityLoaders = entityLoaders;
         this.integrationBootstrapList = integrationBootstraps;
