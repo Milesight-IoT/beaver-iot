@@ -1,11 +1,11 @@
 package com.milesight.beaveriot.blueprint.library.component;
 
 import com.milesight.beaveriot.base.utils.StringUtils;
+import com.milesight.beaveriot.blueprint.facade.IBlueprintLibraryResourceResolverFacade;
 import com.milesight.beaveriot.blueprint.library.model.*;
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryResourceService;
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryService;
 import com.milesight.beaveriot.blueprint.library.support.YamlConverter;
-import com.milesight.beaveriot.context.api.BlueprintLibraryResourceProvider;
 import com.milesight.beaveriot.context.integration.model.BlueprintDevice;
 import com.milesight.beaveriot.context.integration.model.BlueprintDeviceVendor;
 import com.milesight.beaveriot.context.support.SpringContext;
@@ -24,7 +24,7 @@ import java.util.List;
 @SuppressWarnings("unused")
 @Slf4j
 @Service
-public class BlueprintLibraryResourceResolver implements BlueprintLibraryResourceProvider {
+public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResourceResolverFacade {
     private final BlueprintLibraryService blueprintLibraryService;
     private final BlueprintLibraryResourceService blueprintLibraryResourceService;
 

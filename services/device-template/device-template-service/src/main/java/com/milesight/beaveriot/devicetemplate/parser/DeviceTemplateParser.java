@@ -10,7 +10,10 @@ import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.base.utils.ValidationUtils;
+import com.milesight.beaveriot.blueprint.facade.IBlueprintFacade;
+import com.milesight.beaveriot.blueprint.facade.IBlueprintLibraryResourceResolverFacade;
 import com.milesight.beaveriot.blueprint.library.support.DefaultTemplateLoader;
+import com.milesight.beaveriot.blueprint.support.TemplateLoader;
 import com.milesight.beaveriot.context.api.*;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.i18n.locale.LocaleContext;
@@ -20,7 +23,7 @@ import com.milesight.beaveriot.context.integration.model.config.EntityConfig;
 import com.milesight.beaveriot.context.model.DeviceTemplateModel;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateInputResult;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateOutputResult;
-import com.milesight.beaveriot.context.support.TemplateLoader;
+import com.milesight.beaveriot.device.facade.IDeviceBlueprintMappingFacade;
 import com.milesight.beaveriot.devicetemplate.enums.ServerErrorCode;
 import com.milesight.beaveriot.devicetemplate.facade.IDeviceTemplateParserFacade;
 import com.milesight.beaveriot.devicetemplate.support.DeviceTemplateHelper;
@@ -52,9 +55,9 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     private final IntegrationServiceProvider integrationServiceProvider;
     private final DeviceServiceProvider deviceServiceProvider;
     private final DeviceTemplateServiceProvider deviceTemplateServiceProvider;
-    private final BlueprintLibraryResourceProvider blueprintLibraryResourceProvider;
-    private final DeviceBlueprintMappingServiceProvider deviceBlueprintMappingServiceProvider;
-    private final BlueprintServiceProvider blueprintServiceProvider;
+    private final IBlueprintLibraryResourceResolverFacade blueprintLibraryResourceResolverFacade;
+    private final IDeviceBlueprintMappingFacade deviceBlueprintMappingFacade;
+    private final IBlueprintFacade blueprintFacade;
     private final EntityServiceProvider entityServiceProvider;
     private final CodecExecutorServiceProvider codecExecutorServiceProvider;
     private final MergedResourceBundleMessageSource messageSource;
@@ -62,18 +65,18 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     public DeviceTemplateParser(IntegrationServiceProvider integrationServiceProvider,
                                 DeviceServiceProvider deviceServiceProvider,
                                 DeviceTemplateServiceProvider deviceTemplateServiceProvider,
-                                BlueprintLibraryResourceProvider blueprintLibraryResourceProvider,
-                                DeviceBlueprintMappingServiceProvider deviceBlueprintMappingServiceProvider,
-                                BlueprintServiceProvider blueprintServiceProvider,
+                                IBlueprintLibraryResourceResolverFacade blueprintLibraryResourceResolverFacade,
+                                IDeviceBlueprintMappingFacade deviceBlueprintMappingFacade,
+                                IBlueprintFacade blueprintFacade,
                                 EntityServiceProvider entityServiceProvider,
                                 @Lazy CodecExecutorServiceProvider codecExecutorServiceProvider,
                                 MergedResourceBundleMessageSource messageSource) {
         this.integrationServiceProvider = integrationServiceProvider;
         this.deviceServiceProvider = deviceServiceProvider;
         this.deviceTemplateServiceProvider = deviceTemplateServiceProvider;
-        this.blueprintLibraryResourceProvider = blueprintLibraryResourceProvider;
-        this.deviceBlueprintMappingServiceProvider = deviceBlueprintMappingServiceProvider;
-        this.blueprintServiceProvider = blueprintServiceProvider;
+        this.blueprintLibraryResourceResolverFacade = blueprintLibraryResourceResolverFacade;
+        this.deviceBlueprintMappingFacade = deviceBlueprintMappingFacade;
+        this.blueprintFacade = blueprintFacade;
         this.entityServiceProvider = entityServiceProvider;
         this.codecExecutorServiceProvider = codecExecutorServiceProvider;
         this.messageSource = messageSource;
@@ -600,21 +603,21 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             throw ServiceException.with(ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorCode(), ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorMessage()).build();
         }
 
-        if (deviceBlueprintMappingServiceProvider.getBlueprintIdByDeviceId(device.getId()) != null) {
+        if (deviceBlueprintMappingFacade.getBlueprintIdByDeviceId(device.getId()) != null) {
             return;
         }
 
-        BlueprintDeviceVendor deviceVendor = blueprintLibraryResourceProvider.getDeviceVendor(vendor);
+        BlueprintDeviceVendor deviceVendor = blueprintLibraryResourceResolverFacade.getDeviceVendor(vendor);
         String workDir = deviceVendor.getWorkDir();
-        String blueprintPath = blueprintLibraryResourceProvider.getResourcePath(workDir, blueprint.getDir());
+        String blueprintPath = blueprintLibraryResourceResolverFacade.getResourcePath(workDir, blueprint.getDir());
         TemplateLoader loader = new DefaultTemplateLoader(blueprintPath);
         Map<String, Object> blueprintValues = buildBlueprintValues(device, blueprint.getValues());
-        Long blueprintId = blueprintServiceProvider.deployBlueprint(loader, blueprintValues);
+        Long blueprintId = blueprintFacade.deployBlueprint(loader, blueprintValues);
         if (blueprintId == null) {
             throw ServiceException.with(ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorCode(), ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorMessage()).build();
         }
 
-        deviceBlueprintMappingServiceProvider.saveMapping(device.getId(), blueprintId);
+        deviceBlueprintMappingFacade.saveMapping(device.getId(), blueprintId);
     }
 
     private DeviceTemplate getDeviceTemplate(String vendor, String model) {
@@ -676,7 +679,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         String vendor = deviceTemplate.getVendor();
         String model = deviceTemplate.getModel();
         if (vendor != null && model != null) {
-            content = blueprintLibraryResourceProvider.getDeviceTemplateContent(vendor, model);
+            content = blueprintLibraryResourceResolverFacade.getDeviceTemplateContent(vendor, model);
         } else {
             content = deviceTemplate.getContent();
         }

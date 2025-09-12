@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.device.service;
 
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
-import com.milesight.beaveriot.context.api.DeviceBlueprintMappingServiceProvider;
+import com.milesight.beaveriot.device.facade.IDeviceBlueprintMappingFacade;
 import com.milesight.beaveriot.device.po.DeviceBlueprintMappingPO;
 import com.milesight.beaveriot.device.repository.DeviceBlueprintMappingRepository;
 import org.springframework.stereotype.Service;
@@ -14,7 +14,7 @@ import java.util.List;
  * create: 2025/9/9 14:56
  **/
 @Service
-public class DeviceBlueprintMappingService implements DeviceBlueprintMappingServiceProvider {
+public class DeviceBlueprintMappingService implements IDeviceBlueprintMappingFacade {
     private final DeviceBlueprintMappingRepository deviceBlueprintMappingRepository;
 
     public DeviceBlueprintMappingService(DeviceBlueprintMappingRepository deviceBlueprintMappingRepository) {

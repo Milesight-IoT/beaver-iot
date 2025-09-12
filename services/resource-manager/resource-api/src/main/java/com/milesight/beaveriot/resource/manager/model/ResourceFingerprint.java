@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.context.integration.model;
+package com.milesight.beaveriot.resource.manager.model;
 
 import lombok.Builder;
 import lombok.Data;

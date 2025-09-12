@@ -63,10 +63,4 @@ public interface DeviceStatusServiceProvider {
      * @param device the device to update
      */
     void updateDeviceStatusToOffline(Device device);
-    /**
-     * Release the resources when a device is deleted.
-     *
-     * @param device the device that was deleted
-     */
-    void deviceDeleted(Device device);
 }

@@ -1,10 +1,10 @@
 package com.milesight.beaveriot.user.service;
 
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
-import com.milesight.beaveriot.context.api.TenantServiceProvider;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.user.constants.UserConstants;
 import com.milesight.beaveriot.user.enums.TenantStatus;
+import com.milesight.beaveriot.user.facade.ITenantFacade;
 import com.milesight.beaveriot.user.po.RolePO;
 import com.milesight.beaveriot.user.po.TenantPO;
 import com.milesight.beaveriot.user.repository.RoleRepository;
@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
  * @author loong
  */
 @Service
-public class TenantService implements TenantServiceProvider {
+public class TenantService implements ITenantFacade {
 
     @Autowired
     TenantRepository tenantRepository;

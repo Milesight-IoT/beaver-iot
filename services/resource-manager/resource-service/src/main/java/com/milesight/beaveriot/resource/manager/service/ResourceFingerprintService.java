@@ -1,8 +1,8 @@
 package com.milesight.beaveriot.resource.manager.service;
 
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
-import com.milesight.beaveriot.context.api.ResourceFingerprintServiceProvider;
-import com.milesight.beaveriot.context.integration.model.ResourceFingerprint;
+import com.milesight.beaveriot.resource.manager.facade.IResourceFingerprintFacade;
+import com.milesight.beaveriot.resource.manager.model.ResourceFingerprint;
 import com.milesight.beaveriot.resource.manager.po.ResourceFingerprintPO;
 import com.milesight.beaveriot.resource.manager.repository.ResourceFingerprintRepository;
 import org.springframework.stereotype.Service;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
  * create: 2025/9/3 16:18
  **/
 @Service
-public class ResourceFingerprintService implements ResourceFingerprintServiceProvider {
+public class ResourceFingerprintService implements IResourceFingerprintFacade {
     private final ResourceFingerprintRepository resourceFingerprintRepository;
 
     public ResourceFingerprintService(ResourceFingerprintRepository resourceFingerprintRepository) {

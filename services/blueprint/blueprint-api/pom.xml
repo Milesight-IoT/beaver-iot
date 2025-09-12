@@ -3,15 +3,14 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>services</artifactId>
+        <artifactId>blueprint</artifactId>
         <groupId>com.milesight.beaveriot</groupId>
         <version>${revision}</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>blueprint</artifactId>
-    <packaging>pom</packaging>
-    <name>blueprint</name>
+    <artifactId>blueprint-api</artifactId>
+    <name>blueprint-api</name>
     <description>An open-source platform designed for rapid and intuitive IoT application development.</description>
     <url>https://github.com/milesight-iot/beaver-iot</url>
     <scm>
@@ -21,10 +20,6 @@
         <name>Milesight</name>
         <url>https://www.milesight.com</url>
     </organization>
-    <modules>
-        <module>blueprint-api</module>
-        <module>blueprint-service</module>
-    </modules>
     <developers>
         <developer>
             <id>Simon</id>
@@ -43,6 +38,14 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <okhttp3.version>4.12.0</okhttp3.version>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>context</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 </project>
