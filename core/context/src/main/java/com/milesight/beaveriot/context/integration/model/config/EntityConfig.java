@@ -30,7 +30,7 @@ public class EntityConfig {
     private Map<String, Object> attributes;
     private List<Entity> children;
     private Boolean visible = true;
-    private Boolean important;
+    private Integer important;
     private String entityRef;
 
     public Entity toEntity() {

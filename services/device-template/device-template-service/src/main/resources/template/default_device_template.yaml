@@ -50,7 +50,7 @@ initial_entities:
     access_mod: R
     attributes:
       unit: '℃'
-    important: true
+    important: 1
   - identifier: 'humidity'     # entity identifier
     name: 'humidity'           # entity name
     value_type: double         # entity value type

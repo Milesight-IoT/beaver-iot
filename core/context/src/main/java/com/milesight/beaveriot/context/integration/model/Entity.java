@@ -161,7 +161,7 @@ public class Entity implements IdentityKey, Cloneable {
         return Boolean.TRUE.equals(getAttributes().get(AttributeBuilder.ATTRIBUTE_OPTIONAL));
     }
 
-    public void setImportant(Boolean important) {
+    public void setImportant(Integer important) {
         if (important == null) {
             return;
         }
@@ -172,12 +172,12 @@ public class Entity implements IdentityKey, Cloneable {
         getAttributes().put(AttributeBuilder.ATTRIBUTE_IMPORTANT, important);
     }
 
-    public boolean isImportant() {
+    public Integer getImportant() {
         if (getAttributes() == null) {
-            return false;
+            return null;
         }
 
-        return Boolean.TRUE.equals(getAttributes().get(AttributeBuilder.ATTRIBUTE_IMPORTANT));
+        return (Integer) getAttributes().get(AttributeBuilder.ATTRIBUTE_IMPORTANT);
     }
 
     @Override

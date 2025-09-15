@@ -10,4 +10,5 @@ import java.util.Map;
  **/
 public interface IBlueprintFacade {
     Long deployBlueprint(TemplateLoader templateLoader, Map<String, Object> variables);
+    void removeBlueprint(Long blueprintId);
 }

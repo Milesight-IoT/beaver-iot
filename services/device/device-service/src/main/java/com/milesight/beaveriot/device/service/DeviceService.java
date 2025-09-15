@@ -7,6 +7,7 @@ import com.milesight.beaveriot.base.enums.ComparisonOperator;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.Sorts;
+import com.milesight.beaveriot.blueprint.facade.IBlueprintFacade;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
@@ -99,6 +100,9 @@ public class DeviceService implements IDeviceFacade {
 
     @Autowired
     private DeviceBlueprintMappingService deviceBlueprintMappingService;
+
+    @Autowired
+    private IBlueprintFacade blueprintFacade;
 
     @Lazy
     @Autowired
@@ -507,7 +511,11 @@ public class DeviceService implements IDeviceFacade {
         deviceGroupService.removeDevices(List.of(device.getId()));
 
         deviceStatusService.deregister(device);
-        deviceBlueprintMappingService.deleteByDeviceId(device.getId());
+        Long blueprintId = deviceBlueprintMappingService.getBlueprintIdByDeviceId(device.getId());
+        if (blueprintId != null) {
+            deviceBlueprintMappingService.deleteByDeviceId(device.getId());
+            blueprintFacade.removeBlueprint(blueprintId);
+        }
 
         deviceRepository.deleteById(device.getId());
         self.evictIntegrationIdToDeviceCache(device.getIntegrationId());
