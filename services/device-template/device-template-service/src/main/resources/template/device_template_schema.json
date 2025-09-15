@@ -200,14 +200,18 @@
             "format": {"type": "string"},
             "enum": {"type": "object"},
             "optional": {"type": "boolean"},
-            "important": {"type": "boolean"}
+            "important": {
+              "type": "integer",
+              "minimum": 1
+            }
           }
         },
         "visible": {
           "type": "boolean"
         },
         "important": {
-          "type": "boolean"
+          "type": "integer",
+          "minimum": 1
         },
         "children": {
           "type": "array",

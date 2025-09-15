@@ -16,4 +16,9 @@ public class ToDeleteBlueprintService implements IBlueprintFacade {
     public Long deployBlueprint(TemplateLoader templateLoader, Map<String, Object> variables) {
         return 9999999999L;
     }
+
+    @Override
+    public void removeBlueprint(Long blueprintId) {
+
+    }
 }
