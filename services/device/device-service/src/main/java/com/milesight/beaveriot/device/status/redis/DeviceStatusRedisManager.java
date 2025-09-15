@@ -1,12 +1,11 @@
 package com.milesight.beaveriot.device.status.redis;
 
 import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
-import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
 import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
+import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
-import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.device.status.BaseDeviceStatusManager;
 import com.milesight.beaveriot.device.status.DeviceStatusManager;
@@ -42,21 +41,22 @@ public class DeviceStatusRedisManager extends BaseDeviceStatusManager implements
     public DeviceStatusRedisManager(DeviceServiceProvider deviceServiceProvider,
                                     EntityServiceProvider entityServiceProvider,
                                     EntityValueServiceProvider entityValueServiceProvider,
+                                    EntityTemplateServiceProvider entityTemplateServiceProvider,
                                     RedissonClient redissonClient) {
-        super(deviceServiceProvider, entityServiceProvider, entityValueServiceProvider);
+        super(deviceServiceProvider, entityServiceProvider, entityValueServiceProvider, entityTemplateServiceProvider);
         this.redissonClient = redissonClient;
         this.executorService = Executors.newSingleThreadExecutor();
     }
 
     @Override
-    protected void init() {
+    protected void onInit() {
         deviceTimeoutQueue = redissonClient.getBlockingQueue(DEVICE_STATUS_TIMEOUT_QUEUE);
         delayedQueue = redissonClient.getDelayedQueue(deviceTimeoutQueue);
         deviceExpirationTimeMap = redissonClient.getMap(DEVICE_STATUS_TIMEOUT_MAP);
     }
 
     @Override
-    protected void destroy() {
+    protected void onDestroy() {
         isRunning.set(false);
         if (!executorService.isShutdown()) {
             executorService.shutdown();
@@ -90,7 +90,7 @@ public class DeviceStatusRedisManager extends BaseDeviceStatusManager implements
             try {
                 Long deviceId = deviceTimeoutQueue.take();
                 AvailableDeviceData availableDeviceData = getAvailableDeviceDataByDeviceId(deviceId);
-                self.handleStatus(deviceId, availableDeviceData, null, DeviceStatusOperation.OFFLINE);
+                self.handleStatus(deviceId, availableDeviceData, DeviceStatusOperation.OFFLINE);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } catch (Exception e) {
@@ -100,13 +100,18 @@ public class DeviceStatusRedisManager extends BaseDeviceStatusManager implements
     }
 
     @Override
-    public void dataUploaded(Device device, ExchangePayload payload) {
+    public void online(Device device) {
         AvailableDeviceData availableDeviceData = getAvailableDeviceDataByDeviceId(device.getId());
-        self().handleStatus(device.getId(), availableDeviceData, payload, DeviceStatusOperation.ONLINE);
+        if (availableDeviceData == null) {
+            updateDeviceStatusToOnline(device);
+            return;
+        }
+
+        self().handleStatus(device.getId(), availableDeviceData, DeviceStatusOperation.ONLINE);
     }
 
     @Override
-    public void deviceDeleted(Device device) {
+    public void deregister(Device device) {
         deviceExpirationTimeMap.remove(device.getId());
     }
 
@@ -115,10 +120,9 @@ public class DeviceStatusRedisManager extends BaseDeviceStatusManager implements
     }
 
     @Transactional
-    @DistributedLock(name = "device:status:handle:#{#p0}", waitForLock = "5s", throwOnLockFailure = false, scope = LockScope.GLOBAL)
+    @DistributedLock(name = "device:status:handle:#{#p0}", waitForLock = "5s", throwOnLockFailure = false)
     public void handleStatus(Long deviceId,
                              AvailableDeviceData availableDeviceData,
-                             ExchangePayload payload,
                              DeviceStatusOperation operation) {
         if (availableDeviceData == null) {
             deviceExpirationTimeMap.remove(deviceId);
@@ -126,16 +130,16 @@ public class DeviceStatusRedisManager extends BaseDeviceStatusManager implements
         }
 
         if (operation == DeviceStatusOperation.ONLINE) {
-            handleStatusToOnline(availableDeviceData, payload);
+            handleStatusToOnline(availableDeviceData);
         } else {
             handleStatusToOffline(availableDeviceData);
         }
     }
 
-    private void handleStatusToOnline(AvailableDeviceData availableDeviceData, ExchangePayload payload) {
+    private void handleStatusToOnline(AvailableDeviceData availableDeviceData) {
         Device device = availableDeviceData.getDevice();
         DeviceStatusConfig config = availableDeviceData.getDeviceStatusConfig();
-        config.getOnlineUpdater().accept(device, payload);
+        config.getOnlineUpdater().accept(device);
 
         long offlineSeconds = getDeviceOfflineSeconds(device, config);
         long expirationTime = System.currentTimeMillis() + offlineSeconds * 1000;
@@ -165,10 +169,5 @@ public class DeviceStatusRedisManager extends BaseDeviceStatusManager implements
 
         availableDeviceData.getDeviceStatusConfig().getOfflineUpdater().accept(availableDeviceData.getDevice());
         deviceOfflineCallback(availableDeviceData.getDevice());
-    }
-
-    public enum DeviceStatusOperation {
-        ONLINE,
-        OFFLINE
     }
 }
