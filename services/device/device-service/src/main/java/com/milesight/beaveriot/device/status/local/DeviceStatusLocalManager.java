@@ -1,7 +1,6 @@
 package com.milesight.beaveriot.device.status.local;
 
 import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
-import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
 import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
@@ -74,7 +73,7 @@ public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements
     }
 
     @Transactional
-    @DistributedLock(name = "device:status:handle:#{#p0}", waitForLock = "5s", throwOnLockFailure = false, scope = LockScope.GLOBAL)
+    @DistributedLock(name = "device:status:handle:#{#p0}", waitForLock = "5s", throwOnLockFailure = false)
     public void handleStatus(Long deviceId,
                              AvailableDeviceData availableDeviceData,
                              DeviceStatusOperation operation) {
