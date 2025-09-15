@@ -18,7 +18,8 @@ public interface DeviceStatusServiceProvider {
      */
     void register(String integrationId, Function<Device, Long> offlineTimeoutFetcher);
     /**
-     * Updates the device status to "Online".
+     * Updates the device status to "Online",
+     * then reverts to "Offline" upon timeout. (If the integration was registered with the device status manager.)
      *
      * @param device the device to update
      */

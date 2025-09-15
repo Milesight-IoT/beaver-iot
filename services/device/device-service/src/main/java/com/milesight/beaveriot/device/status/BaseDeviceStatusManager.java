@@ -119,7 +119,7 @@ public abstract class BaseDeviceStatusManager {
             entityServiceProvider.save(statusEntity);
         }
         ExchangePayload payload = ExchangePayload.create(entityKey, deviceStatus);
-        entityValueServiceProvider.saveValues(payload);
+        entityValueServiceProvider.saveValuesAndPublishAsync(payload);
     }
 
     @Data
