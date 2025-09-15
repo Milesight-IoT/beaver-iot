@@ -171,9 +171,4 @@ public class DeviceStatusRedisManager extends BaseDeviceStatusManager implements
         availableDeviceData.getDeviceStatusConfig().getOfflineUpdater().accept(availableDeviceData.getDevice());
         deviceOfflineCallback(availableDeviceData.getDevice());
     }
-
-    public enum DeviceStatusOperation {
-        ONLINE,
-        OFFLINE
-    }
 }

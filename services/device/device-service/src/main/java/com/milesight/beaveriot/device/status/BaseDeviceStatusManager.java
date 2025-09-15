@@ -109,8 +109,8 @@ public abstract class BaseDeviceStatusManager {
     }
 
     protected void updateDeviceStatus(Device device, String deviceStatus) {
-        String entityKey = device.getKey() + "." + IDENTIFIER_DEVICE_STATUS;
-        if (entityServiceProvider.findByKey(entityKey) == null) {
+        String statusEntityKey = getStatusEntityKey(device);
+        if (entityServiceProvider.findByKey(statusEntityKey) == null) {
             EntityTemplate entityTemplate = entityTemplateServiceProvider.findByKey(IDENTIFIER_DEVICE_STATUS);
             if (entityTemplate == null) {
                 throw new RuntimeException("Device status entity template not found");
@@ -118,8 +118,16 @@ public abstract class BaseDeviceStatusManager {
             Entity statusEntity = entityTemplate.toEntity(device.getIntegrationId(), device.getKey());
             entityServiceProvider.save(statusEntity);
         }
-        ExchangePayload payload = ExchangePayload.create(entityKey, deviceStatus);
-        entityValueServiceProvider.saveValuesAndPublishAsync(payload);
+
+        String existValue = (String) entityValueServiceProvider.findValueByKey(statusEntityKey);
+        if (!deviceStatus.equals(existValue)) {
+            ExchangePayload payload = ExchangePayload.create(statusEntityKey, deviceStatus);
+            entityValueServiceProvider.saveValuesAndPublishAsync(payload);
+        }
+    }
+
+    protected String getStatusEntityKey(Device device) {
+        return device.getKey() + "." + IDENTIFIER_DEVICE_STATUS;
     }
 
     @Data
@@ -148,5 +156,10 @@ public abstract class BaseDeviceStatusManager {
             data.setDeviceStatusConfig(deviceStatusConfig);
             return data;
         }
+    }
+
+    public enum DeviceStatusOperation {
+        ONLINE,
+        OFFLINE
     }
 }
