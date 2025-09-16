@@ -2,10 +2,10 @@ package com.milesight.beaveriot.devicetemplate.codec.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.milesight.beaveriot.base.exception.ServiceException;
-import com.milesight.beaveriot.context.api.DeviceCodecExecutorProvider;
 import com.milesight.beaveriot.devicetemplate.codec.chain.CodecExecutorDecoderChain;
 import com.milesight.beaveriot.devicetemplate.codec.chain.CodecExecutorEncoderChain;
 import com.milesight.beaveriot.devicetemplate.codec.enums.CodecErrorCode;
+import com.milesight.beaveriot.devicetemplate.facade.IDeviceCodecExecutorFacade;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -15,7 +15,7 @@ import java.util.Map;
  * create: 2025/9/8 17:00
  **/
 @Slf4j
-public class DeviceCodecExecutorService implements DeviceCodecExecutorProvider {
+public class DeviceCodecExecutorService implements IDeviceCodecExecutorFacade {
     private CodecExecutorDecoderChain decoderChain;
     private CodecExecutorEncoderChain encoderChain;
 
@@ -26,6 +26,7 @@ public class DeviceCodecExecutorService implements DeviceCodecExecutorProvider {
         return executor;
     }
 
+    @Override
     public JsonNode decode(byte[] data, Map<String, Object> argContext) {
         try {
             return decoderChain.execute(data, argContext);
@@ -36,6 +37,7 @@ public class DeviceCodecExecutorService implements DeviceCodecExecutorProvider {
         }
     }
 
+    @Override
     public byte[] encode(JsonNode data, Map<String, Object> argContext) {
         try {
             return encoderChain.execute(data, argContext);

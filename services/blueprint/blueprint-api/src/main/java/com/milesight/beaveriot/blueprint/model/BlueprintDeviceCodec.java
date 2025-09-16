@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.blueprint.library.model;
+package com.milesight.beaveriot.blueprint.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.milesight.beaveriot.base.utils.StringUtils;
@@ -49,7 +49,7 @@ public class BlueprintDeviceCodec {
     @Data
     public static class Argument {
         private String id;
-        @JsonProperty("isPayload")
+        @JsonProperty("is_payload")
         private boolean isPayload;
     }
 

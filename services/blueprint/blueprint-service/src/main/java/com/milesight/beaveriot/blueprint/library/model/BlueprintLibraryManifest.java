@@ -10,14 +10,14 @@ import org.springframework.util.StringUtils;
 @Data
 public class BlueprintLibraryManifest {
     private String version;
-    private String minimumRequiredBeaverIoTVersion;
+    private String minimumRequiredBeaverIotVersion;
     private String author;
     private String deviceVendorIndex;
     private String solutionIndex;
 
     public boolean validate() {
         return StringUtils.hasText(version) &&
-                StringUtils.hasText(minimumRequiredBeaverIoTVersion) &&
+                StringUtils.hasText(minimumRequiredBeaverIotVersion) &&
                 StringUtils.hasText(author) &&
                 StringUtils.hasText(deviceVendorIndex) &&
                 StringUtils.hasText(solutionIndex);

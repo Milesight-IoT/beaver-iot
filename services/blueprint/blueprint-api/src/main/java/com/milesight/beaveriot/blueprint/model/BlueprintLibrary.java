@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.blueprint.library.model;
+package com.milesight.beaveriot.blueprint.model;
 
 import lombok.Builder;
 import lombok.Data;

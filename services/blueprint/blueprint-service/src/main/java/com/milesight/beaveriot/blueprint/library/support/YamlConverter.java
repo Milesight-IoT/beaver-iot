@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.blueprint.library.support;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.milesight.beaveriot.base.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class YamlConverter {
     private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
+
+    static {
+        MAPPER.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+    }
 
     public static <T> T from(String yamlContent, Class<T> valueType) {
         try {
