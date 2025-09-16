@@ -11,7 +11,7 @@ import lombok.Data;
 public class EntityLatestResponse {
 
     private Object value;
-    private String updatedAt;
+    private String timestamp;
     private EntityValueType valueType;
 
 }

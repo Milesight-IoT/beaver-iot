@@ -308,7 +308,7 @@ public class EntityValueService implements EntityValueServiceProvider {
 
         private EntityValueType valueType;
 
-        private Long updatedAt;
+        private Long timestamp;
     }
 
     @Override
@@ -356,7 +356,7 @@ public class EntityValueService implements EntityValueServiceProvider {
             EntityLatestValueCache nValue = convertEntityLatestCache(entityLatestPO);
             value.setValueType(nValue.getValueType());
             value.setValue(nValue.getValue());
-            value.setUpdatedAt(nValue.getUpdatedAt());
+            value.setTimestamp(nValue.getTimestamp());
         });
 
         return entityIdToValue.values().stream().toList();
@@ -386,7 +386,7 @@ public class EntityValueService implements EntityValueServiceProvider {
 
         lv.setValue(value);
         lv.setValueType(valueType);
-        lv.setUpdatedAt(entityLatestPO.getUpdatedAt());
+        lv.setTimestamp(entityLatestPO.getTimestamp());
         return lv;
     }
 
@@ -658,7 +658,7 @@ public class EntityValueService implements EntityValueServiceProvider {
             return entityLatestResponse;
         }
 
-        entityLatestResponse.setUpdatedAt(lv.getUpdatedAt() == null ? null : lv.getUpdatedAt().toString());
+        entityLatestResponse.setTimestamp(lv.getTimestamp() == null ? null : lv.getTimestamp().toString());
         entityLatestResponse.setValueType(lv.getValueType());
         entityLatestResponse.setValue(lv.getValue());
         return entityLatestResponse;

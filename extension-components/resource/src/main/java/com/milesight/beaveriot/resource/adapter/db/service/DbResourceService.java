@@ -125,6 +125,10 @@ public class DbResourceService {
             return;
         }
 
+        Cache cache = cacheManager.getCache(CacheKeyConstants.PRE_SIGN_CACHE_NAME);
+        assert cache != null;
+        cache.evict(objKey);
+
         resourceDataRepository.delete(resourceData);
     }
 }

@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.dashboard.model.response;
 
+import com.milesight.beaveriot.dashboard.enums.DashboardCoverType;
 import lombok.*;
 
 /**
@@ -13,6 +14,10 @@ public class DashboardListItemResponse {
     private String userId;
     private String name;
     private Boolean home;
+    private String description;
+    private DashboardCoverType coverType;
+    private String coverData;
+    private String mainCanvasId;
     private String createdAt;
 
 }
