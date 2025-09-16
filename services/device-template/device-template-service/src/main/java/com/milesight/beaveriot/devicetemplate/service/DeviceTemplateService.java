@@ -261,8 +261,20 @@ public class DeviceTemplateService implements IDeviceTemplateFacade {
     }
 
     @Override
+    public List<DeviceTemplate> findAllCustom(String integrationId) {
+        return deviceTemplateConverter.convertPO(deviceTemplateRepository
+                .findAll(f -> f.eq(DeviceTemplatePO.Fields.integration, integrationId)
+                        .and(f2 -> f2.isNull(DeviceTemplatePO.Fields.blueprintLibraryId))));
+    }
+
+    @Override
     public Page<DeviceTemplateResponseData> search(SearchDeviceTemplateRequest searchDeviceTemplateRequest) {
         return searchDeviceTemplate(searchDeviceTemplateRequest);
+    }
+
+    @Override
+    public Page<DeviceTemplateResponseData> searchCustom(SearchDeviceTemplateRequest searchDeviceTemplateRequest) {
+        return searchCustomDeviceTemplate(searchDeviceTemplateRequest);
     }
 
     private boolean deviceTemplateAdditionalDataEqual(Map<String, Object> arg1, Map<String, Object> arg2) {
@@ -314,6 +326,35 @@ public class DeviceTemplateService implements IDeviceTemplateFacade {
             d.setDeletable(true);
             d.setIntegrationName(integration.getName());
         });
+    }
+
+    public Page<DeviceTemplateResponseData> searchCustomDeviceTemplate(SearchDeviceTemplateRequest searchDeviceTemplateRequest) {
+        if (searchDeviceTemplateRequest.getSort().getOrders().isEmpty()) {
+            searchDeviceTemplateRequest.sort(new Sorts().desc(DeviceTemplatePO.Fields.id));
+        }
+
+        Page<DeviceTemplateResponseData> responseDataList;
+        try {
+            responseDataList = deviceTemplateRepository
+                    .findAllWithDataPermission(
+                            f -> f.likeIgnoreCase(
+                                            StringUtils.hasText(searchDeviceTemplateRequest.getName()),
+                                            DeviceTemplatePO.Fields.name,
+                                            searchDeviceTemplateRequest.getName()
+                            )
+                            .and(f2 -> f2.isNull(DeviceTemplatePO.Fields.blueprintLibraryId)),
+                            searchDeviceTemplateRequest.toPageable()
+                    )
+                    .map(this::convertPOToResponseData);
+        } catch (Exception e) {
+            if (e instanceof ServiceException && Objects.equals(((ServiceException) e).getErrorCode(), ErrorCode.FORBIDDEN_PERMISSION.getErrorCode())) {
+                return Page.empty();
+            }
+            throw e;
+        }
+
+        fillIntegrationInfo(responseDataList.stream().toList());
+        return responseDataList;
     }
 
     public Page<DeviceTemplateResponseData> searchDeviceTemplate(SearchDeviceTemplateRequest searchDeviceTemplateRequest) {
