@@ -30,7 +30,10 @@ public interface DeviceTemplateServiceProvider {
 
     List<DeviceTemplate> findAll(String integrationId);
 
+    List<DeviceTemplate> findAllCustom(String integrationId);
+
     void batchDelete(List<Long> ids);
 
     Page<DeviceTemplateResponseData> search(SearchDeviceTemplateRequest searchDeviceTemplateRequest);
+    Page<DeviceTemplateResponseData> searchCustom(SearchDeviceTemplateRequest searchDeviceTemplateRequest);
 }

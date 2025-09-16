@@ -68,6 +68,11 @@ public class DeviceTemplateServiceProviderImpl implements DeviceTemplateServiceP
     }
 
     @Override
+    public List<DeviceTemplate> findAllCustom(String integrationId) {
+        return deviceTemplateService.findAllCustom(integrationId);
+    }
+
+    @Override
     public void batchDelete(List<Long> ids) {
         deviceTemplateService.batchDelete(ids);
     }
@@ -75,5 +80,10 @@ public class DeviceTemplateServiceProviderImpl implements DeviceTemplateServiceP
     @Override
     public Page<DeviceTemplateResponseData> search(SearchDeviceTemplateRequest searchDeviceTemplateRequest) {
         return deviceTemplateService.search(searchDeviceTemplateRequest);
+    }
+
+    @Override
+    public Page<DeviceTemplateResponseData> searchCustom(SearchDeviceTemplateRequest searchDeviceTemplateRequest) {
+        return deviceTemplateService.searchCustom(searchDeviceTemplateRequest);
     }
 }

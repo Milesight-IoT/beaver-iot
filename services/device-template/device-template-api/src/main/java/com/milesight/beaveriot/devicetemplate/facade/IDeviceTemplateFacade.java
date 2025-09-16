@@ -20,7 +20,9 @@ public interface IDeviceTemplateFacade {
     List<DeviceTemplate> findByIdentifiers(List<String> identifier, String integrationId);
     DeviceTemplate findByBlueprintLibrary(Long blueprintLibraryId, String blueprintLibraryVersion, String vendor, String model);
     List<DeviceTemplate> findAll(String integrationId);
+    List<DeviceTemplate> findAllCustom(String integrationId);
     void batchDelete(List<Long> ids);
     Page<DeviceTemplateResponseData> search(SearchDeviceTemplateRequest searchDeviceTemplateRequest);
+    Page<DeviceTemplateResponseData> searchCustom(SearchDeviceTemplateRequest searchDeviceTemplateRequest);
     List<DeviceTemplateDTO> getDeviceTemplateByKeys(List<String> deviceTemplateKeys);
 }
