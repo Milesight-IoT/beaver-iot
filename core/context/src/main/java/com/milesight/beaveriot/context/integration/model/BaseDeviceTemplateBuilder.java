@@ -18,6 +18,8 @@ public class BaseDeviceTemplateBuilder<T extends BaseDeviceTemplateBuilder> {
     protected Long id;
     protected String vendor;
     protected String model;
+    protected Long blueprintLibraryId;
+    protected String blueprintLibraryVersion;
 
     public BaseDeviceTemplateBuilder(String integrationId) {
         this.integrationId = integrationId;
@@ -67,6 +69,16 @@ public class BaseDeviceTemplateBuilder<T extends BaseDeviceTemplateBuilder> {
         return (T) this;
     }
 
+    public T blueprintLibraryId(Long blueprintLibraryId) {
+        this.blueprintLibraryId = blueprintLibraryId;
+        return (T) this;
+    }
+
+    public T blueprintLibraryVersion(String blueprintLibraryVersion) {
+        this.blueprintLibraryVersion = blueprintLibraryVersion;
+        return (T) this;
+    }
+
     public DeviceTemplate build() {
         DeviceTemplate deviceTemplate = new DeviceTemplate();
         deviceTemplate.setName(name);
@@ -81,6 +93,8 @@ public class BaseDeviceTemplateBuilder<T extends BaseDeviceTemplateBuilder> {
         deviceTemplate.setId(id);
         deviceTemplate.setVendor(vendor);
         deviceTemplate.setModel(model);
+        deviceTemplate.setBlueprintLibraryId(blueprintLibraryId);
+        deviceTemplate.setBlueprintLibraryVersion(blueprintLibraryVersion);
         return deviceTemplate;
     }
 

@@ -1,7 +1,7 @@
-package com.milesight.beaveriot.blueprint.library.support;
+package com.milesight.beaveriot.blueprint.support;
 
-import com.milesight.beaveriot.blueprint.library.component.BlueprintLibraryResourceResolver;
-import com.milesight.beaveriot.blueprint.support.TemplateLoader;
+import com.milesight.beaveriot.blueprint.facade.IBlueprintLibraryResourceResolverFacade;
+import com.milesight.beaveriot.blueprint.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.support.SpringContext;
 
 import java.io.ByteArrayInputStream;
@@ -13,17 +13,19 @@ import java.nio.charset.StandardCharsets;
  * create: 2025/9/9 15:09
  **/
 public class DefaultTemplateLoader implements TemplateLoader {
-    private final BlueprintLibraryResourceResolver blueprintLibraryResourceResolver;
+    private final IBlueprintLibraryResourceResolverFacade blueprintLibraryResourceFacade;
+    private final BlueprintLibrary blueprintLibrary;
     private final String blueprintPath;
-    public DefaultTemplateLoader(String blueprintPath) {
+    public DefaultTemplateLoader(BlueprintLibrary blueprintLibrary, String blueprintPath) {
+        this.blueprintLibrary = blueprintLibrary;
         this.blueprintPath = blueprintPath;
-        this.blueprintLibraryResourceResolver = SpringContext.getBean(BlueprintLibraryResourceResolver.class);
+        this.blueprintLibraryResourceFacade = SpringContext.getBean(IBlueprintLibraryResourceResolverFacade.class);
     }
     @Override
     public InputStream loadTemplate(String relativePath) {
         try {
-            String resourcePath = blueprintLibraryResourceResolver.getResourcePath(blueprintPath, relativePath);
-            String content = blueprintLibraryResourceResolver.getResourceContent(resourcePath);
+            String resourcePath = blueprintLibraryResourceFacade.buildResourcePath(blueprintPath, relativePath);
+            String content = blueprintLibraryResourceFacade.getResourceContent(blueprintLibrary, resourcePath);
             if (content == null) {
                 throw new IllegalArgumentException("Resource content is null for path: " + resourcePath);
             }

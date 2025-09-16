@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 import java.text.MessageFormat;
 
 public enum BlueprintLibraryErrorCode implements ErrorCodeSpec {
+    BLUEPRINT_LIBRARY_NULL(HttpStatus.BAD_REQUEST.value(),
+            "blueprint_library_null", "Blueprint library must not be null"),
     BLUEPRINT_LIBRARY_BEAVER_VERSION_UNSUPPORTED(HttpStatus.BAD_REQUEST.value(),
             "blueprint_library_beaver_version_unsupported", "Blueprint library beaver version unsupported"),
     BLUEPRINT_LIBRARY_SYNC_FAILED(HttpStatus.BAD_REQUEST.value(),

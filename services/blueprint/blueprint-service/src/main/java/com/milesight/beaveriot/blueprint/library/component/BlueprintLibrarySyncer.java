@@ -12,6 +12,8 @@ import com.milesight.beaveriot.blueprint.library.model.*;
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryResourceService;
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryService;
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryAddressService;
+import com.milesight.beaveriot.blueprint.model.BlueprintLibrary;
+import com.milesight.beaveriot.blueprint.model.BlueprintLibrarySyncStatus;
 import com.milesight.beaveriot.context.application.ApplicationProperties;
 import com.milesight.beaveriot.context.integration.model.BlueprintDeviceVendor;
 import lombok.extern.slf4j.Slf4j;
@@ -69,7 +71,7 @@ public class BlueprintLibrarySyncer {
 
         log.debug("Found new version: {} for blueprint library {}", manifest.getVersion(), blueprintLibraryAddress.getKey());
         String currentBeaverVersion = getCurrentBeaverVersion();
-        if (!isBeaverVersionSupported(currentBeaverVersion, manifest.getMinimumRequiredBeaverIoTVersion())) {
+        if (!isBeaverVersionSupported(currentBeaverVersion, manifest.getMinimumRequiredBeaverIotVersion())) {
             if (blueprintLibrary == null) {
                 blueprintLibrary = BlueprintLibrary.builder()
                         .home(blueprintLibraryAddress.getHome())
@@ -83,7 +85,7 @@ public class BlueprintLibrarySyncer {
             log.debug("Skipping update for blueprint library {} because current beaver version {} is below minimum required version {}",
                     blueprintLibraryAddress.getKey(),
                     currentBeaverVersion,
-                    manifest.getMinimumRequiredBeaverIoTVersion());
+                    manifest.getMinimumRequiredBeaverIotVersion());
             return;
         }
 

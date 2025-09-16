@@ -1,6 +1,6 @@
 package com.milesight.beaveriot.blueprint.library.po;
 
-import com.milesight.beaveriot.blueprint.library.model.BlueprintLibrarySyncStatus;
+import com.milesight.beaveriot.blueprint.model.BlueprintLibrarySyncStatus;
 import jakarta.persistence.*;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Table;

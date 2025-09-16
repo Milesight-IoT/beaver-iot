@@ -9,3 +9,17 @@ ALTER TABLE `t_device_template`
 
 ALTER TABLE `t_device_template`
     ADD CONSTRAINT uk_device_template_vendor_model_tenant_id UNIQUE (vendor, model, tenant_id);
+
+--changeset pandalxb:device_template_v1.3.0_20250915_175500
+ALTER TABLE `t_device_template`
+    DROP CONSTRAINT uk_device_template_vendor_model_tenant_id;
+
+ALTER TABLE `t_device_template`
+    ADD COLUMN blueprint_library_id BIGINT NOT NULL;
+
+ALTER TABLE `t_device_template`
+    ADD COLUMN blueprint_library_version VARCHAR(32) NOT NULL;
+
+ALTER TABLE `t_device_template`
+    ADD CONSTRAINT uk_device_template_vendor_model_blueprint_library_id_blueprint_library_version_tenant_id UNIQUE (vendor, model, blueprint_library_id, blueprint_library_version, tenant_id);
+

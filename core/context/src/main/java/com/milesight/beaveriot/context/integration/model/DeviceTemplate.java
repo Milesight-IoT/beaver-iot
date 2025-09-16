@@ -39,6 +39,12 @@ public class DeviceTemplate implements IdentityKey {
     @Setter
     private String model;
 
+    @Setter
+    private Long blueprintLibraryId;
+
+    @Setter
+    private String blueprintLibraryVersion;
+
     protected DeviceTemplate() {
     }
 

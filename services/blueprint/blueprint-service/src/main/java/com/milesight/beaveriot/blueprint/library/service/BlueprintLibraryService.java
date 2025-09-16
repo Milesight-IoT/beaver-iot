@@ -2,7 +2,8 @@ package com.milesight.beaveriot.blueprint.library.service;
 
 import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
-import com.milesight.beaveriot.blueprint.library.model.BlueprintLibrary;
+import com.milesight.beaveriot.blueprint.facade.IBlueprintLibraryFacade;
+import com.milesight.beaveriot.blueprint.model.BlueprintLibrary;
 import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryAddress;
 import com.milesight.beaveriot.blueprint.library.po.BlueprintLibraryPO;
 import com.milesight.beaveriot.blueprint.library.repository.BlueprintLibraryRepository;
@@ -18,7 +19,7 @@ import org.springframework.stereotype.Service;
  **/
 @Slf4j
 @Service
-public class BlueprintLibraryService {
+public class BlueprintLibraryService implements IBlueprintLibraryFacade {
     private final BlueprintLibraryRepository blueprintLibraryRepository;
     private final BlueprintLibraryAddressService blueprintLibraryAddressService;
 
@@ -50,6 +51,11 @@ public class BlueprintLibraryService {
                 branch);
     }
 
+    public BlueprintLibrary findById(Long id) {
+        return blueprintLibraryRepository.findById(id).map(this::convertPOToModel).orElse(null);
+    }
+
+    @Override
     public BlueprintLibrary getCurrentBlueprintLibrary() {
         BlueprintLibraryAddress blueprintLibraryAddress = blueprintLibraryAddressService.getCurrentBlueprintLibraryAddress();
         return self().getBlueprintLibrary(blueprintLibraryAddress.getHome(), blueprintLibraryAddress.getBranch());

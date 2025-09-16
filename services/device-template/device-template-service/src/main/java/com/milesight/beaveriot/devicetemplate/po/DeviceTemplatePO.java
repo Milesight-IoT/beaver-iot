@@ -62,4 +62,10 @@ public class DeviceTemplatePO {
 
     @Column(name = "model")
     private String model;
+
+    @Column(name = "blueprint_library_id")
+    private Long blueprintLibraryId;
+
+    @Column(name = "blueprint_library_version")
+    private String blueprintLibraryVersion;
 }
