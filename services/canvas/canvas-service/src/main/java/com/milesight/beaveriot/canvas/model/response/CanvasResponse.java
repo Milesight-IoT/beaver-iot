@@ -15,6 +15,7 @@ import java.util.List;
  */
 @Data
 public class CanvasResponse {
+    private String id;
     private String name;
     private CanvasAttachType attachType;
     private String attachId;

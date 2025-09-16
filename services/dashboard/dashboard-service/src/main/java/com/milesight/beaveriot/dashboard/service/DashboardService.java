@@ -108,6 +108,7 @@ public class DashboardService {
         }
 
         dashboardPO.setName(updateDashboardRequest.getName());
+        dashboardPO.setDescription(updateDashboardRequest.getDescription());
         dashboardCoverService.applyCover(dashboardPO, updateDashboardRequest.getCoverType(), updateDashboardRequest.getCoverData());
         dashboardRepository.save(dashboardPO);
     }

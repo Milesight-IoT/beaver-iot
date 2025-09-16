@@ -100,6 +100,7 @@ public class CanvasService {
         CanvasPO canvasPO = getCanvasById(canvasId);
         checkCanvasPermission(canvasPO, CanvasOp.READ);
         CanvasResponse canvasResponse = new CanvasResponse();
+        canvasResponse.setId(canvasPO.getId().toString());
         canvasResponse.setName(canvasPO.getName());
         canvasResponse.setAttachId(canvasPO.getAttachId());
         canvasResponse.setAttachType(canvasPO.getAttachType());
