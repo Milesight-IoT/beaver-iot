@@ -1,12 +1,18 @@
 package com.milesight.beaveriot.rule.manager.service;
 
+import com.milesight.beaveriot.base.enums.ErrorCode;
+import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
+import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
 import com.milesight.beaveriot.context.integration.model.AttributeBuilder;
+import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.EntityBuilder;
+import com.milesight.beaveriot.device.facade.IDeviceBlueprintMappingFacade;
 import com.milesight.beaveriot.entity.facade.IEntityFacade;
 import com.milesight.beaveriot.rule.manager.model.TriggerNodeParameters;
 import com.milesight.beaveriot.rule.manager.po.WorkflowEntityRelationPO;
@@ -38,6 +44,13 @@ public class WorkflowEntityRelationService {
     @Autowired
     IEntityFacade entityFacade;
 
+
+    @Autowired
+    DeviceServiceProvider deviceServiceProvider;
+
+    @Autowired
+    IDeviceBlueprintMappingFacade deviceBlueprintMappingFacade;
+
     public RuleNodeConfig getTriggerNode(RuleFlowConfig ruleFlowConfig) {
         if (ruleFlowConfig == null) {
             return null;
@@ -66,7 +79,8 @@ public class WorkflowEntityRelationService {
 
         if (triggerNodeConfig == null) {
             if (serviceEntity != null) {
-                entityFacade.deleteCustomizedEntitiesByIds(List.of(serviceEntity.getId()));
+                entityFacade.deleteEntitiesByIds(List.of(serviceEntity.getId()));
+                workflowEntityRelationRepository.delete(relationPO);
             }
 
             return;
@@ -91,8 +105,30 @@ public class WorkflowEntityRelationService {
                     }).toList();
         }
 
+        Long relatedDeviceId = null;
+        if (ruleFlowConfig.getMetadata() != null && !StringUtils.isEmpty(ruleFlowConfig.getMetadata().getBlueprintId())) {
+            Long blueprintId = Long.valueOf(ruleFlowConfig.getMetadata().getBlueprintId());
+            relatedDeviceId = deviceBlueprintMappingFacade.getDeviceIdByBlueprintId(blueprintId);
+            if (relatedDeviceId == null) {
+                throw ServiceException.with(ErrorCode.DATA_NO_FOUND.getErrorCode(), "Cannot find device for blueprint: " + blueprintId).build();
+            }
+        }
+
         if (serviceEntity == null) {
-            EntityBuilder eb = new EntityBuilder(IntegrationConstants.SYSTEM_INTEGRATION_ID);
+            EntityBuilder eb;
+
+            // create device entity or custom entity
+            if (relatedDeviceId == null) {
+                eb = new EntityBuilder(IntegrationConstants.SYSTEM_INTEGRATION_ID);
+            } else {
+                Device relatedDevice = deviceServiceProvider.findById(relatedDeviceId);
+                if (relatedDevice == null) {
+                    throw ServiceException.with(ErrorCode.DATA_NO_FOUND.getErrorCode(), "Device Not Found: " + relatedDeviceId).build();
+                }
+
+                eb = new EntityBuilder(relatedDevice.getIntegrationId(), relatedDevice.getKey());
+            }
+
             serviceEntity = eb.identifier(workflowPO.getId().toString())
                     .service(workflowPO.getName())
                     .valueType(EntityValueType.OBJECT)
@@ -123,8 +159,13 @@ public class WorkflowEntityRelationService {
                     .stream().map(WorkflowEntityRelationPO::getEntityId)
                     .toList();
             workflowEntityRelationRepository.deleteAll(relations);
-            entityFacade.deleteCustomizedEntitiesByIds(entityIds);
+            entityFacade.deleteEntitiesByIds(entityIds);
         }
+    }
+
+    public boolean entityFlowExists(Long entityId) {
+        return workflowEntityRelationRepository
+                .findOne(f -> f.eq(WorkflowEntityRelationPO.Fields.entityId, entityId)).isPresent();
     }
 
     public WorkflowPO getFlowByEntityId(Long entityId) {

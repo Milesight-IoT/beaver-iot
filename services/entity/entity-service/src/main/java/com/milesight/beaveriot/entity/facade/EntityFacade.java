@@ -80,13 +80,15 @@ public class EntityFacade implements IEntityFacade {
     }
 
     /**
-     * Batch delete customized entities by ids
+     * Batch delete entities by ids
      *
      * @param entityIds entity ids
      */
     @Override
-    public void deleteCustomizedEntitiesByIds(List<Long> entityIds) {
-        entityService.deleteCustomizedEntitiesByIds(entityIds);
+    public void deleteEntitiesByIds(List<Long> entityIds) {
+        if (entityIds != null && !entityIds.isEmpty()) {
+            entityService.deleteEntitiesByPOList(entityService.findEntityPOListAndTheirChildrenByIds(entityIds));
+        }
     }
 
     @Override
