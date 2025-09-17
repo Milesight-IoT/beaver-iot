@@ -23,7 +23,7 @@ public interface IEntityFacade {
 
     Map<Long, String> mapEntityIdToAttachTargetId(Collection<Long> entityIds);
 
-    void deleteCustomizedEntitiesByIds(List<Long> entityIds);
+    void deleteEntitiesByIds(List<Long> entityIds);
 
     long countAllEntitiesByIntegrationId(String integrationId);
 

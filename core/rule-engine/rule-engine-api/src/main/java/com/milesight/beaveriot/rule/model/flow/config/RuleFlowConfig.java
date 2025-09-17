@@ -5,6 +5,7 @@ import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author leon
@@ -17,6 +18,8 @@ public class RuleFlowConfig {
     private String name;
 
     private String fromNodeId;
+
+    private RuleFlowConfigMetadata metadata;
 
     private List<RuleNodeConfig> nodes;
 
