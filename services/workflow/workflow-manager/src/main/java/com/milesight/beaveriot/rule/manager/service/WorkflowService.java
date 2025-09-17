@@ -68,6 +68,9 @@ public class WorkflowService {
     WorkflowEntityRelationService workflowEntityRelationService;
 
     @Autowired
+    DeviceWorkflowService deviceWorkflowService;
+
+    @Autowired
     MessagePubSub messagePubSub;
     private final AtomicBoolean workflowPrepared = new AtomicBoolean(true);
 
@@ -377,7 +380,7 @@ public class WorkflowService {
         swr.setFlowId(workflowIdStr);
         swr.setVersion(workflowPO.getVersion());
 
-        workflowEntityRelationService.saveEntity(workflowPO, ruleFlowConfig);
+        workflowEntityRelationService.saveEntity(workflowPO, ruleFlowConfig, deviceWorkflowService.fetchDeviceIdFromWorkflowMetadata(ruleFlowConfig));
 
         return swr;
     }
@@ -439,7 +442,7 @@ public class WorkflowService {
         swr.setFlowId(workflowIdStr);
         swr.setVersion(workflowPO.getVersion());
 
-        workflowEntityRelationService.saveEntity(workflowPO, ruleFlowConfig);
+        workflowEntityRelationService.saveEntity(workflowPO, ruleFlowConfig, deviceWorkflowService.fetchDeviceIdFromExistsBlueprintWorkflow(workflowPO.getId()));
 
         return swr;
     }

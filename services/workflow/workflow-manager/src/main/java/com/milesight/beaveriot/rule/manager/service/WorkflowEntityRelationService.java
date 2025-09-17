@@ -2,7 +2,6 @@ package com.milesight.beaveriot.rule.manager.service;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
-import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
@@ -12,7 +11,6 @@ import com.milesight.beaveriot.context.integration.model.AttributeBuilder;
 import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.EntityBuilder;
-import com.milesight.beaveriot.device.facade.IDeviceBlueprintMappingFacade;
 import com.milesight.beaveriot.entity.facade.IEntityFacade;
 import com.milesight.beaveriot.rule.manager.model.TriggerNodeParameters;
 import com.milesight.beaveriot.rule.manager.po.WorkflowEntityRelationPO;
@@ -48,9 +46,6 @@ public class WorkflowEntityRelationService {
     @Autowired
     DeviceServiceProvider deviceServiceProvider;
 
-    @Autowired
-    IDeviceBlueprintMappingFacade deviceBlueprintMappingFacade;
-
     public RuleNodeConfig getTriggerNode(RuleFlowConfig ruleFlowConfig) {
         if (ruleFlowConfig == null) {
             return null;
@@ -65,7 +60,7 @@ public class WorkflowEntityRelationService {
         return null;
     }
 
-    public void saveEntity(WorkflowPO workflowPO, RuleFlowConfig ruleFlowConfig) {
+    public void saveEntity(WorkflowPO workflowPO, RuleFlowConfig ruleFlowConfig, Long relatedDeviceId) {
         RuleNodeConfig triggerNodeConfig = getTriggerNode(ruleFlowConfig);
 
         WorkflowEntityRelationPO relationPO = workflowEntityRelationRepository.findOne(f -> f.eq(WorkflowEntityRelationPO.Fields.flowId, workflowPO.getId())).orElse(null);
@@ -103,15 +98,6 @@ public class WorkflowEntityRelationService {
                         }
                         return eb.build();
                     }).toList();
-        }
-
-        Long relatedDeviceId = null;
-        if (ruleFlowConfig.getMetadata() != null && !StringUtils.isEmpty(ruleFlowConfig.getMetadata().getBlueprintId())) {
-            Long blueprintId = Long.valueOf(ruleFlowConfig.getMetadata().getBlueprintId());
-            relatedDeviceId = deviceBlueprintMappingFacade.getDeviceIdByBlueprintId(blueprintId);
-            if (relatedDeviceId == null) {
-                throw ServiceException.with(ErrorCode.DATA_NO_FOUND.getErrorCode(), "Cannot find device for blueprint: " + blueprintId).build();
-            }
         }
 
         if (serviceEntity == null) {
