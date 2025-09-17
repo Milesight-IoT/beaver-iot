@@ -7,5 +7,6 @@ package com.milesight.beaveriot.device.facade;
 public interface IDeviceBlueprintMappingFacade {
     void saveMapping(Long deviceId, Long blueprintId);
     Long getBlueprintIdByDeviceId(Long deviceId);
+    Long getDeviceIdByBlueprintId(Long blueprintId);
     void deleteByDeviceId(Long deviceId);
 }

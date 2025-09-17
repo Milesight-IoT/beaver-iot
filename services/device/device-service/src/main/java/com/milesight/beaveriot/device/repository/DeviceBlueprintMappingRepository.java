@@ -14,5 +14,6 @@ import java.util.List;
 public interface DeviceBlueprintMappingRepository extends BaseJpaRepository<DeviceBlueprintMappingPO, Long> {
     DeviceBlueprintMappingPO findByDeviceIdAndBlueprintId(Long deviceId, Long blueprintId);
     List<DeviceBlueprintMappingPO> findAllByDeviceId(Long deviceId);
+    List<DeviceBlueprintMappingPO> findAllByBlueprintId(Long blueprintId);
     void deleteAllByDeviceId(Long deviceId);
 }
