@@ -44,6 +44,16 @@ public class DeviceBlueprintMappingService implements IDeviceBlueprintMappingFac
     }
 
     @Override
+    public Long getDeviceIdByBlueprintId(Long blueprintId) {
+        List<DeviceBlueprintMappingPO> mappingPOs = deviceBlueprintMappingRepository.findAllByBlueprintId(blueprintId);
+        if (CollectionUtils.isEmpty(mappingPOs)) {
+            return null;
+        }
+
+        return mappingPOs.get(0).getDeviceId();
+    }
+
+    @Override
     public void deleteByDeviceId(Long deviceId) {
         deviceBlueprintMappingRepository.deleteAllByDeviceId(deviceId);
     }
