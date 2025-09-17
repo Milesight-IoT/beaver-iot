@@ -70,7 +70,7 @@ public class DataPermissionAspect {
 
         List<String> dataIds = permissionDTO.getIds();
         if (dataIds.isEmpty()) {
-            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have data permission").build();
+            throw ServiceException.with(ErrorCode.NO_DATA_PERMISSION).detailMessage("user does not have data permission").build();
         }
 
         DataAspectContext.setDataPermissionContext(tableName, DataAspectContext.DataPermissionContext.builder()

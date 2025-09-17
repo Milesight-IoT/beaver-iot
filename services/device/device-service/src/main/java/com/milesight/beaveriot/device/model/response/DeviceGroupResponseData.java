@@ -13,4 +13,6 @@ public class DeviceGroupResponseData {
     private String id;
 
     private String name;
+
+    private Integer deviceCount;
 }

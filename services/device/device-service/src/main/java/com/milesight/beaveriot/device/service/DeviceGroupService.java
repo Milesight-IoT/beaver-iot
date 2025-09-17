@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.device.service;
 
 import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
+import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
@@ -78,20 +79,38 @@ public class DeviceGroupService {
         return deviceGroupRepository.count();
     }
 
-    private DeviceGroupResponseData mapToResponseData(DeviceGroupPO deviceGroupPO) {
-        DeviceGroupResponseData responseData = new DeviceGroupResponseData();
-        responseData.setId(deviceGroupPO.getId().toString());
-        responseData.setName(deviceGroupPO.getName());
-        return responseData;
-    }
-
     public Page<DeviceGroupResponseData> search(SearchDeviceGroupRequest request) {
         Consumer<Filterable> filterable = f -> f.likeIgnoreCase(StringUtils.hasText(request.getName()), DeviceGroupPO.Fields.name, request.getName());
         if (request.getSort().getOrders().isEmpty()) {
             request.sort(new Sorts().desc(DeviceGroupPO.Fields.id));
         }
 
-        return deviceGroupRepository.findAll(filterable, request.toPageable()).map(this::mapToResponseData);
+        Page<DeviceGroupPO> deviceGroupPOPage = deviceGroupRepository.findAll(filterable, request.toPageable());
+        Map<Long, Long> deviceCountMapping = new HashMap<>();
+        if (Boolean.TRUE.equals(request.getWithDeviceCount())) {
+            List<Long> groupIdList = deviceGroupPOPage.map(DeviceGroupPO::getId).toList();
+            try {
+                List<DeviceGroupMappingPO> mappingList = deviceGroupMappingRepository.findAllByGroupIdIn(groupIdList);
+                deviceCountMapping = mappingList.stream()
+                        .collect(Collectors.groupingBy(
+                                DeviceGroupMappingPO::getGroupId,
+                                Collectors.counting()
+                        ));
+            } catch (ServiceException e) {
+                if (!e.getErrorCode().equals(ErrorCode.NO_DATA_PERMISSION.getErrorCode())) {
+                    throw e;
+                }
+            }
+        }
+
+        Map<Long, Long> finalDeviceCountMapping = deviceCountMapping;
+        return deviceGroupPOPage.map(deviceGroupPO -> {
+            DeviceGroupResponseData responseData = new DeviceGroupResponseData();
+            responseData.setId(deviceGroupPO.getId().toString());
+            responseData.setName(deviceGroupPO.getName());
+            responseData.setDeviceCount(Optional.ofNullable(finalDeviceCountMapping.get(deviceGroupPO.getId())).map(Long::intValue).orElse(null));
+            return responseData;
+        });
     }
 
     public List<Long> findAllGroupedDeviceIdList() {
