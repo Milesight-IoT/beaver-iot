@@ -62,11 +62,11 @@ public class BlueprintLibrarySyncer {
         long start = System.currentTimeMillis();
 
         log.debug("Start checking blueprint library {}", blueprintLibraryAddress.getKey());
-        BlueprintLibrary blueprintLibrary = blueprintLibraryService.getBlueprintLibrary(blueprintLibraryAddress.getType().name(), blueprintLibraryAddress.getHome(), blueprintLibraryAddress.getBranch());
+        BlueprintLibrary blueprintLibrary = blueprintLibraryService.getBlueprintLibrary(blueprintLibraryAddress.getType().name(), blueprintLibraryAddress.getUrl(), blueprintLibraryAddress.getBranch());
         if (blueprintLibrary == null) {
             blueprintLibrary = BlueprintLibrary.builder()
                     .type(blueprintLibraryAddress.getType())
-                    .home(blueprintLibraryAddress.getHome())
+                    .url(blueprintLibraryAddress.getUrl())
                     .branch(blueprintLibraryAddress.getBranch())
                     .build();
         }
@@ -111,7 +111,7 @@ public class BlueprintLibrarySyncer {
             BlueprintLibraryAddress defaultBlueprintLibraryAddress = blueprintLibraryAddressService.getDefaultBlueprintLibraryAddress();
             if (!defaultBlueprintLibraryAddress.logicEquals(blueprintLibraryAddress)) {
                 // delete unnecessary blueprint library
-                List<BlueprintLibraryAddress> allTenantsBlueprintLibraryAddresses = blueprintLibraryAddressService.findAllByTypeAndHomeAndBranchIgnoreTenant(blueprintLibrary.getType().name(), blueprintLibrary.getHome(), blueprintLibrary.getBranch());
+                List<BlueprintLibraryAddress> allTenantsBlueprintLibraryAddresses = blueprintLibraryAddressService.findAllByTypeAndUrlAndBranchIgnoreTenant(blueprintLibrary.getType().name(), blueprintLibrary.getUrl(), blueprintLibrary.getBranch());
                 if (CollectionUtils.isEmpty(allTenantsBlueprintLibraryAddresses)) {
                     blueprintLibraryService.deleteById(blueprintLibrary.getId());
                 }
@@ -247,7 +247,7 @@ public class BlueprintLibrarySyncer {
         }
 
         List<BlueprintDeviceVendor> deviceVendors = blueprintLibraryResourceResolver.getDeviceVendors();
-        blueprintLibraryService.evictCacheBlueprintLibrary(oldBlueprintLibrary.getType().name(), oldBlueprintLibrary.getHome(), oldBlueprintLibrary.getBranch());
+        blueprintLibraryService.evictCacheBlueprintLibrary(oldBlueprintLibrary.getType().name(), oldBlueprintLibrary.getUrl(), oldBlueprintLibrary.getBranch());
         blueprintLibraryResourceResolver.evictCacheDeviceVendors(oldBlueprintLibrary);
         if (!CollectionUtils.isEmpty(deviceVendors)) {
             deviceVendors.forEach(vendor -> blueprintLibraryResourceResolver.evictCacheDevices(oldBlueprintLibrary, vendor.getId()));

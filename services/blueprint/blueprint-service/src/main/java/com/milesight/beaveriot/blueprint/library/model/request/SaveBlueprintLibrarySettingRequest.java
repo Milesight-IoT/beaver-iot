@@ -10,6 +10,6 @@ import lombok.Data;
 public class SaveBlueprintLibrarySettingRequest {
     private String sourceType;
     private String type;
-    private String home;
+    private String url;
     private String branch = "main";
 }

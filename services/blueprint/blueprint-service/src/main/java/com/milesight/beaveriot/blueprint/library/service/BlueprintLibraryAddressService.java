@@ -86,8 +86,8 @@ public class BlueprintLibraryAddressService {
     }
 
     @Transactional
-    public void setActiveOnlyByTypeHomeBranch(String type, String home, String branch) {
-        blueprintLibraryAddressRepository.setActiveOnlyByTypeHomeBranch(type, home, branch);
+    public void setActiveOnlyByTypeUrlBranch(String type, String url, String branch) {
+        blueprintLibraryAddressRepository.setActiveOnlyByTypeUrlBranch(type, url, branch);
     }
 
     public List<BlueprintLibraryAddress> findAll() {
@@ -98,16 +98,16 @@ public class BlueprintLibraryAddressService {
         return blueprintLibraryAddressRepository.findAllIgnoreTenant().stream().map(this::convertPOToModel).toList();
     }
 
-    public List<BlueprintLibraryAddress> findAllByTypeAndHomeAndBranch(String type, String home, String branch) {
-        return blueprintLibraryAddressRepository.findAllByTypeAndHomeAndBranch(type, home, branch).stream().map(this::convertPOToModel).toList();
+    public List<BlueprintLibraryAddress> findAllByTypeAndUrlAndBranch(String type, String url, String branch) {
+        return blueprintLibraryAddressRepository.findAllByTypeAndUrlAndBranch(type, url, branch).stream().map(this::convertPOToModel).toList();
     }
 
-    public List<BlueprintLibraryAddress> findAllByTypeAndHomeAndBranchIgnoreTenant(String type, String home, String branch) {
-        return blueprintLibraryAddressRepository.findAllByTypeAndHomeAndBranchIgnoreTenant(type, home, branch).stream().map(this::convertPOToModel).toList();
+    public List<BlueprintLibraryAddress> findAllByTypeAndUrlAndBranchIgnoreTenant(String type, String url, String branch) {
+        return blueprintLibraryAddressRepository.findAllByTypeAndUrlAndBranchIgnoreTenant(type, url, branch).stream().map(this::convertPOToModel).toList();
     }
 
-    public BlueprintLibraryAddress findByTypeAndHomeAndBranch(String type, String home, String branch) {
-        List<BlueprintLibraryAddress> blueprintLibraryAddresses = findAllByTypeAndHomeAndBranch(type, home, branch);
+    public BlueprintLibraryAddress findByTypeAndUrlAndBranch(String type, String url, String branch) {
+        List<BlueprintLibraryAddress> blueprintLibraryAddresses = findAllByTypeAndUrlAndBranch(type, url, branch);
         if (CollectionUtils.isEmpty(blueprintLibraryAddresses)) {
             return null;
         }
@@ -216,7 +216,7 @@ public class BlueprintLibraryAddressService {
     }
 
     public BlueprintLibraryAddress convertPOToModel(BlueprintLibraryAddressPO blueprintLibraryAddressPO) {
-        BlueprintLibraryAddress address = BlueprintLibraryAddress.of(blueprintLibraryAddressPO.getType(), blueprintLibraryAddressPO.getHome(), blueprintLibraryAddressPO.getBranch());
+        BlueprintLibraryAddress address = BlueprintLibraryAddress.of(blueprintLibraryAddressPO.getType(), blueprintLibraryAddressPO.getUrl(), blueprintLibraryAddressPO.getBranch());
         address.setId(blueprintLibraryAddressPO.getId());
         address.setActive(blueprintLibraryAddressPO.getActive());
         address.setCreatedAt(blueprintLibraryAddressPO.getCreatedAt());
@@ -227,7 +227,7 @@ public class BlueprintLibraryAddressService {
         BlueprintLibraryAddressPO addressPO = new BlueprintLibraryAddressPO();
         addressPO.setId(blueprintLibraryAddress.getId());
         addressPO.setType(blueprintLibraryAddress.getType().name());
-        addressPO.setHome(blueprintLibraryAddress.getHome());
+        addressPO.setUrl(blueprintLibraryAddress.getUrl());
         addressPO.setBranch(blueprintLibraryAddress.getBranch());
         addressPO.setActive(blueprintLibraryAddress.getActive());
         return addressPO;

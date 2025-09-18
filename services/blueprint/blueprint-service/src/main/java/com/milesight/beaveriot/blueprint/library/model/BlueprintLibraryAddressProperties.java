@@ -9,6 +9,6 @@ import lombok.Data;
 @Data
 public class BlueprintLibraryAddressProperties {
     private String type;
-    private String home;
+    private String url;
     private String branch;
 }

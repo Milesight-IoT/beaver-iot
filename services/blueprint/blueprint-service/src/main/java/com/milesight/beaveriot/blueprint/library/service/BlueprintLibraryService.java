@@ -30,12 +30,12 @@ public class BlueprintLibraryService implements IBlueprintLibraryFacade {
     }
 
     @Cacheable(cacheNames = Constants.CACHE_NAME_LIBRARY, key = "#p0 + ':' + #p1 + '@' + #p2", unless = "#result == null")
-    public BlueprintLibrary getBlueprintLibrary(String type, String home, String branch) {
-        if (StringUtils.isEmpty(home) || StringUtils.isEmpty(branch)) {
+    public BlueprintLibrary getBlueprintLibrary(String type, String url, String branch) {
+        if (StringUtils.isEmpty(url) || StringUtils.isEmpty(branch)) {
             return null;
         }
 
-        BlueprintLibraryPO blueprintLibraryPO = blueprintLibraryRepository.findByTypeAndHomeAndBranch(type, home, branch);
+        BlueprintLibraryPO blueprintLibraryPO = blueprintLibraryRepository.findByTypeAndUrlAndBranch(type, url, branch);
         if (blueprintLibraryPO == null) {
             return null;
         }
@@ -45,11 +45,11 @@ public class BlueprintLibraryService implements IBlueprintLibraryFacade {
 
     @SuppressWarnings("unused")
     @CacheEvict(cacheNames = Constants.CACHE_NAME_LIBRARY, key = "#p0 + ':' + #p1 + '@' + #p2")
-    public void evictCacheBlueprintLibrary(String type, String home, String branch) {
+    public void evictCacheBlueprintLibrary(String type, String url, String branch) {
         log.debug("Evict cache: {}, key: {}:{}@{}",
                 Constants.CACHE_NAME_LIBRARY,
                 type,
-                home,
+                url,
                 branch);
     }
 
@@ -66,7 +66,7 @@ public class BlueprintLibraryService implements IBlueprintLibraryFacade {
     @Override
     public BlueprintLibrary getCurrentBlueprintLibrary() {
         BlueprintLibraryAddress blueprintLibraryAddress = blueprintLibraryAddressService.getCurrentBlueprintLibraryAddress();
-        return self().getBlueprintLibrary(blueprintLibraryAddress.getType().name(), blueprintLibraryAddress.getHome(), blueprintLibraryAddress.getBranch());
+        return self().getBlueprintLibrary(blueprintLibraryAddress.getType().name(), blueprintLibraryAddress.getUrl(), blueprintLibraryAddress.getBranch());
     }
 
     public BlueprintLibraryService self() {
@@ -83,7 +83,7 @@ public class BlueprintLibraryService implements IBlueprintLibraryFacade {
         return BlueprintLibrary.builder()
                 .id(blueprintLibraryPO.getId())
                 .type(BlueprintLibraryType.of(blueprintLibraryPO.getType()))
-                .home(blueprintLibraryPO.getHome())
+                .url(blueprintLibraryPO.getUrl())
                 .branch(blueprintLibraryPO.getBranch())
                 .currentVersion(blueprintLibraryPO.getCurrentVersion())
                 .remoteVersion(blueprintLibraryPO.getRemoteVersion())
@@ -102,7 +102,7 @@ public class BlueprintLibraryService implements IBlueprintLibraryFacade {
         }
         blueprintLibraryPO.setId(id);
         blueprintLibraryPO.setType(blueprintLibrary.getType().name());
-        blueprintLibraryPO.setHome(blueprintLibrary.getHome());
+        blueprintLibraryPO.setUrl(blueprintLibrary.getUrl());
         blueprintLibraryPO.setBranch(blueprintLibrary.getBranch());
         blueprintLibraryPO.setCurrentVersion(blueprintLibrary.getCurrentVersion());
         blueprintLibraryPO.setRemoteVersion(blueprintLibrary.getRemoteVersion());

@@ -27,8 +27,8 @@ public class BlueprintLibraryPO {
     @Column(name = "type")
     private String type;
 
-    @Column(name = "home")
-    private String home;
+    @Column(name = "url")
+    private String url;
 
     @Column(name = "branch")
     private String branch;

@@ -19,7 +19,7 @@ public abstract class BlueprintLibraryAddress {
     @JsonIgnore
     protected Long id;
     protected BlueprintLibraryType type;
-    protected String home;
+    protected String url;
     protected String branch;
     protected Boolean active;
     @JsonIgnore
@@ -30,14 +30,14 @@ public abstract class BlueprintLibraryAddress {
     protected BlueprintLibraryAddress() {
     }
 
-    public static BlueprintLibraryAddress of(String type, String home, String branch) {
+    public static BlueprintLibraryAddress of(String type, String url, String branch) {
         BlueprintLibraryType addressType = BlueprintLibraryType.of(type);
         BlueprintLibraryAddress address = switch (addressType) {
             case Github -> new BlueprintLibraryGithubAddress();
             case Gitlab -> new BlueprintLibraryGitlabAddress();
             case Zip -> new BlueprintLibraryZipAddress();
         };
-        address.setHome(home);
+        address.setUrl(url);
         address.setBranch(branch);
         address.setActive(false);
         return address;
@@ -49,7 +49,7 @@ public abstract class BlueprintLibraryAddress {
         }
 
         return type == other.type &&
-                Objects.equals(home, other.getHome()) &&
+                Objects.equals(url, other.getUrl()) &&
                 Objects.equals(branch, other.getBranch());
     }
 
@@ -58,8 +58,8 @@ public abstract class BlueprintLibraryAddress {
         this.updateKey();
     }
 
-    public void setHome(String home) {
-        this.home = home;
+    public void setUrl(String url) {
+        this.url = url;
         this.updateKey();
     }
 
@@ -69,13 +69,13 @@ public abstract class BlueprintLibraryAddress {
     }
 
     private void updateKey() {
-        key = String.format("%s:%s@%s", type, home, branch);
+        key = String.format("%s:%s@%s", type, url, branch);
     }
 
     public void validate() {
-        if (StringUtils.isEmpty(home)) {
-            throw ServiceException.with(BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_HOME_EMPTY.getErrorCode(),
-                    BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_HOME_EMPTY.getErrorMessage()).build();
+        if (StringUtils.isEmpty(url)) {
+            throw ServiceException.with(BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_URL_EMPTY.getErrorCode(),
+                    BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_URL_EMPTY.getErrorMessage()).build();
         }
 
         if (StringUtils.isEmpty(branch)) {
@@ -83,15 +83,15 @@ public abstract class BlueprintLibraryAddress {
                     BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_BRANCH_EMPTY.getErrorMessage()).build();
         }
 
-        if (!validateHome()) {
-            throw ServiceException.with(BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_HOME_INVALID.getErrorCode(),
-                    BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_HOME_INVALID.formatMessage(getHomeRegex())).build();
+        if (!validateUrl()) {
+            throw ServiceException.with(BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_URL_INVALID.getErrorCode(),
+                    BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_URL_INVALID.formatMessage(getUrlRegex())).build();
         }
     }
 
-    public abstract boolean validateHome();
+    public abstract boolean validateUrl();
     @JsonIgnore
-    public abstract String getHomeRegex();
+    public abstract String getUrlRegex();
     @JsonIgnore
     public abstract String getRawManifestUrl();
     @JsonIgnore

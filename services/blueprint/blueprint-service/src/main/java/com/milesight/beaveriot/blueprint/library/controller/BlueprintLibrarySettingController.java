@@ -80,7 +80,7 @@ public class BlueprintLibrarySettingController {
     public ResponseBody<Void> saveBlueprintLibrarySetting(@RequestBody SaveBlueprintLibrarySettingRequest request) throws Exception {
         String sourceType = request.getSourceType();
         String type = request.getType();
-        String home = request.getHome();
+        String url = request.getUrl();
         String branch = request.getBranch();
 
         // Step 1. Get blueprint library address
@@ -88,9 +88,9 @@ public class BlueprintLibrarySettingController {
         if (BlueprintLibrarySourceType.Default.name().equals(sourceType)) {
             blueprintLibraryAddress = blueprintLibraryAddressService.getDefaultBlueprintLibraryAddress();
         } else {
-            blueprintLibraryAddress = blueprintLibraryAddressService.findByTypeAndHomeAndBranch(type, home, branch);
+            blueprintLibraryAddress = blueprintLibraryAddressService.findByTypeAndUrlAndBranch(type, url, branch);
             if (blueprintLibraryAddress == null) {
-                blueprintLibraryAddress = BlueprintLibraryAddress.of(type, home, branch);
+                blueprintLibraryAddress = BlueprintLibraryAddress.of(type, url, branch);
                 blueprintLibraryAddress.setId(SnowflakeUtil.nextId());
             }
         }
@@ -104,7 +104,7 @@ public class BlueprintLibrarySettingController {
         } else {
             blueprintLibraryAddress.setActive(true);
             blueprintLibraryAddressService.save(blueprintLibraryAddress);
-            blueprintLibraryAddressService.setActiveOnlyByTypeHomeBranch(type, home, branch);
+            blueprintLibraryAddressService.setActiveOnlyByTypeUrlBranch(type, url, branch);
         }
 
         return ResponseBuilder.success();

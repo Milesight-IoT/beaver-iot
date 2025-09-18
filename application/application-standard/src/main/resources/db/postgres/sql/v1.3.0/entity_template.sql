@@ -23,3 +23,7 @@ CREATE TABLE t_entity_template
 
 CREATE INDEX idx_entity_template_tenant_id ON t_entity_template (tenant_id);
 CREATE INDEX idx_entity_template_parent ON t_entity_template (parent);
+
+--changeset pandalxb:entity_template_v1.3.0_20250918_150000
+ALTER TABLE t_entity_template
+    ALTER COLUMN tenant_id SET NOT NULL;

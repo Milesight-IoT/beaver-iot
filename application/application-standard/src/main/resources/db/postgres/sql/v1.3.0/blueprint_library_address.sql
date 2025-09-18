@@ -5,12 +5,12 @@ CREATE TABLE t_blueprint_library_address
 (
     id                      BIGINT        NOT NULL,
     type                    VARCHAR(32)   NOT NULL,
-    home                    VARCHAR(512)  NOT NULL,
+    url                     VARCHAR(512)  NOT NULL,
     branch                  VARCHAR(255)  NOT NULL,
     active                  BOOLEAN       NOT NULL,
-    tenant_id               VARCHAR(255)  DEFAULT 'default',
+    tenant_id               VARCHAR(255)  NOT NULL,
     created_at              BIGINT        NOT NULL,
     updated_at              BIGINT        NOT NULL,
     PRIMARY KEY (id),
-    CONSTRAINT uk_blueprint_library_address_home_branch_tenant_id UNIQUE (home, branch, tenant_id)
+    CONSTRAINT uk_blueprint_library_address_url_branch_tenant_id UNIQUE (url, branch, tenant_id)
 );

@@ -8,5 +8,5 @@ import com.milesight.beaveriot.data.jpa.repository.BaseJpaRepository;
  * create: 2025/9/1 9:40
  **/
 public interface BlueprintLibraryRepository extends BaseJpaRepository<BlueprintLibraryPO, Long> {
-    BlueprintLibraryPO findByTypeAndHomeAndBranch(String type, String home, String branch);
+    BlueprintLibraryPO findByTypeAndUrlAndBranch(String type, String url, String branch);
 }

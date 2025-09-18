@@ -20,6 +20,6 @@ public class BlueprintLibraryConfig {
     private BlueprintLibraryAddressProperties defaultAddress;
 
     public BlueprintLibraryAddress getDefaultBlueprintLibraryAddress() {
-        return BlueprintLibraryAddress.of(defaultAddress.getType(), defaultAddress.getHome(), defaultAddress.getBranch());
+        return BlueprintLibraryAddress.of(defaultAddress.getType(), defaultAddress.getUrl(), defaultAddress.getBranch());
     }
 }

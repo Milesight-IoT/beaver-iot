@@ -20,18 +20,18 @@ public class BlueprintLibraryGitlabAddress extends BlueprintLibraryAddress {
     }
 
     @Override
-    public boolean validateHome() {
-        return home != null && BlueprintLibraryAddressValidator.PATTERN_HOME.matcher(home).matches();
+    public boolean validateUrl() {
+        return url != null && BlueprintLibraryAddressValidator.PATTERN_URL.matcher(url).matches();
     }
 
     @Override
-    public String getHomeRegex() {
-        return BlueprintLibraryAddressValidator.REGEX_ADDRESS_HOME;
+    public String getUrlRegex() {
+        return BlueprintLibraryAddressValidator.REGEX_ADDRESS_URL;
     }
 
     @Override
     public String getRawManifestUrl() {
-        Matcher matcher = BlueprintLibraryAddressValidator.PATTERN_HOME.matcher(home);
+        Matcher matcher = BlueprintLibraryAddressValidator.PATTERN_URL.matcher(url);
         if (matcher.matches()) {
             String prefix = matcher.group(1);
             String repository = matcher.group(2);
@@ -42,7 +42,7 @@ public class BlueprintLibraryGitlabAddress extends BlueprintLibraryAddress {
 
     @Override
     public String getCodeZipUrl() {
-        Matcher matcher = BlueprintLibraryAddressValidator.PATTERN_HOME.matcher(home);
+        Matcher matcher = BlueprintLibraryAddressValidator.PATTERN_URL.matcher(url);
         if (matcher.matches()) {
             String prefix = matcher.group(1);
             String repository = matcher.group(2);
@@ -58,8 +58,8 @@ public class BlueprintLibraryGitlabAddress extends BlueprintLibraryAddress {
     }
 
     public static class BlueprintLibraryAddressValidator {
-        public static final String REGEX_ADDRESS_HOME = "^(https?://[^/]+(?:/[^/]+)*)/([^/]+)\\.git$";
+        public static final String REGEX_ADDRESS_URL = "^(https?://[^/]+(?:/[^/]+)*)/([^/]+)\\.git$";
 
-        public static final Pattern PATTERN_HOME = Pattern.compile(REGEX_ADDRESS_HOME);
+        public static final Pattern PATTERN_URL = Pattern.compile(REGEX_ADDRESS_URL);
     }
 }

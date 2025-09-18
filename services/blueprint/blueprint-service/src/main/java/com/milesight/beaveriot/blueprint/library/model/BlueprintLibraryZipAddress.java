@@ -4,8 +4,6 @@ import com.milesight.beaveriot.context.model.BlueprintLibraryType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.regex.Pattern;
-
 /**
  * author: Luxb
  * create: 2025/9/16 17:46
@@ -19,13 +17,13 @@ public class BlueprintLibraryZipAddress extends BlueprintLibraryAddress {
     }
 
     @Override
-    public boolean validateHome() {
-        return home.matches(BlueprintLibraryAddressValidator.REGEX_ADDRESS_HOME);
+    public boolean validateUrl() {
+        return url.matches(BlueprintLibraryAddressValidator.REGEX_ADDRESS_URL);
     }
 
     @Override
-    public String getHomeRegex() {
-        return BlueprintLibraryAddressValidator.REGEX_ADDRESS_HOME;
+    public String getUrlRegex() {
+        return BlueprintLibraryAddressValidator.REGEX_ADDRESS_URL;
     }
 
     @Override
@@ -35,11 +33,10 @@ public class BlueprintLibraryZipAddress extends BlueprintLibraryAddress {
 
     @Override
     public String getCodeZipUrl() {
-        return home;
+        return url;
     }
 
     public static class BlueprintLibraryAddressValidator {
-        public static final String REGEX_ADDRESS_HOME = "^https?://.+\\.zip$";
-        public static final Pattern PATTERN_HOME = Pattern.compile(REGEX_ADDRESS_HOME);
+        public static final String REGEX_ADDRESS_URL = "^https?://.+\\.zip$";
     }
 }

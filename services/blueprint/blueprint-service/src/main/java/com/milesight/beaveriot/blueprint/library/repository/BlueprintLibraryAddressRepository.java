@@ -21,23 +21,23 @@ public interface BlueprintLibraryAddressRepository extends BaseJpaRepository<Blu
     }
 
     @Tenant(enable = false)
-    default List<BlueprintLibraryAddressPO> findAllByTypeAndHomeAndBranchIgnoreTenant(String type, String home, String branch) {
-        return findAllByTypeAndHomeAndBranch(type, home, branch);
+    default List<BlueprintLibraryAddressPO> findAllByTypeAndUrlAndBranchIgnoreTenant(String type, String url, String branch) {
+        return findAllByTypeAndUrlAndBranch(type, url, branch);
     }
 
     List<BlueprintLibraryAddressPO> findAllByActiveTrue();
 
-    List<BlueprintLibraryAddressPO> findAllByTypeAndHomeAndBranch(String type, String home, String branch);
+    List<BlueprintLibraryAddressPO> findAllByTypeAndUrlAndBranch(String type, String url, String branch);
 
     @Modifying
     @Query("UPDATE BlueprintLibraryAddressPO b " +
             "SET b.active = CASE " +
-            "   WHEN b.type = :type AND b.home = :home AND b.branch = :branch THEN true " +
+            "   WHEN b.type = :type AND b.url = :url AND b.branch = :branch THEN true " +
             "   ELSE false " +
             "END")
-    void setActiveOnlyByTypeHomeBranch(
+    void setActiveOnlyByTypeUrlBranch(
             @Param("type") String type,
-            @Param("home") String home,
+            @Param("url") String url,
             @Param("branch") String branch
     );
 

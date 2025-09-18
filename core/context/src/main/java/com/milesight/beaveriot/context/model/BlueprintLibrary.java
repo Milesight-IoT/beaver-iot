@@ -14,7 +14,7 @@ import lombok.extern.jackson.Jacksonized;
 public class BlueprintLibrary {
     private Long id;
     private BlueprintLibraryType type;
-    private String home;
+    private String url;
     private String branch;
     private String currentVersion;
     private String remoteVersion;
@@ -26,7 +26,7 @@ public class BlueprintLibrary {
         return BlueprintLibrary.builder()
                 .id(blueprintLibrary.getId())
                 .type(blueprintLibrary.getType())
-                .home(blueprintLibrary.getHome())
+                .url(blueprintLibrary.getUrl())
                 .branch(blueprintLibrary.getBranch())
                 .currentVersion(blueprintLibrary.getCurrentVersion())
                 .remoteVersion(blueprintLibrary.getRemoteVersion())
