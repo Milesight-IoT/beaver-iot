@@ -2,6 +2,7 @@ package com.milesight.beaveriot.canvas.model.response;
 
 import com.milesight.beaveriot.canvas.enums.CanvasAttachType;
 import com.milesight.beaveriot.canvas.model.dto.CanvasWidgetDTO;
+import com.milesight.beaveriot.device.dto.DeviceResponseData;
 import com.milesight.beaveriot.entity.dto.EntityResponse;
 import lombok.Data;
 
@@ -22,4 +23,6 @@ public class CanvasResponse {
     private List<CanvasWidgetDTO> widgets;
     private List<String> entityIds;
     private List<EntityResponse> entities;
+    private List<String> deviceIds;
+    private List<DeviceResponseData> devices;
 }

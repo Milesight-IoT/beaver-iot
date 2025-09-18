@@ -88,3 +88,14 @@ INSERT INTO t_dashboard_preset_cover (id, name, type, data, ordered)
         (80000, 'Green', 'DEFAULT_IMAGE', 'public/default-covers/green.png', 80000);
 
 DROP TABLE t_dashboard_widget_template;
+
+--changeset simon:dashboard_v1.3.0_20250918_093000
+CREATE TABLE "t_canvas_device"
+(
+    id                      BIGINT         PRIMARY KEY,
+    canvas_id               BIGINT         NOT NULL,
+    device_id               BIGINT         NOT NULL,
+    created_at              BIGINT         NOT NULL
+);
+ALTER TABLE t_canvas_device
+    ADD CONSTRAINT uk_canvas_device_canvas_id_device_id UNIQUE (canvas_id, device_id);

@@ -1,16 +1,16 @@
-package com.milesight.beaveriot.device.model.response;
+package com.milesight.beaveriot.device.dto;
 
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
-import com.milesight.beaveriot.context.model.EntityTag;
 import lombok.*;
 
-import java.util.List;
 import java.util.Map;
 
 @Data
 @Builder
-public class DeviceEntityData {
+@AllArgsConstructor
+@NoArgsConstructor
+public class DeviceResponseEntityData {
     private String id;
     private String key;
     private String name;
@@ -18,5 +18,4 @@ public class DeviceEntityData {
     private Map<String, Object> valueAttribute;
     private EntityValueType valueType;
     private String description;
-    private List<EntityTag> entityTags;
 }
