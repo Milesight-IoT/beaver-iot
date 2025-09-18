@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.blueprint.support;
 
 import com.milesight.beaveriot.blueprint.facade.IBlueprintLibraryResourceResolverFacade;
-import com.milesight.beaveriot.blueprint.model.BlueprintLibrary;
+import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.support.SpringContext;
 
 import java.io.ByteArrayInputStream;

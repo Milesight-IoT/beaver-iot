@@ -15,3 +15,22 @@ CREATE TABLE "t_blueprint_library"
     PRIMARY KEY (id),
     CONSTRAINT uk_blueprint_library_home_branch UNIQUE (home, branch)
 );
+
+--changeset pandalxb:blueprint_library_v1.3.0_20250917_084400
+ALTER TABLE t_blueprint_library
+    ADD COLUMN type VARCHAR(32);
+
+ALTER TABLE t_blueprint_library
+    DROP CONSTRAINT uk_blueprint_library_home_branch;
+
+ALTER TABLE t_blueprint_library
+    ADD CONSTRAINT uk_blueprint_library_type_home_branch UNIQUE (type, home, branch);
+
+ALTER TABLE t_blueprint_library
+    ALTER COLUMN synced_at DROP NOT NULL;
+
+ALTER TABLE t_blueprint_library
+    ALTER COLUMN remote_version DROP NOT NULL;
+
+ALTER TABLE t_blueprint_library
+    ADD COLUMN sync_message TEXT;

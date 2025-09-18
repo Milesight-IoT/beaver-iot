@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.blueprint.facade;
 
 import com.milesight.beaveriot.blueprint.model.BlueprintDeviceCodec;
-import com.milesight.beaveriot.blueprint.model.BlueprintLibrary;
+import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.integration.model.BlueprintDevice;
 import com.milesight.beaveriot.context.integration.model.BlueprintDeviceVendor;
 

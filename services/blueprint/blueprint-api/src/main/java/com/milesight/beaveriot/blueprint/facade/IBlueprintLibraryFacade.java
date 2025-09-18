@@ -1,6 +1,6 @@
 package com.milesight.beaveriot.blueprint.facade;
 
-import com.milesight.beaveriot.blueprint.model.BlueprintLibrary;
+import com.milesight.beaveriot.context.model.BlueprintLibrary;
 
 /**
  * author: Luxb
@@ -8,5 +8,6 @@ import com.milesight.beaveriot.blueprint.model.BlueprintLibrary;
  **/
 public interface IBlueprintLibraryFacade {
     BlueprintLibrary findById(Long id);
+    void deleteById(Long id);
     BlueprintLibrary getCurrentBlueprintLibrary();
 }

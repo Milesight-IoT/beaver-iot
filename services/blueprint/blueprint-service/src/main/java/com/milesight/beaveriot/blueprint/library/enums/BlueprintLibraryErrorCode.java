@@ -10,8 +10,10 @@ public enum BlueprintLibraryErrorCode implements ErrorCodeSpec {
             "blueprint_library_null", "Blueprint library must not be null"),
     BLUEPRINT_LIBRARY_BEAVER_VERSION_UNSUPPORTED(HttpStatus.BAD_REQUEST.value(),
             "blueprint_library_beaver_version_unsupported", "Blueprint library beaver version unsupported"),
-    BLUEPRINT_LIBRARY_SYNC_FAILED(HttpStatus.BAD_REQUEST.value(),
-            "blueprint_library_sync_failed", "Blueprint library sync failed");
+    BLUEPRINT_LIBRARY_ZIP_URL_EMPTY(HttpStatus.BAD_REQUEST.value(),
+            "blueprint_library_zip_url_empty", "Blueprint library zip url must not be empty"),
+    BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED(HttpStatus.BAD_REQUEST.value(),
+            "blueprint_library_resources_fetch_failed", "Blueprint library resources fetch failed");
     private final String errorCode;
     private final String errorMessage;
     private final int status;

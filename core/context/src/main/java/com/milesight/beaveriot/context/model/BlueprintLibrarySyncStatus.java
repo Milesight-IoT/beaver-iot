@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.blueprint.model;
+package com.milesight.beaveriot.context.model;
 
 public enum BlueprintLibrarySyncStatus {
     SYNCING,

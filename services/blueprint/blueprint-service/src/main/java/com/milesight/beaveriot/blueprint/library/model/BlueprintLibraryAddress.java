@@ -1,15 +1,13 @@
 package com.milesight.beaveriot.blueprint.library.model;
 
-import com.milesight.beaveriot.base.error.ErrorHolder;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.blueprint.library.enums.BlueprintLibraryAddressErrorCode;
+import com.milesight.beaveriot.context.model.BlueprintLibraryType;
 import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Objects;
 
 
 /**
@@ -17,10 +15,48 @@ import java.util.regex.Pattern;
  * create: 2025/9/1 10:03
  **/
 @Data
-public class BlueprintLibraryAddress {
-    private String home;
-    private String branch;
+public abstract class BlueprintLibraryAddress {
+    @JsonIgnore
+    protected Long id;
+    protected BlueprintLibraryType type;
+    protected String home;
+    protected String branch;
+    protected Boolean active;
+    @JsonIgnore
+    protected Long createdAt;
+    @JsonIgnore
     private String key;
+
+    protected BlueprintLibraryAddress() {
+    }
+
+    public static BlueprintLibraryAddress of(String type, String home, String branch) {
+        BlueprintLibraryType addressType = BlueprintLibraryType.of(type);
+        BlueprintLibraryAddress address = switch (addressType) {
+            case Github -> new BlueprintLibraryGithubAddress();
+            case Gitlab -> new BlueprintLibraryGitlabAddress();
+            case Zip -> new BlueprintLibraryZipAddress();
+        };
+        address.setHome(home);
+        address.setBranch(branch);
+        address.setActive(false);
+        return address;
+    }
+
+    public boolean logicEquals(BlueprintLibraryAddress other) {
+        if (other == null) {
+            return false;
+        }
+
+        return type == other.type &&
+                Objects.equals(home, other.getHome()) &&
+                Objects.equals(branch, other.getBranch());
+    }
+
+    public void setType(BlueprintLibraryType type) {
+        this.type = type;
+        this.updateKey();
+    }
 
     public void setHome(String home) {
         this.home = home;
@@ -33,70 +69,39 @@ public class BlueprintLibraryAddress {
     }
 
     private void updateKey() {
-        key = String.format("%s@%s", home, branch);
+        key = String.format("%s:%s@%s", type, home, branch);
     }
 
-    public List<ErrorHolder> validate() {
-        List<ErrorHolder> errors = new ArrayList<>();
+    public void validate() {
         if (StringUtils.isEmpty(home)) {
-            errors.add(ErrorHolder.of(BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_HOME_EMPTY.getErrorCode(),
-                    BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_HOME_EMPTY.getErrorMessage()));
-            return errors;
+            throw ServiceException.with(BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_HOME_EMPTY.getErrorCode(),
+                    BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_HOME_EMPTY.getErrorMessage()).build();
         }
 
         if (StringUtils.isEmpty(branch)) {
-            errors.add(ErrorHolder.of(BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_BRANCH_EMPTY.getErrorCode(),
-                    BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_BRANCH_EMPTY.getErrorMessage()));
-            return errors;
+            throw ServiceException.with(BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_BRANCH_EMPTY.getErrorCode(),
+                    BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_BRANCH_EMPTY.getErrorMessage()).build();
         }
 
-        if (!BlueprintLibraryAddressValidator.validateHome(home)) {
-            errors.add(ErrorHolder.of(BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_HOME_INVALID.getErrorCode(),
-                    BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_HOME_INVALID.formatMessage(BlueprintLibraryAddressValidator.REGEX_ADDRESS_HOME),
-                    Map.of(ExtraDataConstants.KEY_REGEX, BlueprintLibraryAddressValidator.REGEX_ADDRESS_HOME)));
-        }
-        return errors;
-    }
-
-    public String getRawManifestUrl() {
-        Matcher matcher = BlueprintLibraryAddressValidator.PATTERN_HOME.matcher(home);
-        if (matcher.matches()) {
-            String username = matcher.group(1);
-            String repository = matcher.group(2);
-            return String.format(Constants.FORMAT_MANIFEST,
-                    username, repository, branch);
-        } else {
-            return null;
+        if (!validateHome()) {
+            throw ServiceException.with(BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_HOME_INVALID.getErrorCode(),
+                    BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_HOME_INVALID.formatMessage(getHomeRegex())).build();
         }
     }
 
-    public String getCodeZipUrl() {
-        Matcher matcher = BlueprintLibraryAddressValidator.PATTERN_HOME.matcher(home);
-        if (matcher.matches()) {
-            String username = matcher.group(1);
-            String repository = matcher.group(2);
-            return String.format(Constants.FORMAT_CODE_ZIP,
-                    username, repository, branch);
-        } else {
-            return null;
-        }
+    public abstract boolean validateHome();
+    @JsonIgnore
+    public abstract String getHomeRegex();
+    @JsonIgnore
+    public abstract String getRawManifestUrl();
+    @JsonIgnore
+    public abstract String getCodeZipUrl();
+    @JsonIgnore
+    public String getManifestFilePath() {
+        return Constants.PATH_MANIFEST;
     }
 
-    private static class ExtraDataConstants {
-        public static final String KEY_REGEX = "regex";
-    }
-
-    public static class Constants {
-        public static final String FORMAT_MANIFEST = "https://raw.githubusercontent.com/%s/%s/refs/heads/%s/manifest.yaml";
-        public static final String FORMAT_CODE_ZIP = "https://github.com/%s/%s/archive/refs/heads/%s.zip";
-    }
-
-    public static class BlueprintLibraryAddressValidator {
-        public static final String REGEX_ADDRESS_HOME = "^https://github\\.com/([a-zA-Z\\d](?:[a-zA-Z\\d]|-(?=[a-zA-Z\\d])){0,38})/([a-zA-Z\\d](?:[a-zA-Z\\d._-]*[a-zA-Z\\d])?)\\.git$";
-        public static final Pattern PATTERN_HOME = Pattern.compile(REGEX_ADDRESS_HOME);
-
-        public static boolean validateHome(String home) {
-            return home.matches(REGEX_ADDRESS_HOME);
-        }
+    private static class Constants {
+        public static final String PATH_MANIFEST = "manifest.yaml";
     }
 }

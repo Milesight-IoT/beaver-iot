@@ -18,8 +18,6 @@ public enum BlueprintLibraryAddressErrorCode implements ErrorCodeSpec {
             "blueprint_library_address_home_invalid", "Blueprint library address home must be a string that matches the pattern {0}"),
     BLUEPRINT_LIBRARY_ADDRESS_BRANCH_EMPTY(HttpStatus.BAD_REQUEST.value(),
             "blueprint_library_address_branch_empty", "Blueprint library address branch must not be empty"),
-    BLUEPRINT_LIBRARY_ADDRESS_BRANCH_INVALID(HttpStatus.BAD_REQUEST.value(),
-            "blueprint_library_address_branch_invalid", "Blueprint library address branch must be a string that matches the pattern {0}"),
     BLUEPRINT_LIBRARY_ADDRESS_MANIFEST_NOT_REACHABLE(HttpStatus.BAD_REQUEST.value(),
             "blueprint_library_address_manifest_not_reachable", "Blueprint library address manifest is not reachable"),
     BLUEPRINT_LIBRARY_ADDRESS_MANIFEST_INVALID(HttpStatus.BAD_REQUEST.value(),
