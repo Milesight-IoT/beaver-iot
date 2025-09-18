@@ -217,7 +217,7 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
                 });
 
                 d.setImportantEntities(flattenEntities.stream()
-                        .filter(entity -> entity.getAttributes().get(AttributeBuilder.ATTRIBUTE_IMPORTANT) != null)
+                        .filter(entity -> entity.getAttributes() != null && entity.getAttributes().get(AttributeBuilder.ATTRIBUTE_IMPORTANT) != null)
                         .map(entity -> DeviceResponseEntityData.builder()
                                 .id(entity.getId().toString())
                                 .key(entity.getKey())
@@ -264,7 +264,10 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
             searchDeviceRequest.sort(new Sorts().desc(DevicePO.Fields.id));
         }
 
-        Consumer<Filterable> filter = f -> f.likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.name, searchDeviceRequest.getName())
+        Consumer<Filterable> filter = f -> f.or(
+                        fo -> fo.likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.name, searchDeviceRequest.getName())
+                                .eq(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.identifier, searchDeviceRequest.getName())
+                )
                 .eq(StringUtils.hasText(searchDeviceRequest.getTemplate()), DevicePO.Fields.template, searchDeviceRequest.getTemplate())
                 .likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getIdentifier()), DevicePO.Fields.identifier, searchDeviceRequest.getIdentifier())
                 .in(!searchDeviceRequest.getIdList().isEmpty(), DevicePO.Fields.id, searchDeviceRequest.getIdList().toArray());
