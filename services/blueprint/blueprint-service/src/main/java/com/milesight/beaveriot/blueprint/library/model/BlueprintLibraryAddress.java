@@ -16,6 +16,7 @@ import java.util.Objects;
  **/
 @Data
 public abstract class BlueprintLibraryAddress {
+    public static final String RESOURCE_TYPE = "blueprint-library-address";
     @JsonIgnore
     protected Long id;
     protected BlueprintLibraryType type;
@@ -43,6 +44,7 @@ public abstract class BlueprintLibraryAddress {
         return address;
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean logicEquals(BlueprintLibraryAddress other) {
         if (other == null) {
             return false;

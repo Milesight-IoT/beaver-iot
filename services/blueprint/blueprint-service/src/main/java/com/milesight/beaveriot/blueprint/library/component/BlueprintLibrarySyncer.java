@@ -16,6 +16,7 @@ import com.milesight.beaveriot.context.application.ApplicationProperties;
 import com.milesight.beaveriot.context.integration.model.BlueprintDeviceVendor;
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySyncStatus;
+import com.milesight.beaveriot.context.model.BlueprintLibraryType;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
@@ -69,6 +70,12 @@ public class BlueprintLibrarySyncer {
                     .url(blueprintLibraryAddress.getUrl())
                     .branch(blueprintLibraryAddress.getBranch())
                     .build();
+        }
+
+        if (blueprintLibrary.getType() == BlueprintLibraryType.Zip && blueprintLibrary.getSyncStatus() == BlueprintLibrarySyncStatus.SYNCED) {
+            syncDoneWithMessage(blueprintLibrary,
+                    MessageFormat.format("Skipping update for blueprint library {0} because it is already up to date", blueprintLibraryAddress.getKey()));
+            return;
         }
 
         if (BlueprintLibrarySyncStatus.SYNCING != blueprintLibrary.getSyncStatus()) {

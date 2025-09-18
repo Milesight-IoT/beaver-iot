@@ -10,6 +10,8 @@ import java.text.MessageFormat;
  * create: 2025/9/1 10:56
  **/
 public enum BlueprintLibraryAddressErrorCode implements ErrorCodeSpec {
+    BLUEPRINT_LIBRARY_SOURCE_TYPE_NOT_SUPPORTED(HttpStatus.BAD_REQUEST.value(),
+            "blueprint_library_source_type_not_supported", "Blueprint library source type not supported"),
     BLUEPRINT_LIBRARY_ADDRESS_NULL(HttpStatus.BAD_REQUEST.value(),
             "blueprint_library_address_null", "Blueprint library address must not be null"),
     BLUEPRINT_LIBRARY_ADDRESS_URL_EMPTY(HttpStatus.BAD_REQUEST.value(),

@@ -7,5 +7,5 @@ package com.milesight.beaveriot.context.model;
 public enum BlueprintLibrarySourceType {
     Default,
     Custom,
-    Zip
+    Upload
 }

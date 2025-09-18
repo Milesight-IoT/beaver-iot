@@ -1,84 +1,80 @@
 package com.milesight.beaveriot.blueprint.library.controller;
 
+import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.blueprint.library.component.BlueprintLibrarySyncer;
+import com.milesight.beaveriot.blueprint.library.enums.BlueprintLibraryAddressErrorCode;
 import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryAddress;
 import com.milesight.beaveriot.blueprint.library.model.request.SaveBlueprintLibrarySettingRequest;
 import com.milesight.beaveriot.blueprint.library.model.response.QueryBlueprintLibrarySettingResponse;
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryAddressService;
+import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryService;
+import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
 import com.milesight.beaveriot.context.model.BlueprintLibraryType;
-import org.springframework.util.CollectionUtils;
+import com.milesight.beaveriot.resource.manager.dto.ResourceRefDTO;
+import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * author: Luxb
  * create: 2025/9/17 15:05
  **/
+@Slf4j
 @RestController
 @RequestMapping("/blueprint-library-setting")
 public class BlueprintLibrarySettingController {
     private final BlueprintLibraryAddressService blueprintLibraryAddressService;
+    private final BlueprintLibraryService blueprintLibraryService;
     private final BlueprintLibrarySyncer blueprintLibrarySyncer;
+    private final ResourceManagerFacade resourceManagerFacade;
 
-    public BlueprintLibrarySettingController(BlueprintLibraryAddressService blueprintLibraryAddressService, BlueprintLibrarySyncer blueprintLibrarySyncer) {
+    public BlueprintLibrarySettingController(BlueprintLibraryAddressService blueprintLibraryAddressService, BlueprintLibraryService blueprintLibraryService, BlueprintLibrarySyncer blueprintLibrarySyncer, ResourceManagerFacade resourceManagerFacade) {
         this.blueprintLibraryAddressService = blueprintLibraryAddressService;
+        this.blueprintLibraryService = blueprintLibraryService;
         this.blueprintLibrarySyncer = blueprintLibrarySyncer;
+        this.resourceManagerFacade = resourceManagerFacade;
     }
 
     @GetMapping("")
     public ResponseBody<QueryBlueprintLibrarySettingResponse> getBlueprintLibrarySetting() {
+        QueryBlueprintLibrarySettingResponse response = new QueryBlueprintLibrarySettingResponse();
         BlueprintLibraryAddress defaultBlueprintLibraryAddress = blueprintLibraryAddressService.getDefaultBlueprintLibraryAddress();
 
-        List<BlueprintLibraryAddress> blueprintLibraryAddresses = blueprintLibraryAddressService.findAll();
-        if (CollectionUtils.isEmpty(blueprintLibraryAddresses)) {
-            defaultBlueprintLibraryAddress.setActive(true);
-            return ResponseBuilder.success(QueryBlueprintLibrarySettingResponse.of(BlueprintLibrarySourceType.Default.name(),
-                    Map.of(BlueprintLibrarySourceType.Default.name(), List.of(defaultBlueprintLibraryAddress))));
-        }
-
-        Map<BlueprintLibraryType, BlueprintLibraryAddress> typeAddressMap = new HashMap<>();
-        for (BlueprintLibraryAddress blueprintLibraryAddress : blueprintLibraryAddresses) {
-            BlueprintLibraryAddress existBlueprintLibraryAddress = typeAddressMap.get(blueprintLibraryAddress.getType());
-            if (existBlueprintLibraryAddress == null || blueprintLibraryAddress.getCreatedAt() > existBlueprintLibraryAddress.getCreatedAt()) {
-                typeAddressMap.put(blueprintLibraryAddress.getType(), blueprintLibraryAddress);
+        BlueprintLibraryAddress activeBlueprintLibraryAddress = blueprintLibraryAddressService.findByActiveTrue();
+        if (activeBlueprintLibraryAddress != null && activeBlueprintLibraryAddress.getType() == BlueprintLibraryType.Zip) {
+            BlueprintLibrary activeBlueprintLibrary = blueprintLibraryService.getBlueprintLibrary(activeBlueprintLibraryAddress.getType().name(), activeBlueprintLibraryAddress.getUrl(), activeBlueprintLibraryAddress.getBranch());
+            response.setCurrentSourceType(BlueprintLibrarySourceType.Upload.name());
+            if (activeBlueprintLibrary != null) {
+                response.setVersion(activeBlueprintLibrary.getCurrentVersion());
+                response.setFileName(getZipFileFromUrl(activeBlueprintLibrary.getUrl()));
+            }
+        } else {
+            BlueprintLibrary defaultBlueprintLibrary = blueprintLibraryService.getBlueprintLibrary(defaultBlueprintLibraryAddress.getType().name(), defaultBlueprintLibraryAddress.getUrl(), defaultBlueprintLibraryAddress.getBranch());
+            response.setCurrentSourceType(BlueprintLibrarySourceType.Default.name());
+            if (defaultBlueprintLibrary != null) {
+                response.setVersion(defaultBlueprintLibrary.getCurrentVersion());
+                response.setUpdateTime(defaultBlueprintLibrary.getSyncedAt());
             }
         }
 
-        Map<String, List<BlueprintLibraryAddress>> switchTypeAddressMap = new HashMap<>();
-        String currentSourceType = null;
-        for (BlueprintLibraryType type : typeAddressMap.keySet()) {
-            String sourceType = switch(type) {
-                case Github, Gitlab -> BlueprintLibrarySourceType.Custom.name();
-                case Zip -> BlueprintLibrarySourceType.Zip.name();
-            };
+        return ResponseBuilder.success(response);
+    }
 
-            BlueprintLibraryAddress blueprintLibraryAddress = typeAddressMap.get(type);
-            if (blueprintLibraryAddress.getActive()) {
-                currentSourceType = sourceType;
-            }
-            List<BlueprintLibraryAddress> addresses = switchTypeAddressMap.computeIfAbsent(sourceType, k -> new ArrayList<>());
-            addresses.add(blueprintLibraryAddress);
-        }
-
-        if (currentSourceType == null) {
-            currentSourceType = BlueprintLibrarySourceType.Default.name();
-            defaultBlueprintLibraryAddress.setActive(true);
-        }
-        switchTypeAddressMap.put(BlueprintLibrarySourceType.Default.name(), List.of(defaultBlueprintLibraryAddress));
-        return ResponseBuilder.success(QueryBlueprintLibrarySettingResponse.of(currentSourceType, switchTypeAddressMap));
+    private String getZipFileFromUrl(String url) {
+        return url.substring(url.lastIndexOf("/") + 1);
     }
 
     @PostMapping("")
     public ResponseBody<Void> saveBlueprintLibrarySetting(@RequestBody SaveBlueprintLibrarySettingRequest request) throws Exception {
         String sourceType = request.getSourceType();
+        if (!validateSourceType(sourceType)) {
+            throw ServiceException.with(BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_SOURCE_TYPE_NOT_SUPPORTED).build();
+        }
+
         String type = request.getType();
         String url = request.getUrl();
         String branch = request.getBranch();
@@ -105,8 +101,24 @@ public class BlueprintLibrarySettingController {
             blueprintLibraryAddress.setActive(true);
             blueprintLibraryAddressService.save(blueprintLibraryAddress);
             blueprintLibraryAddressService.setActiveOnlyByTypeUrlBranch(type, url, branch);
+            tryLinkResource(blueprintLibraryAddress);
         }
 
         return ResponseBuilder.success();
+    }
+
+    private boolean validateSourceType(String sourceType) {
+        return BlueprintLibrarySourceType.Default.name().equals(sourceType) || BlueprintLibrarySourceType.Upload.name().equals(sourceType);
+    }
+
+    private void tryLinkResource(BlueprintLibraryAddress blueprintLibraryAddress) {
+        if (blueprintLibraryAddress.getType() == BlueprintLibraryType.Zip) {
+            try {
+                ResourceRefDTO resourceRefDTO = new ResourceRefDTO(blueprintLibraryAddress.getKey(), BlueprintLibraryAddress.RESOURCE_TYPE);
+                resourceManagerFacade.linkByUrl(blueprintLibraryAddress.getUrl(), resourceRefDTO);
+            } catch (Exception e) {
+                log.warn("Try link url {} to resource failed.", blueprintLibraryAddress.getUrl());
+            }
+        }
     }
 }
