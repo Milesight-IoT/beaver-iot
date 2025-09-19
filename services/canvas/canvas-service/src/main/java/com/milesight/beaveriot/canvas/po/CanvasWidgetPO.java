@@ -42,7 +42,7 @@ public class CanvasWidgetPO {
         if (getData() != null) {
             String dataStr = new MapJsonConverter().convertToDatabaseColumn(getData());
             if (dataStr.length() > CanvasDataFieldConstants.WIDGET_MAX_DATA_SIZE) {
-                throw new IllegalArgumentException("Dashboard too large");
+                throw new IllegalArgumentException("Widget too large");
             }
         }
     }

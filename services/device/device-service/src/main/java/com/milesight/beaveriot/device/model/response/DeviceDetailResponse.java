@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.device.model.response;
 
+import com.milesight.beaveriot.device.dto.DeviceResponseData;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -17,6 +18,4 @@ public class DeviceDetailResponse extends DeviceResponseData {
     private String userNickname;
 
     private String userEmail;
-
-    List<DeviceEntityData> entities;
 }

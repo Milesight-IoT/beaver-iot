@@ -5,7 +5,7 @@ import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.device.model.request.*;
 import com.milesight.beaveriot.device.model.response.DeviceCanvasResponse;
 import com.milesight.beaveriot.device.model.response.DeviceDetailResponse;
-import com.milesight.beaveriot.device.model.response.DeviceResponseData;
+import com.milesight.beaveriot.device.dto.DeviceResponseData;
 import com.milesight.beaveriot.device.service.DeviceCanvasService;
 import com.milesight.beaveriot.device.service.DeviceService;
 import com.milesight.beaveriot.permission.aspect.OperationPermission;

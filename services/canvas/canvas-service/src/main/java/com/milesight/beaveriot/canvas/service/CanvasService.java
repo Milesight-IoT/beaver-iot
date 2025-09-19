@@ -21,6 +21,7 @@ import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.dashboard.dto.DashboardDTO;
 import com.milesight.beaveriot.dashboard.facade.IDashboardFacade;
+import com.milesight.beaveriot.device.dto.DeviceResponseData;
 import com.milesight.beaveriot.entity.dto.EntityQuery;
 import com.milesight.beaveriot.entity.facade.IEntityFacade;
 import com.milesight.beaveriot.permission.enums.DataPermissionType;
@@ -57,12 +58,6 @@ public class CanvasService {
     IPermissionFacade permissionFacade;
 
     @Autowired
-    IDashboardFacade dashboardFacade;
-
-    @Autowired
-    CanvasEntityRepository canvasEntityRepository;
-
-    @Autowired
     IEntityFacade entityFacade;
 
     @Autowired
@@ -70,6 +65,9 @@ public class CanvasService {
 
     @Autowired
     ResourceManagerFacade resourceManagerFacade;
+
+    @Autowired
+    CanvasRelationService canvasRelationService;
 
     protected void checkCanvasPermission(CanvasPO canvasPO, CanvasOp userOp) {
         if (canvasPO.getAttachType().equals(CanvasAttachType.DASHBOARD)) {
@@ -113,20 +111,14 @@ public class CanvasService {
             return canvasWidgetDTO;
         }).collect(Collectors.toList()));
 
-        List<CanvasEntityPO> canvasEntityList = canvasEntityRepository.findAll(filter -> filter.eq(CanvasEntityPO.Fields.canvasId, canvasId));
-        if (!canvasEntityList.isEmpty()) {
-            List<Long> entityIds = canvasEntityList.stream().map(CanvasEntityPO::getEntityId).toList();
-            canvasResponse.setEntityIds(entityIds.stream().map(Object::toString).toList());
-            EntityQuery query = new EntityQuery();
-            query.setEntityIds(entityIds);
-            query.setPageNumber(1);
-            query.setPageSize(CanvasDataFieldConstants.ENTITY_MAX_COUNT_PER_DASHBOARD);
-            query.setSort(new Sorts().asc("id"));
-            canvasResponse.setEntities(entityFacade.search(query).getContent());
-        } else {
-            canvasResponse.setEntityIds(List.of());
-            canvasResponse.setEntities(List.of());
-        }
+        CanvasRelationService.CanvasEntityResult canvasEntityResult = canvasRelationService.getCanvasEntities(canvasId);
+
+        canvasResponse.setEntityIds(canvasEntityResult.getEntityIdList().stream().map(Object::toString).toList());
+        canvasResponse.setEntities(canvasEntityResult.getEntityList());
+
+        List<DeviceResponseData> deviceResponseDataList = canvasRelationService.getCanvasDevices(canvasId);
+        canvasResponse.setDeviceIds(deviceResponseDataList.stream().map(DeviceResponseData::getId).toList());
+        canvasResponse.setDevices(deviceResponseDataList);
         return canvasResponse;
     }
 
@@ -146,21 +138,8 @@ public class CanvasService {
 
         canvasPO.setName(updateRequest.getName());
         canvasRepository.save(canvasPO);
-
-        canvasEntityRepository.deleteAllByCanvasId(canvasId);
-        canvasEntityRepository.flush();
-        if (!CollectionUtils.isEmpty(updateRequest.getEntityIds())) {
-            List<Entity> entities = entityServiceProvider.findByIds(updateRequest.getEntityIds());
-            List<CanvasEntityPO> canvasEntities = entities.stream()
-                    .map(e -> CanvasEntityPO.builder()
-                            .id(SnowflakeUtil.nextId())
-                            .canvasId(canvasId)
-                            .entityId(e.getId())
-                            .entityKey(e.getKey())
-                            .build())
-                    .toList();
-            canvasEntityRepository.saveAll(canvasEntities);
-        }
+        canvasRelationService.saveCanvasEntities(canvasId, updateRequest.getEntityIds());
+        canvasRelationService.saveCanvasDevices(canvasId, updateRequest.getDeviceIds());
 
         List<CanvasWidgetDTO> canvasWidgetDTOList = updateRequest.getWidgets();
         List<CanvasWidgetPO> prevCanvasWidgetPOList = canvasWidgetRepository.findAll(filter -> filter.eq(CanvasWidgetPO.Fields.canvasId, canvasId));
@@ -230,7 +209,7 @@ public class CanvasService {
     }
 
     @Transactional
-    protected void doDeleteCanvasByIdList(List<Long> canvasIdList) {
+    public void doDeleteCanvasByIdList(List<Long> canvasIdList) {
         if (canvasIdList == null || canvasIdList.isEmpty()) {
             return;
         }
@@ -247,7 +226,7 @@ public class CanvasService {
 
         deleteUrlMap.forEach((widgetId, url) -> resourceManagerFacade.unlinkRef(new ResourceRefDTO(widgetId, ResourceRefType.DASHBOARD_WIDGET.name())));
         canvasWidgetRepository.deleteByCanvasIdIn(canvasIdList);
-        canvasEntityRepository.deleteAllByCanvasIdIn(canvasIdList);
+        canvasRelationService.deleteCanvasRelations(canvasIdList);
         canvasRepository.deleteAllById(canvasIdList);
     }
 }

@@ -1,7 +1,8 @@
-package com.milesight.beaveriot.device.model.response;
+package com.milesight.beaveriot.device.dto;
 
 import lombok.*;
 
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -19,4 +20,5 @@ public class DeviceResponseData {
     private String integrationName;
     private String groupName;
     private Boolean deletable;
+    private List<DeviceResponseEntityData> importantEntities;
 }

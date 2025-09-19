@@ -20,9 +20,12 @@ public class CanvasUpdateRequest {
     @NotBlank
     private String name;
 
-    @Size(max = CanvasDataFieldConstants.WIDGET_MAX_COUNT_PER_DASHBOARD)
+    @Size(max = CanvasDataFieldConstants.WIDGET_MAX_COUNT_PER_CANVAS)
     private List<CanvasWidgetDTO> widgets;
 
-    @Size(max = CanvasDataFieldConstants.ENTITY_MAX_COUNT_PER_DASHBOARD)
+    @Size(max = CanvasDataFieldConstants.ENTITY_MAX_COUNT_PER_CANVAS)
     private List<Long> entityIds;
+
+    @Size(max = CanvasDataFieldConstants.DEVICE_MAX_COUNT_PER_CANVAS)
+    private List<Long> deviceIds;
 }
