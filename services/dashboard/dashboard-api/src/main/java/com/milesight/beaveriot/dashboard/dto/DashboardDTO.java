@@ -11,6 +11,7 @@ public class DashboardDTO {
 
     private Long dashboardId;
     private String dashboardName;
+    private Long mainCanvasId;
     private Long userId;
     private Long createdAt;
 

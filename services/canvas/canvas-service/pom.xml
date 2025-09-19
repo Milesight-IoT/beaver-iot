@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.milesight.beaveriot</groupId>
+        <artifactId>canvas</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>canvas-service</artifactId>
+    <name>canvas-service</name>
+    <description>An open-source platform designed for rapid and intuitive IoT application development.</description>
+    <url>https://github.com/milesight-iot/beaver-iot</url>
+    <scm>
+        <url>https://github.com/milesight-iot/beaver-iot</url>
+    </scm>
+    <organization>
+        <name>Milesight</name>
+        <url>https://www.milesight.com</url>
+    </organization>
+    <developers>
+        <developer>
+            <id>Simon</id>
+            <name>Simon Zhao</name>
+            <email>simon.zhao@milesight.com</email>
+        </developer>
+    </developers>
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/license/MIT</url>
+        </license>
+    </licenses>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>context</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>data-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>canvas-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>dashboard-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>entity-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>device-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>permission-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>resource-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>data-jpa</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>mqtt-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>

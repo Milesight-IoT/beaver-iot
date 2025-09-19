@@ -1,0 +1,89 @@
+package com.milesight.beaveriot.permission.service;
+
+import com.milesight.beaveriot.base.enums.ErrorCode;
+import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.permission.dto.PermissionDTO;
+import com.milesight.beaveriot.permission.enums.DataPermissionType;
+import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
+import com.milesight.beaveriot.permission.facade.IPermissionFacade;
+import com.milesight.beaveriot.user.dto.MenuDTO;
+import com.milesight.beaveriot.user.facade.IUserFacade;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * PermissionService class.
+ *
+ * @author simon
+ * @date 2025/9/10
+ */
+@Service
+public class PermissionService implements IPermissionFacade {
+    @Autowired
+    IUserFacade userFacade;
+
+    @Autowired
+    EntityPermissionService entityPermissionService;
+    @Autowired
+    DashboardPermissionService dashboardPermissionService;
+    @Autowired
+    DevicePermissionService devicePermissionService;
+    @Autowired
+    WorkflowPermissionService workflowPermissionService;
+
+    private Long getContextUserId() {
+        Long userId = SecurityUserContext.getUserId();
+        if (userId == null) {
+            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not logged in").build();
+        }
+
+        return userId;
+    }
+
+    public void checkMenuPermission(OperationPermissionCode[] codes) {
+        if (codes == null || codes.length == 0) {
+            return;
+        }
+
+        List<MenuDTO> menuDTOList = userFacade.getMenusByUserId(getContextUserId());
+        if (menuDTOList == null || menuDTOList.isEmpty()) {
+            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have permission").build();
+        }
+        List<String> operationPermissionCodes = Arrays.stream(codes).map(OperationPermissionCode::getCode).toList();
+        boolean hasPermission = menuDTOList.stream().anyMatch(menuDTO -> operationPermissionCodes.contains(menuDTO.getMenuCode()));
+        if (!hasPermission) {
+            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have permission").build();
+        }
+    }
+
+    public PermissionDTO getDataPermission(DataPermissionType type) {
+        Long userId = getContextUserId();
+        PermissionDTO permissionDTO = switch (type) {
+            case ENTITY -> entityPermissionService.getEntityPermission(userId);
+            case DEVICE -> devicePermissionService.getDevicePermission(userId);
+            case DASHBOARD -> dashboardPermissionService.getDashboardPermission(userId);
+            case WORKFLOW -> workflowPermissionService.getWorkflowPermission(userId);
+        };
+
+        if (permissionDTO == null) {
+            throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("unknown data permission type").build();
+        }
+
+        return permissionDTO;
+    }
+
+    public void checkDataPermission(DataPermissionType type, String id) {
+        PermissionDTO permissionDTO = getDataPermission(type);
+        if (permissionDTO.isHaveAllPermissions()) {
+            return;
+        }
+
+        if (!permissionDTO.getIds().contains(id)) {
+            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have permission").build();
+        }
+    }
+}

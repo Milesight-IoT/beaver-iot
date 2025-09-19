@@ -935,9 +935,24 @@ public class EntityService implements EntityServiceProvider {
         val attachTargetIds = new HashSet<>();
         if (integrationIds != null) {
             attachTargetIds.addAll(integrationIds);
-            val integrationDeviceIds = getDeviceIdsByIntegrationId(integrationIds);
-            if (!integrationDeviceIds.isEmpty()) {
-                intersectionDeviceIds = new HashSet<>(integrationDeviceIds);
+            intersectionDeviceIds = new HashSet<>(getDeviceIdsByIntegrationId(integrationIds));
+        }
+
+        val deviceIdCondition = columnToCondition.get(EntitySearchColumn.DEVICE_ID);
+        if (deviceIdCondition != null && deviceIdCondition.getOperator().equals(ComparisonOperator.EQ)) {
+            if (CollectionUtils.isEmpty(deviceIdCondition.getValues())) {
+                return Page.empty();
+            }
+
+            attachTargetIds.clear();
+            if (intersectionDeviceIds != null) {
+                intersectionDeviceIds = doIntersection(intersectionDeviceIds, List.of(deviceIdCondition.getValues().get(0)));
+            } else {
+                intersectionDeviceIds = new HashSet<>(List.of(deviceIdCondition.getValues().get(0)));
+            }
+
+            if (intersectionDeviceIds.isEmpty()) {
+                return Page.empty();
             }
         }
 

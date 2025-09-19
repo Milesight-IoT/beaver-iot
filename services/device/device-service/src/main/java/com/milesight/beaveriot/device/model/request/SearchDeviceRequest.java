@@ -7,6 +7,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
@@ -17,4 +20,5 @@ public class SearchDeviceRequest extends GenericPageRequest {
     private String groupId;
     private Boolean filterNotGrouped;
     private String identifier;
+    private List<Long> idList = new ArrayList<>();
 }

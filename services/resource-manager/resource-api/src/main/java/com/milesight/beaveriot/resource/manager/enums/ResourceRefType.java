@@ -5,5 +5,6 @@ package com.milesight.beaveriot.resource.manager.enums;
  */
 public enum ResourceRefType {
     DASHBOARD_WIDGET,
+    DASHBOARD_COVER,
     ;
 }

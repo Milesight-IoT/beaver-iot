@@ -50,6 +50,7 @@
         <module>device-template</module>
         <module>entity-template</module>
         <module>blueprint</module>
+        <module>canvas</module>
     </modules>
 
     <properties>

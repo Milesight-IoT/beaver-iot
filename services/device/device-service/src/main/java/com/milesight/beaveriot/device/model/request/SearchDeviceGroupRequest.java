@@ -19,4 +19,6 @@ import lombok.ToString;
 public class SearchDeviceGroupRequest extends GenericPageRequest {
     @Size(max = DeviceDataFieldConstants.DEVICE_GROUP_NAME_MAX_LENGTH)
     private String name;
+
+    private Boolean withDeviceCount;
 }

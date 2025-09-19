@@ -13,20 +13,17 @@ import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
 import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
-import com.milesight.beaveriot.context.integration.model.Device;
-import com.milesight.beaveriot.context.integration.model.Entity;
-import com.milesight.beaveriot.context.integration.model.ExchangePayload;
-import com.milesight.beaveriot.context.integration.model.Integration;
+import com.milesight.beaveriot.context.integration.model.*;
 import com.milesight.beaveriot.context.integration.model.event.DeviceEvent;
-import com.milesight.beaveriot.context.model.EntityTag;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
+import com.milesight.beaveriot.device.dto.DeviceResponseEntityData;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
+import com.milesight.beaveriot.device.facade.IDeviceResponseFacade;
 import com.milesight.beaveriot.device.model.request.*;
 import com.milesight.beaveriot.device.model.response.DeviceDetailResponse;
-import com.milesight.beaveriot.device.model.response.DeviceEntityData;
-import com.milesight.beaveriot.device.model.response.DeviceResponseData;
+import com.milesight.beaveriot.device.dto.DeviceResponseData;
 import com.milesight.beaveriot.device.po.DeviceGroupMappingPO;
 import com.milesight.beaveriot.device.po.DeviceGroupPO;
 import com.milesight.beaveriot.device.po.DevicePO;
@@ -55,14 +52,14 @@ import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.*;
 
 @Service
 @Slf4j
-public class DeviceService implements IDeviceFacade {
+public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
 
     @Autowired
     private DeviceRepository deviceRepository;
@@ -190,10 +187,13 @@ public class DeviceService implements IDeviceFacade {
                 .collect(Collectors.toMap(Integration::getId, integration -> integration));
     }
 
-
     private void fillRelativeInfo(List<DeviceResponseData> dataList) {
         Map<String, Integration> integrationMap = getIntegrationMap(dataList.stream().map(DeviceResponseData::getIntegration).toList());
         Map<Long, DeviceGroupPO> deviceGroupMap = deviceGroupService.deviceMapToGroup(dataList.stream().map(d -> Long.valueOf(d.getId())).toList());
+        Map<String, List<Entity>> deviceKeyToEntity = entityServiceProvider
+            .findByTargetIds(AttachTargetType.DEVICE, dataList.stream().map(DeviceResponseData::getId).toList())
+            .stream()
+            .collect(Collectors.groupingBy(Entity::getDeviceKey));
 
         dataList.forEach(d -> {
             Integration integration = integrationMap.get(d.getIntegration());
@@ -207,6 +207,31 @@ public class DeviceService implements IDeviceFacade {
             DeviceGroupPO groupPO = deviceGroupMap.get(Long.valueOf(d.getId()));
             if (groupPO != null) {
                 d.setGroupName(groupPO.getName());
+                d.setGroupId(groupPO.getId().toString());
+            }
+
+            List<Entity> deviceEntities = deviceKeyToEntity.get(d.getKey());
+            if (deviceEntities != null && !deviceEntities.isEmpty()) {
+                final List<Entity> flattenEntities = new ArrayList<>();
+                deviceEntities.forEach(entity -> {
+                    flattenEntities.add(entity);
+                    flattenEntities.addAll(entity.getChildren());
+                });
+
+                d.setImportantEntities(flattenEntities.stream()
+                        .filter(entity -> entity.getAttributes() != null && entity.getAttributes().get(AttributeBuilder.ATTRIBUTE_IMPORTANT) != null)
+                        .map(entity -> DeviceResponseEntityData.builder()
+                                .id(entity.getId().toString())
+                                .key(entity.getKey())
+                                .name(entity.getName())
+                                .type(entity.getType())
+                                .valueAttribute(entity.getAttributes())
+                                .valueType(entity.getValueType())
+                                .description(entity.getDescription())
+                                .build()
+                        )
+                        .toList()
+                );
             }
         });
     }
@@ -241,9 +266,13 @@ public class DeviceService implements IDeviceFacade {
             searchDeviceRequest.sort(new Sorts().desc(DevicePO.Fields.id));
         }
 
-        Consumer<Filterable> filter = f -> f.likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.name, searchDeviceRequest.getName())
+        Consumer<Filterable> filter = f -> f.or(
+                        fo -> fo.likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.name, searchDeviceRequest.getName())
+                                .eq(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.identifier, searchDeviceRequest.getName())
+                )
                 .eq(StringUtils.hasText(searchDeviceRequest.getTemplate()), DevicePO.Fields.template, searchDeviceRequest.getTemplate())
-                .likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getIdentifier()), DevicePO.Fields.identifier, searchDeviceRequest.getIdentifier());
+                .likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getIdentifier()), DevicePO.Fields.identifier, searchDeviceRequest.getIdentifier())
+                .in(!searchDeviceRequest.getIdList().isEmpty(), DevicePO.Fields.id, searchDeviceRequest.getIdList().toArray());
 
         Page<DeviceResponseData> responseDataList = Page.empty();
         String groupIdStr = searchDeviceRequest.getGroupId();
@@ -280,6 +309,16 @@ public class DeviceService implements IDeviceFacade {
 
         fillRelativeInfo(responseDataList.getContent());
         return responseDataList;
+    }
+
+    @Override
+    public Page<DeviceResponseData> getDeviceResponseByIds(List<Long> deviceIds) {
+        SearchDeviceRequest searchDeviceRequest = new SearchDeviceRequest();
+        searchDeviceRequest.setIdList(deviceIds);
+        searchDeviceRequest.setPageNumber(1);
+        searchDeviceRequest.setPageSize(deviceIds.size());
+        searchDeviceRequest.setSort(new Sorts().asc("id"));
+        return searchDevice(searchDeviceRequest);
     }
 
     @Transactional(rollbackFor = Throwable.class)
@@ -382,40 +421,6 @@ public class DeviceService implements IDeviceFacade {
                 deviceDetailResponse.setTemplateName(deviceTemplate.getName());
             }
         }
-
-        // set entities
-        List<Entity> entities = entityServiceProvider.findByTargetId(AttachTargetType.DEVICE, deviceId.toString());
-        List<Long> entityIds = entities.stream().flatMap(entity -> Stream.concat(
-                        Stream.of(entity.getId()),
-                        Optional.ofNullable(entity.getChildren())
-                                .map(e -> e.stream().map(Entity::getId))
-                                .orElseGet(Stream::empty)))
-                .toList();
-        Map<Long, List<EntityTag>> entityIdToTags = entityServiceProvider.findTagsByIds(entityIds);
-        deviceDetailResponse.setEntities(entities
-                .stream().flatMap((Entity pEntity) -> {
-                    List<Entity> flatEntities = new ArrayList<>();
-                    flatEntities.add(pEntity);
-
-                    List<Entity> childrenEntities = pEntity.getChildren();
-                    if (childrenEntities != null) {
-                        flatEntities.addAll(childrenEntities);
-                    }
-
-                    List<EntityTag> entityTags = entityIdToTags.get(pEntity.getId());
-
-                    return flatEntities.stream().map(entity -> DeviceEntityData
-                            .builder()
-                            .id(entity.getId().toString())
-                            .key(entity.getKey())
-                            .type(entity.getType())
-                            .name(entity.getName())
-                            .valueType(entity.getValueType())
-                            .valueAttribute(entity.getAttributes())
-                            .description(entity.getDescription())
-                            .entityTags(entityTags)
-                            .build());
-                }).toList());
         return deviceDetailResponse;
     }
 

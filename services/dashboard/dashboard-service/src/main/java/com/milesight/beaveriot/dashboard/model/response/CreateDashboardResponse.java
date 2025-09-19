@@ -12,4 +12,6 @@ public class CreateDashboardResponse {
 
     private String dashboardId;
 
+    private String mainCanvasId;
+
 }

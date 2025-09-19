@@ -22,6 +22,7 @@ public enum EntitySearchColumn {
     ENTITY_PARENT_NAME(Set.of(ComparisonOperator.CONTAINS, ComparisonOperator.NOT_CONTAINS, ComparisonOperator.EQ, ComparisonOperator.NE, ComparisonOperator.START_WITH, ComparisonOperator.END_WITH, ComparisonOperator.IS_EMPTY, ComparisonOperator.IS_NOT_EMPTY)),
     ENTITY_TAGS(Set.of(ComparisonOperator.ANY_EQUALS, ComparisonOperator.EQ, ComparisonOperator.CONTAINS, ComparisonOperator.NOT_CONTAINS, ComparisonOperator.IS_EMPTY, ComparisonOperator.IS_NOT_EMPTY)),
     DEVICE_GROUP(Set.of(ComparisonOperator.ANY_EQUALS)),
+    DEVICE_ID(Set.of(ComparisonOperator.EQ)),
     ;
 
     private static final Map<String, EntitySearchColumn> NAME_TO_ENUM = Arrays.stream(EntitySearchColumn.values())

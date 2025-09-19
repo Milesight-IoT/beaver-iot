@@ -1,15 +1,12 @@
 package com.milesight.beaveriot.dashboard.repository;
 
 import com.milesight.beaveriot.dashboard.po.DashboardHomePO;
-import com.milesight.beaveriot.dashboard.po.DashboardPO;
 import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.data.jpa.repository.BaseJpaRepository;
 import com.milesight.beaveriot.permission.aspect.DataPermission;
 import com.milesight.beaveriot.permission.aspect.Tenant;
 import com.milesight.beaveriot.permission.enums.DataPermissionType;
 import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +30,5 @@ public interface DashboardHomeRepository extends BaseJpaRepository<DashboardHome
     }
 
     @Modifying
-    @Query("delete from DashboardHomePO d where d.dashboardId = :dashboardId")
-    void deleteByDashboardId(@Param("dashboardId") Long dashboardId);
-
+    void deleteByDashboardIdIn(List<Long> dashboardIdList);
 }
