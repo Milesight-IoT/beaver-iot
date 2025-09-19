@@ -19,6 +19,7 @@ public class DeviceResponseData {
 
     private String integrationName;
     private String groupName;
+    private String groupId;
     private Boolean deletable;
     private List<DeviceResponseEntityData> importantEntities;
 }
