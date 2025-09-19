@@ -48,6 +48,7 @@ public class TenantService implements ITenantFacade {
 
     @Override
     public void runWithAllTenants(Runnable runnable) {
+        String tenantId = TenantContext.tryGetTenantId().orElse(null);
         tenantRepository.findAll().forEach(tenant -> {
             try {
                 TenantContext.setTenantId(tenant.getId());
@@ -56,5 +57,8 @@ public class TenantService implements ITenantFacade {
                 TenantContext.clear();
             }
         });
+        if (tenantId != null) {
+            TenantContext.setTenantId(tenantId);
+        }
     }
 }

@@ -1,6 +1,6 @@
 package com.milesight.beaveriot.devicetemplate.facade;
 
-import com.milesight.beaveriot.blueprint.model.BlueprintLibrary;
+import com.milesight.beaveriot.context.model.BlueprintLibrary;
 
 /**
  * author: Luxb

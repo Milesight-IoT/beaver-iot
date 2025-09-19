@@ -13,7 +13,7 @@ import com.milesight.beaveriot.base.utils.ValidationUtils;
 import com.milesight.beaveriot.blueprint.facade.IBlueprintFacade;
 import com.milesight.beaveriot.blueprint.facade.IBlueprintLibraryFacade;
 import com.milesight.beaveriot.blueprint.facade.IBlueprintLibraryResourceResolverFacade;
-import com.milesight.beaveriot.blueprint.model.BlueprintLibrary;
+import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.blueprint.support.DefaultTemplateLoader;
 import com.milesight.beaveriot.blueprint.support.TemplateLoader;
 import com.milesight.beaveriot.context.api.*;

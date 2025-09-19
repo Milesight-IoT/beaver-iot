@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.blueprint.model;
+package com.milesight.beaveriot.context.model;
 
 import lombok.Builder;
 import lombok.Data;
@@ -13,21 +13,25 @@ import lombok.extern.jackson.Jacksonized;
 @Data
 public class BlueprintLibrary {
     private Long id;
-    private String home;
+    private BlueprintLibraryType type;
+    private String url;
     private String branch;
     private String currentVersion;
     private String remoteVersion;
     private BlueprintLibrarySyncStatus syncStatus;
     private Long syncedAt;
+    private String syncMessage;
 
     public static BlueprintLibrary clone(BlueprintLibrary blueprintLibrary) {
         return BlueprintLibrary.builder()
                 .id(blueprintLibrary.getId())
-                .home(blueprintLibrary.getHome())
+                .type(blueprintLibrary.getType())
+                .url(blueprintLibrary.getUrl())
                 .branch(blueprintLibrary.getBranch())
                 .currentVersion(blueprintLibrary.getCurrentVersion())
                 .remoteVersion(blueprintLibrary.getRemoteVersion())
                 .syncStatus(blueprintLibrary.getSyncStatus())
-                .syncedAt(blueprintLibrary.getSyncedAt()).build();
+                .syncedAt(blueprintLibrary.getSyncedAt())
+                .syncMessage(blueprintLibrary.getSyncMessage()).build();
     }
 }

@@ -1,9 +1,6 @@
 package com.milesight.beaveriot.blueprint.library.po;
 
-import com.milesight.beaveriot.context.model.BlueprintLibrarySyncStatus;
 import jakarta.persistence.*;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
 import org.springframework.data.annotation.CreatedDate;
@@ -12,39 +9,23 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * author: Luxb
- * create: 2025/9/1 9:29
+ * create: 2025/9/19 10:00
  **/
 @Data
 @Entity
 @FieldNameConstants
-@Table(name = "t_blueprint_library")
+@Table(name = "t_blueprint_library_version")
 @EntityListeners(AuditingEntityListener.class)
-public class BlueprintLibraryPO {
+public class BlueprintLibraryVersionPO {
     @Id
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "type")
-    private String type;
+    @Column(name = "library_id")
+    private Long libraryId;
 
-    @Column(name = "url")
-    private String url;
-
-    @Column(name = "branch")
-    private String branch;
-
-    @Column(name = "current_version")
-    private String currentVersion;
-
-    @Column(name = "remote_version")
-    private String remoteVersion;
-
-    @Column(name = "sync_status")
-    @Enumerated(EnumType.STRING)
-    private BlueprintLibrarySyncStatus syncStatus;
-
-    @Column(name = "syncMessage")
-    private String syncMessage;
+    @Column(name = "library_version")
+    private String libraryVersion;
 
     @Column(name = "synced_at")
     private Long syncedAt;

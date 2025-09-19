@@ -10,7 +10,7 @@ import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryResourc
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryService;
 import com.milesight.beaveriot.blueprint.library.support.YamlConverter;
 import com.milesight.beaveriot.blueprint.model.BlueprintDeviceCodec;
-import com.milesight.beaveriot.blueprint.model.BlueprintLibrary;
+import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.integration.model.BlueprintDevice;
 import com.milesight.beaveriot.context.integration.model.BlueprintDeviceVendor;
 import com.milesight.beaveriot.context.support.SpringContext;
@@ -132,7 +132,7 @@ public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResour
         return getResourceContent(blueprintLibraryService.getCurrentBlueprintLibrary(), vendor, relativePath);
     }
 
-    @Cacheable(cacheNames = Constants.CACHE_NAME_DEVICE_VENDORS, key = "#p0.home + '@' + #p0.branch + ':' + #p0.currentVersion", unless = "#result == null")
+    @Cacheable(cacheNames = Constants.CACHE_NAME_DEVICE_VENDORS, key = "#p0.type + ':' + #p0.url + '@' + #p0.branch + ':' + #p0.currentVersion", unless = "#result == null")
     public List<BlueprintDeviceVendor> getDeviceVendors(BlueprintLibrary blueprintLibrary) {
         if (blueprintLibrary == null) {
             throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_NULL.getErrorCode(),
@@ -154,16 +154,16 @@ public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResour
         return vendors.getVendors();
     }
 
-    @CacheEvict(cacheNames = Constants.CACHE_NAME_DEVICE_VENDORS, key = "#p0.home + '@' + #p0.branch + ':' + #p0.currentVersion")
+    @CacheEvict(cacheNames = Constants.CACHE_NAME_DEVICE_VENDORS, key = "#p0.type + ':' + #p0.url + '@' + #p0.branch + ':' + #p0.currentVersion")
     public void evictCacheDeviceVendors(BlueprintLibrary blueprintLibrary) {
         log.debug("Evict cache: {}, key: {}@{}:{}",
                 Constants.CACHE_NAME_DEVICE_VENDORS,
-                blueprintLibrary.getHome(),
+                blueprintLibrary.getUrl(),
                 blueprintLibrary.getBranch(),
                 blueprintLibrary.getCurrentVersion());
     }
 
-    @Cacheable(cacheNames = Constants.CACHE_NAME_DEVICES, key = "#p0.home + '@' + #p0.branch + ':' + #p0.currentVersion + ':' + #p1", unless = "#result == null")
+    @Cacheable(cacheNames = Constants.CACHE_NAME_DEVICES, key = "#p0.type + ':' + #p0.url + '@' + #p0.branch + ':' + #p0.currentVersion + ':' + #p1", unless = "#result == null")
     public List<BlueprintDevice> getDevices(BlueprintLibrary blueprintLibrary, String vendor) {
         BlueprintDeviceVendor vendorDef = getDeviceVendor(blueprintLibrary, vendor);
         if (vendorDef == null) {
@@ -181,11 +181,11 @@ public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResour
         return devices.getDevices();
     }
 
-    @CacheEvict(cacheNames = Constants.CACHE_NAME_DEVICES, key = "#p0.home + '@' + #p0.branch + ':' + #p0.currentVersion + ':' + #p1")
+    @CacheEvict(cacheNames = Constants.CACHE_NAME_DEVICES, key = "#p0.type + ':' + #p0.url + '@' + #p0.branch + ':' + #p0.currentVersion + ':' + #p1")
     public void evictCacheDevices(BlueprintLibrary blueprintLibrary, String vendor) {
         log.debug("Evict cache: {}, key: {}@{}:{}",
                 Constants.CACHE_NAME_DEVICE_VENDORS,
-                blueprintLibrary.getHome(),
+                blueprintLibrary.getUrl(),
                 blueprintLibrary.getBranch(),
                 blueprintLibrary.getCurrentVersion());
     }

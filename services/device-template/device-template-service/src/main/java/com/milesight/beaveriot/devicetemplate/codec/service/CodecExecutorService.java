@@ -3,7 +3,7 @@ package com.milesight.beaveriot.devicetemplate.codec.service;
 import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.blueprint.facade.IBlueprintLibraryResourceResolverFacade;
 import com.milesight.beaveriot.blueprint.model.BlueprintDeviceCodec;
-import com.milesight.beaveriot.blueprint.model.BlueprintLibrary;
+import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.api.DeviceTemplateParserProvider;
 import com.milesight.beaveriot.context.model.DeviceTemplateModel;
 import com.milesight.beaveriot.devicetemplate.codec.Argument;

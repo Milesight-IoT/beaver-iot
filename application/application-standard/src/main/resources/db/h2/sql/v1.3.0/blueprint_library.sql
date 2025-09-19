@@ -4,14 +4,16 @@
 CREATE TABLE `t_blueprint_library`
 (
     id                      BIGINT        NOT NULL,
-    home                    VARCHAR(512)  NOT NULL,
+    type                    VARCHAR(32)   NOT NULL,
+    url                     VARCHAR(512)  NOT NULL,
     branch                  VARCHAR(255)  NOT NULL,
     current_version         VARCHAR(32),
-    remote_version          VARCHAR(32)   NOT NULL,
+    remote_version          VARCHAR(32),
     sync_status             VARCHAR(32)   NOT NULL,
-    synced_at               BIGINT       NOT NULL,
-    created_at              BIGINT       NOT NULL,
-    updated_at              BIGINT       NOT NULL,
+    sync_message            TEXT,
+    synced_at               BIGINT,
+    created_at              BIGINT        NOT NULL,
+    updated_at              BIGINT        NOT NULL,
     PRIMARY KEY (id),
-    CONSTRAINT uk_blueprint_library_home_branch UNIQUE (home, branch)
+    CONSTRAINT uk_blueprint_library_type_url_branch UNIQUE (type, url, branch)
 );
