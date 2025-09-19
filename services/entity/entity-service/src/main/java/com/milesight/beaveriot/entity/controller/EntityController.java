@@ -4,15 +4,7 @@ import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.entity.dto.EntityQuery;
 import com.milesight.beaveriot.entity.dto.EntityResponse;
-import com.milesight.beaveriot.entity.model.request.EntityAdvancedSearchQuery;
-import com.milesight.beaveriot.entity.model.request.EntityAggregateQuery;
-import com.milesight.beaveriot.entity.model.request.EntityCreateRequest;
-import com.milesight.beaveriot.entity.model.request.EntityDeleteRequest;
-import com.milesight.beaveriot.entity.model.request.EntityExportRequest;
-import com.milesight.beaveriot.entity.model.request.EntityHistoryQuery;
-import com.milesight.beaveriot.entity.model.request.EntityModifyRequest;
-import com.milesight.beaveriot.entity.model.request.ServiceCallRequest;
-import com.milesight.beaveriot.entity.model.request.UpdatePropertyEntityRequest;
+import com.milesight.beaveriot.entity.model.request.*;
 import com.milesight.beaveriot.entity.model.response.EntityAggregateResponse;
 import com.milesight.beaveriot.entity.model.response.EntityHistoryResponse;
 import com.milesight.beaveriot.entity.model.response.EntityLatestResponse;
@@ -37,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author loong
@@ -92,6 +85,12 @@ public class EntityController {
     public ResponseBody<EntityLatestResponse> getEntityStatus(@PathVariable("entityId") Long entityId) {
         EntityLatestResponse entityLatestResponse = entityValueService.getEntityStatus(entityId);
         return ResponseBuilder.success(entityLatestResponse);
+    }
+
+    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW, OperationPermissionCode.WORKFLOW_ADD, OperationPermissionCode.WORKFLOW_EDIT})
+    @PostMapping("/batch-get-status")
+    public ResponseBody<Map<String, EntityLatestResponse>> batchGetEntityStatus(@RequestBody @Valid EntityStatusBatchGetRequest entityStatusBatchGetRequest) {
+        return ResponseBuilder.success(entityValueService.batchGetEntityStatus(entityStatusBatchGetRequest.getEntityIds()));
     }
 
     @GetMapping("/{entityId}/meta")

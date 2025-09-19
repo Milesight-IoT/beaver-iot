@@ -206,6 +206,7 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
             DeviceGroupPO groupPO = deviceGroupMap.get(Long.valueOf(d.getId()));
             if (groupPO != null) {
                 d.setGroupName(groupPO.getName());
+                d.setGroupId(groupPO.getId().toString());
             }
 
             List<Entity> deviceEntities = deviceKeyToEntity.get(d.getKey());
