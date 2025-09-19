@@ -23,7 +23,9 @@ public enum BlueprintLibraryAddressErrorCode implements ErrorCodeSpec {
     BLUEPRINT_LIBRARY_ADDRESS_MANIFEST_NOT_REACHABLE(HttpStatus.BAD_REQUEST.value(),
             "blueprint_library_address_manifest_not_reachable", "Blueprint library address manifest is not reachable"),
     BLUEPRINT_LIBRARY_ADDRESS_MANIFEST_INVALID(HttpStatus.BAD_REQUEST.value(),
-            "blueprint_library_address_manifest_invalid", "Blueprint library address manifest is invalid");
+            "blueprint_library_address_manifest_invalid", "Blueprint library address manifest is invalid"),
+    BLUEPRINT_LIBRARY_ADDRESS_BEING_SYNCED(HttpStatus.BAD_REQUEST.value(),
+            "blueprint_library_address_being_synced", "Blueprint library address is currently being synchronized. Please try again later.");
 
     private final String errorCode;
     private final String errorMessage;

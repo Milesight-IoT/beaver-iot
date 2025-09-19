@@ -7,23 +7,20 @@ import com.milesight.beaveriot.blueprint.library.config.BlueprintLibraryConfig;
 import com.milesight.beaveriot.blueprint.library.enums.BlueprintLibraryAddressErrorCode;
 import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryAddress;
 import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryManifest;
-import com.milesight.beaveriot.blueprint.library.po.BlueprintLibraryAddressPO;
-import com.milesight.beaveriot.blueprint.library.repository.BlueprintLibraryAddressRepository;
+import com.milesight.beaveriot.blueprint.library.model.BlueprintLibrarySubscription;
 import com.milesight.beaveriot.blueprint.library.support.YamlConverter;
+import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.BlueprintLibraryType;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -35,24 +32,29 @@ import java.util.zip.ZipInputStream;
 @Service
 public class BlueprintLibraryAddressService {
     private final BlueprintLibraryConfig blueprintLibraryConfig;
-    private final BlueprintLibraryAddressRepository blueprintLibraryAddressRepository;
+    private final BlueprintLibraryService blueprintLibraryService;
+    private final BlueprintLibrarySubscriptionService blueprintLibrarySubscriptionService;
 
-    public BlueprintLibraryAddressService(BlueprintLibraryConfig blueprintLibraryConfig, BlueprintLibraryAddressRepository blueprintLibraryAddressRepository) {
+    public BlueprintLibraryAddressService(BlueprintLibraryConfig blueprintLibraryConfig,
+                                          @Lazy BlueprintLibraryService blueprintLibraryService,
+                                          BlueprintLibrarySubscriptionService blueprintLibrarySubscriptionService) {
         this.blueprintLibraryConfig = blueprintLibraryConfig;
-        this.blueprintLibraryAddressRepository = blueprintLibraryAddressRepository;
+        this.blueprintLibraryService = blueprintLibraryService;
+        this.blueprintLibrarySubscriptionService = blueprintLibrarySubscriptionService;
     }
 
     public List<BlueprintLibraryAddress> getDistinctBlueprintLibraryAddresses() {
         List<BlueprintLibraryAddress> distinctBlueprintLibraryAddresses = new ArrayList<>();
 
-        List<BlueprintLibraryAddress> allTenantsBlueprintLibraryAddresses = findAllIgnoreTenant();
+        List<BlueprintLibrarySubscription> allTenantsBlueprintLibrarySubscriptions = blueprintLibrarySubscriptionService.findAllIgnoreTenant();
+        List<BlueprintLibraryAddress> allTenantsBlueprintLibraryAddresses = convertSubscriptionsToAddresses(allTenantsBlueprintLibrarySubscriptions);
         BlueprintLibraryAddress defaultBlueprintLibraryAddress = blueprintLibraryConfig.getDefaultBlueprintLibraryAddress();
         List<BlueprintLibraryAddress> allBlueprintLibraryAddresses = new ArrayList<>(allTenantsBlueprintLibraryAddresses);
         allBlueprintLibraryAddresses.add(defaultBlueprintLibraryAddress);
 
         Set<String> keys = new HashSet<>();
         for (BlueprintLibraryAddress blueprintLibraryAddress : allBlueprintLibraryAddresses) {
-            if (!defaultBlueprintLibraryAddress.logicEquals(blueprintLibraryAddress) && !blueprintLibraryAddress.getActive()) {
+            if (!blueprintLibraryAddress.logicEquals(defaultBlueprintLibraryAddress) && !blueprintLibraryAddress.getActive()) {
                 continue;
             }
 
@@ -62,6 +64,38 @@ public class BlueprintLibraryAddressService {
             }
         }
         return distinctBlueprintLibraryAddresses;
+    }
+
+    public boolean isDefaultBlueprintLibraryAddress(BlueprintLibraryAddress blueprintLibraryAddress) {
+        return blueprintLibraryConfig.getDefaultBlueprintLibraryAddress().logicEquals(blueprintLibraryAddress);
+    }
+
+    private List<BlueprintLibraryAddress> convertSubscriptionsToAddresses(List<BlueprintLibrarySubscription> blueprintLibrarySubscriptions) {
+        if (CollectionUtils.isEmpty(blueprintLibrarySubscriptions)) {
+            return Collections.emptyList();
+        }
+
+        List<BlueprintLibraryAddress> blueprintLibraryAddresses = new ArrayList<>();
+        Map<Long, BlueprintLibrary> blueprintLibraryCache = new HashMap<>();
+        for (BlueprintLibrarySubscription blueprintLibrarySubscription : blueprintLibrarySubscriptions) {
+            if (!blueprintLibrarySubscription.getActive()) {
+                continue;
+            }
+
+            BlueprintLibrary blueprintLibrary = blueprintLibraryCache.computeIfAbsent(blueprintLibrarySubscription.getLibraryId(), blueprintLibraryService::findById);
+            BlueprintLibraryAddress blueprintLibraryAddress = convertLibraryToAddress(blueprintLibrary);
+            blueprintLibraryAddresses.add(blueprintLibraryAddress);
+        }
+        return blueprintLibraryAddresses;
+    }
+
+    private BlueprintLibraryAddress convertSubscriptionToAddress(BlueprintLibrarySubscription blueprintLibrarySubscription) {
+        BlueprintLibrary blueprintLibrary = blueprintLibraryService.findById(blueprintLibrarySubscription.getLibraryId());
+        return convertLibraryToAddress(blueprintLibrary);
+    }
+
+    private BlueprintLibraryAddress convertLibraryToAddress(BlueprintLibrary blueprintLibrary) {
+        return BlueprintLibraryAddress.of(blueprintLibrary.getType().name(), blueprintLibrary.getUrl(), blueprintLibrary.getBranch());
     }
 
     public BlueprintLibraryAddress getDefaultBlueprintLibraryAddress() {
@@ -77,46 +111,12 @@ public class BlueprintLibraryAddressService {
     }
 
     public BlueprintLibraryAddress findByActiveTrue() {
-        return blueprintLibraryAddressRepository.findAllByActiveTrue().stream().map(this::convertPOToModel).findFirst().orElse(null);
-    }
-
-    @Transactional
-    public void setAllInactive() {
-        blueprintLibraryAddressRepository.setAllInactive();
-    }
-
-    @Transactional
-    public void setActiveOnlyByTypeUrlBranch(String type, String url, String branch) {
-        blueprintLibraryAddressRepository.setActiveOnlyByTypeUrlBranch(type, url, branch);
-    }
-
-    public List<BlueprintLibraryAddress> findAll() {
-        return blueprintLibraryAddressRepository.findAll().stream().map(this::convertPOToModel).toList();
-    }
-
-    public List<BlueprintLibraryAddress> findAllIgnoreTenant() {
-        return blueprintLibraryAddressRepository.findAllIgnoreTenant().stream().map(this::convertPOToModel).toList();
-    }
-
-    public List<BlueprintLibraryAddress> findAllByTypeAndUrlAndBranch(String type, String url, String branch) {
-        return blueprintLibraryAddressRepository.findAllByTypeAndUrlAndBranch(type, url, branch).stream().map(this::convertPOToModel).toList();
-    }
-
-    public List<BlueprintLibraryAddress> findAllByTypeAndUrlAndBranchIgnoreTenant(String type, String url, String branch) {
-        return blueprintLibraryAddressRepository.findAllByTypeAndUrlAndBranchIgnoreTenant(type, url, branch).stream().map(this::convertPOToModel).toList();
-    }
-
-    public BlueprintLibraryAddress findByTypeAndUrlAndBranch(String type, String url, String branch) {
-        List<BlueprintLibraryAddress> blueprintLibraryAddresses = findAllByTypeAndUrlAndBranch(type, url, branch);
-        if (CollectionUtils.isEmpty(blueprintLibraryAddresses)) {
+        BlueprintLibrarySubscription blueprintLibrarySubscription = blueprintLibrarySubscriptionService.findByActiveTrue();
+        if (blueprintLibrarySubscription == null) {
             return null;
         }
 
-        return blueprintLibraryAddresses.get(0);
-    }
-
-    public void save(BlueprintLibraryAddress blueprintLibraryAddress) {
-        blueprintLibraryAddressRepository.save(convertModelToPO(blueprintLibraryAddress));
+        return convertSubscriptionToAddress(blueprintLibrarySubscription);
     }
 
     public BlueprintLibraryManifest validateAndGetManifest(BlueprintLibraryAddress blueprintLibraryAddress) {
@@ -213,23 +213,5 @@ public class BlueprintLibraryAddressService {
             return null;
         }
         return null;
-    }
-
-    public BlueprintLibraryAddress convertPOToModel(BlueprintLibraryAddressPO blueprintLibraryAddressPO) {
-        BlueprintLibraryAddress address = BlueprintLibraryAddress.of(blueprintLibraryAddressPO.getType(), blueprintLibraryAddressPO.getUrl(), blueprintLibraryAddressPO.getBranch());
-        address.setId(blueprintLibraryAddressPO.getId());
-        address.setActive(blueprintLibraryAddressPO.getActive());
-        address.setCreatedAt(blueprintLibraryAddressPO.getCreatedAt());
-        return address;
-    }
-
-    public BlueprintLibraryAddressPO convertModelToPO(BlueprintLibraryAddress blueprintLibraryAddress) {
-        BlueprintLibraryAddressPO addressPO = new BlueprintLibraryAddressPO();
-        addressPO.setId(blueprintLibraryAddress.getId());
-        addressPO.setType(blueprintLibraryAddress.getType().name());
-        addressPO.setUrl(blueprintLibraryAddress.getUrl());
-        addressPO.setBranch(blueprintLibraryAddress.getBranch());
-        addressPO.setActive(blueprintLibraryAddress.getActive());
-        return addressPO;
     }
 }

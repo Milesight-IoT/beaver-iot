@@ -13,7 +13,9 @@ public enum BlueprintLibraryErrorCode implements ErrorCodeSpec {
     BLUEPRINT_LIBRARY_ZIP_URL_EMPTY(HttpStatus.BAD_REQUEST.value(),
             "blueprint_library_zip_url_empty", "Blueprint library zip url must not be empty"),
     BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED(HttpStatus.BAD_REQUEST.value(),
-            "blueprint_library_resources_fetch_failed", "Blueprint library resources fetch failed");
+            "blueprint_library_resources_fetch_failed", "Blueprint library resources fetch failed"),
+    BLUEPRINT_LIBRARY_DEFAULT_NOT_FOUND(HttpStatus.NOT_FOUND.value(),
+            "blueprint_library_default_not_found", "Blueprint library default not found");
     private final String errorCode;
     private final String errorMessage;
     private final int status;

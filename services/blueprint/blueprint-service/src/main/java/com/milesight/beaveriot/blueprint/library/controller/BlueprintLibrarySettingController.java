@@ -3,14 +3,16 @@ package com.milesight.beaveriot.blueprint.library.controller;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
-import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.blueprint.library.component.BlueprintLibrarySyncer;
 import com.milesight.beaveriot.blueprint.library.enums.BlueprintLibraryAddressErrorCode;
+import com.milesight.beaveriot.blueprint.library.enums.BlueprintLibraryErrorCode;
 import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryAddress;
+import com.milesight.beaveriot.blueprint.library.model.BlueprintLibrarySubscription;
 import com.milesight.beaveriot.blueprint.library.model.request.SaveBlueprintLibrarySettingRequest;
 import com.milesight.beaveriot.blueprint.library.model.response.QueryBlueprintLibrarySettingResponse;
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryAddressService;
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryService;
+import com.milesight.beaveriot.blueprint.library.service.BlueprintLibrarySubscriptionService;
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
 import com.milesight.beaveriot.context.model.BlueprintLibraryType;
@@ -28,12 +30,14 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/blueprint-library-setting")
 public class BlueprintLibrarySettingController {
     private final BlueprintLibraryAddressService blueprintLibraryAddressService;
+    private final BlueprintLibrarySubscriptionService blueprintLibrarySubscriptionService;
     private final BlueprintLibraryService blueprintLibraryService;
     private final BlueprintLibrarySyncer blueprintLibrarySyncer;
     private final ResourceManagerFacade resourceManagerFacade;
 
-    public BlueprintLibrarySettingController(BlueprintLibraryAddressService blueprintLibraryAddressService, BlueprintLibraryService blueprintLibraryService, BlueprintLibrarySyncer blueprintLibrarySyncer, ResourceManagerFacade resourceManagerFacade) {
+    public BlueprintLibrarySettingController(BlueprintLibraryAddressService blueprintLibraryAddressService, BlueprintLibrarySubscriptionService blueprintLibrarySubscriptionService, BlueprintLibraryService blueprintLibraryService, BlueprintLibrarySyncer blueprintLibrarySyncer, ResourceManagerFacade resourceManagerFacade) {
         this.blueprintLibraryAddressService = blueprintLibraryAddressService;
+        this.blueprintLibrarySubscriptionService = blueprintLibrarySubscriptionService;
         this.blueprintLibraryService = blueprintLibraryService;
         this.blueprintLibrarySyncer = blueprintLibrarySyncer;
         this.resourceManagerFacade = resourceManagerFacade;
@@ -84,23 +88,36 @@ public class BlueprintLibrarySettingController {
         if (BlueprintLibrarySourceType.Default.name().equals(sourceType)) {
             blueprintLibraryAddress = blueprintLibraryAddressService.getDefaultBlueprintLibraryAddress();
         } else {
-            blueprintLibraryAddress = blueprintLibraryAddressService.findByTypeAndUrlAndBranch(type, url, branch);
-            if (blueprintLibraryAddress == null) {
-                blueprintLibraryAddress = BlueprintLibraryAddress.of(type, url, branch);
-                blueprintLibraryAddress.setId(SnowflakeUtil.nextId());
-            }
+            blueprintLibraryAddress = BlueprintLibraryAddress.of(type, url, branch);
         }
 
         // Step 2. Sync blueprint library
-        blueprintLibrarySyncer.sync(blueprintLibraryAddress);
+        // (only when it's not default blueprint library address)
+        BlueprintLibrary blueprintLibrary;
+        if (blueprintLibraryAddressService.isDefaultBlueprintLibraryAddress(blueprintLibraryAddress)) {
+            blueprintLibrary = blueprintLibraryService.getBlueprintLibrary(blueprintLibraryAddress.getType().name(), blueprintLibraryAddress.getUrl(), blueprintLibraryAddress.getBranch());
+            if (blueprintLibrary == null) {
+                throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_DEFAULT_NOT_FOUND).build();
+            }
+        } else {
+            blueprintLibrary = blueprintLibrarySyncer.sync(blueprintLibraryAddress);
+            if (blueprintLibrary == null) {
+                throw ServiceException.with(BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_BEING_SYNCED).build();
+            }
+        }
 
         // Step 3. Switch blueprint library
-        if (BlueprintLibrarySourceType.Default.name().equals(sourceType)) {
-            blueprintLibraryAddressService.setAllInactive();
-        } else {
-            blueprintLibraryAddress.setActive(true);
-            blueprintLibraryAddressService.save(blueprintLibraryAddress);
-            blueprintLibraryAddressService.setActiveOnlyByTypeUrlBranch(type, url, branch);
+        BlueprintLibrarySubscription blueprintLibrarySubscription = blueprintLibrarySubscriptionService.findByLibraryId(blueprintLibrary.getId());
+        if (blueprintLibrarySubscription == null) {
+            blueprintLibrarySubscription = BlueprintLibrarySubscription.builder()
+                    .libraryId(blueprintLibrary.getId())
+                    .libraryVersion(blueprintLibrary.getCurrentVersion())
+                    .active(false)
+                    .build();
+            blueprintLibrarySubscriptionService.save(blueprintLibrarySubscription);
+        }
+        blueprintLibrarySubscriptionService.setActiveOnlyByLibraryId(blueprintLibrary.getId());
+        if (BlueprintLibrarySourceType.Upload.name().equals(sourceType)) {
             tryLinkResource(blueprintLibraryAddress);
         }
 

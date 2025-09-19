@@ -9,32 +9,26 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * author: Luxb
- * create: 2025/9/16 15:22
+ * create: 2025/9/19 10:00
  **/
 @Data
 @Entity
 @FieldNameConstants
-@Table(name = "t_blueprint_library_address")
+@Table(name = "t_blueprint_library_version")
 @EntityListeners(AuditingEntityListener.class)
-public class BlueprintLibraryAddressPO {
+public class BlueprintLibraryVersionPO {
     @Id
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "type")
-    private String type;
+    @Column(name = "library_id")
+    private Long libraryId;
 
-    @Column(name = "url")
-    private String url;
+    @Column(name = "library_version")
+    private String libraryVersion;
 
-    @Column(name = "branch")
-    private String branch;
-
-    @Column(name = "active")
-    private Boolean active;
-
-    @Column(insertable = false, updatable = false)
-    private String tenantId;
+    @Column(name = "synced_at")
+    private Long syncedAt;
 
     @Column(name = "created_at", updatable = false)
     @CreatedDate
