@@ -58,11 +58,12 @@ public class BlueprintService implements IBlueprintFacade {
         templateParser.loadConstantsIntoContext(templateLoader, context);
 
         var variablesJsonSchema = templateParser.getVariableJsonSchema(templateLoader, context);
-        validateVariables(variables, variablesJsonSchema);
-        BlueprintUtils.loadObjectSchemaDefaultValues(variablesJsonSchema, variables);
-
-        context.put(BlueprintConstants.VARIABLES_KEY, variables);
-        context.put(BlueprintConstants.PARAMETERS_KEY, variables);
+        if (variablesJsonSchema != null) {
+            validateVariables(variables, variablesJsonSchema);
+            BlueprintUtils.loadObjectSchemaDefaultValues(variablesJsonSchema, variables);
+            context.put(BlueprintConstants.VARIABLES_KEY, variables);
+            context.put(BlueprintConstants.PARAMETERS_KEY, variables);
+        }
 
         var systemContext = getSystemContext();
         context.put(BlueprintConstants.SYSTEM_CONTEXT_KEY, systemContext);

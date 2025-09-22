@@ -53,7 +53,7 @@ public class DeviceCanvasResourceManager implements ResourceManager<DeviceCanvas
         var deviceCanvasResponse = deviceCanvasService.getOrCreateDeviceCanvas(Long.valueOf(deviceId));
         var canvasId = deviceCanvasResponse.getCanvasId();
 
-        var canvasUpdateRequest = JsonUtils.cast(data, CanvasUpdateRequest.class);
+        var canvasUpdateRequest = JsonUtils.CAMEL_CASE.cast(data, CanvasUpdateRequest.class);
         canvasFacade.updateCanvas(Long.valueOf(canvasId), canvasUpdateRequest);
 
         accessor.setId(canvasId);
@@ -77,4 +77,5 @@ public class DeviceCanvasResourceManager implements ResourceManager<DeviceCanvas
         }
         return false;
     }
+
 }

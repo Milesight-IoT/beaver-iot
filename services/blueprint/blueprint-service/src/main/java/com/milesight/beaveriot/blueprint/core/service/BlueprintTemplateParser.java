@@ -10,11 +10,13 @@ import com.milesight.beaveriot.blueprint.core.chart.node.base.BlueprintNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.template.TemplateNode;
 import com.milesight.beaveriot.blueprint.core.chart.parser.IBlueprintTemplateParser;
 import com.milesight.beaveriot.blueprint.core.constant.BlueprintConstants;
+import com.milesight.beaveriot.blueprint.core.enums.BlueprintErrorCode;
 import com.milesight.beaveriot.blueprint.core.model.ConstantsTemplate;
 import com.milesight.beaveriot.blueprint.core.model.ParametersObjectSchema;
 import com.milesight.beaveriot.blueprint.core.model.VariablesTemplate;
 import com.milesight.beaveriot.blueprint.support.TemplateLoader;
 import io.pebbletemplates.pebble.PebbleEngine;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
@@ -26,6 +28,7 @@ import java.io.StringWriter;
 import java.util.ArrayDeque;
 import java.util.Map;
 
+@Slf4j
 @Component
 public class BlueprintTemplateParser implements IBlueprintTemplateParser {
 
@@ -43,6 +46,7 @@ public class BlueprintTemplateParser implements IBlueprintTemplateParser {
     public JsonNode getVariableJsonSchema(TemplateLoader templateLoader, Map<String, Object> context) {
         var variables = readTemplateAsType(templateLoader, BlueprintConstants.VARIABLES_TEMPLATE_FILE_NAME, context, VariablesTemplate.class);
         if (variables == null) {
+            log.info("variables.peb not found.");
             return null;
         }
         return JsonUtils.toJsonNode(new ParametersObjectSchema(variables.getProperties()));
@@ -51,6 +55,10 @@ public class BlueprintTemplateParser implements IBlueprintTemplateParser {
     @Override
     public TemplateNode parseBlueprint(TemplateLoader templateLoader, Map<String, Object> context) {
         var indexTemplateJsonNode = readTemplateAsJsonNode(templateLoader, BlueprintConstants.INDEX_TEMPLATE_FILE_NAME, context);
+        if (indexTemplateJsonNode == null) {
+            throw new ServiceException(BlueprintErrorCode.BLUEPRINT_TEMPLATE_PARSING_ERROR, "index.peb not found.");
+        }
+
         var tasks = new ArrayDeque<BlueprintNode.ProcessingTask>();
         var blueprintChartContext = new BlueprintParseContext(tasks, templateLoader, indexTemplateJsonNode, context);
         var root = templateNodeParser.parse(null, indexTemplateJsonNode, null, blueprintChartContext);
@@ -78,7 +86,11 @@ public class BlueprintTemplateParser implements IBlueprintTemplateParser {
 
     @Override
     public JsonNode readTemplateAsJsonNode(TemplateLoader templateLoader, String relativePath, Map<String, Object> context) {
-        return JsonUtils.toJsonNode(blueprintSnakeYaml.load(readTemplateAsYaml(templateLoader, relativePath, context)));
+        var yaml = readTemplateAsYaml(templateLoader, relativePath, context);
+        if (yaml == null) {
+            return null;
+        }
+        return JsonUtils.toJsonNode(blueprintSnakeYaml.load(yaml));
     }
 
 

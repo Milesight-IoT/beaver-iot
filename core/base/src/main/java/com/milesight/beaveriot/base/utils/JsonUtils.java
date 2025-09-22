@@ -25,25 +25,31 @@ import java.util.Objects;
  */
 public class JsonUtils {
 
+    public static Instance SNAKE_CASE = new Instance(jsonMapperBuilder()
+            .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+            .build());
+
+    public static Instance CAMEL_CASE = new Instance(jsonMapperBuilder()
+            .propertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE)
+            .build());
+
     private JsonUtils() {
+
     }
 
-    private static final ObjectMapper JSON = JsonMapper.builder()
-            .addModule(new JavaTimeModule())
-            .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-            .configure(SerializationFeature.WRITE_DATES_WITH_ZONE_ID, true)
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true)
-            .configure(JsonReadFeature.ALLOW_UNESCAPED_CONTROL_CHARS, true)
-            .serializationInclusion(JsonInclude.Include.NON_NULL)
-            .build();
-
-    static {
-        JSON.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+    private static JsonMapper.Builder jsonMapperBuilder() {
+        return JsonMapper.builder()
+                .addModule(new JavaTimeModule())
+                .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+                .configure(SerializationFeature.WRITE_DATES_WITH_ZONE_ID, true)
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true)
+                .configure(JsonReadFeature.ALLOW_UNESCAPED_CONTROL_CHARS, true)
+                .serializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
     public static ObjectMapper getObjectMapper() {
-        return JSON;
+        return SNAKE_CASE.objectMapper;
     }
 
     public static <T> T copy(T object) {
@@ -63,14 +69,14 @@ public class JsonUtils {
         if (object == null) {
             return null;
         }
-        return JSON.convertValue(object, typeReference);
+        return getObjectMapper().convertValue(object, typeReference);
     }
 
     public static <T> T cast(Object object, Class<T> classType) {
         if (object == null) {
             return null;
         }
-        return JSON.convertValue(object, classType);
+        return getObjectMapper().convertValue(object, classType);
     }
 
     public static String toPrettyJSON(String json) {
@@ -82,7 +88,7 @@ public class JsonUtils {
             return null;
         }
         try {
-            return JSON.writeValueAsString(object);
+            return getObjectMapper().writeValueAsString(object);
         } catch (JsonProcessingException e) {
             throw new JSONException(e);
         }
@@ -93,7 +99,7 @@ public class JsonUtils {
             return null;
         }
         try {
-            return JSON.writerWithDefaultPrettyPrinter().writeValueAsString(object);
+            return getObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(object);
         } catch (JsonProcessingException e) {
             throw new JSONException(e);
         }
@@ -114,7 +120,7 @@ public class JsonUtils {
             return null;
         }
         try {
-            return JSON.readValue(json, type);
+            return getObjectMapper().readValue(json, type);
         } catch (JsonProcessingException e) {
             throw new JSONException(e);
         }
@@ -125,7 +131,7 @@ public class JsonUtils {
             return null;
         }
         try {
-            return JSON.readValue(json, type);
+            return getObjectMapper().readValue(json, type);
         } catch (JsonProcessingException e) {
             throw new JSONException(e);
         }
@@ -136,7 +142,7 @@ public class JsonUtils {
             return null;
         }
         try {
-            return JSON.readValue(json, new TypeReference<T>() {
+            return getObjectMapper().readValue(json, new TypeReference<T>() {
             });
         } catch (JsonProcessingException e) {
             throw new JSONException(e);
@@ -148,7 +154,7 @@ public class JsonUtils {
             return null;
         }
         try {
-            return JSON.readTree(json);
+            return getObjectMapper().readTree(json);
         } catch (JsonProcessingException e) {
             throw new JSONException(e);
         }
@@ -165,5 +171,136 @@ public class JsonUtils {
         return Objects.equals(toJsonNode(source), toJsonNode(target));
     }
 
+    public static class Instance {
+
+        private final ObjectMapper objectMapper;
+
+        private Instance(ObjectMapper objectMapper) {
+            this.objectMapper = objectMapper;
+        }
+
+        public ObjectMapper getObjectMapper() {
+            return objectMapper;
+        }
+
+        public <T> T copy(T object) {
+            return cast(object, getClass(object));
+        }
+
+        public <T> T copy(T object, TypeReference<T> typeReference) {
+            return cast(object, typeReference);
+        }
+
+        @SuppressWarnings("unchecked")
+        private <T> Class<T> getClass(T object) {
+            return (Class<T>) object.getClass();
+        }
+
+        public <T> T cast(Object object, TypeReference<T> typeReference) {
+            if (object == null) {
+                return null;
+            }
+            return objectMapper.convertValue(object, typeReference);
+        }
+
+        public <T> T cast(Object object, Class<T> classType) {
+            if (object == null) {
+                return null;
+            }
+            return objectMapper.convertValue(object, classType);
+        }
+
+        public String toPrettyJSON(String json) {
+            return toPrettyJSON(fromJSON(json));
+        }
+
+        public String toJSON(Object object) {
+            if (object == null) {
+                return null;
+            }
+            try {
+                return objectMapper.writeValueAsString(object);
+            } catch (JsonProcessingException e) {
+                throw new JSONException(e);
+            }
+        }
+
+        public String toPrettyJSON(Object object) {
+            if (object == null) {
+                return null;
+            }
+            try {
+                return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(object);
+            } catch (JsonProcessingException e) {
+                throw new JSONException(e);
+            }
+        }
+
+        public Map<String, Object> toMap(String json) {
+            return fromJsonWithType(json);
+        }
+
+
+        @SuppressWarnings("unchecked")
+        public Map<String, Object> toMap(Object object) {
+            return cast(object, Map.class);
+        }
+
+        public <T> T fromJSON(String json, Class<T> type) {
+            if (ObjectUtils.isEmpty(json)) {
+                return null;
+            }
+            try {
+                return objectMapper.readValue(json, type);
+            } catch (JsonProcessingException e) {
+                throw new JSONException(e);
+            }
+        }
+
+        public <T> T fromJSON(String json, TypeReference<T> type) {
+            if (ObjectUtils.isEmpty(json)) {
+                return null;
+            }
+            try {
+                return objectMapper.readValue(json, type);
+            } catch (JsonProcessingException e) {
+                throw new JSONException(e);
+            }
+        }
+
+        public <T> T fromJsonWithType(String json) {
+            if (ObjectUtils.isEmpty(json)) {
+                return null;
+            }
+            try {
+                return objectMapper.readValue(json, new TypeReference<T>() {
+                });
+            } catch (JsonProcessingException e) {
+                throw new JSONException(e);
+            }
+        }
+
+        public JsonNode fromJSON(String json) {
+            if (ObjectUtils.isEmpty(json)) {
+                return null;
+            }
+            try {
+                return objectMapper.readTree(json);
+            } catch (JsonProcessingException e) {
+                throw new JSONException(e);
+            }
+        }
+
+        public JsonNode toJsonNode(Object object) {
+            if (object instanceof String string) {
+                return fromJSON(string);
+            }
+            return cast(object, JsonNode.class);
+        }
+
+        public boolean equals(Object source, Object target) {
+            return Objects.equals(toJsonNode(source), toJsonNode(target));
+        }
+    }
 
 }
