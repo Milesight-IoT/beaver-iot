@@ -15,6 +15,7 @@ import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryService
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibrarySubscriptionService;
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
+import com.milesight.beaveriot.context.model.BlueprintLibrarySyncStatus;
 import com.milesight.beaveriot.context.model.BlueprintLibraryType;
 import com.milesight.beaveriot.resource.manager.dto.ResourceRefDTO;
 import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
@@ -61,7 +62,11 @@ public class BlueprintLibrarySettingController {
             response.setCurrentSourceType(BlueprintLibrarySourceType.Default.name());
             if (defaultBlueprintLibrary != null) {
                 response.setVersion(defaultBlueprintLibrary.getCurrentVersion());
-                response.setUpdateTime(defaultBlueprintLibrary.getSyncedAt());
+                boolean syncedSuccess = defaultBlueprintLibrary.getSyncStatus() == BlueprintLibrarySyncStatus.SYNCED;
+                if (syncedSuccess) {
+                    response.setUpdateTime(defaultBlueprintLibrary.getSyncedAt());
+                }
+                response.setSyncedSuccess(syncedSuccess);
             }
         }
 

@@ -122,7 +122,6 @@ public class BlueprintLibrarySyncer {
         } catch (Exception e) {
             log.error("Sync blueprint library {} failed", blueprintLibraryAddress.getKey(), e);
             blueprintLibrary.setSyncStatus(BlueprintLibrarySyncStatus.SYNC_FAILED);
-            blueprintLibrary.setSyncedAt(System.currentTimeMillis());
             blueprintLibrary.setSyncMessage(MessageFormat.format("Sync failed. Error Message: {0}", e.getMessage()));
             blueprintLibraryService.save(blueprintLibrary);
             throw e;

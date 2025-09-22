@@ -12,4 +12,5 @@ public class QueryBlueprintLibrarySettingResponse {
     private String fileName;
     private String version;
     private Long updateTime;
+    private boolean syncedSuccess;
 }
