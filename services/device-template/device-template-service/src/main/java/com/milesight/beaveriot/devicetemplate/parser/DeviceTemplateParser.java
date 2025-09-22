@@ -672,8 +672,11 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         Map<String, Object> blueprintValues = new HashMap<>();
         values.forEach((key, value) -> {
             Object valueObject;
-            if (DeviceTemplateModel.Blueprint.Value.TYPE_ENTITY.equals(value.getType())) {
-                valueObject = entityServiceProvider.findByKey(device.getKey() + "." + value.getIdentifier());
+            if (DeviceTemplateModel.Blueprint.Value.TYPE_ENTITY_ID.equals(value.getType())) {
+                Entity entity = entityServiceProvider.findByKey(device.getKey() + "." + value.getIdentifier());
+                valueObject = entity.getId();
+            } else if (DeviceTemplateModel.Blueprint.Value.TYPE_DEVICE_ID.equals(value.getType())) {
+                valueObject = device.getId();
             } else {
                 valueObject = value.getValue();
             }

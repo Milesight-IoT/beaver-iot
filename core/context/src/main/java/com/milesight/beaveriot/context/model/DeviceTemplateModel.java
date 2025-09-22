@@ -103,7 +103,8 @@ public class DeviceTemplateModel {
 
         @Data
         public static class Value {
-            public static final String TYPE_ENTITY = "entity";
+            public static final String TYPE_ENTITY_ID = "entity_id";
+            public static final String TYPE_DEVICE_ID = "device_id";
             private String type;
             private String identifier;
             private Object value;
@@ -113,7 +114,7 @@ public class DeviceTemplateModel {
                     return false;
                 }
 
-                if (TYPE_ENTITY.equals(type)) {
+                if (TYPE_ENTITY_ID.equals(type)) {
                     return !StringUtils.isEmpty(identifier);
                 }
 
