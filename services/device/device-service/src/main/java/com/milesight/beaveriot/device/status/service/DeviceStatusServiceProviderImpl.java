@@ -32,4 +32,9 @@ public class DeviceStatusServiceProviderImpl implements DeviceStatusServiceProvi
     public void offline(Device device) {
         deviceStatusService.offline(device);
     }
+
+    @Override
+    public String status(Device device) {
+        return deviceStatusService.status(device);
+    }
 }

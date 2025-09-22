@@ -13,4 +13,5 @@ public interface DeviceStatusManager {
     void deregister(Device device);
     void online(Device device);
     void offline(Device device);
+    String status(Device device);
 }

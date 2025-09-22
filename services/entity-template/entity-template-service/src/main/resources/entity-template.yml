@@ -7,8 +7,8 @@ entity-template:
       access_mod: R
       attributes:
         enum:
-          Online: ${ fn.i18n('entity-template-service.entity.status.attributes.enum.online') }
-          Offline: ${ fn.i18n('entity-template-service.entity.status.attributes.enum.offline') }
+          ONLINE: ${ fn.i18n('entity-template-service.entity.status.attributes.enum.online') }
+          OFFLINE: ${ fn.i18n('entity-template-service.entity.status.attributes.enum.offline') }
     - identifier: '@location'
       name: ${ fn.i18n('entity-template-service.entity.location.name') }
       value_type: object
