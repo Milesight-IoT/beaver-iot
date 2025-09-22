@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.blueprint.library.component;
 
 import com.milesight.beaveriot.context.api.BlueprintLibraryResourceResolverProvider;
-import com.milesight.beaveriot.context.integration.model.BlueprintDevice;
+import com.milesight.beaveriot.context.integration.model.BlueprintDeviceModel;
 import com.milesight.beaveriot.context.integration.model.BlueprintDeviceVendor;
 import org.springframework.stereotype.Service;
 
@@ -25,22 +25,22 @@ public class BlueprintLibraryResourceResolverProviderImpl implements BlueprintLi
     }
 
     @Override
-    public BlueprintDeviceVendor getDeviceVendor(String vendor) {
-        return blueprintLibraryResourceResolver.getDeviceVendor(vendor);
+    public BlueprintDeviceVendor getDeviceVendor(String vendorId) {
+        return blueprintLibraryResourceResolver.getDeviceVendor(vendorId);
     }
 
     @Override
-    public List<BlueprintDevice> getDevices(String vendor) {
-        return blueprintLibraryResourceResolver.getDevices(vendor);
+    public List<BlueprintDeviceModel> getDeviceModels(String vendorId) {
+        return blueprintLibraryResourceResolver.getDeviceModels(vendorId);
     }
 
     @Override
-    public BlueprintDevice getDevice(String vendor, String model) {
-        return blueprintLibraryResourceResolver.getDevice(vendor, model);
+    public BlueprintDeviceModel getDeviceModel(String vendorId, String modelId) {
+        return blueprintLibraryResourceResolver.getDeviceModel(vendorId, modelId);
     }
 
     @Override
-    public String getDeviceTemplateContent(String vendor, String model) {
-        return blueprintLibraryResourceResolver.getDeviceTemplateContent(vendor, model);
+    public String getDeviceTemplateContent(String vendorId, String modelId) {
+        return blueprintLibraryResourceResolver.getDeviceTemplateContent(vendorId, modelId);
     }
 }

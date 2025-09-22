@@ -8,13 +8,13 @@ import lombok.Data;
  **/
 @Data
 public class DeviceModel {
-    private String vendor;
-    private String model;
+    private String vendorId;
+    private String modelId;
 
-    public static DeviceModel of(String vendor, String model) {
+    public static DeviceModel of(String vendorId, String modelId) {
         DeviceModel deviceModel = new DeviceModel();
-        deviceModel.setVendor(vendor);
-        deviceModel.setModel(model);
+        deviceModel.setVendorId(vendorId);
+        deviceModel.setModelId(modelId);
         return deviceModel;
     }
 }

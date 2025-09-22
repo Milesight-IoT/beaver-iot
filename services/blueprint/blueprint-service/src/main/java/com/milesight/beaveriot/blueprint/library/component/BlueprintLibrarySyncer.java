@@ -326,7 +326,7 @@ public class BlueprintLibrarySyncer {
         blueprintLibraryService.evictCacheBlueprintLibrary(oldBlueprintLibrary.getType().name(), oldBlueprintLibrary.getUrl(), oldBlueprintLibrary.getBranch());
         blueprintLibraryResourceResolver.evictCacheDeviceVendors(oldBlueprintLibrary);
         if (!CollectionUtils.isEmpty(deviceVendors)) {
-            deviceVendors.forEach(vendor -> blueprintLibraryResourceResolver.evictCacheDevices(oldBlueprintLibrary, vendor.getId()));
+            deviceVendors.forEach(vendor -> blueprintLibraryResourceResolver.evictCacheDeviceModels(oldBlueprintLibrary, vendor.getId()));
         }
     }
 
