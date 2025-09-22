@@ -81,6 +81,10 @@ public abstract class BaseDeviceStatusManager {
         updateDeviceStatusToOffline(device);
     }
 
+    public String status(Device device) {
+        return (String) entityValueServiceProvider.findValueByKey(getStatusEntityKey(device));
+    }
+
     protected AvailableDeviceData getAvailableDeviceDataByDeviceId(Long deviceId) {
         Device device = deviceServiceProvider.findById(deviceId);
         if (device == null) {

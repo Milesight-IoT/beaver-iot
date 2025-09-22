@@ -33,4 +33,8 @@ public class DeviceStatusService {
     public void offline(Device device) {
         deviceStatusManager.offline(device);
     }
+
+    public String status(Device device) {
+        return deviceStatusManager.status(device);
+    }
 }
