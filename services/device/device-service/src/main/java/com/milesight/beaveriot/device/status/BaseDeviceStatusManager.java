@@ -5,6 +5,7 @@ import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.integration.model.*;
+import com.milesight.beaveriot.device.status.constants.DeviceStatusConstants;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.Data;
@@ -22,10 +23,6 @@ import java.util.function.Function;
  **/
 @Slf4j
 public abstract class BaseDeviceStatusManager {
-    protected static final String IDENTIFIER_DEVICE_STATUS = "status";
-    protected static final String STATUS_VALUE_ONLINE = "Online";
-    protected static final String STATUS_VALUE_OFFLINE = "Offline";
-    protected static final long DEFAULT_OFFLINE_SECONDS = 300;
     protected final DeviceServiceProvider deviceServiceProvider;
     protected final EntityServiceProvider entityServiceProvider;
     protected final EntityValueServiceProvider entityValueServiceProvider;
@@ -73,11 +70,11 @@ public abstract class BaseDeviceStatusManager {
     }
 
     protected void updateDeviceStatusToOnline(Device device) {
-        updateDeviceStatus(device, STATUS_VALUE_ONLINE);
+        updateDeviceStatus(device, DeviceStatusConstants.STATUS_VALUE_ONLINE);
     }
 
     protected void updateDeviceStatusToOffline(Device device) {
-        updateDeviceStatus(device, STATUS_VALUE_OFFLINE);
+        updateDeviceStatus(device, DeviceStatusConstants.STATUS_VALUE_OFFLINE);
     }
 
     public void offline(Device device) {
@@ -101,17 +98,17 @@ public abstract class BaseDeviceStatusManager {
     protected long getDeviceOfflineSeconds(Device device, DeviceStatusConfig config) {
         return Optional.ofNullable(config.getOfflineTimeoutFetcher())
                 .map(f -> f.apply(device))
-                .orElse(DEFAULT_OFFLINE_SECONDS);
+                .orElse(DeviceStatusConstants.DEFAULT_OFFLINE_SECONDS);
     }
 
     protected long getDeviceDefaultOfflineSeconds(Device device) {
-        return DEFAULT_OFFLINE_SECONDS;
+        return DeviceStatusConstants.DEFAULT_OFFLINE_SECONDS;
     }
 
     protected void updateDeviceStatus(Device device, String deviceStatus) {
         String statusEntityKey = getStatusEntityKey(device);
         if (entityServiceProvider.findByKey(statusEntityKey) == null) {
-            EntityTemplate entityTemplate = entityTemplateServiceProvider.findByKey(IDENTIFIER_DEVICE_STATUS);
+            EntityTemplate entityTemplate = entityTemplateServiceProvider.findByKey(DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS);
             if (entityTemplate == null) {
                 throw new RuntimeException("Device status entity template not found");
             }
@@ -127,7 +124,7 @@ public abstract class BaseDeviceStatusManager {
     }
 
     protected String getStatusEntityKey(Device device) {
-        return device.getKey() + "." + IDENTIFIER_DEVICE_STATUS;
+        return device.getKey() + "." + DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS;
     }
 
     @Data

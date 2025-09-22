@@ -50,7 +50,6 @@ initial_entities:
     access_mod: R
     attributes:
       unit: '℃'
-    important: 1
   - identifier: 'humidity'     # entity identifier
     name: 'humidity'           # entity name
     value_type: double         # entity value type
@@ -63,4 +62,3 @@ initial_entities:
     value_type: string     # entity value type
     type: property         # entity type
     access_mod: R
-  - entity_ref: 'location' # entity key reference in entity template

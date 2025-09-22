@@ -1,6 +1,6 @@
 entity-template:
   initial-entity-templates:
-    - identifier: 'status'
+    - identifier: '@status'
       name: ${ fn.i18n('entity-template-service.entity.status.name') }
       value_type: string
       type: property
@@ -9,18 +9,18 @@ entity-template:
         enum:
           Online: ${ fn.i18n('entity-template-service.entity.status.attributes.enum.online') }
           Offline: ${ fn.i18n('entity-template-service.entity.status.attributes.enum.offline') }
-    - identifier: 'location'
+    - identifier: '@location'
       name: ${ fn.i18n('entity-template-service.entity.location.name') }
       value_type: object
       type: property
       access_mod: RW
       children:
-        - identifier: 'address'
-          name: ${ fn.i18n('entity-template-service.entity.address.name') }
+        - identifier: '@address'
+          name: ${ fn.i18n('entity-template-service.entity.location.children.address.name') }
           value_type: string
-        - identifier: 'longitude'
-          name: ${ fn.i18n('entity-template-service.entity.longitude.name') }
+        - identifier: '@longitude'
+          name: ${ fn.i18n('entity-template-service.entity.location.children.longitude.name') }
           value_type: double
-        - identifier: 'latitude'
-          name: ${ fn.i18n('entity-template-service.entity.latitude.name') }
+        - identifier: '@latitude'
+          name: ${ fn.i18n('entity-template-service.entity.location.children.latitude.name') }
           value_type: double
