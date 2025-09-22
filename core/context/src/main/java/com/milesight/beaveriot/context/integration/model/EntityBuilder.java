@@ -17,7 +17,7 @@ public class EntityBuilder extends BaseEntityBuilder<EntityBuilder> {
 
     private String deviceKey;
 
-    private final List<Entity> children = new ArrayList<>();
+    protected List<Entity> children = new ArrayList<>();
 
     public EntityBuilder() {
     }
@@ -70,7 +70,7 @@ public class EntityBuilder extends BaseEntityBuilder<EntityBuilder> {
 
     public static class ChildEntityBuilder extends BaseEntityBuilder<ChildEntityBuilder> {
 
-        private final EntityBuilder entityBuilder;
+        private EntityBuilder entityBuilder;
 
         public ChildEntityBuilder(EntityBuilder entityBuilder) {
             this.entityBuilder = entityBuilder;
