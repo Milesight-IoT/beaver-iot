@@ -7,8 +7,8 @@ import lombok.Data;
  * create: 2025/9/2 10:01
  **/
 @Data
-public class BlueprintDevice {
+public class BlueprintDeviceModel {
     private String id;
     private String name;
-    private String device;
+    private String template;
 }

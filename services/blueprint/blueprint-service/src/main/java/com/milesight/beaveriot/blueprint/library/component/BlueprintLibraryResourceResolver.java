@@ -11,7 +11,7 @@ import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryService
 import com.milesight.beaveriot.blueprint.library.support.YamlConverter;
 import com.milesight.beaveriot.blueprint.model.BlueprintDeviceCodec;
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
-import com.milesight.beaveriot.context.integration.model.BlueprintDevice;
+import com.milesight.beaveriot.context.integration.model.BlueprintDeviceModel;
 import com.milesight.beaveriot.context.integration.model.BlueprintDeviceVendor;
 import com.milesight.beaveriot.context.support.SpringContext;
 import lombok.extern.slf4j.Slf4j;
@@ -44,112 +44,105 @@ public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResour
     }
 
     @Override
-    public BlueprintDeviceVendor getDeviceVendor(String vendor) {
-        return getDeviceVendor(blueprintLibraryService.getCurrentBlueprintLibrary(), vendor);
+    public BlueprintDeviceVendor getDeviceVendor(String vendorId) {
+        return getDeviceVendor(blueprintLibraryService.getCurrentBlueprintLibrary(), vendorId);
     }
 
     @Override
-    public BlueprintDeviceVendor getDeviceVendor(BlueprintLibrary blueprintLibrary, String vendor) {
-        if (vendor == null) {
-            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDOR_NULL.getErrorCode(),
-                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDOR_NULL.getErrorMessage()).build();
+    public BlueprintDeviceVendor getDeviceVendor(BlueprintLibrary blueprintLibrary, String vendorId) {
+        if (vendorId == null) {
+            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDOR_NULL).build();
         }
 
         List<BlueprintDeviceVendor> vendors = self().getDeviceVendors(blueprintLibrary);
         if (vendors == null) {
-            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDORS_NOT_FOUND.getErrorCode(),
-                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDORS_NOT_FOUND.getErrorMessage()).build();
+            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDORS_NOT_FOUND).build();
         }
 
-        for (BlueprintDeviceVendor eachVendor : vendors) {
-            if (vendor.equals(eachVendor.getId())) {
-                return eachVendor;
+        for (BlueprintDeviceVendor vendor : vendors) {
+            if (vendorId.equals(vendor.getId())) {
+                return vendor;
             }
         }
         throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDOR_NOT_FOUND.getErrorCode(),
-                BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDOR_NOT_FOUND.formatMessage(vendor)).build();
+                BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDOR_NOT_FOUND.formatMessage(vendorId)).build();
     }
 
     @Override
-    public List<BlueprintDevice> getDevices(String vendor) {
-        return self().getDevices(blueprintLibraryService.getCurrentBlueprintLibrary(), vendor);
+    public List<BlueprintDeviceModel> getDeviceModels(String vendorId) {
+        return self().getDeviceModels(blueprintLibraryService.getCurrentBlueprintLibrary(), vendorId);
     }
 
     @Override
-    public BlueprintDevice getDevice(String vendor, String model) {
-        return getDevice(blueprintLibraryService.getCurrentBlueprintLibrary(), vendor, model);
+    public BlueprintDeviceModel getDeviceModel(String vendorId, String modelId) {
+        return getDeviceModel(blueprintLibraryService.getCurrentBlueprintLibrary(), vendorId, modelId);
     }
 
-    public BlueprintDevice getDevice(BlueprintLibrary blueprintLibrary, String vendor, String model) {
-        if (vendor == null) {
-            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDOR_NULL.getErrorCode(),
-                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDOR_NULL.getErrorMessage()).build();
+    public BlueprintDeviceModel getDeviceModel(BlueprintLibrary blueprintLibrary, String vendorId, String modelId) {
+        if (vendorId == null) {
+            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDOR_NULL).build();
         }
 
-        if (model == null) {
-            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_MODEL_NULL.getErrorCode(),
-                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_MODEL_NULL.getErrorMessage()).build();
+        if (modelId == null) {
+            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_MODEL_NULL).build();
         }
 
-        List<BlueprintDevice> devices = self().getDevices(blueprintLibrary, vendor);
-        if (devices == null) {
-            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICES_NOT_FOUND.getErrorCode(),
-                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICES_NOT_FOUND.formatMessage(vendor)).build();
+        List<BlueprintDeviceModel> deviceModels = self().getDeviceModels(blueprintLibrary, vendorId);
+        if (deviceModels == null) {
+            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_MODELS_NOT_FOUND.getErrorCode(),
+                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_MODELS_NOT_FOUND.formatMessage(vendorId)).build();
         }
 
-        for (BlueprintDevice eachDevice : devices) {
-            if (model.equals(eachDevice.getId())) {
-                return eachDevice;
+        for (BlueprintDeviceModel deviceModel : deviceModels) {
+            if (modelId.equals(deviceModel.getId())) {
+                return deviceModel;
             }
         }
-        throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_NOT_FOUND.getErrorCode(),
-                BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_NOT_FOUND.formatMessage(vendor, model)).build();
+        throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_MODEL_NOT_FOUND.getErrorCode(),
+                BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_MODEL_NOT_FOUND.formatMessage(vendorId, modelId)).build();
     }
 
     @Override
-    public String getDeviceTemplateContent(String vendor, String model) {
-        return getDeviceTemplateContent(blueprintLibraryService.getCurrentBlueprintLibrary(), vendor, model);
+    public String getDeviceTemplateContent(String vendorId, String modelId) {
+        return getDeviceTemplateContent(blueprintLibraryService.getCurrentBlueprintLibrary(), vendorId, modelId);
     }
 
     @Override
-    public String getDeviceTemplateContent(BlueprintLibrary blueprintLibrary, String vendor, String model) {
-        BlueprintDevice device = getDevice(blueprintLibrary, vendor, model);
+    public String getDeviceTemplateContent(BlueprintLibrary blueprintLibrary, String vendorId, String modelId) {
+        BlueprintDeviceModel device = getDeviceModel(blueprintLibrary, vendorId, modelId);
         if (device == null) {
-            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_NOT_FOUND.getErrorCode(),
-                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_NOT_FOUND.formatMessage(vendor, model)).build();
+            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_MODEL_NOT_FOUND.getErrorCode(),
+                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_MODEL_NOT_FOUND.formatMessage(vendorId, modelId)).build();
         }
 
-        if (StringUtils.isEmpty(device.getDevice())) {
+        if (StringUtils.isEmpty(device.getTemplate())) {
             throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_TEMPLATE_NOT_FOUND.getErrorCode(),
-                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_TEMPLATE_NOT_FOUND.formatMessage(vendor, model)).build();
+                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_TEMPLATE_NOT_FOUND.formatMessage(vendorId, modelId)).build();
         }
 
-        return getResourceContent(blueprintLibrary, vendor, device.getDevice());
+        return getResourceContent(blueprintLibrary, vendorId, device.getTemplate());
     }
 
     @Override
-    public String getResourceContent(String vendor, String relativePath) {
-        return getResourceContent(blueprintLibraryService.getCurrentBlueprintLibrary(), vendor, relativePath);
+    public String getResourceContent(String vendorId, String relativePath) {
+        return getResourceContent(blueprintLibraryService.getCurrentBlueprintLibrary(), vendorId, relativePath);
     }
 
     @Cacheable(cacheNames = Constants.CACHE_NAME_DEVICE_VENDORS, key = "#p0.type + ':' + #p0.url + '@' + #p0.branch + ':' + #p0.currentVersion", unless = "#result == null")
     public List<BlueprintDeviceVendor> getDeviceVendors(BlueprintLibrary blueprintLibrary) {
         if (blueprintLibrary == null) {
-            throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_NULL.getErrorCode(),
-                    BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_NULL.getErrorMessage()).build();
+            throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_NULL).build();
         }
 
         BlueprintLibraryManifest manifest = getManifest(blueprintLibrary);
         if (manifest == null) {
-            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_MANIFEST_NOT_FOUND.getErrorCode(),
-                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_MANIFEST_NOT_FOUND.getErrorMessage()).build();
+            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_MANIFEST_NOT_FOUND).build();
         }
 
         String vendorsContent = getResourceContent(blueprintLibrary, manifest.getDeviceVendorIndex());
         BlueprintDeviceVendors vendors = YamlConverter.from(vendorsContent, BlueprintDeviceVendors.class);
         if (vendors == null) {
-            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDORS_NOT_FOUND.getErrorCode(),
-                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDORS_NOT_FOUND.getErrorMessage()).build();
+            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDORS_NOT_FOUND).build();
         }
         return vendors.getVendors();
     }
@@ -163,26 +156,26 @@ public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResour
                 blueprintLibrary.getCurrentVersion());
     }
 
-    @Cacheable(cacheNames = Constants.CACHE_NAME_DEVICES, key = "#p0.type + ':' + #p0.url + '@' + #p0.branch + ':' + #p0.currentVersion + ':' + #p1", unless = "#result == null")
-    public List<BlueprintDevice> getDevices(BlueprintLibrary blueprintLibrary, String vendor) {
-        BlueprintDeviceVendor vendorDef = getDeviceVendor(blueprintLibrary, vendor);
+    @Cacheable(cacheNames = Constants.CACHE_NAME_DEVICE_MODELS, key = "#p0.type + ':' + #p0.url + '@' + #p0.branch + ':' + #p0.currentVersion + ':' + #p1", unless = "#result == null")
+    public List<BlueprintDeviceModel> getDeviceModels(BlueprintLibrary blueprintLibrary, String vendorId) {
+        BlueprintDeviceVendor vendorDef = getDeviceVendor(blueprintLibrary, vendorId);
         if (vendorDef == null) {
             throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDOR_NOT_FOUND.getErrorCode(),
-                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDOR_NOT_FOUND.formatMessage(vendor)).build();
+                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDOR_NOT_FOUND.formatMessage(vendorId)).build();
         }
 
-        String resourcePath = buildResourcePath(vendorDef.getWorkDir(), vendorDef.getDeviceIndex());
+        String resourcePath = buildResourcePath(vendorDef.getWorkDir(), vendorDef.getModelIndex());
         String devicesContent = getResourceContent(blueprintLibrary, resourcePath);
-        BlueprintDevices devices = YamlConverter.from(devicesContent, BlueprintDevices.class);
-        if (devices == null) {
-            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICES_NOT_FOUND.getErrorCode(),
-                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICES_NOT_FOUND.formatMessage(vendor)).build();
+        BlueprintDeviceModels deviceModels = YamlConverter.from(devicesContent, BlueprintDeviceModels.class);
+        if (deviceModels == null) {
+            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_MODELS_NOT_FOUND.getErrorCode(),
+                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_MODELS_NOT_FOUND.formatMessage(vendorId)).build();
         }
-        return devices.getDevices();
+        return deviceModels.getModels();
     }
 
-    @CacheEvict(cacheNames = Constants.CACHE_NAME_DEVICES, key = "#p0.type + ':' + #p0.url + '@' + #p0.branch + ':' + #p0.currentVersion + ':' + #p1")
-    public void evictCacheDevices(BlueprintLibrary blueprintLibrary, String vendor) {
+    @CacheEvict(cacheNames = Constants.CACHE_NAME_DEVICE_MODELS, key = "#p0.type + ':' + #p0.url + '@' + #p0.branch + ':' + #p0.currentVersion + ':' + #p1")
+    public void evictCacheDeviceModels(BlueprintLibrary blueprintLibrary, String vendorId) {
         log.debug("Evict cache: {}, key: {}@{}:{}",
                 Constants.CACHE_NAME_DEVICE_VENDORS,
                 blueprintLibrary.getUrl(),
@@ -190,48 +183,44 @@ public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResour
                 blueprintLibrary.getCurrentVersion());
     }
 
-    public BlueprintDeviceCodecs getBlueprintDeviceCodecs(String vendor, String codecRelativePath) {
-        return getBlueprintDeviceCodecs(blueprintLibraryService.getCurrentBlueprintLibrary(), vendor, codecRelativePath);
+    public BlueprintDeviceCodecs getBlueprintDeviceCodecs(String vendorId, String codecRelativePath) {
+        return getBlueprintDeviceCodecs(blueprintLibraryService.getCurrentBlueprintLibrary(), vendorId, codecRelativePath);
     }
 
-    public BlueprintDeviceCodecs getBlueprintDeviceCodecs(BlueprintLibrary blueprintLibrary, String vendor, String codecRelativePath) {
-        String codecsContent = getResourceContent(blueprintLibrary, vendor, codecRelativePath);
+    public BlueprintDeviceCodecs getBlueprintDeviceCodecs(BlueprintLibrary blueprintLibrary, String vendorId, String codecRelativePath) {
+        String codecsContent = getResourceContent(blueprintLibrary, vendorId, codecRelativePath);
         return YamlConverter.from(codecsContent, BlueprintDeviceCodecs.class);
     }
 
-    public BlueprintDeviceCodec getBlueprintDeviceCodec(String vendor, String codecRelativePath, String codecId) {
-        return getBlueprintDeviceCodec(blueprintLibraryService.getCurrentBlueprintLibrary(), vendor, codecRelativePath, codecId);
+    public BlueprintDeviceCodec getBlueprintDeviceCodec(String vendorId, String codecRelativePath, String codecId) {
+        return getBlueprintDeviceCodec(blueprintLibraryService.getCurrentBlueprintLibrary(), vendorId, codecRelativePath, codecId);
     }
 
     @Override
-    public BlueprintDeviceCodec getBlueprintDeviceCodec(BlueprintLibrary blueprintLibrary, String vendor, String codecRelativePath, String codecId) {
-        BlueprintDeviceCodecs blueprintDeviceCodecs = getBlueprintDeviceCodecs(blueprintLibrary, vendor, codecRelativePath);
+    public BlueprintDeviceCodec getBlueprintDeviceCodec(BlueprintLibrary blueprintLibrary, String vendorId, String codecRelativePath, String codecId) {
+        BlueprintDeviceCodecs blueprintDeviceCodecs = getBlueprintDeviceCodecs(blueprintLibrary, vendorId, codecRelativePath);
         if (blueprintDeviceCodecs == null) {
-            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_CODEC_NOT_FOUND.getErrorCode(),
-                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_CODEC_NOT_FOUND.getErrorMessage()).build();
+            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_CODEC_NOT_FOUND).build();
         }
 
         if (CollectionUtils.isEmpty(blueprintDeviceCodecs.getCodecs())) {
-            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_CODEC_NOT_FOUND.getErrorCode(),
-                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_CODEC_NOT_FOUND.getErrorMessage()).build();
+            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_CODEC_NOT_FOUND).build();
         }
 
         if (codecId == null) {
-            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_CODEC_NOT_FOUND.getErrorCode(),
-                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_CODEC_NOT_FOUND.getErrorMessage()).build();
+            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_CODEC_NOT_FOUND).build();
         }
 
-        for (BlueprintDeviceCodec eachCodec : blueprintDeviceCodecs.getCodecs()) {
-            if (codecId.equals(eachCodec.getId())) {
-                return eachCodec;
+        for (BlueprintDeviceCodec codec : blueprintDeviceCodecs.getCodecs()) {
+            if (codecId.equals(codec.getId())) {
+                return codec;
             }
         }
-        throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_CODEC_NOT_FOUND.getErrorCode(),
-                BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_CODEC_NOT_FOUND.getErrorMessage()).build();
+        throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_CODEC_NOT_FOUND).build();
     }
 
-    public String getResourceContent(BlueprintLibrary blueprintLibrary, String vendor, String relativePath) {
-        String workDir = getWorkDirByVendor(blueprintLibrary, vendor);
+    public String getResourceContent(BlueprintLibrary blueprintLibrary, String vendorId, String relativePath) {
+        String workDir = getWorkDirByVendor(blueprintLibrary, vendorId);
         String resourcePath = buildResourcePath(workDir, relativePath);
         return getResourceContent(blueprintLibrary, resourcePath);
     }
@@ -255,18 +244,18 @@ public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResour
         return basePath + "/" + relativePath;
     }
 
-    public String getWorkDirByVendor(String vendor) {
-        return getWorkDirByVendor(blueprintLibraryService.getCurrentBlueprintLibrary(), vendor);
+    public String getWorkDirByVendor(String vendorId) {
+        return getWorkDirByVendor(blueprintLibraryService.getCurrentBlueprintLibrary(), vendorId);
     }
 
-    private String getWorkDirByVendor(BlueprintLibrary blueprintLibrary, String vendor) {
-        BlueprintDeviceVendor vendorDef = getDeviceVendor(blueprintLibrary, vendor);
-        if (vendorDef == null) {
+    private String getWorkDirByVendor(BlueprintLibrary blueprintLibrary, String vendorId) {
+        BlueprintDeviceVendor vendor = getDeviceVendor(blueprintLibrary, vendorId);
+        if (vendor == null) {
             throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDOR_NOT_FOUND.getErrorCode(),
-                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDOR_NOT_FOUND.formatMessage(vendor)).build();
+                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDOR_NOT_FOUND.formatMessage(vendorId)).build();
         }
 
-        return vendorDef.getWorkDir();
+        return vendor.getWorkDir();
     }
 
     private BlueprintLibraryManifest getManifest(BlueprintLibrary blueprintLibrary) {
@@ -284,8 +273,7 @@ public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResour
     @Override
     public String getResourceContent(BlueprintLibrary blueprintLibrary, String resourcePath) {
         if (blueprintLibrary == null) {
-            throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_NULL.getErrorCode(),
-                    BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_NULL.getErrorMessage()).build();
+            throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_NULL).build();
         }
 
         if (StringUtils.isEmpty(resourcePath)) {
@@ -302,7 +290,7 @@ public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResour
 
     public static class Constants {
         public static final String CACHE_NAME_DEVICE_VENDORS = "blueprint-library:resource:device-vendors";
-        public static final String CACHE_NAME_DEVICES = "blueprint-library:resource:devices";
+        public static final String CACHE_NAME_DEVICE_MODELS = "blueprint-library:resource:device-models";
         public static final String PATH_MANIFEST = "manifest.yaml";
     }
 }

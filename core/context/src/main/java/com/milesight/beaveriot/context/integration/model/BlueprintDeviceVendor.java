@@ -11,5 +11,5 @@ public class BlueprintDeviceVendor {
     private String id;
     private String name;
     private String workDir;
-    private String deviceIndex;
+    private String modelIndex;
 }

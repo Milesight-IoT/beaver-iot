@@ -20,7 +20,7 @@ public class DeviceModelSupport {
         return DeviceModel.of(split[1], split[0]);
     }
 
-    public static String toModelKey(String vendor, String model) {
-        return model + "@" + vendor;
+    public static String toModelKey(String vendorId, String modelId) {
+        return modelId + "@" + vendorId;
     }
 }
