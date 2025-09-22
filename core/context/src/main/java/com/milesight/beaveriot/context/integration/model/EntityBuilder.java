@@ -11,7 +11,7 @@ import java.util.function.Supplier;
  *
  * @author leon
  */
-public final class EntityBuilder extends BaseEntityBuilder<EntityBuilder> {
+public class EntityBuilder extends BaseEntityBuilder<EntityBuilder> {
 
     private String integrationId;
 
@@ -29,13 +29,6 @@ public final class EntityBuilder extends BaseEntityBuilder<EntityBuilder> {
     public EntityBuilder(String integrationId, String deviceKey) {
         this.deviceKey = deviceKey;
         this.integrationId = integrationId;
-    }
-
-    static EntityBuilder createInnerEntityBuilder(String integrationId, String deviceKey) {
-        EntityBuilder innerEntityBuilder = new EntityBuilder(integrationId, deviceKey);
-        // Disable enhanced validation
-        innerEntityBuilder.enableEnhancedValidation = false;
-        return innerEntityBuilder;
     }
 
     public EntityBuilder children(Entity childrenEntity) {

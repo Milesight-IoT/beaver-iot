@@ -29,17 +29,4 @@ public class IdentifierValidator {
             validate(identifier);
         }
     }
-
-    public static void enhancedValidate(String identifier) {
-        validate(identifier);
-        if (identifier.startsWith("@")) {
-            throw new IllegalArgumentException("identifier must not start with the character '@' :" + identifier);
-        }
-    }
-
-    public static void enhancedValidateNullable(String identifier) {
-        if (StringUtils.hasText(identifier)) {
-            enhancedValidate(identifier);
-        }
-    }
 }

@@ -61,7 +61,7 @@ public class EntityTemplate {
         String entityName = StringUtils.isEmpty(name) ? this.name : name;
         String entityDescription = StringUtils.isEmpty(description) ? this.description : description;
 
-        EntityBuilder entityBuilder = EntityBuilder.createInnerEntityBuilder(integrationId, deviceKey);
+        EntityBuilder entityBuilder = new EntityBuilder(integrationId, deviceKey);
         entityBuilder.identifier(identifier)
                 .description(entityDescription)
                 .valueType(valueType)
