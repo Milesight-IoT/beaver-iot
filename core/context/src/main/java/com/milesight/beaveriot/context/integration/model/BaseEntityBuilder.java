@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 /**
  * @author leon
  */
-public class BaseEntityBuilder<T extends BaseEntityBuilder<T>> {
+class BaseEntityBuilder<T extends BaseEntityBuilder<T>> {
     protected Long id;
     protected String name;
 
@@ -27,14 +27,24 @@ public class BaseEntityBuilder<T extends BaseEntityBuilder<T>> {
     protected Boolean visible = true;
     protected String description;
 
+    protected boolean enableEnhancedValidation = true;
+
     public T identifier(String identifier) {
-        IdentifierValidator.validate(identifier);
+        if (enableEnhancedValidation) {
+            IdentifierValidator.enhancedValidate(identifier);
+        } else {
+            IdentifierValidator.validate(identifier);
+        }
         this.identifier = identifier;
         return (T) this;
     }
 
     public T parentIdentifier(String parentIdentifier) {
-        IdentifierValidator.validateNullable(parentIdentifier);
+        if (enableEnhancedValidation) {
+            IdentifierValidator.enhancedValidateNullable(parentIdentifier);
+        } else {
+            IdentifierValidator.validateNullable(parentIdentifier);
+        }
         this.parentIdentifier = parentIdentifier;
         return (T) this;
     }
