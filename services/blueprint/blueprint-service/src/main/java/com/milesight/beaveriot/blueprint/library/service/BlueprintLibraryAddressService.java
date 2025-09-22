@@ -149,11 +149,11 @@ public class BlueprintLibraryAddressService {
     private String getManifestContentFromUrl(String manifestUrl) {
         ClientResponse response = OkHttpUtil.get(manifestUrl);
         if (response == null) {
-            return null;
+            throw ServiceException.with(BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_ACCESS_FAILED).build();
         }
 
         if (!response.isSuccessful()) {
-            return null;
+            throw ServiceException.with(BlueprintLibraryAddressErrorCode.BLUEPRINT_LIBRARY_ADDRESS_ACCESS_FAILED).build();
         }
 
         return response.getData();

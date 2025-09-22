@@ -51,8 +51,10 @@ public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements
         List<Device> devices = deviceServiceProvider.findAll(integrationId);
         if (config != null && !CollectionUtils.isEmpty(devices)) {
             devices.forEach(device -> {
-                long offlineSeconds = getDeviceOfflineSeconds(device, config);
-                startOfflineCountdown(device, offlineSeconds);
+                Long offlineSeconds = getDeviceOfflineSeconds(device, config);
+                if (offlineSeconds != null) {
+                    startOfflineCountdown(device, offlineSeconds);
+                }
             });
         }
     }
@@ -96,11 +98,14 @@ public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements
         DeviceStatusConfig config = availableDeviceData.getDeviceStatusConfig();
         config.getOnlineUpdater().accept(device);
 
-        long offlineSeconds = getDeviceOfflineSeconds(device, config);
-        long expirationTime = System.currentTimeMillis() + offlineSeconds * 1000;
-        deviceExpirationTimeMap.put(device.getId(), expirationTime);
+        Long expirationTime = null;
+        Long offlineSeconds = getDeviceOfflineSeconds(device, config);
+        if (offlineSeconds != null) {
+            expirationTime = System.currentTimeMillis() + offlineSeconds * 1000;
+            deviceExpirationTimeMap.put(device.getId(), expirationTime);
+            startOfflineCountdown(device, offlineSeconds);
+        }
 
-        startOfflineCountdown(device, offlineSeconds);
         deviceOnlineCallback(device, expirationTime);
     }
 

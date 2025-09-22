@@ -4,7 +4,10 @@ import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
-import com.milesight.beaveriot.context.integration.model.*;
+import com.milesight.beaveriot.context.integration.model.Device;
+import com.milesight.beaveriot.context.integration.model.Entity;
+import com.milesight.beaveriot.context.integration.model.EntityTemplate;
+import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.device.status.constants.DeviceStatusConstants;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -37,9 +40,6 @@ public abstract class BaseDeviceStatusManager {
     }
 
     public void register(String integrationId, Function<Device, Long> offlineTimeoutFetcher) {
-        if (offlineTimeoutFetcher == null) {
-            offlineTimeoutFetcher = this::getDeviceDefaultOfflineSeconds;
-        }
         DeviceStatusConfig config = DeviceStatusConfig.of(this::updateDeviceStatusToOnline, this::updateDeviceStatusToOffline, offlineTimeoutFetcher);
         integrationDeviceStatusConfigs.put(integrationId, config);
         afterRegister(integrationId, config);
@@ -61,8 +61,8 @@ public abstract class BaseDeviceStatusManager {
 
     protected abstract void afterRegister(String integrationId, DeviceStatusConfig config);
 
-    protected void deviceOnlineCallback(Device device, long expirationTime) {
-        log.debug("Device(id={}, key={}) status updated to online, expiration time: {}", device.getId(), device.getKey(), expirationTime / 1000);
+    protected void deviceOnlineCallback(Device device, Long expirationTime) {
+        log.debug("Device(id={}, key={}) status updated to online, expiration time: {}", device.getId(), device.getKey(), expirationTime == null ? "-" :expirationTime / 1000);
     }
 
     protected void deviceOfflineCallback(Device device) {
@@ -99,14 +99,11 @@ public abstract class BaseDeviceStatusManager {
         return AvailableDeviceData.of(device, deviceStatusConfig);
     }
 
-    protected long getDeviceOfflineSeconds(Device device, DeviceStatusConfig config) {
+    protected Long getDeviceOfflineSeconds(Device device, DeviceStatusConfig config) {
         return Optional.ofNullable(config.getOfflineTimeoutFetcher())
                 .map(f -> f.apply(device))
-                .orElse(DeviceStatusConstants.DEFAULT_OFFLINE_SECONDS);
-    }
-
-    protected long getDeviceDefaultOfflineSeconds(Device device) {
-        return DeviceStatusConstants.DEFAULT_OFFLINE_SECONDS;
+                .filter(s -> s > 0)
+                .orElse(null);
     }
 
     protected void updateDeviceStatus(Device device, String deviceStatus) {
