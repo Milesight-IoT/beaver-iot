@@ -156,7 +156,7 @@ public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResour
                 blueprintLibrary.getCurrentVersion());
     }
 
-    @Cacheable(cacheNames = Constants.CACHE_NAME_DEVICES, key = "#p0.type + ':' + #p0.url + '@' + #p0.branch + ':' + #p0.currentVersion + ':' + #p1", unless = "#result == null")
+    @Cacheable(cacheNames = Constants.CACHE_NAME_DEVICE_MODELS, key = "#p0.type + ':' + #p0.url + '@' + #p0.branch + ':' + #p0.currentVersion + ':' + #p1", unless = "#result == null")
     public List<BlueprintDeviceModel> getDeviceModels(BlueprintLibrary blueprintLibrary, String vendorId) {
         BlueprintDeviceVendor vendorDef = getDeviceVendor(blueprintLibrary, vendorId);
         if (vendorDef == null) {
@@ -174,7 +174,7 @@ public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResour
         return deviceModels.getModels();
     }
 
-    @CacheEvict(cacheNames = Constants.CACHE_NAME_DEVICES, key = "#p0.type + ':' + #p0.url + '@' + #p0.branch + ':' + #p0.currentVersion + ':' + #p1")
+    @CacheEvict(cacheNames = Constants.CACHE_NAME_DEVICE_MODELS, key = "#p0.type + ':' + #p0.url + '@' + #p0.branch + ':' + #p0.currentVersion + ':' + #p1")
     public void evictCacheDeviceModels(BlueprintLibrary blueprintLibrary, String vendorId) {
         log.debug("Evict cache: {}, key: {}@{}:{}",
                 Constants.CACHE_NAME_DEVICE_VENDORS,
@@ -290,7 +290,7 @@ public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResour
 
     public static class Constants {
         public static final String CACHE_NAME_DEVICE_VENDORS = "blueprint-library:resource:device-vendors";
-        public static final String CACHE_NAME_DEVICES = "blueprint-library:resource:devices";
+        public static final String CACHE_NAME_DEVICE_MODELS = "blueprint-library:resource:device-models";
         public static final String PATH_MANIFEST = "manifest.yaml";
     }
 }
