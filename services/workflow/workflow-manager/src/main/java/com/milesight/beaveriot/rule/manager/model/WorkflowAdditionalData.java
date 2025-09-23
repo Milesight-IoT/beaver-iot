@@ -10,5 +10,5 @@ import lombok.Data;
  */
 @Data
 public class WorkflowAdditionalData {
-    private String deviceId;
+    private String deviceId; // is device workflow
 }

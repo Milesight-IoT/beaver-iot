@@ -51,4 +51,5 @@ public @interface Attribute {
      */
     boolean optional() default false;
 
+    int important() default AttributeBuilder.POSITIVE_INT_NAN;
 }

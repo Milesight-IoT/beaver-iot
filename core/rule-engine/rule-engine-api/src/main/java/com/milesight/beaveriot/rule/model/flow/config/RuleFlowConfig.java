@@ -5,7 +5,6 @@ import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author leon
@@ -22,6 +21,8 @@ public class RuleFlowConfig {
     private List<RuleNodeConfig> nodes;
 
     private List<RuleEdgeConfig> edges;
+
+    private RuleFlowConfigMetadata metadata;
 
     private List<RuleConfig> initializedNodes = new ArrayList<>();
 

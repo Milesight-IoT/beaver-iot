@@ -102,6 +102,7 @@ public class WorkflowEntityRelationService {
         }
 
         if (serviceEntity == null) {
+            // create service entity
             EntityBuilder eb;
 
             WorkflowAdditionalData additionalData = workflowPO.getAdditionalData();
@@ -116,6 +117,12 @@ public class WorkflowEntityRelationService {
                 }
 
                 eb = new EntityBuilder(relatedDevice.getIntegrationId(), relatedDevice.getKey());
+
+                if (ruleFlowConfig.getMetadata() != null && ruleFlowConfig.getMetadata().getDeviceImportantEntity() != null) {
+                    AttributeBuilder ab = new AttributeBuilder();
+                    ab.important(ruleFlowConfig.getMetadata().getDeviceImportantEntity());
+                    eb.attributes(ab.build());
+                }
             }
 
             serviceEntity = eb.identifier(workflowPO.getId().toString())
@@ -131,12 +138,12 @@ public class WorkflowEntityRelationService {
             relationPO.setFlowId(workflowPO.getId());
             workflowEntityRelationRepository.save(relationPO);
         } else {
+            // update service entity
             serviceEntity.setName(workflowPO.getName());
             serviceEntity.setChildren(childEntities);
             serviceEntity.setDescription(workflowPO.getRemark());
             entityServiceProvider.save(serviceEntity);
         }
-
     }
 
     public void deleteEntityByFlowIds(List<Long> flowIds) {
