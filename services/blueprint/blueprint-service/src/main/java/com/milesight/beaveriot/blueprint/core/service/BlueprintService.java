@@ -60,6 +60,8 @@ public class BlueprintService implements IBlueprintFacade {
         var variablesJsonSchema = templateParser.getVariableJsonSchema(templateLoader, context);
         if (variablesJsonSchema != null) {
             validateVariables(variables, variablesJsonSchema);
+            // ensure map is writable
+            variables = new HashMap<>(variables);
             BlueprintUtils.loadObjectSchemaDefaultValues(variablesJsonSchema, variables);
             context.put(BlueprintConstants.VARIABLES_KEY, variables);
             context.put(BlueprintConstants.PARAMETERS_KEY, variables);
@@ -111,6 +113,7 @@ public class BlueprintService implements IBlueprintFacade {
         try {
             JsonSchemaUtils.validate(variablesJsonSchema, JsonUtils.toJsonNode(variables));
         } catch (JsonSchemaValidationException e) {
+            log.debug("Json schema validation error: {}", e.getDetails());
             throw new ServiceException(BlueprintErrorCode.BLUEPRINT_PARAMETERS_VALIDATION_ERROR, e.getMessage(), e.getDetails());
         }
     }

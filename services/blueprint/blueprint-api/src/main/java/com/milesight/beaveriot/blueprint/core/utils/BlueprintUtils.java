@@ -2,6 +2,7 @@ package com.milesight.beaveriot.blueprint.core.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -12,6 +13,7 @@ import com.milesight.beaveriot.blueprint.core.chart.node.base.KeyValueNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.DataNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.container.ArrayDataNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.container.MapDataNode;
+import com.milesight.beaveriot.blueprint.core.chart.node.data.value.BoolValueNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.value.DoubleValueNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.value.LongValueNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.value.StringValueNode;
@@ -150,6 +152,10 @@ public class BlueprintUtils {
     public static DataNode convertToDataNode(String nodeName, BlueprintNode parentNode, JsonNode data) {
         if (data == null) {
             return null;
+        }
+
+        if (data instanceof BooleanNode boolNode) {
+            return new BoolValueNode(parentNode, nodeName, boolNode.booleanValue());
         }
 
         if (data instanceof TextNode textNode) {
