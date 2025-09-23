@@ -228,6 +228,7 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
                                 .valueAttribute(entity.getAttributes())
                                 .valueType(entity.getValueType())
                                 .description(entity.getDescription())
+                                .accessMod(entity.getAccessMod())
                                 .build()
                         )
                         .toList()

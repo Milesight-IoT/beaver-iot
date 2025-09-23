@@ -19,8 +19,6 @@ public class RuleFlowConfig {
 
     private String fromNodeId;
 
-    private RuleFlowConfigMetadata metadata;
-
     private List<RuleNodeConfig> nodes;
 
     private List<RuleEdgeConfig> edges;

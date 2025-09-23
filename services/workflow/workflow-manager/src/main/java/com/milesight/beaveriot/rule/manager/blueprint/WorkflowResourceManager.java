@@ -55,7 +55,7 @@ public class WorkflowResourceManager implements ResourceManager<WorkflowResource
 
         log.info("create workflow: {}", name);
 
-        var response = workflowService.createWorkflow(request);
+        var response = workflowService.createWorkflow(request, null);
         var flowId = response.getFlowId();
         accessor.setId(flowId);
 

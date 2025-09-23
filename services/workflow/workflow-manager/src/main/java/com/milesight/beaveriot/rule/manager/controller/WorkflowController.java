@@ -4,6 +4,7 @@ import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.permission.aspect.OperationPermission;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
+import com.milesight.beaveriot.rule.manager.model.WorkflowCreateContext;
 import com.milesight.beaveriot.rule.manager.model.request.BatchDeleteWorkflowRequest;
 import com.milesight.beaveriot.rule.manager.model.request.SaveWorkflowRequest;
 import com.milesight.beaveriot.rule.manager.model.request.SearchWorkflowLogsRequest;
@@ -116,7 +117,7 @@ public class WorkflowController {
     public ResponseBody<SaveWorkflowResponse> saveWorkflow(@RequestBody @Valid SaveWorkflowRequest request) {
         boolean isCreate = request.getId() == null || request.getId().isEmpty();
         if (isCreate) {
-            return ResponseBuilder.success(workflowService.createWorkflow(request));
+            return ResponseBuilder.success(workflowService.createWorkflow(request, null));
         }
 
         return ResponseBuilder.success(workflowService.updateWorkflow(request));

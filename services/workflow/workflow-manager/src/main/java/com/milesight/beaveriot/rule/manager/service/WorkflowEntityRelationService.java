@@ -13,6 +13,7 @@ import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.EntityBuilder;
 import com.milesight.beaveriot.entity.facade.IEntityFacade;
 import com.milesight.beaveriot.rule.manager.model.TriggerNodeParameters;
+import com.milesight.beaveriot.rule.manager.model.WorkflowAdditionalData;
 import com.milesight.beaveriot.rule.manager.po.WorkflowEntityRelationPO;
 import com.milesight.beaveriot.rule.manager.po.WorkflowPO;
 import com.milesight.beaveriot.rule.manager.repository.WorkflowEntityRelationRepository;
@@ -60,7 +61,7 @@ public class WorkflowEntityRelationService {
         return null;
     }
 
-    public void saveEntity(WorkflowPO workflowPO, RuleFlowConfig ruleFlowConfig, Long relatedDeviceId) {
+    public void saveEntity(WorkflowPO workflowPO, RuleFlowConfig ruleFlowConfig) {
         RuleNodeConfig triggerNodeConfig = getTriggerNode(ruleFlowConfig);
 
         WorkflowEntityRelationPO relationPO = workflowEntityRelationRepository.findOne(f -> f.eq(WorkflowEntityRelationPO.Fields.flowId, workflowPO.getId())).orElse(null);
@@ -103,10 +104,12 @@ public class WorkflowEntityRelationService {
         if (serviceEntity == null) {
             EntityBuilder eb;
 
+            WorkflowAdditionalData additionalData = workflowPO.getAdditionalData();
             // create device entity or custom entity
-            if (relatedDeviceId == null) {
+            if (additionalData == null || additionalData.getDeviceId() == null) {
                 eb = new EntityBuilder(IntegrationConstants.SYSTEM_INTEGRATION_ID);
             } else {
+                Long relatedDeviceId = Long.valueOf(additionalData.getDeviceId());
                 Device relatedDevice = deviceServiceProvider.findById(relatedDeviceId);
                 if (relatedDevice == null) {
                     throw ServiceException.with(ErrorCode.DATA_NO_FOUND.getErrorCode(), "Device Not Found: " + relatedDeviceId).build();

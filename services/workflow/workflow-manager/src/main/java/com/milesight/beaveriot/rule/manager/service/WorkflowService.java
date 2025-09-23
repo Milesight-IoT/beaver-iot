@@ -16,6 +16,8 @@ import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.pubsub.MessagePubSub;
 import com.milesight.beaveriot.rule.RuleEngineComponentManager;
 import com.milesight.beaveriot.rule.RuleEngineLifecycleManager;
+import com.milesight.beaveriot.rule.manager.model.WorkflowAdditionalData;
+import com.milesight.beaveriot.rule.manager.model.WorkflowCreateContext;
 import com.milesight.beaveriot.rule.manager.model.event.BaseWorkflowEvent;
 import com.milesight.beaveriot.rule.manager.model.event.WorkflowDeployEvent;
 import com.milesight.beaveriot.rule.manager.model.event.WorkflowRemoveEvent;
@@ -66,9 +68,6 @@ public class WorkflowService {
 
     @Autowired
     WorkflowEntityRelationService workflowEntityRelationService;
-
-    @Autowired
-    DeviceWorkflowService deviceWorkflowService;
 
     @Autowired
     MessagePubSub messagePubSub;
@@ -352,7 +351,7 @@ public class WorkflowService {
 
     @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_ADD})
     @Transactional(rollbackFor = Exception.class)
-    public SaveWorkflowResponse createWorkflow(SaveWorkflowRequest request) {
+    public SaveWorkflowResponse createWorkflow(SaveWorkflowRequest request, WorkflowCreateContext createContext) {
         assertWorkflowPrepared();
         WorkflowPO workflowPO = new WorkflowPO();
         workflowPO.setId(SnowflakeUtil.nextId());
@@ -363,6 +362,12 @@ public class WorkflowService {
         workflowPO.setRemark(request.getRemark());
         workflowPO.setEnabled(request.getEnabled());
         workflowPO.setDesignData(request.getDesignData());
+
+        if (createContext != null && createContext.getDeviceId() != null) {
+            WorkflowAdditionalData additionalData = new WorkflowAdditionalData();
+            additionalData.setDeviceId(createContext.getDeviceId().toString());
+            workflowPO.setAdditionalData(additionalData);
+        }
 
         final String workflowIdStr = workflowPO.getId().toString();
         RuleFlowConfig ruleFlowConfig = parseRuleFlowConfig(workflowIdStr, request.getDesignData());
@@ -380,7 +385,7 @@ public class WorkflowService {
         swr.setFlowId(workflowIdStr);
         swr.setVersion(workflowPO.getVersion());
 
-        workflowEntityRelationService.saveEntity(workflowPO, ruleFlowConfig, deviceWorkflowService.fetchDeviceIdFromWorkflowMetadata(ruleFlowConfig));
+        workflowEntityRelationService.saveEntity(workflowPO, ruleFlowConfig);
 
         return swr;
     }
@@ -442,7 +447,7 @@ public class WorkflowService {
         swr.setFlowId(workflowIdStr);
         swr.setVersion(workflowPO.getVersion());
 
-        workflowEntityRelationService.saveEntity(workflowPO, ruleFlowConfig, deviceWorkflowService.fetchDeviceIdFromExistsBlueprintWorkflow(workflowPO.getId()));
+        workflowEntityRelationService.saveEntity(workflowPO, ruleFlowConfig);
 
         return swr;
     }

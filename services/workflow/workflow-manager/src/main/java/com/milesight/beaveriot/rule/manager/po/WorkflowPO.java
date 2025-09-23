@@ -1,5 +1,7 @@
 package com.milesight.beaveriot.rule.manager.po;
 
+import com.milesight.beaveriot.rule.manager.converter.WorkflowAdditionalDataConverter;
+import com.milesight.beaveriot.rule.manager.model.WorkflowAdditionalData;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
@@ -28,6 +30,10 @@ public class WorkflowPO {
 
     @Column(name = "design_data", columnDefinition = "TEXT")
     private String designData;
+
+    @Column(name = "additional_data")
+    @Convert(converter = WorkflowAdditionalDataConverter.class)
+    private WorkflowAdditionalData additionalData;
 
     @Column(name = "enabled")
     private Boolean enabled;
