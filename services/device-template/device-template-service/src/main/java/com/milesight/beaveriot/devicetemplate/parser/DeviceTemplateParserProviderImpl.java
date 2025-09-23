@@ -115,7 +115,7 @@ public class DeviceTemplateParserProviderImpl implements DeviceTemplateParserPro
     }
 
     @Override
-    public DeviceTemplate getNewestDeviceTemplate(String vendor, String model) {
-        return deviceTemplateParser.getNewestDeviceTemplate(vendor, model);
+    public DeviceTemplate getLatestDeviceTemplate(String vendor, String model) {
+        return deviceTemplateParser.getLatestDeviceTemplate(vendor, model);
     }
 }

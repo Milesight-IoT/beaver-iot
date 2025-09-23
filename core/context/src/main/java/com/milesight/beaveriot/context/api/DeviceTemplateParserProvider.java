@@ -40,5 +40,5 @@ public interface DeviceTemplateParserProvider {
                         String deviceIdentifier,
                         String deviceName,
                         BiFunction<Device, Map<String, Object>, Boolean> beforeSaveDevice);
-    DeviceTemplate getNewestDeviceTemplate(String vendor, String model);
+    DeviceTemplate getLatestDeviceTemplate(String vendor, String model);
 }

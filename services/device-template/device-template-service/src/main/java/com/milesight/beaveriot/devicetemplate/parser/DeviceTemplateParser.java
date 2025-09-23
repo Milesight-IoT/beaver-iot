@@ -545,7 +545,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                                BiFunction<Device, Map<String, Object>, Boolean> beforeSaveDevice,
                                BlueprintCreationStrategy strategy) {
         try {
-            DeviceTemplate deviceTemplate = getNewestDeviceTemplate(vendor, model);
+            DeviceTemplate deviceTemplate = getLatestDeviceTemplate(vendor, model);
             return createDevice(integration,
                     vendor,
                     deviceTemplate,
@@ -646,7 +646,8 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         deviceBlueprintMappingFacade.saveMapping(device.getId(), blueprintId);
     }
 
-    public DeviceTemplate getNewestDeviceTemplate(String vendor, String model) {
+    @Override
+    public DeviceTemplate getLatestDeviceTemplate(String vendor, String model) {
         BlueprintLibrary blueprintLibrary = blueprintLibraryFacade.getCurrentBlueprintLibrary();
         if (blueprintLibrary == null) {
             return null;
