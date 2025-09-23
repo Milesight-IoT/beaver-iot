@@ -20,4 +20,5 @@ public class DeviceResponseEntityData {
     private EntityValueType valueType;
     private AccessMod accessMod;
     private String description;
+    private String parent;
 }

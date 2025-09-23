@@ -2,10 +2,10 @@ package com.milesight.beaveriot.entitytemplate.service;
 
 import com.google.common.collect.Sets;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
-import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
 import com.milesight.beaveriot.context.integration.model.EntityTemplate;
 import com.milesight.beaveriot.context.integration.model.EntityTemplateBuilder;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.entitytemplate.facade.IEntityTemplateFacade;
 import com.milesight.beaveriot.entitytemplate.po.EntityTemplatePO;
 import com.milesight.beaveriot.entitytemplate.repository.EntityTemplateRepository;
 import com.milesight.beaveriot.entitytemplate.support.EntityTemplateSupporter;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  **/
 @Slf4j
 @Service
-public class EntityTemplateService implements EntityTemplateServiceProvider {
+public class EntityTemplateService implements IEntityTemplateFacade {
     private final EntityTemplateRepository entityTemplateRepository;
 
     public EntityTemplateService(EntityTemplateRepository entityTemplateRepository) {
