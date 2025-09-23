@@ -68,7 +68,7 @@ public interface DataNode extends BlueprintNode {
                     return dataNodeParser.parse(functionName, objectNode.get(functionName), parentNode, context);
                 } else {
                     var mapDataNode = new MapDataNode(parentNode, propertyName);
-                    objectNode.fields().forEachRemaining(entry ->
+                    BlueprintUtils.forEachInReverseOrder(objectNode.fields(), entry ->
                             context.pushTask(() ->
                                     mapDataNode.addChildNode(dataNodeParser.parse(entry.getKey(), entry.getValue(), mapDataNode, context))));
                     return mapDataNode;

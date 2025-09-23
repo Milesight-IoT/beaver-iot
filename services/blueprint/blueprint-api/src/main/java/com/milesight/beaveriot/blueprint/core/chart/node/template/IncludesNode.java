@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.BlueprintParseContext;
 import com.milesight.beaveriot.blueprint.core.chart.node.base.AbstractMapNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.base.BlueprintNode;
+import com.milesight.beaveriot.blueprint.core.utils.BlueprintUtils;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -28,7 +29,7 @@ public class IncludesNode extends AbstractMapNode<IncludeNode> {
             var includesNode = new IncludesNode(parentNode, propertyName);
             includesNode.setBlueprintNodeName(propertyName);
             if (propertyValue instanceof ObjectNode object) {
-                object.fields().forEachRemaining(entry -> context.pushTask(() -> includesNode.addChildNode(
+                BlueprintUtils.forEachInReverseOrder(object.fields(), entry -> context.pushTask(() -> includesNode.addChildNode(
                         includeNodeParser.parse(entry.getKey(), entry.getValue(), includesNode, context))));
             }
             return includesNode;

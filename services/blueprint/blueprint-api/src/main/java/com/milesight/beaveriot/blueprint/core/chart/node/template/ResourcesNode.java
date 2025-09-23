@@ -7,6 +7,7 @@ import com.milesight.beaveriot.blueprint.core.chart.node.BlueprintParseContext;
 import com.milesight.beaveriot.blueprint.core.chart.node.base.AbstractMapNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.base.BlueprintNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.resource.AbstractResourceNode;
+import com.milesight.beaveriot.blueprint.core.utils.BlueprintUtils;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -44,7 +45,7 @@ public class ResourcesNode extends AbstractMapNode<AbstractResourceNode> {
 
             var resourcesNode = new ResourcesNode(parentNode, propertyName);
             if (propertyValue instanceof ObjectNode object) {
-                object.fields().forEachRemaining(entry -> Optional.ofNullable(entry.getValue().get("type"))
+                BlueprintUtils.forEachInReverseOrder(object.fields(), entry -> Optional.ofNullable(entry.getValue().get("type"))
                         .filter(TextNode.class::isInstance)
                         .map(JsonNode::asText)
                         .map(typeToResourceNodeParser::get)

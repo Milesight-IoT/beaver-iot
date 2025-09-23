@@ -23,10 +23,33 @@ import com.milesight.beaveriot.blueprint.core.enums.BlueprintErrorCode;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 public class BlueprintUtils {
+
+    public static <T> Stream<T> iteratorToStream(Iterator<T> iterator) {
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false);
+    }
+
+    public static <T> void forEachInReverseOrder(Iterator<T> iterator, Consumer<T> consumer) {
+        var list = new ArrayList<T>();
+        while (iterator.hasNext()) {
+            list.add(iterator.next());
+        }
+        Collections.reverse(list);
+        for (var item : list) {
+            consumer.accept(item);
+        }
+    }
 
     public static BlueprintNode getChildByName(BlueprintNode blueprintNode, String name) {
         if (name == null || name.isEmpty()) {
@@ -165,7 +188,8 @@ public class BlueprintUtils {
         if (data instanceof NumericNode numericNode) {
             if (numericNode.isBigInteger() || numericNode.isBigDecimal()) {
                 var nodePath = getNodePath(nodeName, parentNode);
-                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_TEMPLATE_PARSING_FAILED, "Big number is unsupported. Path: " + nodePath);
+                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_TEMPLATE_PARSING_FAILED,
+                        "Big number is unsupported. Path: " + nodePath);
             } else if (numericNode.isIntegralNumber()) {
                 return new LongValueNode(parentNode, nodeName, numericNode.longValue());
             } else if (numericNode.isFloatingPointNumber()) {
