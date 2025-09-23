@@ -25,11 +25,11 @@ import java.util.Objects;
  */
 public class JsonUtils {
 
-    public static Instance SNAKE_CASE = new Instance(jsonMapperBuilder()
+    private static final Instance WITH_SNAKE_CASE_STRATEGY = new Instance(jsonMapperBuilder()
             .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
             .build());
 
-    public static Instance CAMEL_CASE = new Instance(jsonMapperBuilder()
+    private static final Instance WITH_CAMEL_CASE_STRATEGY = new Instance(jsonMapperBuilder()
             .propertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE)
             .build());
 
@@ -48,8 +48,16 @@ public class JsonUtils {
                 .serializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
+    public static Instance withCamelCaseStrategy() {
+        return WITH_CAMEL_CASE_STRATEGY;
+    }
+
+    public static Instance withSnakeCaseStrategy() {
+        return WITH_SNAKE_CASE_STRATEGY;
+    }
+
     public static ObjectMapper getObjectMapper() {
-        return SNAKE_CASE.objectMapper;
+        return withSnakeCaseStrategy().objectMapper;
     }
 
     public static <T> T copy(T object) {
