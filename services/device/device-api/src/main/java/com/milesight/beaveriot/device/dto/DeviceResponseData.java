@@ -22,4 +22,5 @@ public class DeviceResponseData {
     private String groupId;
     private Boolean deletable;
     private List<DeviceResponseEntityData> importantEntities;
+    private List<DeviceResponseEntityData> commonEntities;
 }

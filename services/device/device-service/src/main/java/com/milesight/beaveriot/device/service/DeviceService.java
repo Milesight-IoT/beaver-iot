@@ -18,12 +18,12 @@ import com.milesight.beaveriot.context.integration.model.event.DeviceEvent;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
+import com.milesight.beaveriot.device.dto.DeviceResponseData;
 import com.milesight.beaveriot.device.dto.DeviceResponseEntityData;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.device.facade.IDeviceResponseFacade;
 import com.milesight.beaveriot.device.model.request.*;
 import com.milesight.beaveriot.device.model.response.DeviceDetailResponse;
-import com.milesight.beaveriot.device.dto.DeviceResponseData;
 import com.milesight.beaveriot.device.po.DeviceGroupMappingPO;
 import com.milesight.beaveriot.device.po.DeviceGroupPO;
 import com.milesight.beaveriot.device.po.DevicePO;
@@ -32,6 +32,7 @@ import com.milesight.beaveriot.device.status.service.DeviceStatusService;
 import com.milesight.beaveriot.device.support.DeviceConverter;
 import com.milesight.beaveriot.devicetemplate.dto.DeviceTemplateDTO;
 import com.milesight.beaveriot.devicetemplate.facade.IDeviceTemplateFacade;
+import com.milesight.beaveriot.entitytemplate.facade.IEntityTemplateFacade;
 import com.milesight.beaveriot.eventbus.EventBus;
 import com.milesight.beaveriot.permission.aspect.IntegrationPermission;
 import com.milesight.beaveriot.user.dto.UserDTO;
@@ -51,8 +52,8 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.milesight.beaveriot.context.constants.ExchangeContextKeys.*;
@@ -101,11 +102,15 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
     @Autowired
     private IBlueprintFacade blueprintFacade;
 
+    @Autowired
+    private IEntityTemplateFacade entityTemplateFacade;
+
     @Lazy
     @Autowired
     private DeviceService self;
 
     public static final String TENANT_PARAM_DEVICE_GROUP_ID = "DEVICE_GROUP_ID";
+    private static final Set<String> entityTemplateKeys = ConcurrentHashMap.newKeySet();
 
     @IntegrationPermission
     public Integration getIntegration(String integrationIdentifier) {
@@ -187,6 +192,18 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
                 .collect(Collectors.toMap(Integration::getId, integration -> integration));
     }
 
+    private void initEntityTemplateKeys() {
+        if (entityTemplateKeys.isEmpty()) {
+            List<EntityTemplate> entityTemplates = entityTemplateFacade.findAll();
+            entityTemplates.forEach(entityTemplate -> {
+                entityTemplateKeys.add(entityTemplate.getKey());
+                if (!CollectionUtils.isEmpty(entityTemplate.getChildren())) {
+                    entityTemplate.getChildren().forEach(child -> entityTemplateKeys.add(child.getKey()));
+                }
+            });
+        }
+    }
+
     private void fillRelativeInfo(List<DeviceResponseData> dataList) {
         Map<String, Integration> integrationMap = getIntegrationMap(dataList.stream().map(DeviceResponseData::getIntegration).toList());
         Map<Long, DeviceGroupPO> deviceGroupMap = deviceGroupService.deviceMapToGroup(dataList.stream().map(d -> Long.valueOf(d.getId())).toList());
@@ -194,6 +211,8 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
             .findByTargetIds(AttachTargetType.DEVICE, dataList.stream().map(DeviceResponseData::getId).toList())
             .stream()
             .collect(Collectors.groupingBy(Entity::getDeviceKey));
+
+        initEntityTemplateKeys();
 
         dataList.forEach(d -> {
             Integration integration = integrationMap.get(d.getIntegration());
@@ -229,6 +248,24 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
                                 .valueType(entity.getValueType())
                                 .description(entity.getDescription())
                                 .accessMod(entity.getAccessMod())
+                                .parent(entity.getParentKey())
+                                .build()
+                        )
+                        .toList()
+                );
+
+                d.setCommonEntities(flattenEntities.stream()
+                        .filter(entity -> entityTemplateKeys.contains(entity.getFullIdentifier()))
+                        .map(entity -> DeviceResponseEntityData.builder()
+                                .id(entity.getId().toString())
+                                .key(entity.getKey())
+                                .name(entity.getName())
+                                .type(entity.getType())
+                                .valueAttribute(entity.getAttributes())
+                                .valueType(entity.getValueType())
+                                .description(entity.getDescription())
+                                .accessMod(entity.getAccessMod())
+                                .parent(entity.getParentKey())
                                 .build()
                         )
                         .toList()
