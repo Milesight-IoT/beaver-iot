@@ -4,6 +4,8 @@ import com.milesight.beaveriot.context.api.DeviceStatusServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -21,6 +23,11 @@ public class DeviceStatusServiceProviderImpl implements DeviceStatusServiceProvi
     @Override
     public void register(String integrationId, Function<Device, Long> offlineTimeoutFetcher) {
         deviceStatusService.register(integrationId, offlineTimeoutFetcher);
+    }
+
+    @Override
+    public void register(String integrationId, Function<Device, Long> offlineTimeoutFetcher, Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher) {
+        deviceStatusService.register(integrationId, offlineTimeoutFetcher, batchOfflineTimeoutFetcher);
     }
 
     @Override

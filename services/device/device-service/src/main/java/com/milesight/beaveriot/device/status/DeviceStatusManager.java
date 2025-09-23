@@ -2,6 +2,8 @@ package com.milesight.beaveriot.device.status;
 
 import com.milesight.beaveriot.context.integration.model.Device;
 
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -10,6 +12,7 @@ import java.util.function.Function;
  **/
 public interface DeviceStatusManager {
     void register(String integrationId, Function<Device, Long> offlineTimeoutFetcher);
+    void register(String integrationId, Function<Device, Long> offlineTimeoutFetcher, Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher);
     void deregister(Device device);
     void online(Device device);
     void offline(Device device);
