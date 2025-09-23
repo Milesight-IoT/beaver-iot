@@ -77,7 +77,7 @@ public interface DataNode extends BlueprintNode {
 
             if (propertyValue instanceof ArrayNode arrayNode) {
                 var arrayDataNode = new ArrayDataNode(parentNode, propertyName);
-                for (var i = 0; i < arrayNode.size(); i++) {
+                for (var i = arrayNode.size() - 1; i >= 0; i--) {
                     var item = arrayNode.get(i);
                     var itemName = "[" + i + "]";
                     context.pushTask(() ->

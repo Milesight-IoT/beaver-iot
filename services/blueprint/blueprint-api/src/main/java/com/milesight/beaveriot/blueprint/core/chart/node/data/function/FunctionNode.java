@@ -35,12 +35,10 @@ public interface FunctionNode extends DataNode, SequenceNode<DataNode> {
     void setBlueprintNodeChildren(List<BlueprintNode> children);
 
     @Component
-    abstract class Parser<T extends FunctionNode> implements BlueprintNode.Parser<T> {
+    abstract class Parser<T extends FunctionNode> implements BlueprintNode.Parser<T>, BlueprintRuntimeFunctionName {
 
         @Autowired
         private DataNode.Parser dataNodeParser;
-
-        public abstract String getFunctionName();
 
         protected abstract T createNode(BlueprintNode blueprintNodeParent, String blueprintNodeName);
 
@@ -49,7 +47,7 @@ public interface FunctionNode extends DataNode, SequenceNode<DataNode> {
             var functionNode = createNode(parentNode, propertyName);
             var parameters = new ArrayList<DataNode>();
             if (propertyValue instanceof ArrayNode arrayNode) {
-                for (var i = 0; i < arrayNode.size(); i++) {
+                for (var i = arrayNode.size() - 1; i >= 0; i--) {
                     var itemName = "[" + i + "]";
                     var item = arrayNode.get(i);
                     context.pushTask(() -> parameters.add(dataNodeParser.parse(itemName, item, functionNode, context)));

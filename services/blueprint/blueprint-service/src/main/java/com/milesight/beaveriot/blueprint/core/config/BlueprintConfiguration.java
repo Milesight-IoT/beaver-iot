@@ -1,5 +1,7 @@
 package com.milesight.beaveriot.blueprint.core.config;
 
+import com.milesight.beaveriot.blueprint.core.chart.node.data.function.BlueprintRuntimeFunctionName;
+import com.milesight.beaveriot.blueprint.core.pebble.AbstractBlueprintPebbleExtension;
 import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.extension.Extension;
 import io.pebbletemplates.pebble.loader.StringLoader;
@@ -19,7 +21,7 @@ public class BlueprintConfiguration {
 
     @Bean
     @Primary
-    public PebbleEngine blueprintPebbleEngine(List<BlueprintPebbleExtension> blueprintPebbleExtensions) {
+    public PebbleEngine blueprintPebbleEngine(List<AbstractBlueprintPebbleExtension> blueprintPebbleExtensions) {
         return new PebbleEngine.Builder()
                 .loader(new StringLoader())
                 .extension(blueprintPebbleExtensions.toArray(new Extension[0]))
@@ -31,13 +33,19 @@ public class BlueprintConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public BlueprintIntrinsicsYamlConstructor blueprintIntrinsicsYamlConstructor() {
+    public LoaderOptions loaderOptions() {
         var loaderOptions = new LoaderOptions();
         loaderOptions.setEnumCaseSensitive(false);
         loaderOptions.setMaxAliasesForCollections(50);
         loaderOptions.setNestingDepthLimit(50);
         loaderOptions.setCodePointLimit((int) DataSize.ofMegabytes(3).toBytes());
-        return new BlueprintIntrinsicsYamlConstructor(loaderOptions);
+        return loaderOptions;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public BlueprintIntrinsicsYamlConstructor blueprintIntrinsicsYamlConstructor(LoaderOptions loaderOptions, List<BlueprintRuntimeFunctionName> functionParsers) {
+        return new BlueprintIntrinsicsYamlConstructor(loaderOptions, functionParsers);
     }
 
     @Bean

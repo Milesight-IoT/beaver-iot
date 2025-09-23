@@ -2,9 +2,11 @@ package com.milesight.beaveriot.blueprint.core.config;
 
 
 import com.milesight.beaveriot.base.exception.ServiceException;
-import com.milesight.beaveriot.base.utils.StringUtils;
+import com.milesight.beaveriot.blueprint.core.chart.node.data.function.BlueprintRuntimeFunctionName;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.function.FunctionNode;
 import com.milesight.beaveriot.blueprint.core.enums.BlueprintErrorCode;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.constructor.AbstractConstruct;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -17,8 +19,8 @@ import org.yaml.snakeyaml.nodes.Tag;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Allows snakeyaml to parse YAML templates that contain short forms of
@@ -27,12 +29,27 @@ import java.util.Objects;
  * Inspired by jenkinsci/aws-sam-plugin (https://github.com/jenkinsci/aws-sam-plugin/blob/master/src/main/java/com/amazonaws/jenkins/plugins/sam/util/IntrinsicsYamlConstructor.java)
  * License: MIT
  */
+@Slf4j
+@Component
 public class BlueprintIntrinsicsYamlConstructor extends SafeConstructor {
 
-    public BlueprintIntrinsicsYamlConstructor(LoaderOptions loaderOptions) {
+    public BlueprintIntrinsicsYamlConstructor(LoaderOptions loaderOptions, List<BlueprintRuntimeFunctionName> functions) {
         super(loaderOptions);
         this.yamlConstructors.put(null, new ConstructUnknownTag());
-        addIntrinsic("Ref", true);
+
+        if (functions == null || functions.isEmpty()) {
+            log.warn("No functions found, skip adding intrinsic functions");
+            return;
+        }
+
+        functions.forEach(parser -> {
+            var functionName = parser.getFunctionName();
+            if (functionName.startsWith(FunctionNode.PREFIX)) {
+                addIntrinsic(functionName.substring(4));
+            } else {
+                addIntrinsic(functionName, false);
+            }
+        });
     }
 
     protected void addIntrinsic(String tag) {
@@ -44,10 +61,6 @@ public class BlueprintIntrinsicsYamlConstructor extends SafeConstructor {
     }
 
     protected void addIntrinsic(String tag, boolean attachFnPrefix, boolean forceSequenceValue) {
-        var snakeCasedTag = StringUtils.toSnakeCase(tag);
-        if (!Objects.equals(snakeCasedTag, tag)) {
-            addIntrinsic(snakeCasedTag, attachFnPrefix, forceSequenceValue);
-        }
         this.yamlConstructors.put(new Tag("!" + tag), new ConstructFunction(attachFnPrefix, forceSequenceValue));
     }
 
@@ -61,7 +74,7 @@ public class BlueprintIntrinsicsYamlConstructor extends SafeConstructor {
         }
 
         public Object construct(Node node) {
-            String key = StringUtils.toSnakeCase(node.getTag().getValue().substring(1));
+            String key = node.getTag().getValue().substring(1);
             String prefix = attachFnPrefix ? FunctionNode.PREFIX : "";
             Map<String, Object> result = new HashMap<>();
 
