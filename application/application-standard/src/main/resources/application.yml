@@ -225,10 +225,10 @@ application:
 blueprint:
   library:
     default_address:
-      type: ${BLUEPRINT_LIBRARY_DEFAULT_ADDRESS_TYPE:Github}
-      url: ${BLUEPRINT_LIBRARY_DEFAULT_ADDRESS_URL:https://github.com/zakersimonjack/beaver-iot-blueprint.git}
-      branch: ${BLUEPRINT_LIBRARY_DEFAULT_ADDRESS_BRANCH:main}
-    sync_frequency: ${BLUEPRINT_LIBRARY_SYNC_FREQUENCY:3h}
+      type: Github
+      url: https://github.com/zakersimonjack/beaver-iot-blueprint.git
+      branch: main
+    sync_frequency: 3h
 
 logging:
   level:
