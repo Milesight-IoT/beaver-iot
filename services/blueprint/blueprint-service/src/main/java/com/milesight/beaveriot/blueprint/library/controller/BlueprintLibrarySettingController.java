@@ -63,9 +63,7 @@ public class BlueprintLibrarySettingController {
             if (defaultBlueprintLibrary != null) {
                 response.setVersion(defaultBlueprintLibrary.getCurrentVersion());
                 boolean syncedSuccess = defaultBlueprintLibrary.getSyncStatus() == BlueprintLibrarySyncStatus.SYNCED;
-                if (syncedSuccess) {
-                    response.setUpdateTime(defaultBlueprintLibrary.getSyncedAt());
-                }
+                response.setUpdateTime(defaultBlueprintLibrary.getSyncedAt());
                 response.setSyncedSuccess(syncedSuccess);
             }
         }
