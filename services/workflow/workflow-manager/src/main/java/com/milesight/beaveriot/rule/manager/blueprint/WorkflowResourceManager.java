@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.rule.manager.blueprint;
 
 import com.google.common.primitives.Longs;
+import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.blueprint.core.chart.deploy.BlueprintDeployContext;
 import com.milesight.beaveriot.blueprint.core.chart.deploy.resource.ResourceManager;
@@ -9,6 +10,7 @@ import com.milesight.beaveriot.blueprint.core.chart.node.resource.WorkflowResour
 import com.milesight.beaveriot.blueprint.core.enums.BlueprintErrorCode;
 import com.milesight.beaveriot.blueprint.core.model.BindResource;
 import com.milesight.beaveriot.blueprint.core.utils.BlueprintUtils;
+import com.milesight.beaveriot.rule.manager.model.WorkflowAdditionalData;
 import com.milesight.beaveriot.rule.manager.model.WorkflowCreateContext;
 import com.milesight.beaveriot.rule.manager.model.request.SaveWorkflowRequest;
 import com.milesight.beaveriot.rule.manager.service.WorkflowService;
@@ -19,6 +21,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -36,37 +39,60 @@ public class WorkflowResourceManager implements ResourceManager<WorkflowResource
     @Override
     public List<BindResource> deploy(WorkflowResourceNode workflowNode, BlueprintDeployContext context) {
         var accessor = workflowNode.getAccessor();
+        var flowId = accessor.getId();
+        var isManaged = flowId == null;
+        if (!isManaged) {
+            try {
+                var existsWorkflow = workflowService.getWorkflowDesign(Longs.tryParse(flowId), null);
+                Optional.ofNullable(existsWorkflow.getAdditionalData())
+                        .map(WorkflowAdditionalData::getDeviceId)
+                        .map(Longs::tryParse)
+                        .ifPresent(accessor::setDeviceId);
+                accessor.setName(existsWorkflow.getName());
+                accessor.setRemark(existsWorkflow.getRemark());
+                accessor.setEnabled(existsWorkflow.getEnabled());
+                accessor.setData(JsonHelper.fromJSON(existsWorkflow.getDesignData()));
 
-        var name = accessor.getName();
-        if (name == null) {
-            throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'name'! Path: " + BlueprintUtils.getNodePath(workflowNode, context.getRoot()));
+            } catch (ServiceException e) {
+                if (ErrorCode.DATA_NO_FOUND.getErrorCode().equals(e.getErrorCode())) {
+                    throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Workflow '" + flowId + "' not found.");
+                } else {
+                    throw e;
+                }
+            }
+
+        } else {
+            var name = accessor.getName();
+            if (name == null) {
+                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'name'! Path: " + BlueprintUtils.getNodePath(workflowNode, context.getRoot()));
+            }
+
+            var deviceId = accessor.getDeviceId();
+            if (deviceId == null) {
+                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'device_id'! Path: " + BlueprintUtils.getNodePath(workflowNode, context.getRoot()));
+            }
+
+            var data = accessor.getData();
+            if (data == null) {
+                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'data'! Path: " + BlueprintUtils.getNodePath(workflowNode, context.getRoot()));
+            }
+
+            var remark = accessor.getRemark();
+            var enabled = accessor.isEnabled();
+            var request = new SaveWorkflowRequest();
+            request.setName(name);
+            request.setRemark(remark);
+            request.setEnabled(enabled);
+            request.setDesignData(JsonHelper.toJSON(data));
+
+            log.info("create workflow: {}", name);
+
+            var response = workflowService.createWorkflow(request, new WorkflowCreateContext(deviceId));
+            flowId = response.getFlowId();
+            accessor.setId(flowId);
         }
 
-        var deviceId = accessor.getDeviceId();
-        if (deviceId == null) {
-            throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'device_id'! Path: " + BlueprintUtils.getNodePath(workflowNode, context.getRoot()));
-        }
-
-        var data = accessor.getData();
-        if (data == null) {
-            throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'data'! Path: " + BlueprintUtils.getNodePath(workflowNode, context.getRoot()));
-        }
-
-        var remark = accessor.getRemark();
-        var enabled = accessor.isEnabled();
-        var request = new SaveWorkflowRequest();
-        request.setName(name);
-        request.setRemark(remark);
-        request.setEnabled(enabled);
-        request.setDesignData(JsonHelper.toJSON(data));
-
-        log.info("create workflow: {}", name);
-
-        var response = workflowService.createWorkflow(request, new WorkflowCreateContext(deviceId));
-        var flowId = response.getFlowId();
-        accessor.setId(flowId);
-
-        return List.of(new BindResource(WorkflowResourceNode.RESOURCE_TYPE, flowId, true));
+        return List.of(new BindResource(WorkflowResourceNode.RESOURCE_TYPE, flowId, isManaged));
     }
 
     @Override

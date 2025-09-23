@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.rule.manager.model.response;
 
+import com.milesight.beaveriot.rule.manager.model.WorkflowAdditionalData;
 import lombok.Builder;
 import lombok.Data;
 
@@ -17,4 +18,6 @@ public class WorkflowDesignResponse {
     private Integer version;
 
     private String designData;
+
+    private WorkflowAdditionalData additionalData;
 }

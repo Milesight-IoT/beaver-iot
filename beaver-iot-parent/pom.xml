@@ -66,6 +66,7 @@
         <aws-sdk.version>2.31.14</aws-sdk.version>
         <graalvm.version>24.1.2</graalvm.version>
         <poi.version>5.4.1</poi.version>
+        <jakarta.validation-api.version>3.0.2</jakarta.validation-api.version>
     </properties>
 
     <dependencyManagement>
@@ -197,6 +198,12 @@
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok-mapstruct-binding</artifactId>
                 <version>${lombok-mapstruct.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>jakarta.validation</groupId>
+                <artifactId>jakarta.validation-api</artifactId>
+                <version>${jakarta.validation-api.version}</version>
             </dependency>
 
             <dependency>

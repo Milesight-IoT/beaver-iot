@@ -21,12 +21,20 @@ import com.milesight.beaveriot.rule.manager.model.WorkflowCreateContext;
 import com.milesight.beaveriot.rule.manager.model.event.BaseWorkflowEvent;
 import com.milesight.beaveriot.rule.manager.model.event.WorkflowDeployEvent;
 import com.milesight.beaveriot.rule.manager.model.event.WorkflowRemoveEvent;
-import com.milesight.beaveriot.rule.manager.support.WorkflowTenantCache;
-import com.milesight.beaveriot.rule.manager.model.request.*;
-import com.milesight.beaveriot.rule.manager.model.response.*;
+import com.milesight.beaveriot.rule.manager.model.request.SaveWorkflowRequest;
+import com.milesight.beaveriot.rule.manager.model.request.SearchWorkflowRequest;
+import com.milesight.beaveriot.rule.manager.model.request.TestWorkflowNodeRequest;
+import com.milesight.beaveriot.rule.manager.model.request.TestWorkflowRequest;
+import com.milesight.beaveriot.rule.manager.model.request.ValidateWorkflowRequest;
+import com.milesight.beaveriot.rule.manager.model.response.SaveWorkflowResponse;
+import com.milesight.beaveriot.rule.manager.model.response.WorkflowComponentData;
+import com.milesight.beaveriot.rule.manager.model.response.WorkflowDesignResponse;
+import com.milesight.beaveriot.rule.manager.model.response.WorkflowResponse;
 import com.milesight.beaveriot.rule.manager.po.WorkflowHistoryPO;
 import com.milesight.beaveriot.rule.manager.po.WorkflowPO;
-import com.milesight.beaveriot.rule.manager.repository.*;
+import com.milesight.beaveriot.rule.manager.repository.WorkflowHistoryRepository;
+import com.milesight.beaveriot.rule.manager.repository.WorkflowRepository;
+import com.milesight.beaveriot.rule.manager.support.WorkflowTenantCache;
 import com.milesight.beaveriot.rule.model.RuleLanguage;
 import com.milesight.beaveriot.rule.model.flow.config.RuleEdgeConfig;
 import com.milesight.beaveriot.rule.model.flow.config.RuleFlowConfig;
@@ -45,7 +53,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
@@ -284,6 +297,7 @@ public class WorkflowService {
                 .remark(workflowPO.getRemark())
                 .enabled(workflowPO.getEnabled())
                 .designData(workflowPO.getDesignData())
+                .additionalData(workflowPO.getAdditionalData())
                 .version(workflowPO.getVersion())
                 .build();
         if (version != null) {

@@ -101,10 +101,13 @@ public class BlueprintTemplateParser implements IBlueprintTemplateParser {
                 return null;
             }
             var templateString = StringUtils.copyToString(templateInputStream);
+            log.debug("read template {}: {}", relativePath, templateString);
             var template = pebbleEngine.getTemplate(templateString);
             var stringWriter = new StringWriter();
             template.evaluate(stringWriter, context);
-            return stringWriter.toString();
+            var result = stringWriter.toString();
+            log.debug("pebble evaluated: {}", result);
+            return result;
         } catch (IOException e) {
             throw new ServiceException(ErrorCode.SERVER_ERROR, "Failed to read template " + relativePath, e);
         }

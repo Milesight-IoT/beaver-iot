@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.device.blueprint;
 
 import com.google.common.primitives.Longs;
+import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.blueprint.core.chart.deploy.BlueprintDeployContext;
@@ -10,6 +11,7 @@ import com.milesight.beaveriot.blueprint.core.chart.node.resource.DeviceCanvasRe
 import com.milesight.beaveriot.blueprint.core.enums.BlueprintErrorCode;
 import com.milesight.beaveriot.blueprint.core.model.BindResource;
 import com.milesight.beaveriot.blueprint.core.utils.BlueprintUtils;
+import com.milesight.beaveriot.canvas.enums.CanvasAttachType;
 import com.milesight.beaveriot.canvas.facade.ICanvasFacade;
 import com.milesight.beaveriot.canvas.model.request.CanvasUpdateRequest;
 import com.milesight.beaveriot.device.service.DeviceCanvasService;
@@ -40,26 +42,52 @@ public class DeviceCanvasResourceManager implements ResourceManager<DeviceCanvas
     @Override
     public List<BindResource> deploy(DeviceCanvasResourceNode canvasNode, BlueprintDeployContext context) {
         var accessor = canvasNode.getAccessor();
-        var deviceId = accessor.getDeviceId();
-        if (deviceId == null) {
-            throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'device_id'! Path: " + BlueprintUtils.getNodePath(canvasNode, context.getRoot()));
+        var canvasId = accessor.getId();
+        var isManaged = canvasId == null;
+        if (!isManaged) {
+            try {
+                var existsCanvasData = canvasFacade.getCanvasData(Longs.tryParse(canvasId));
+
+                if (CanvasAttachType.DEVICE.equals(existsCanvasData.getAttachType())) {
+                    accessor.setDeviceId(Longs.tryParse(existsCanvasData.getAttachId()));
+                } else {
+                    throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Canvas '" + canvasId + "' is not a 'device-canvas'.");
+                }
+
+                existsCanvasData.setDevices(null);
+                existsCanvasData.setEntities(null);
+                accessor.setData(JsonUtils.withCamelCaseStrategy().toJsonNode(existsCanvasData));
+
+            } catch (ServiceException e) {
+                if (ErrorCode.DATA_NO_FOUND.getErrorCode().equals(e.getErrorCode())) {
+                    throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Canvas '" + canvasId + "' not found.");
+                } else {
+                    throw e;
+                }
+            }
+
+        } else {
+            var deviceId = accessor.getDeviceId();
+            if (deviceId == null) {
+                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'device_id'! Path: " + BlueprintUtils.getNodePath(canvasNode, context.getRoot()));
+            }
+            log.info("blueprint create canvas for device: {}", deviceId);
+
+            var data = accessor.getData();
+            if (data == null) {
+                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'data'! Path: " + BlueprintUtils.getNodePath(canvasNode, context.getRoot()));
+            }
+
+            var deviceCanvasResponse = deviceCanvasService.getOrCreateDeviceCanvas(deviceId);
+            canvasId = deviceCanvasResponse.getCanvasId();
+
+            var canvasUpdateRequest = JsonUtils.withCamelCaseStrategy().cast(data, CanvasUpdateRequest.class);
+            canvasFacade.updateCanvas(Longs.tryParse(canvasId), canvasUpdateRequest);
+            accessor.setId(canvasId);
         }
-        log.info("blueprint create canvas for device: {}", deviceId);
 
-        var data = accessor.getData();
-        if (data == null) {
-            throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'data'! Path: " + BlueprintUtils.getNodePath(canvasNode, context.getRoot()));
-        }
-
-        var deviceCanvasResponse = deviceCanvasService.getOrCreateDeviceCanvas(deviceId);
-        var canvasId = deviceCanvasResponse.getCanvasId();
-
-        var canvasUpdateRequest = JsonUtils.withCamelCaseStrategy().cast(data, CanvasUpdateRequest.class);
-        canvasFacade.updateCanvas(Longs.tryParse(canvasId), canvasUpdateRequest);
-
-        accessor.setId(canvasId);
-
-        return List.of(new BindResource(DeviceCanvasResourceNode.RESOURCE_TYPE, canvasId, true));
+        canvasNode.setManaged(isManaged);
+        return List.of(new BindResource(DeviceCanvasResourceNode.RESOURCE_TYPE, canvasId, isManaged));
     }
 
     @Override

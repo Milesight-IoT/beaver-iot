@@ -142,9 +142,9 @@ public class BlueprintUtils {
         return result.toString();
     }
 
-    public static DataNode convertToDataNode(String nodeName, BlueprintNode parent, Object data) {
+    public static DataNode convertToDataNode(String nodeName, BlueprintNode parentNode, Object data) {
         var jsonNode = JsonUtils.toJsonNode(data);
-        return convertToDataNode(nodeName, parent, jsonNode);
+        return convertToDataNode(nodeName, parentNode, jsonNode);
     }
 
     public static DataNode convertToDataNode(String nodeName, BlueprintNode parentNode, JsonNode data) {

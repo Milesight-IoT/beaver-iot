@@ -1,10 +1,14 @@
 package com.milesight.beaveriot.blueprint.core.chart.node.resource;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.primitives.Longs;
 import com.milesight.beaveriot.blueprint.core.chart.node.base.BlueprintNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.DataNode;
+import com.milesight.beaveriot.blueprint.core.chart.node.data.value.BoolValueNode;
+import com.milesight.beaveriot.blueprint.core.chart.node.data.value.LongValueNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.value.StringValueNode;
+import com.milesight.beaveriot.blueprint.core.utils.BlueprintUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -70,6 +74,10 @@ public class WorkflowResourceNode extends AbstractResourceNode {
             return Longs.tryParse(String.valueOf(node.deviceId.getValue()));
         }
 
+        public void setDeviceId(Long deviceId) {
+            node.setDeviceId(new LongValueNode(node, Fields.deviceId, deviceId));
+        }
+
         public String getName() {
             if(node.name == null || node.name.getValue() == null) {
                 return null;
@@ -77,11 +85,19 @@ public class WorkflowResourceNode extends AbstractResourceNode {
             return String.valueOf(node.name.getValue());
         }
 
+        public void setName(String name) {
+            node.setName(new StringValueNode(node, Fields.name, name));
+        }
+
         public String getRemark() {
             if(node.remark == null || node.remark.getValue() == null) {
                 return null;
             }
             return String.valueOf(node.remark.getValue());
+        }
+
+        public void setRemark(String remark) {
+            node.setRemark(new StringValueNode(node, Fields.remark, remark));
         }
 
         public boolean isEnabled() {
@@ -97,6 +113,10 @@ public class WorkflowResourceNode extends AbstractResourceNode {
             return true;
         }
 
+        public void setEnabled(boolean enabled) {
+            node.setEnabled(new BoolValueNode(node, Fields.enabled, enabled));
+        }
+
         @SuppressWarnings({"rawtypes", "unchecked"})
         public Map<String, Object> getData() {
             if(node.data == null || node.data.getValue() == null) {
@@ -104,6 +124,11 @@ public class WorkflowResourceNode extends AbstractResourceNode {
             }
             return node.data.getValue() instanceof Map value ? value : null;
         }
+
+        public void setData(JsonNode data) {
+            node.setData(BlueprintUtils.convertToDataNode(WorkflowResourceNode.Fields.data, node, data));
+        }
+
     }
 
     @Component
