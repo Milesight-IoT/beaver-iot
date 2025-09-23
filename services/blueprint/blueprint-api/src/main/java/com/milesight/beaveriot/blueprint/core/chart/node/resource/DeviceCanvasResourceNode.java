@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.blueprint.core.chart.node.resource;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.primitives.Longs;
 import com.milesight.beaveriot.blueprint.core.chart.node.base.BlueprintNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.DataNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.value.StringValueNode;
@@ -53,11 +54,14 @@ public class DeviceCanvasResourceNode extends AbstractResourceNode {
             node.setId(new StringValueNode(node, Fields.id, id));
         }
 
-        public String getDeviceId() {
+        public Long getDeviceId() {
             if (node.deviceId == null || node.deviceId.getValue() == null) {
                 return null;
             }
-            return String.valueOf(node.deviceId.getValue());
+            if (node.deviceId.getValue() instanceof Long number) {
+                return number;
+            }
+            return Longs.tryParse(String.valueOf(node.deviceId.getValue()));
         }
 
         @SuppressWarnings({"rawtypes", "unchecked"})

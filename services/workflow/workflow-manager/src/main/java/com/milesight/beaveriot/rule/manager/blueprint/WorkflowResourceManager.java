@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.rule.manager.blueprint;
 
+import com.google.common.primitives.Longs;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.blueprint.core.chart.deploy.BlueprintDeployContext;
 import com.milesight.beaveriot.blueprint.core.chart.deploy.resource.ResourceManager;
@@ -8,6 +9,7 @@ import com.milesight.beaveriot.blueprint.core.chart.node.resource.WorkflowResour
 import com.milesight.beaveriot.blueprint.core.enums.BlueprintErrorCode;
 import com.milesight.beaveriot.blueprint.core.model.BindResource;
 import com.milesight.beaveriot.blueprint.core.utils.BlueprintUtils;
+import com.milesight.beaveriot.rule.manager.model.WorkflowCreateContext;
 import com.milesight.beaveriot.rule.manager.model.request.SaveWorkflowRequest;
 import com.milesight.beaveriot.rule.manager.service.WorkflowService;
 import com.milesight.beaveriot.rule.support.JsonHelper;
@@ -40,6 +42,11 @@ public class WorkflowResourceManager implements ResourceManager<WorkflowResource
             throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'name'! Path: " + BlueprintUtils.getNodePath(workflowNode, context.getRoot()));
         }
 
+        var deviceId = accessor.getDeviceId();
+        if (deviceId == null) {
+            throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'device_id'! Path: " + BlueprintUtils.getNodePath(workflowNode, context.getRoot()));
+        }
+
         var data = accessor.getData();
         if (data == null) {
             throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'data'! Path: " + BlueprintUtils.getNodePath(workflowNode, context.getRoot()));
@@ -55,11 +62,11 @@ public class WorkflowResourceManager implements ResourceManager<WorkflowResource
 
         log.info("create workflow: {}", name);
 
-        var response = workflowService.createWorkflow(request, null);
+        var response = workflowService.createWorkflow(request, new WorkflowCreateContext(deviceId));
         var flowId = response.getFlowId();
         accessor.setId(flowId);
 
-        return  List.of(new BindResource(WorkflowResourceNode.RESOURCE_TYPE, flowId, true));
+        return List.of(new BindResource(WorkflowResourceNode.RESOURCE_TYPE, flowId, true));
     }
 
     @Override
@@ -72,9 +79,11 @@ public class WorkflowResourceManager implements ResourceManager<WorkflowResource
         }
 
         if (resource.isManaged() && condition.isMatch(resource.getResourceType(), id)) {
-            var flowId = Long.valueOf(id);
-            workflowService.batchDelete(List.of(flowId));
-            return true;
+            var flowId = Longs.tryParse(id);
+            if (flowId != null) {
+                workflowService.batchDelete(List.of(flowId));
+                return true;
+            }
         }
         return false;
     }

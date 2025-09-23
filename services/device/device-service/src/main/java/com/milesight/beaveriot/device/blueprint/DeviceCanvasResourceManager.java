@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.device.blueprint;
 
+import com.google.common.primitives.Longs;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.blueprint.core.chart.deploy.BlueprintDeployContext;
@@ -50,11 +51,11 @@ public class DeviceCanvasResourceManager implements ResourceManager<DeviceCanvas
             throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'data'! Path: " + BlueprintUtils.getNodePath(canvasNode, context.getRoot()));
         }
 
-        var deviceCanvasResponse = deviceCanvasService.getOrCreateDeviceCanvas(Long.valueOf(deviceId));
+        var deviceCanvasResponse = deviceCanvasService.getOrCreateDeviceCanvas(deviceId);
         var canvasId = deviceCanvasResponse.getCanvasId();
 
         var canvasUpdateRequest = JsonUtils.withCamelCaseStrategy().cast(data, CanvasUpdateRequest.class);
-        canvasFacade.updateCanvas(Long.valueOf(canvasId), canvasUpdateRequest);
+        canvasFacade.updateCanvas(Longs.tryParse(canvasId), canvasUpdateRequest);
 
         accessor.setId(canvasId);
 
@@ -71,9 +72,11 @@ public class DeviceCanvasResourceManager implements ResourceManager<DeviceCanvas
         }
 
         if (resource.isManaged() && condition.isMatch(resource.getResourceType(), id)) {
-            var canvasId = Long.valueOf(id);
-            canvasFacade.deleteCanvasByIds(List.of(canvasId));
-            return true;
+            var canvasId = Longs.tryParse(id);
+            if (canvasId != null) {
+                canvasFacade.deleteCanvasByIds(List.of(canvasId));
+                return true;
+            }
         }
         return false;
     }

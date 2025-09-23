@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.blueprint.core.chart.node.resource;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.primitives.Longs;
 import com.milesight.beaveriot.blueprint.core.chart.node.base.BlueprintNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.DataNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.value.StringValueNode;
@@ -26,6 +27,8 @@ public class WorkflowResourceNode extends AbstractResourceNode {
     private final Accessor accessor = new Accessor(this);
 
     private DataNode id;
+
+    private DataNode deviceId;
 
     private DataNode name;
 
@@ -55,6 +58,16 @@ public class WorkflowResourceNode extends AbstractResourceNode {
 
         public void setId(String id) {
             node.setId(new StringValueNode(node, Fields.id, id));
+        }
+
+        public Long getDeviceId() {
+            if(node.deviceId == null || node.deviceId.getValue() == null) {
+                return null;
+            }
+            if (node.deviceId.getValue() instanceof Long number) {
+                return number;
+            }
+            return Longs.tryParse(String.valueOf(node.deviceId.getValue()));
         }
 
         public String getName() {
