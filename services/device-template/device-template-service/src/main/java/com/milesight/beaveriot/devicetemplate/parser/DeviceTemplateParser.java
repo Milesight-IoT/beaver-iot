@@ -646,7 +646,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         deviceBlueprintMappingFacade.saveMapping(device.getId(), blueprintId);
     }
 
-    private DeviceTemplate getNewestDeviceTemplate(String vendor, String model) {
+    public DeviceTemplate getNewestDeviceTemplate(String vendor, String model) {
         BlueprintLibrary blueprintLibrary = blueprintLibraryFacade.getCurrentBlueprintLibrary();
         if (blueprintLibrary == null) {
             return null;
@@ -655,9 +655,11 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         String deviceTemplateIdentifier = DeviceTemplateHelper.getTemplateIdentifier(blueprintLibrary.getId(), blueprintLibrary.getCurrentVersion(), vendor, model);
         DeviceTemplate deviceTemplate = deviceTemplateService.findByBlueprintLibrary(blueprintLibrary.getId(), blueprintLibrary.getCurrentVersion(), vendor, model);
         if (deviceTemplate == null) {
+            String content = blueprintLibraryResourceResolverFacade.getDeviceTemplateContent(blueprintLibrary, vendor, model);
             deviceTemplate = new DeviceTemplateBuilder(IntegrationConstants.SYSTEM_INTEGRATION_ID)
                     .name(DeviceTemplateHelper.getTemplateName(vendor, model))
                     .identifier(deviceTemplateIdentifier)
+                    .content(content)
                     .blueprintLibraryId(blueprintLibrary.getId())
                     .blueprintLibraryVersion(blueprintLibrary.getCurrentVersion())
                     .vendor(vendor)
@@ -711,18 +713,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorMessage()).build();
         }
 
-        String content;
-        String vendor = deviceTemplate.getVendor();
-        String model = deviceTemplate.getModel();
-        Long blueprintLibraryId = deviceTemplate.getBlueprintLibraryId();
-        String blueprintLibraryVersion = deviceTemplate.getBlueprintLibraryVersion();
-        if (blueprintLibraryId != null && blueprintLibraryVersion != null && vendor != null && model != null) {
-            BlueprintLibrary blueprintLibrary = getBlueprintLibrary(deviceTemplate);
-            content = blueprintLibraryResourceResolverFacade.getDeviceTemplateContent(blueprintLibrary, vendor, model);
-        } else {
-            content = deviceTemplate.getContent();
-        }
-
+        String content = deviceTemplate.getContent();
         if (!validate(content)) {
             return null;
         }
