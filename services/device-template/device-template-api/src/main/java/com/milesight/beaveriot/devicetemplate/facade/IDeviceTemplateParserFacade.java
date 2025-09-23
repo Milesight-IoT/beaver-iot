@@ -2,6 +2,7 @@ package com.milesight.beaveriot.devicetemplate.facade;
 
 import com.milesight.beaveriot.context.integration.model.BlueprintCreationStrategy;
 import com.milesight.beaveriot.context.integration.model.Device;
+import com.milesight.beaveriot.context.integration.model.DeviceTemplate;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.model.DeviceTemplateModel;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateInputResult;
@@ -35,4 +36,5 @@ public interface IDeviceTemplateParserFacade {
                         String deviceIdentifier,
                         String deviceName,
                         BiFunction<Device, Map<String, Object>, Boolean> beforeSaveDevice);
+    DeviceTemplate getLatestDeviceTemplate(String vendor, String model);
 }

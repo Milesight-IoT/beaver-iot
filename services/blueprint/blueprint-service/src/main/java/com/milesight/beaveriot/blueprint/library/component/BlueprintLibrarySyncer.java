@@ -84,7 +84,7 @@ public class BlueprintLibrarySyncer {
 
         if (blueprintLibrary.getType() == BlueprintLibraryType.Zip && blueprintLibrary.getSyncStatus() == BlueprintLibrarySyncStatus.SYNCED) {
             syncDoneWithMessage(blueprintLibrary,
-                    MessageFormat.format("Skipping update for blueprint library {0} because it is already up to date", blueprintLibraryAddress.getKey()), false);
+                    MessageFormat.format("Skipping update for blueprint library {0} because it is already up to date", blueprintLibraryAddress.getKey()));
             return blueprintLibrary;
         }
 
@@ -98,7 +98,7 @@ public class BlueprintLibrarySyncer {
             BlueprintLibraryManifest manifest = blueprintLibraryAddressService.validateAndGetManifest(blueprintLibraryAddress);
             if (!isNeedUpdateLibrary(blueprintLibrary, manifest.getVersion())) {
                 syncDoneWithMessage(blueprintLibrary,
-                        MessageFormat.format("Skipping update for blueprint library {0} because it is already up to date", blueprintLibraryAddress.getKey()), false);
+                        MessageFormat.format("Skipping update for blueprint library {0} because it is already up to date", blueprintLibraryAddress.getKey()));
                 return blueprintLibrary;
             }
 
@@ -113,7 +113,7 @@ public class BlueprintLibrarySyncer {
                         MessageFormat.format("Skipping update for blueprint library {0} because current beaver version {1} is below minimum required version {2}",
                         blueprintLibraryAddress.getKey(),
                         currentBeaverVersion,
-                        manifest.getMinimumRequiredBeaverIotVersion()), false);
+                        manifest.getMinimumRequiredBeaverIotVersion()));
                 return blueprintLibrary;
             }
 
@@ -122,18 +122,17 @@ public class BlueprintLibrarySyncer {
         } catch (Exception e) {
             log.error("Sync blueprint library {} failed", blueprintLibraryAddress.getKey(), e);
             blueprintLibrary.setSyncStatus(BlueprintLibrarySyncStatus.SYNC_FAILED);
+            blueprintLibrary.setSyncedAt(System.currentTimeMillis());
             blueprintLibrary.setSyncMessage(MessageFormat.format("Sync failed. Error Message: {0}", e.getMessage()));
             blueprintLibraryService.save(blueprintLibrary);
             throw e;
         }
     }
 
-    public void syncDoneWithMessage(BlueprintLibrary blueprintLibrary, String syncMessage, boolean updateSyncedAt) {
+    public void syncDoneWithMessage(BlueprintLibrary blueprintLibrary, String syncMessage) {
         blueprintLibrary.setSyncStatus(BlueprintLibrarySyncStatus.SYNCED);
         blueprintLibrary.setSyncMessage(syncMessage);
-        if (updateSyncedAt) {
-            blueprintLibrary.setSyncedAt(System.currentTimeMillis());
-        }
+        blueprintLibrary.setSyncedAt(System.currentTimeMillis());
         blueprintLibraryService.save(blueprintLibrary);
         log.debug(syncMessage);
     }
@@ -218,7 +217,7 @@ public class BlueprintLibrarySyncer {
 
             BlueprintLibrary oldBlueprintLibrary = BlueprintLibrary.clone(blueprintLibrary);
             blueprintLibrary.setCurrentVersion(manifest.getVersion());
-            syncDoneWithMessage(blueprintLibrary, "Synced blueprint library successfully", true);
+            syncDoneWithMessage(blueprintLibrary, "Synced blueprint library successfully");
             saveBlueprintLibraryVersion(blueprintLibrary, blueprintLibraryAddress);
 
             tenantFacade.runWithAllTenants(() -> evictCaches(oldBlueprintLibrary));

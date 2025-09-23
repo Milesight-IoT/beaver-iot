@@ -3,6 +3,7 @@ package com.milesight.beaveriot.devicetemplate.parser;
 import com.milesight.beaveriot.context.api.DeviceTemplateParserProvider;
 import com.milesight.beaveriot.context.integration.model.BlueprintCreationStrategy;
 import com.milesight.beaveriot.context.integration.model.Device;
+import com.milesight.beaveriot.context.integration.model.DeviceTemplate;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.model.DeviceTemplateModel;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateInputResult;
@@ -111,5 +112,10 @@ public class DeviceTemplateParserProviderImpl implements DeviceTemplateParserPro
                 deviceIdentifier,
                 deviceName,
                 beforeSaveDevice);
+    }
+
+    @Override
+    public DeviceTemplate getLatestDeviceTemplate(String vendor, String model) {
+        return deviceTemplateParser.getLatestDeviceTemplate(vendor, model);
     }
 }
