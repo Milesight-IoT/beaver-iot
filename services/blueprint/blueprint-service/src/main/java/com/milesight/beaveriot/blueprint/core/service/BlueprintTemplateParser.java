@@ -56,7 +56,7 @@ public class BlueprintTemplateParser implements IBlueprintTemplateParser {
     public TemplateNode parseBlueprint(TemplateLoader templateLoader, Map<String, Object> context) {
         var indexTemplateJsonNode = readTemplateAsJsonNode(templateLoader, BlueprintConstants.INDEX_TEMPLATE_FILE_NAME, context);
         if (indexTemplateJsonNode == null) {
-            throw new ServiceException(BlueprintErrorCode.BLUEPRINT_TEMPLATE_PARSING_ERROR, "index.peb not found.");
+            throw new ServiceException(BlueprintErrorCode.BLUEPRINT_TEMPLATE_PARSING_FAILED, "index.peb not found.");
         }
 
         var tasks = new ArrayDeque<BlueprintNode.ProcessingTask>();

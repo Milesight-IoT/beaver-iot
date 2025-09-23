@@ -63,7 +63,7 @@ public class IncludeNode extends AbstractObjectNode {
                 context.pushTask(() -> includeNode.setTemplate(templateNodeParser.parse(Fields.template, templateJsonNode, includeNode, context)));
                 context.leaveFromNestedTemplate();
             } else {
-                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_TEMPLATE_PARSING_ERROR, "Property 'template' should be a valid relative path.");
+                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_TEMPLATE_PARSING_FAILED, "Property 'template' should be a valid relative path.");
             }
 
             if (propertyValue.get(Fields.parameters) instanceof ObjectNode parameters) {

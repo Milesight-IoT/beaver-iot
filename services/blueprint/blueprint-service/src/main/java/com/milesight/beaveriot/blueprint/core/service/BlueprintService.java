@@ -111,7 +111,7 @@ public class BlueprintService implements IBlueprintFacade {
         try {
             JsonSchemaUtils.validate(variablesJsonSchema, JsonUtils.toJsonNode(variables));
         } catch (JsonSchemaValidationException e) {
-            throw new ServiceException(BlueprintErrorCode.BLUEPRINT_VARIABLES_VALIDATION_ERROR, e.getMessage(), e.getDetails());
+            throw new ServiceException(BlueprintErrorCode.BLUEPRINT_PARAMETERS_VALIDATION_ERROR, e.getMessage(), e.getDetails());
         }
     }
 

@@ -7,9 +7,8 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum BlueprintErrorCode implements ErrorCodeSpec {
-    BLUEPRINT_VARIABLES_VALIDATION_ERROR("Validation of blueprint input variables failed"),
-    BLUEPRINT_TEMPLATE_PARSING_ERROR("Failed to parse blueprint template"),
-    BLUEPRINT_TEMPLATE_UNKNOWN_YAML_TAG("Unknown YAML tag found in blueprint template"),
+    BLUEPRINT_PARAMETERS_VALIDATION_ERROR("Validation of blueprint input parameters failed"),
+    BLUEPRINT_TEMPLATE_PARSING_FAILED("Failed to parse blueprint template"),
     BLUEPRINT_MAX_TEMPLATE_NODE_COUNT_EXCEED("Maximum blueprint template node count exceeded"),
     BLUEPRINT_MAX_NESTED_TEMPLATE_COUNT_EXCEED("Maximum number of nested blueprint templates exceeded"),
     BLUEPRINT_FUNCTION_EXECUTOR_NOT_FOUND("Blueprint function executor not found"),

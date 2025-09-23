@@ -91,7 +91,7 @@ public class BlueprintIntrinsicsYamlConstructor extends SafeConstructor {
 
         @Override
         public Object construct(Node node) {
-            throw new ServiceException(BlueprintErrorCode.BLUEPRINT_TEMPLATE_UNKNOWN_YAML_TAG);
+            throw new ServiceException(BlueprintErrorCode.BLUEPRINT_TEMPLATE_PARSING_FAILED, "Unknown YAML tag found in blueprint template");
         }
     }
 }

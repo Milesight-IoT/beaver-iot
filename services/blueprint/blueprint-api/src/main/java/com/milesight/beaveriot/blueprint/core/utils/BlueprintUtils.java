@@ -159,7 +159,7 @@ public class BlueprintUtils {
         if (data instanceof NumericNode numericNode) {
             if (numericNode.isBigInteger() || numericNode.isBigDecimal()) {
                 var nodePath = getNodePath(nodeName, parentNode);
-                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_TEMPLATE_PARSING_ERROR, "Big number is unsupported. Path: " + nodePath);
+                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_TEMPLATE_PARSING_FAILED, "Big number is unsupported. Path: " + nodePath);
             } else if (numericNode.isIntegralNumber()) {
                 return new LongValueNode(parentNode, nodeName, numericNode.longValue());
             } else if (numericNode.isFloatingPointNumber()) {
