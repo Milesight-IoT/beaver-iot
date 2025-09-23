@@ -15,6 +15,7 @@ import org.springframework.util.CollectionUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.function.Function;
 
 /**
  * author: Luxb
@@ -22,6 +23,7 @@ import java.util.concurrent.*;
  **/
 @SuppressWarnings("unused")
 public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements DeviceStatusManager {
+    private static final int BATCH_QUERY_OFFLINE_TIMEOUT_SIZE = 1000;
     private final ScheduledExecutorService scheduler;
     private final Map<Long, ScheduledFuture<?>> deviceTimerFutures = new ConcurrentHashMap<>();
     private final Map<Long, Long> deviceExpirationTimeMap;
@@ -50,12 +52,36 @@ public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements
     protected void afterRegister(String integrationId, DeviceStatusConfig config) {
         List<Device> devices = deviceServiceProvider.findAll(integrationId);
         if (config != null && !CollectionUtils.isEmpty(devices)) {
+            initDevices(devices, config);
+        }
+    }
+
+    private void initDevices(List<Device> devices, DeviceStatusConfig config) {
+        Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher = config.getBatchOfflineTimeoutFetcher();
+        if (batchOfflineTimeoutFetcher == null) {
             devices.forEach(device -> {
                 Long offlineSeconds = getDeviceOfflineSeconds(device, config);
                 if (offlineSeconds != null) {
                     startOfflineCountdown(device, offlineSeconds);
                 }
             });
+        } else {
+            int totalSize = devices.size();
+            for (int i = 0; i < totalSize; i += BATCH_QUERY_OFFLINE_TIMEOUT_SIZE) {
+                int endIndex = Math.min(i + BATCH_QUERY_OFFLINE_TIMEOUT_SIZE, totalSize);
+                List<Device> batchDevices = devices.subList(i, endIndex);
+                Map<Long, Long> deviceOfflineTimeoutMap = batchOfflineTimeoutFetcher.apply(batchDevices);
+                if (CollectionUtils.isEmpty(deviceOfflineTimeoutMap)) {
+                    continue;
+                }
+
+                batchDevices.forEach(device -> {
+                    Long offlineSeconds = deviceOfflineTimeoutMap.get(device.getId());
+                    if (offlineSeconds != null) {
+                        startOfflineCountdown(device, offlineSeconds);
+                    }
+                });
+            }
         }
     }
 

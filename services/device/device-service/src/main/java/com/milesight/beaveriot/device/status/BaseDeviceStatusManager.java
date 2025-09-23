@@ -14,6 +14,7 @@ import jakarta.annotation.PreDestroy;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,7 +41,11 @@ public abstract class BaseDeviceStatusManager {
     }
 
     public void register(String integrationId, Function<Device, Long> offlineTimeoutFetcher) {
-        DeviceStatusConfig config = DeviceStatusConfig.of(this::updateDeviceStatusToOnline, this::updateDeviceStatusToOffline, offlineTimeoutFetcher);
+        register(integrationId, offlineTimeoutFetcher, null);
+    }
+
+    public void register(String integrationId, Function<Device, Long> offlineTimeoutFetcher, Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher) {
+        DeviceStatusConfig config = DeviceStatusConfig.of(this::updateDeviceStatusToOnline, this::updateDeviceStatusToOffline, offlineTimeoutFetcher, batchOfflineTimeoutFetcher);
         integrationDeviceStatusConfigs.put(integrationId, config);
         afterRegister(integrationId, config);
     }
@@ -133,12 +138,17 @@ public abstract class BaseDeviceStatusManager {
         private Consumer<Device> onlineUpdater;
         private Consumer<Device> offlineUpdater;
         private Function<Device, Long> offlineTimeoutFetcher;
+        private Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher;
 
-        public static DeviceStatusConfig of(Consumer<Device> onlineUpdater, Consumer<Device> offlineUpdater, Function<Device, Long> offlineTimeoutFetcher) {
+        public static DeviceStatusConfig of(Consumer<Device> onlineUpdater,
+                                            Consumer<Device> offlineUpdater,
+                                            Function<Device, Long> offlineTimeoutFetcher,
+                                            Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher) {
             DeviceStatusConfig config = new DeviceStatusConfig();
             config.setOnlineUpdater(onlineUpdater);
             config.setOfflineUpdater(offlineUpdater);
             config.setOfflineTimeoutFetcher(offlineTimeoutFetcher);
+            config.setBatchOfflineTimeoutFetcher(batchOfflineTimeoutFetcher);
             return config;
         }
     }
