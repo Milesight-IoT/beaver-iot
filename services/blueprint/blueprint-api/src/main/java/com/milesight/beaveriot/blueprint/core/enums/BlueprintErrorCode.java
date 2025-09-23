@@ -19,7 +19,7 @@ public enum BlueprintErrorCode implements ErrorCodeSpec {
     BLUEPRINT_CIRCULAR_DEPENDENCY_DETECTED("Circular dependency detected in blueprint"),
     ;
 
-    private final String errorCode = name();
+    private final String errorCode = name().toLowerCase();
 
     private String errorMessage;
 
