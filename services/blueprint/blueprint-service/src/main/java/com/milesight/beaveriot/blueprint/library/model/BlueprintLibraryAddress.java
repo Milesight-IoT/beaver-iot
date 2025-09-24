@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.blueprint.library.enums.BlueprintLibraryAddressErrorCode;
+import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
 import com.milesight.beaveriot.context.model.BlueprintLibraryType;
 import lombok.Data;
 
@@ -22,6 +23,7 @@ public abstract class BlueprintLibraryAddress {
     protected BlueprintLibraryType type;
     protected String url;
     protected String branch;
+    protected BlueprintLibrarySourceType sourceType;
     protected Boolean active;
     @JsonIgnore
     protected Long createdAt;
@@ -31,8 +33,9 @@ public abstract class BlueprintLibraryAddress {
     protected BlueprintLibraryAddress() {
     }
 
-    public static BlueprintLibraryAddress of(String type, String url, String branch) {
+    public static BlueprintLibraryAddress of(String type, String url, String branch, String sourceType) {
         BlueprintLibraryType addressType = BlueprintLibraryType.of(type);
+        BlueprintLibrarySourceType librarySourceType = BlueprintLibrarySourceType.of(sourceType);
         BlueprintLibraryAddress address = switch (addressType) {
             case Github -> new BlueprintLibraryGithubAddress();
             case Gitlab -> new BlueprintLibraryGitlabAddress();
@@ -40,6 +43,7 @@ public abstract class BlueprintLibraryAddress {
         };
         address.setUrl(url);
         address.setBranch(branch);
+        address.setSourceType(librarySourceType);
         address.setActive(false);
         return address;
     }

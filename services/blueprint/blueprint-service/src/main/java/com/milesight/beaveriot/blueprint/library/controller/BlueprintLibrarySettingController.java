@@ -50,12 +50,14 @@ public class BlueprintLibrarySettingController {
         BlueprintLibraryAddress defaultBlueprintLibraryAddress = blueprintLibraryAddressService.getDefaultBlueprintLibraryAddress();
 
         BlueprintLibraryAddress activeBlueprintLibraryAddress = blueprintLibraryAddressService.findByActiveTrue();
-        if (activeBlueprintLibraryAddress != null && activeBlueprintLibraryAddress.getType() == BlueprintLibraryType.Zip) {
+        if (activeBlueprintLibraryAddress != null && activeBlueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.Upload) {
             BlueprintLibrary activeBlueprintLibrary = blueprintLibraryService.getBlueprintLibrary(activeBlueprintLibraryAddress.getType().name(), activeBlueprintLibraryAddress.getUrl(), activeBlueprintLibraryAddress.getBranch());
             response.setCurrentSourceType(BlueprintLibrarySourceType.Upload.name());
             if (activeBlueprintLibrary != null) {
                 response.setVersion(activeBlueprintLibrary.getCurrentVersion());
                 response.setFileName(getZipFileFromUrl(activeBlueprintLibrary.getUrl()));
+                boolean syncedSuccess = activeBlueprintLibrary.getSyncStatus() == BlueprintLibrarySyncStatus.SYNCED;
+                response.setSyncedSuccess(syncedSuccess);
             }
         } else {
             BlueprintLibrary defaultBlueprintLibrary = blueprintLibraryService.getBlueprintLibrary(defaultBlueprintLibraryAddress.getType().name(), defaultBlueprintLibraryAddress.getUrl(), defaultBlueprintLibraryAddress.getBranch());
@@ -91,7 +93,7 @@ public class BlueprintLibrarySettingController {
         if (BlueprintLibrarySourceType.Default.name().equals(sourceType)) {
             blueprintLibraryAddress = blueprintLibraryAddressService.getDefaultBlueprintLibraryAddress();
         } else {
-            blueprintLibraryAddress = BlueprintLibraryAddress.of(type, url, branch);
+            blueprintLibraryAddress = BlueprintLibraryAddress.of(type, url, branch, sourceType);
         }
 
         // Step 2. Sync blueprint library

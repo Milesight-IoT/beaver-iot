@@ -29,7 +29,7 @@ import java.util.Map;
  * @author leon
  */
 @Slf4j
-@Order(0)
+@Order(2)
 public class IntegrationBootstrapManager implements CommandLineRunner {
 
     private final YamlPropertySourceFactory propertySourceFactory;

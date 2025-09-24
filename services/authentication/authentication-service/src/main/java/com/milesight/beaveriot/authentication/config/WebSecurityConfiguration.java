@@ -6,12 +6,7 @@ import com.milesight.beaveriot.authentication.exception.CustomOAuth2AccessDenied
 import com.milesight.beaveriot.authentication.exception.CustomOAuth2ExceptionEntryPoint;
 import com.milesight.beaveriot.authentication.filter.SecurityUserContextCleanupFilter;
 import com.milesight.beaveriot.authentication.handler.CustomOAuth2AccessTokenResponseHandler;
-import com.milesight.beaveriot.authentication.provider.CustomJdbcOAuth2AuthorizationService;
-import com.milesight.beaveriot.authentication.provider.CustomOAuth2AuthorizationService;
-import com.milesight.beaveriot.authentication.provider.CustomOAuth2PasswordAuthenticationConverter;
-import com.milesight.beaveriot.authentication.provider.CustomOAuth2PasswordAuthenticationProvider;
-import com.milesight.beaveriot.authentication.provider.CustomOAuth2RefreshTokenAuthenticationConverter;
-import com.milesight.beaveriot.authentication.provider.CustomOAuth2RefreshTokenAuthenticationProvider;
+import com.milesight.beaveriot.authentication.provider.*;
 import com.milesight.beaveriot.authentication.util.OAuth2EndpointUtils;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -46,15 +41,8 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
-import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
-import org.springframework.security.oauth2.server.authorization.token.JwtGenerator;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2AccessTokenGenerator;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2RefreshTokenGenerator;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
+import org.springframework.security.oauth2.server.authorization.token.*;
 import org.springframework.security.oauth2.server.authorization.web.authentication.DelegatingAuthenticationConverter;
-import org.springframework.security.oauth2.server.authorization.web.authentication.OAuth2ClientCredentialsAuthenticationConverter;
-import org.springframework.security.oauth2.server.authorization.web.authentication.OAuth2RefreshTokenAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -88,7 +76,7 @@ public class WebSecurityConfiguration {
     IUserFacade userFacade;
 
     @Bean
-    @Order(1)
+    @Order(3)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
         OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
         http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
@@ -113,7 +101,7 @@ public class WebSecurityConfiguration {
     }
 
     @Bean
-    @Order(2)
+    @Order(4)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.securityMatcher((request) -> !OAuth2EndpointUtils.getWhiteListMatcher(oAuth2Properties.getIgnoreUrls()).matches(request))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
