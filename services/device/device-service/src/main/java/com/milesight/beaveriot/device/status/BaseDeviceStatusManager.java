@@ -4,10 +4,7 @@ import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
-import com.milesight.beaveriot.context.integration.model.Device;
-import com.milesight.beaveriot.context.integration.model.Entity;
-import com.milesight.beaveriot.context.integration.model.EntityTemplate;
-import com.milesight.beaveriot.context.integration.model.ExchangePayload;
+import com.milesight.beaveriot.context.integration.model.*;
 import com.milesight.beaveriot.device.status.constants.DeviceStatusConstants;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -75,19 +72,23 @@ public abstract class BaseDeviceStatusManager {
     }
 
     protected void updateDeviceStatusToOnline(Device device) {
-        updateDeviceStatus(device, DeviceStatusConstants.STATUS_VALUE_ONLINE);
+        updateDeviceStatus(device, DeviceStatus.ONLINE.name());
     }
 
     protected void updateDeviceStatusToOffline(Device device) {
-        updateDeviceStatus(device, DeviceStatusConstants.STATUS_VALUE_OFFLINE);
+        updateDeviceStatus(device, DeviceStatus.OFFLINE.name());
     }
 
     public void offline(Device device) {
         updateDeviceStatusToOffline(device);
     }
 
-    public String status(Device device) {
-        return (String) entityValueServiceProvider.findValueByKey(getStatusEntityKey(device));
+    public DeviceStatus status(Device device) {
+        String deviceStatus = (String) entityValueServiceProvider.findValueByKey(getStatusEntityKey(device));
+        if (deviceStatus == null) {
+            return null;
+        }
+        return DeviceStatus.of(deviceStatus);
     }
 
     protected AvailableDeviceData getAvailableDeviceDataByDeviceId(Long deviceId) {
