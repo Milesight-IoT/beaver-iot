@@ -168,7 +168,9 @@ public class BlueprintUtils {
     }
 
     public static DataNode convertToDataNode(String nodeName, BlueprintNode parentNode, Object data) {
-        var jsonNode = JsonUtils.toJsonNode(data);
+        var jsonNode = data instanceof String str
+                ? JsonUtils.getObjectMapper().getNodeFactory().textNode(str)
+                : JsonUtils.toJsonNode(data);
         return convertToDataNode(nodeName, parentNode, jsonNode);
     }
 

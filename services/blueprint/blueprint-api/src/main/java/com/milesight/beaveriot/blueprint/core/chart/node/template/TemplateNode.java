@@ -11,6 +11,8 @@ import com.milesight.beaveriot.blueprint.core.chart.node.base.BlueprintNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.base.KeyValueNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.DataNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.function.FunctionNode;
+import com.milesight.beaveriot.blueprint.core.constant.BlueprintConstants;
+import com.milesight.beaveriot.blueprint.core.utils.BlueprintUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -18,6 +20,7 @@ import lombok.experimental.FieldNameConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -68,7 +71,7 @@ public class TemplateNode extends AbstractObjectNode {
                                   BlueprintParseContext context) {
             var templateNode = new TemplateNode(parentNode, propertyName);
 
-            context.pushTask(() -> initTemplateParameterValues(templateNode));
+            context.pushTask(() -> initTemplateParameterValues(templateNode, context));
 
             if (propertyValue.get(Fields.resources) instanceof ObjectNode resourcesJsonNode) {
                 context.pushTask(() -> templateNode.setResources(
@@ -85,17 +88,22 @@ public class TemplateNode extends AbstractObjectNode {
             return templateNode;
         }
 
-        private static void initTemplateParameterValues(TemplateNode templateNode) {
-            var parameterValues = templateNode.getParameterValues();
-            if (parameterValues != null) {
+        @SuppressWarnings("unchecked")
+        private static void initTemplateParameterValues(TemplateNode templateNode, BlueprintParseContext context) {
+            if (templateNode.getParameterValues() != null) {
                 return;
             }
 
-            parameterValues = new ParameterValues(templateNode, StringUtils.toSnakeCase(TemplateNode.Fields.parameterValues));
+            var parameterValues = new ParameterValues(templateNode, StringUtils.toSnakeCase(TemplateNode.Fields.parameterValues));
 
             if (templateNode.getBlueprintNodeParent() instanceof IncludeNode includeNode) {
                 // link to parameter values defined in parent template
                 includeNode.getParameters().getBlueprintNodeChildren().forEach(parameterValues::addChildNode);
+            }
+
+            if (templateNode == context.getRoot()) {
+                var parameters = (Map<String, Object>) context.getTemplateContext().getOrDefault(BlueprintConstants.PARAMETERS_KEY, Collections.emptyMap());
+                parameters.forEach((key, value) -> parameterValues.addChildNode(BlueprintUtils.convertToDataNode(key, parameterValues, value)));
             }
 
             var nameToParameter = parameterValues.getBlueprintNodeChildren().stream()
@@ -106,7 +114,9 @@ public class TemplateNode extends AbstractObjectNode {
                 var param = nameToParameter.get(defaultValue.getBlueprintNodeName());
                 if (param == null) {
                     defaultValue.setBlueprintNodeParent(parameterSchemas);
-                    parameterValues.addChildNode(defaultValue);
+                    if (parameterValues.getChild(defaultValue.getBlueprintNodeName()) == null) {
+                        parameterValues.addChildNode(defaultValue);
+                    }
                 }
             }
 
