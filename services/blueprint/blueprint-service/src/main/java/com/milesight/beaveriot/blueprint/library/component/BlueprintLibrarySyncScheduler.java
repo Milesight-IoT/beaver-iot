@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  **/
 @Slf4j
 @Service
-@Order(0)
+@Order(1)
 public class BlueprintLibrarySyncScheduler implements CommandLineRunner {
     private final BlueprintLibraryConfig blueprintLibraryConfig;
     private final Scheduler scheduler;

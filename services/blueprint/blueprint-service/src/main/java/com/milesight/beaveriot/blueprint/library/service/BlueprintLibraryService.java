@@ -7,6 +7,7 @@ import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryAddress;
 import com.milesight.beaveriot.blueprint.library.po.BlueprintLibraryPO;
 import com.milesight.beaveriot.blueprint.library.repository.BlueprintLibraryRepository;
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
+import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
 import com.milesight.beaveriot.context.model.BlueprintLibraryType;
 import com.milesight.beaveriot.context.support.SpringContext;
 import lombok.extern.slf4j.Slf4j;
@@ -87,6 +88,7 @@ public class BlueprintLibraryService implements IBlueprintLibraryFacade {
                 .branch(blueprintLibraryPO.getBranch())
                 .currentVersion(blueprintLibraryPO.getCurrentVersion())
                 .remoteVersion(blueprintLibraryPO.getRemoteVersion())
+                .sourceType(BlueprintLibrarySourceType.of(blueprintLibraryPO.getSourceType()))
                 .syncStatus(blueprintLibraryPO.getSyncStatus())
                 .syncedAt(blueprintLibraryPO.getSyncedAt())
                 .syncMessage(blueprintLibraryPO.getSyncMessage()).build();
@@ -106,6 +108,7 @@ public class BlueprintLibraryService implements IBlueprintLibraryFacade {
         blueprintLibraryPO.setBranch(blueprintLibrary.getBranch());
         blueprintLibraryPO.setCurrentVersion(blueprintLibrary.getCurrentVersion());
         blueprintLibraryPO.setRemoteVersion(blueprintLibrary.getRemoteVersion());
+        blueprintLibraryPO.setSourceType(blueprintLibrary.getSourceType().name());
         blueprintLibraryPO.setSyncStatus(blueprintLibrary.getSyncStatus());
         blueprintLibraryPO.setSyncedAt(blueprintLibrary.getSyncedAt());
         blueprintLibraryPO.setSyncMessage(blueprintLibrary.getSyncMessage());

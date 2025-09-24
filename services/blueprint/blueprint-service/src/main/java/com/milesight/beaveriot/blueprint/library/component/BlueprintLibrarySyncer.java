@@ -11,8 +11,8 @@ import com.milesight.beaveriot.blueprint.library.service.*;
 import com.milesight.beaveriot.context.application.ApplicationProperties;
 import com.milesight.beaveriot.context.integration.model.BlueprintDeviceVendor;
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
+import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySyncStatus;
-import com.milesight.beaveriot.context.model.BlueprintLibraryType;
 import com.milesight.beaveriot.user.facade.ITenantFacade;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -79,10 +79,11 @@ public class BlueprintLibrarySyncer {
                     .type(blueprintLibraryAddress.getType())
                     .url(blueprintLibraryAddress.getUrl())
                     .branch(blueprintLibraryAddress.getBranch())
+                    .sourceType(blueprintLibraryAddress.getSourceType())
                     .build();
         }
 
-        if (blueprintLibrary.getType() == BlueprintLibraryType.Zip && blueprintLibrary.getSyncStatus() == BlueprintLibrarySyncStatus.SYNCED) {
+        if (blueprintLibrary.getSourceType() == BlueprintLibrarySourceType.Upload && blueprintLibrary.getSyncStatus() == BlueprintLibrarySyncStatus.SYNCED) {
             syncDoneWithMessage(blueprintLibrary,
                     MessageFormat.format("Skipping update for blueprint library {0} because it is already up to date", blueprintLibraryAddress.getKey()));
             return blueprintLibrary;
@@ -99,6 +100,7 @@ public class BlueprintLibrarySyncer {
             if (!isNeedUpdateLibrary(blueprintLibrary, manifest.getVersion())) {
                 syncDoneWithMessage(blueprintLibrary,
                         MessageFormat.format("Skipping update for blueprint library {0} because it is already up to date", blueprintLibraryAddress.getKey()));
+                switchBlueprintLibrarySubscriptionIfNeeded(blueprintLibrary, blueprintLibraryAddress);
                 return blueprintLibrary;
             }
 
@@ -114,6 +116,7 @@ public class BlueprintLibrarySyncer {
                         blueprintLibraryAddress.getKey(),
                         currentBeaverVersion,
                         manifest.getMinimumRequiredBeaverIotVersion()));
+                switchBlueprintLibrarySubscriptionIfNeeded(blueprintLibrary, blueprintLibraryAddress);
                 return blueprintLibrary;
             }
 
@@ -218,7 +221,8 @@ public class BlueprintLibrarySyncer {
             BlueprintLibrary oldBlueprintLibrary = BlueprintLibrary.clone(blueprintLibrary);
             blueprintLibrary.setCurrentVersion(manifest.getVersion());
             syncDoneWithMessage(blueprintLibrary, "Synced blueprint library successfully");
-            saveBlueprintLibraryVersion(blueprintLibrary, blueprintLibraryAddress);
+            saveBlueprintLibraryVersion(blueprintLibrary);
+            updateBlueprintLibrarySubscriptionsForAllTenants(blueprintLibrary, blueprintLibraryAddress);
 
             tenantFacade.runWithAllTenants(() -> evictCaches(oldBlueprintLibrary));
         }
@@ -227,7 +231,7 @@ public class BlueprintLibrarySyncer {
         log.debug("Fishing syncing blueprint library: {}, time: {} ms", blueprintLibraryAddress.getKey(), System.currentTimeMillis() - start);
     }
 
-    private void saveBlueprintLibraryVersion(BlueprintLibrary blueprintLibrary, BlueprintLibraryAddress blueprintLibraryAddress) {
+    private void saveBlueprintLibraryVersion(BlueprintLibrary blueprintLibrary) {
         // Create new version for blueprint library
         Long libraryId = blueprintLibrary.getId();
         String libraryVersion = blueprintLibrary.getCurrentVersion();
@@ -240,8 +244,12 @@ public class BlueprintLibrarySyncer {
                     .build();
             blueprintLibraryVersionService.save(blueprintLibraryVersion);
         }
+    }
 
+    private void updateBlueprintLibrarySubscriptionsForAllTenants(BlueprintLibrary blueprintLibrary, BlueprintLibraryAddress blueprintLibraryAddress) {
         // Update blueprint library subscriptions for all tenants
+        Long libraryId = blueprintLibrary.getId();
+        String libraryVersion = blueprintLibrary.getCurrentVersion();
         tenantFacade.runWithAllTenants(() -> {
             List<BlueprintLibrarySubscription> blueprintLibrarySubscriptions = blueprintLibrarySubscriptionService.findAll();
             BlueprintLibrarySubscription blueprintLibrarySubscription = blueprintLibrarySubscriptions
@@ -272,8 +280,8 @@ public class BlueprintLibrarySyncer {
                     blueprintLibrarySubscriptionService.setActiveOnlyByLibraryId(libraryId);
                 } else {
                     BlueprintLibrary activeBlueprintLibrary = blueprintLibraryService.findById(activeBlueprintLibrarySubscription.getLibraryId());
-                    if (!activeBlueprintLibrarySubscription.getLibraryId().equals(libraryId) && activeBlueprintLibrary.getType() != BlueprintLibraryType.Zip) {
-                        // Set default blueprint library active
+                    if (!activeBlueprintLibrarySubscription.getLibraryId().equals(libraryId) && activeBlueprintLibrary.getSourceType() == BlueprintLibrarySourceType.Default) {
+                        // Switch the latest default blueprint library active
                         blueprintLibrarySubscriptionService.save(blueprintLibrarySubscription);
                         blueprintLibrarySubscriptionService.setActiveOnlyByLibraryId(libraryId);
                     } else {
@@ -289,6 +297,30 @@ public class BlueprintLibrarySyncer {
                 blueprintLibrarySubscriptionService.save(blueprintLibrarySubscription);
             }
         });
+    }
+
+    private void switchBlueprintLibrarySubscriptionIfNeeded(BlueprintLibrary blueprintLibrary, BlueprintLibraryAddress blueprintLibraryAddress) {
+        // Switch blueprint library subscriptions for all tenants if needed
+        boolean isDefaultBlueprintLibraryAddress = blueprintLibraryAddressService.isDefaultBlueprintLibraryAddress(blueprintLibraryAddress);
+        if (isDefaultBlueprintLibraryAddress) {
+            Long libraryId = blueprintLibrary.getId();
+
+            tenantFacade.runWithAllTenants(() -> {
+                List<BlueprintLibrarySubscription> blueprintLibrarySubscriptions = blueprintLibrarySubscriptionService.findAll();
+                BlueprintLibrarySubscription activeBlueprintLibrarySubscription = blueprintLibrarySubscriptions
+                        .stream()
+                        .filter(BlueprintLibrarySubscription::getActive)
+                        .findFirst()
+                        .orElse(null);
+
+                assert activeBlueprintLibrarySubscription != null;
+                BlueprintLibrary activeBlueprintLibrary = blueprintLibraryService.findById(activeBlueprintLibrarySubscription.getLibraryId());
+                if (!activeBlueprintLibrarySubscription.getLibraryId().equals(libraryId) && activeBlueprintLibrary.getSourceType() == BlueprintLibrarySourceType.Default) {
+                    // Switch the latest default blueprint library active
+                    blueprintLibrarySubscriptionService.setActiveOnlyByLibraryId(libraryId);
+                }
+            });
+        }
     }
 
     private void notifyListeners(BlueprintLibrary blueprintLibrary) {

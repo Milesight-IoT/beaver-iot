@@ -7,5 +7,14 @@ package com.milesight.beaveriot.context.model;
 public enum BlueprintLibrarySourceType {
     Default,
     Custom,
-    Upload
+    Upload;
+
+    public static BlueprintLibrarySourceType of(String type) {
+        for (BlueprintLibrarySourceType value : values()) {
+            if (value.name().equalsIgnoreCase(type)) {
+                return value;
+            }
+        }
+        throw new IllegalArgumentException("Invalid blueprint library source type: " + type);
+    }
 }

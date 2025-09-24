@@ -17,3 +17,7 @@ CREATE TABLE t_blueprint_library
     PRIMARY KEY (id),
     CONSTRAINT uk_blueprint_library_type_url_branch UNIQUE (type, url, branch)
 );
+
+--changeset pandalxb:blueprint_library_v1.3.0_20250924_090000
+ALTER TABLE t_blueprint_library
+    ADD COLUMN source_type VARCHAR(32) DEFAULT 'Default';

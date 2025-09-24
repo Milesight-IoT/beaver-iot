@@ -18,6 +18,7 @@ public class BlueprintLibrary {
     private String branch;
     private String currentVersion;
     private String remoteVersion;
+    private BlueprintLibrarySourceType sourceType;
     private BlueprintLibrarySyncStatus syncStatus;
     private Long syncedAt;
     private String syncMessage;
@@ -30,6 +31,7 @@ public class BlueprintLibrary {
                 .branch(blueprintLibrary.getBranch())
                 .currentVersion(blueprintLibrary.getCurrentVersion())
                 .remoteVersion(blueprintLibrary.getRemoteVersion())
+                .sourceType(blueprintLibrary.getSourceType())
                 .syncStatus(blueprintLibrary.getSyncStatus())
                 .syncedAt(blueprintLibrary.getSyncedAt())
                 .syncMessage(blueprintLibrary.getSyncMessage()).build();

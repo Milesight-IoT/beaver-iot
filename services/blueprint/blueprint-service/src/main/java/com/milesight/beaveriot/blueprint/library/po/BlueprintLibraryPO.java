@@ -39,6 +39,9 @@ public class BlueprintLibraryPO {
     @Column(name = "remote_version")
     private String remoteVersion;
 
+    @Column(name = "source_type")
+    private String sourceType;
+
     @Column(name = "sync_status")
     @Enumerated(EnumType.STRING)
     private BlueprintLibrarySyncStatus syncStatus;

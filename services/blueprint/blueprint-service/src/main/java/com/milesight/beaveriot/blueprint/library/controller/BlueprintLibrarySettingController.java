@@ -91,7 +91,7 @@ public class BlueprintLibrarySettingController {
         if (BlueprintLibrarySourceType.Default.name().equals(sourceType)) {
             blueprintLibraryAddress = blueprintLibraryAddressService.getDefaultBlueprintLibraryAddress();
         } else {
-            blueprintLibraryAddress = BlueprintLibraryAddress.of(type, url, branch);
+            blueprintLibraryAddress = BlueprintLibraryAddress.of(type, url, branch, sourceType);
         }
 
         // Step 2. Sync blueprint library

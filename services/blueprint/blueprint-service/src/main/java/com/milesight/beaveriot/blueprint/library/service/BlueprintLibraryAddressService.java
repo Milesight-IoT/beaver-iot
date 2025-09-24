@@ -95,7 +95,7 @@ public class BlueprintLibraryAddressService {
     }
 
     private BlueprintLibraryAddress convertLibraryToAddress(BlueprintLibrary blueprintLibrary) {
-        return BlueprintLibraryAddress.of(blueprintLibrary.getType().name(), blueprintLibrary.getUrl(), blueprintLibrary.getBranch());
+        return BlueprintLibraryAddress.of(blueprintLibrary.getType().name(), blueprintLibrary.getUrl(), blueprintLibrary.getBranch(), blueprintLibrary.getSourceType().name());
     }
 
     public BlueprintLibraryAddress getDefaultBlueprintLibraryAddress() {
