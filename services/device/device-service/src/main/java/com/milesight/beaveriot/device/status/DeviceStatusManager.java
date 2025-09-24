@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.device.status;
 
 import com.milesight.beaveriot.context.integration.model.Device;
+import com.milesight.beaveriot.context.integration.model.DeviceStatus;
 
 import java.util.List;
 import java.util.Map;
@@ -16,5 +17,5 @@ public interface DeviceStatusManager {
     void deregister(Device device);
     void online(Device device);
     void offline(Device device);
-    String status(Device device);
+    DeviceStatus status(Device device);
 }

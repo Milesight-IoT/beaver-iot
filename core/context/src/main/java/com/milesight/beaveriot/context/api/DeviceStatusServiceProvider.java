@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.context.api;
 
 import com.milesight.beaveriot.context.integration.model.Device;
+import com.milesight.beaveriot.context.integration.model.DeviceStatus;
 
 import java.util.List;
 import java.util.Map;
@@ -47,5 +48,5 @@ public interface DeviceStatusServiceProvider {
      * @param device the device to get the status for
      * @return the device status
      */
-    String status(Device device);
+    DeviceStatus status(Device device);
 }

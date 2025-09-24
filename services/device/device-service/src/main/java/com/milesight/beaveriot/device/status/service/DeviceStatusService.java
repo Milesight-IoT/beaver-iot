@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.device.status.service;
 
 import com.milesight.beaveriot.context.integration.model.Device;
+import com.milesight.beaveriot.context.integration.model.DeviceStatus;
 import com.milesight.beaveriot.device.status.DeviceStatusManager;
 import org.springframework.stereotype.Service;
 
@@ -40,7 +41,7 @@ public class DeviceStatusService {
         deviceStatusManager.offline(device);
     }
 
-    public String status(Device device) {
+    public DeviceStatus status(Device device) {
         return deviceStatusManager.status(device);
     }
 }

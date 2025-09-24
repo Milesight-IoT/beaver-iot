@@ -230,8 +230,10 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
             }
 
             Device device = findById(Long.valueOf(d.getId()));
-            String status = deviceStatusService.status(device);
-            d.setStatus(status);
+            DeviceStatus status = deviceStatusService.status(device);
+            if (status != null) {
+                d.setStatus(status.name());
+            }
 
             List<Entity> deviceEntities = deviceKeyToEntity.get(d.getKey());
             if (deviceEntities != null && !deviceEntities.isEmpty()) {

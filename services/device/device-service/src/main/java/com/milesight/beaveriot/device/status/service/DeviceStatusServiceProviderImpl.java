@@ -2,6 +2,7 @@ package com.milesight.beaveriot.device.status.service;
 
 import com.milesight.beaveriot.context.api.DeviceStatusServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
+import com.milesight.beaveriot.context.integration.model.DeviceStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -41,7 +42,7 @@ public class DeviceStatusServiceProviderImpl implements DeviceStatusServiceProvi
     }
 
     @Override
-    public String status(Device device) {
+    public DeviceStatus status(Device device) {
         return deviceStatusService.status(device);
     }
 }
