@@ -18,15 +18,11 @@ import java.util.Objects;
 @Data
 public abstract class BlueprintLibraryAddress {
     public static final String RESOURCE_TYPE = "blueprint-library-address";
-    @JsonIgnore
-    protected Long id;
     protected BlueprintLibraryType type;
     protected String url;
     protected String branch;
     protected BlueprintLibrarySourceType sourceType;
     protected Boolean active;
-    @JsonIgnore
-    protected Long createdAt;
     @JsonIgnore
     private String key;
 

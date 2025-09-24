@@ -22,6 +22,8 @@ import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Objects;
+
 /**
  * author: Luxb
  * create: 2025/9/17 15:05
@@ -116,7 +118,7 @@ public class BlueprintLibrarySettingController {
         if (blueprintLibrarySubscription == null) {
             blueprintLibrarySubscription = BlueprintLibrarySubscription.builder()
                     .libraryId(blueprintLibrary.getId())
-                    .libraryVersion(blueprintLibrary.getCurrentVersion())
+                    .libraryVersion(Objects.requireNonNullElse(blueprintLibrary.getCurrentVersion(), ""))
                     .active(false)
                     .build();
             blueprintLibrarySubscriptionService.save(blueprintLibrarySubscription);
