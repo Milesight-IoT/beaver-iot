@@ -96,6 +96,7 @@ public class BlueprintService implements IBlueprintFacade {
                         .resourceId(bindResource.id())
                         .resourceType(bindResource.resourceType())
                         .managed(bindResource.managed())
+                        .createdBy(userId)
                         .build())
                 .toList();
         blueprintResourceRepository.saveAll(blueprintResources);
