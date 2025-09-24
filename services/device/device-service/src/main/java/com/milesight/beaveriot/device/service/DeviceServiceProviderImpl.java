@@ -151,12 +151,7 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
 
     @Override
     public Device findById(Long id) {
-        return deviceRepository
-                .findOne(f -> f
-                        .eq(DevicePO.Fields.id, id)
-                )
-                .map(deviceConverter::convertPO)
-                .orElse(null);
+        return deviceService.findById(id);
     }
 
     @Override

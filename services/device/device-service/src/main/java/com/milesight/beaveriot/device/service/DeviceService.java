@@ -229,6 +229,10 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
                 d.setGroupId(groupPO.getId().toString());
             }
 
+            Device device = findById(Long.valueOf(d.getId()));
+            String status = deviceStatusService.status(device);
+            d.setStatus(status);
+
             List<Entity> deviceEntities = deviceKeyToEntity.get(d.getKey());
             if (deviceEntities != null && !deviceEntities.isEmpty()) {
                 final List<Entity> flattenEntities = new ArrayList<>();
@@ -272,6 +276,16 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
                 );
             }
         });
+    }
+
+    @Override
+    public Device findById(Long id) {
+        return deviceRepository
+                .findOne(f -> f
+                        .eq(DevicePO.Fields.id, id)
+                )
+                .map(deviceConverter::convertPO)
+                .orElse(null);
     }
 
     @Override

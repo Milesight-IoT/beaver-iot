@@ -103,8 +103,8 @@ public class DeviceTemplateModel {
 
         @Data
         public static class Value {
-            public static final String TYPE_ENTITY_KEY = "entity_key";
             public static final String TYPE_ENTITY_ID = "entity_id";
+            public static final String TYPE_ENTITY_KEY = "entity_key";
             public static final String TYPE_DEVICE_ID = "device_id";
             public static final String TYPE_DEVICE_KEY = "device_key";
             private String type;

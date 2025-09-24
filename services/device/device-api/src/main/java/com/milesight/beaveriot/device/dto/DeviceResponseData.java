@@ -16,7 +16,7 @@ public class DeviceResponseData {
     private String template;
     private Long createdAt;
     private Long updatedAt;
-
+    private String status;
     private String integrationName;
     private String groupName;
     private String groupId;
