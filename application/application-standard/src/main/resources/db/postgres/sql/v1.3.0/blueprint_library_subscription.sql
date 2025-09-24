@@ -13,3 +13,7 @@ CREATE TABLE t_blueprint_library_subscription
     PRIMARY KEY (id),
     CONSTRAINT uk_blueprint_library_subscription_library_id_tenant_id UNIQUE (library_id, tenant_id)
 );
+
+--changeset pandalxb:blueprint_library_subscription_v1.3.0_20250924_164700
+CREATE INDEX idx_blueprint_library_subscription_active_tenant_id ON t_blueprint_library_subscription (active, tenant_id);
+CREATE INDEX idx_blueprint_library_subscription_tenant_id ON t_blueprint_library_subscription (tenant_id);
