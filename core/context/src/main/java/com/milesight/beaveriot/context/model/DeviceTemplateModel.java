@@ -118,6 +118,10 @@ public class DeviceTemplateModel {
                     return !StringUtils.isEmpty(identifier);
                 }
 
+                if (TYPE_DEVICE_ID.equals(type)) {
+                    return true;
+                }
+
                 return value != null;
             }
         }
