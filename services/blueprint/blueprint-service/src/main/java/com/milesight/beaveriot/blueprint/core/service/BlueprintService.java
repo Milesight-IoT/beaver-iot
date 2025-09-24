@@ -25,6 +25,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -73,20 +74,29 @@ public class BlueprintService implements IBlueprintFacade {
         var chart = templateParser.parseBlueprint(templateLoader, context);
         var bindResources = blueprintDeployer.deploy(chart, context);
 
+        val userId = systemContext.getUserId() != null
+                ? systemContext.getUserId().toString()
+                : null;
+        var tenantId = systemContext.getTenantId();
+
         var blueprintPO = BlueprintPO.builder()
                 .id(SnowflakeUtil.nextId())
-                .tenantId(systemContext.getTenantId())
+                .tenantId(tenantId)
                 .chart(JsonUtils.toJSON(chart))
+                .createdBy(userId)
+                .updatedBy(userId)
                 .build();
         blueprintRepository.save(blueprintPO);
 
         var blueprintResources = bindResources.stream()
                 .map(bindResource -> BlueprintResourcePO.builder()
                         .id(SnowflakeUtil.nextId())
+                        .tenantId(tenantId)
                         .blueprintId(blueprintPO.getId())
                         .resourceId(bindResource.id())
                         .resourceType(bindResource.resourceType())
                         .managed(bindResource.managed())
+                        .createdBy(userId)
                         .build())
                 .toList();
         blueprintResourceRepository.saveAll(blueprintResources);

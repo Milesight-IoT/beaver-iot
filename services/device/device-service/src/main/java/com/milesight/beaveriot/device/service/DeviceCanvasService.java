@@ -42,6 +42,7 @@ public class DeviceCanvasService {
         CanvasDTO deviceCanvas = canvasList.isEmpty() ? canvasFacade.createCanvas(devicePO.getName(), CanvasAttachType.DEVICE, deviceIdStr) : canvasList.get(0);
         DeviceCanvasResponse response = new DeviceCanvasResponse();
         response.setCanvasId(deviceCanvas.getId().toString());
+        response.setName(deviceCanvas.getName());
         return response;
     }
 }
