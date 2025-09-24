@@ -82,6 +82,7 @@ public class DeviceCanvasResourceManager implements ResourceManager<DeviceCanvas
             canvasId = deviceCanvasResponse.getCanvasId();
 
             var canvasUpdateRequest = JsonUtils.withCamelCaseStrategy().cast(data, CanvasUpdateRequest.class);
+            canvasUpdateRequest.setName(deviceCanvasResponse.getName());
             canvasFacade.updateCanvas(Longs.tryParse(canvasId), canvasUpdateRequest);
             accessor.setId(canvasId);
         }
