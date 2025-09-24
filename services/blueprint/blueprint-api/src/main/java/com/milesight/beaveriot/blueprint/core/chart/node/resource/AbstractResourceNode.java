@@ -45,7 +45,7 @@ public abstract class AbstractResourceNode extends AbstractObjectNode implements
         public T parse(String propertyName, JsonNode propertyValue, BlueprintNode parentNode, BlueprintParseContext context) {
             var node = createNode(parentNode, propertyName);
             loadDataNodes(node, propertyValue, context);
-            node.setManaged(node.getId() != null);
+            node.setManaged(node.getId() == null);
             return node;
         }
 

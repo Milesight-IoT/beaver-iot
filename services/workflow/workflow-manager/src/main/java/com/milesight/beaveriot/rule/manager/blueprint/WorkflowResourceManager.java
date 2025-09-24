@@ -92,6 +92,7 @@ public class WorkflowResourceManager implements ResourceManager<WorkflowResource
             accessor.setId(flowId);
         }
 
+        workflowNode.setManaged(isManaged);
         return List.of(new BindResource(WorkflowResourceNode.RESOURCE_TYPE, flowId, isManaged));
     }
 
@@ -107,6 +108,7 @@ public class WorkflowResourceManager implements ResourceManager<WorkflowResource
         if (resource.isManaged() && condition.isMatch(resource.getResourceType(), id)) {
             var flowId = Longs.tryParse(id);
             if (flowId != null) {
+                log.info("delete workflow: {}", flowId);
                 workflowService.batchDelete(List.of(flowId));
                 return true;
             }

@@ -40,32 +40,30 @@ public interface DataNode extends BlueprintNode {
         @Override
         public DataNode parse(String propertyName, JsonNode propertyValue, BlueprintNode parentNode, BlueprintParseContext context) {
 
-            if (propertyName != null && propertyName.toLowerCase().startsWith(FunctionNode.PREFIX)) {
-                if (functionNameToFunctionNodeParser == null) {
-                    functionNameToFunctionNodeParser = functionNodeParsers.stream()
-                            .collect(Collectors.toConcurrentMap(
-                                    FunctionNode.Parser::getFunctionName, Function.identity(), (a, b) -> a));
-                }
-
-                var functionNodeParser = functionNameToFunctionNodeParser.get(propertyName);
-                if (functionNodeParser != null) {
-                    return functionNodeParser.parse(propertyName, propertyValue, parentNode, context);
-                }
-            }
-
             if (propertyValue instanceof ObjectNode objectNode) {
                 String functionName = null;
                 var fieldNames = objectNode.fieldNames();
                 while (fieldNames.hasNext()) {
                     var fieldName = fieldNames.next();
-                    if (fieldName.toLowerCase().startsWith(FunctionNode.PREFIX)) {
+                    if (fieldName.startsWith(FunctionNode.PREFIX)) {
                         functionName = fieldName;
                         break;
                     }
                 }
 
                 if (functionName != null) {
-                    return dataNodeParser.parse(functionName, objectNode.get(functionName), parentNode, context);
+                    if (functionNameToFunctionNodeParser == null) {
+                        functionNameToFunctionNodeParser = functionNodeParsers.stream()
+                                .collect(Collectors.toConcurrentMap(
+                                        FunctionNode.Parser::getFunctionName, Function.identity(), (a, b) -> a));
+                    }
+
+                    var functionNodeParser = functionNameToFunctionNodeParser.get(functionName);
+                    if (functionNodeParser == null) {
+                        return null;
+                    }
+                    return functionNodeParser.parse(propertyName, propertyValue, parentNode, context);
+
                 } else {
                     var mapDataNode = new MapDataNode(parentNode, propertyName);
                     BlueprintUtils.forEachInReverseOrder(objectNode.fields(), entry ->

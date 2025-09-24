@@ -103,6 +103,7 @@ public class DeviceCanvasResourceManager implements ResourceManager<DeviceCanvas
         if (resource.isManaged() && condition.isMatch(resource.getResourceType(), id)) {
             var canvasId = Longs.tryParse(id);
             if (canvasId != null) {
+                log.info("delete canvas: {}", canvasId);
                 canvasFacade.deleteCanvasByIds(List.of(canvasId));
                 return true;
             }

@@ -21,9 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.Map;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -72,7 +70,6 @@ public class IncludeNode extends AbstractObjectNode {
             return includeNode;
         }
 
-        @SuppressWarnings("unchecked")
         private JsonNode readTemplateAsJsonNode(JsonNode propertyValue, BlueprintParseContext context, TextNode templatePath) {
             var parameterValues = new HashMap<String, Object>();
             var templateContext = new HashMap<>(context.getTemplateContext());
@@ -89,9 +86,7 @@ public class IncludeNode extends AbstractObjectNode {
                 defaultValues.forEach((key, value) -> parameterValues.computeIfAbsent(key, k -> value));
             }
 
-            parameterValues.putAll((Map<String, Object>) context.getTemplateContext().getOrDefault(BlueprintConstants.PARAMETERS_KEY, Collections.emptyMap()));
-            templateContext.put(BlueprintConstants.PARAMETERS_KEY, parameterValues);
-            return blueprintTemplateParser.readTemplateAsJsonNode(context.getTemplateLoader(), templatePath.asText(), parameterValues);
+            return blueprintTemplateParser.readTemplateAsJsonNode(context.getTemplateLoader(), templatePath.asText(), templateContext);
         }
 
     }

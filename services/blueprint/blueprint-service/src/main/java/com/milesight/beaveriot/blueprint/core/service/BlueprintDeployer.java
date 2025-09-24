@@ -77,22 +77,12 @@ public class BlueprintDeployer {
 
     public void delete(TemplateNode blueprintRoot, ResourceMatcher condition) {
         var stack = new ArrayDeque<BlueprintNode>();
-        blueprintRoot.setBlueprintNodeStatus(BlueprintNodeStatus.PENDING);
         stack.push(blueprintRoot);
         while (!stack.isEmpty()) {
             var node = stack.pop();
-            switch (node.getBlueprintNodeStatus()) {
-                case FINISHED -> {
-                    node.setBlueprintNodeStatus(BlueprintNodeStatus.PENDING);
-                    stack.push(node);
-                    node.getBlueprintNodeChildren().stream()
-                            .filter(child -> BlueprintNodeStatus.FINISHED.equals(child.getBlueprintNodeStatus()))
-                            .forEach(stack::push);
-                }
-                case PENDING -> deleteNode(node, condition);
-                default -> {
-                    // do nothing
-                }
+            if (BlueprintNodeStatus.FINISHED.equals(node.getBlueprintNodeStatus())) {
+                deleteNode(node, condition);
+                node.getBlueprintNodeChildren().forEach(stack::push);
             }
         }
     }
