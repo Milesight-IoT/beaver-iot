@@ -678,8 +678,12 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             if (DeviceTemplateModel.Blueprint.Value.TYPE_ENTITY_ID.equals(value.getType())) {
                 Entity entity = entityServiceProvider.findByKey(device.getKey() + "." + value.getIdentifier());
                 valueObject = entity.getId();
+            } else if (DeviceTemplateModel.Blueprint.Value.TYPE_ENTITY_KEY.equals(value.getType())) {
+                valueObject = device.getKey() + "." + value.getIdentifier();
             } else if (DeviceTemplateModel.Blueprint.Value.TYPE_DEVICE_ID.equals(value.getType())) {
                 valueObject = device.getId();
+            } else if (DeviceTemplateModel.Blueprint.Value.TYPE_DEVICE_KEY.equals(value.getType())) {
+                valueObject = device.getKey();
             } else {
                 valueObject = value.getValue();
             }
