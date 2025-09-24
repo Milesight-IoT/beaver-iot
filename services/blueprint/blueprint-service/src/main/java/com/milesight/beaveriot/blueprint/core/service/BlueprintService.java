@@ -25,6 +25,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -73,10 +74,16 @@ public class BlueprintService implements IBlueprintFacade {
         var chart = templateParser.parseBlueprint(templateLoader, context);
         var bindResources = blueprintDeployer.deploy(chart, context);
 
+        val operatorId = SecurityUserContext.getUserId() != null
+                ? SecurityUserContext.getUserId().toString()
+                : "";
+
         var blueprintPO = BlueprintPO.builder()
                 .id(SnowflakeUtil.nextId())
                 .tenantId(systemContext.getTenantId())
                 .chart(JsonUtils.toJSON(chart))
+                .createdBy(operatorId)
+                .updatedBy(operatorId)
                 .build();
         blueprintRepository.save(blueprintPO);
 
