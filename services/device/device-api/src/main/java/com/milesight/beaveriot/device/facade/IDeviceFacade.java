@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.device.facade;
 
 import com.milesight.beaveriot.base.enums.ComparisonOperator;
+import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 
 import java.util.List;
@@ -24,4 +25,6 @@ public interface IDeviceFacade {
     Map<String, Long> countByIntegrationIds(List<String> integrationIds);
 
     Long countByIntegrationId(String integrationId);
+
+    Device findById(Long id);
 }
