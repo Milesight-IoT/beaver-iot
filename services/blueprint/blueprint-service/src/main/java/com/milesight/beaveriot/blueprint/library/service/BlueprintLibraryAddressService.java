@@ -116,7 +116,9 @@ public class BlueprintLibraryAddressService {
             return null;
         }
 
-        return convertSubscriptionToAddress(blueprintLibrarySubscription);
+        BlueprintLibraryAddress address = convertSubscriptionToAddress(blueprintLibrarySubscription);
+        address.setActive(blueprintLibrarySubscription.getActive());
+        return address;
     }
 
     public BlueprintLibraryManifest validateAndGetManifest(BlueprintLibraryAddress blueprintLibraryAddress) {
