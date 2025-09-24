@@ -74,22 +74,24 @@ public class BlueprintService implements IBlueprintFacade {
         var chart = templateParser.parseBlueprint(templateLoader, context);
         var bindResources = blueprintDeployer.deploy(chart, context);
 
-        val operatorId = SecurityUserContext.getUserId() != null
-                ? SecurityUserContext.getUserId().toString()
-                : "";
+        val userId = systemContext.getUserId() != null
+                ? systemContext.getUserId().toString()
+                : null;
+        var tenantId = systemContext.getTenantId();
 
         var blueprintPO = BlueprintPO.builder()
                 .id(SnowflakeUtil.nextId())
-                .tenantId(systemContext.getTenantId())
+                .tenantId(tenantId)
                 .chart(JsonUtils.toJSON(chart))
-                .createdBy(operatorId)
-                .updatedBy(operatorId)
+                .createdBy(userId)
+                .updatedBy(userId)
                 .build();
         blueprintRepository.save(blueprintPO);
 
         var blueprintResources = bindResources.stream()
                 .map(bindResource -> BlueprintResourcePO.builder()
                         .id(SnowflakeUtil.nextId())
+                        .tenantId(tenantId)
                         .blueprintId(blueprintPO.getId())
                         .resourceId(bindResource.id())
                         .resourceType(bindResource.resourceType())
