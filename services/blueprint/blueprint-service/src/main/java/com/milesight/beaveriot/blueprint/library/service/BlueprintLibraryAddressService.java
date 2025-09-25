@@ -10,6 +10,7 @@ import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryManifest;
 import com.milesight.beaveriot.blueprint.library.model.BlueprintLibrarySubscription;
 import com.milesight.beaveriot.blueprint.library.support.YamlConverter;
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
+import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
 import com.milesight.beaveriot.context.model.BlueprintLibraryType;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
@@ -106,6 +107,10 @@ public class BlueprintLibraryAddressService {
         BlueprintLibraryAddress activeBlueprintLibraryAddress = findByActiveTrue();
         if (activeBlueprintLibraryAddress == null) {
             activeBlueprintLibraryAddress = blueprintLibraryConfig.getDefaultBlueprintLibraryAddress();
+        } else {
+            if (activeBlueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.Default && !isDefaultBlueprintLibraryAddress(activeBlueprintLibraryAddress)) {
+                activeBlueprintLibraryAddress = blueprintLibraryConfig.getDefaultBlueprintLibraryAddress();
+            }
         }
         return activeBlueprintLibraryAddress;
     }

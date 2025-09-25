@@ -17,6 +17,7 @@ import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySyncStatus;
 import com.milesight.beaveriot.context.model.BlueprintLibraryType;
+import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.permission.aspect.OperationPermission;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.resource.manager.dto.ResourceRefDTO;
@@ -52,11 +53,18 @@ public class BlueprintLibrarySettingController {
     @GetMapping("")
     public ResponseBody<QueryBlueprintLibrarySettingResponse> getBlueprintLibrarySetting() {
         QueryBlueprintLibrarySettingResponse response = new QueryBlueprintLibrarySettingResponse();
-        BlueprintLibraryAddress defaultBlueprintLibraryAddress = blueprintLibraryAddressService.getDefaultBlueprintLibraryAddress();
 
         BlueprintLibraryAddress activeBlueprintLibraryAddress = blueprintLibraryAddressService.findByActiveTrue();
-        if (activeBlueprintLibraryAddress != null && activeBlueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.Upload) {
-            BlueprintLibrary activeBlueprintLibrary = blueprintLibraryService.getBlueprintLibrary(activeBlueprintLibraryAddress.getType().name(), activeBlueprintLibraryAddress.getUrl(), activeBlueprintLibraryAddress.getBranch());
+        if (activeBlueprintLibraryAddress == null) {
+            activeBlueprintLibraryAddress = blueprintLibraryAddressService.getDefaultBlueprintLibraryAddress();
+        } else {
+            if (activeBlueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.Default && !blueprintLibraryAddressService.isDefaultBlueprintLibraryAddress(activeBlueprintLibraryAddress)) {
+                activeBlueprintLibraryAddress = blueprintLibraryAddressService.getDefaultBlueprintLibraryAddress();
+            }
+        }
+
+        BlueprintLibrary activeBlueprintLibrary = blueprintLibraryService.getBlueprintLibrary(activeBlueprintLibraryAddress.getType().name(), activeBlueprintLibraryAddress.getUrl(), activeBlueprintLibraryAddress.getBranch());
+        if (activeBlueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.Upload) {
             response.setCurrentSourceType(BlueprintLibrarySourceType.Upload.name());
             if (activeBlueprintLibrary != null) {
                 response.setVersion(activeBlueprintLibrary.getCurrentVersion());
@@ -65,12 +73,11 @@ public class BlueprintLibrarySettingController {
                 response.setSyncedSuccess(syncedSuccess);
             }
         } else {
-            BlueprintLibrary defaultBlueprintLibrary = blueprintLibraryService.getBlueprintLibrary(defaultBlueprintLibraryAddress.getType().name(), defaultBlueprintLibraryAddress.getUrl(), defaultBlueprintLibraryAddress.getBranch());
             response.setCurrentSourceType(BlueprintLibrarySourceType.Default.name());
-            if (defaultBlueprintLibrary != null) {
-                response.setVersion(defaultBlueprintLibrary.getCurrentVersion());
-                boolean syncedSuccess = defaultBlueprintLibrary.getSyncStatus() == BlueprintLibrarySyncStatus.SYNCED;
-                response.setUpdateTime(defaultBlueprintLibrary.getSyncedAt());
+            if (activeBlueprintLibrary != null) {
+                response.setVersion(activeBlueprintLibrary.getCurrentVersion());
+                boolean syncedSuccess = activeBlueprintLibrary.getSyncStatus() == BlueprintLibrarySyncStatus.SYNCED;
+                response.setUpdateTime(activeBlueprintLibrary.getSyncedAt());
                 response.setSyncedSuccess(syncedSuccess);
             }
         }
@@ -131,6 +138,8 @@ public class BlueprintLibrarySettingController {
         if (BlueprintLibrarySourceType.Upload.name().equals(sourceType)) {
             tryLinkResource(blueprintLibraryAddress);
         }
+
+        blueprintLibrarySyncer.notifyListenersWithTenant(blueprintLibrary, TenantContext.getTenantId());
 
         return ResponseBuilder.success();
     }

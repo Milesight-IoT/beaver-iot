@@ -333,17 +333,21 @@ public class BlueprintLibrarySyncer {
         for (BlueprintLibrarySubscription blueprintLibrarySubscription : blueprintLibrarySubscriptions) {
             if (blueprintLibrarySubscription.getLibraryId().equals(blueprintLibrary.getId())) {
                 String tenantId = blueprintLibrarySubscription.getTenantId();
-                BlueprintLibrary finalBlueprintLibrary = BlueprintLibrary.clone(blueprintLibrary);
-                listeners.forEach(listener -> CompletableFuture.runAsync(() -> {
-                    try {
-                        TenantContext.setTenantId(tenantId);
-                        listener.accept(finalBlueprintLibrary);
-                    } catch (Exception e) {
-                        log.error("Listener failed", e);
-                    }
-                }, listenerExecutor));
+                notifyListenersWithTenant(blueprintLibrary, tenantId);
             }
         }
+    }
+
+    public void notifyListenersWithTenant(BlueprintLibrary blueprintLibrary, String tenantId) {
+        BlueprintLibrary finalBlueprintLibrary = BlueprintLibrary.clone(blueprintLibrary);
+        listeners.forEach(listener -> CompletableFuture.runAsync(() -> {
+            try {
+                TenantContext.setTenantId(tenantId);
+                listener.accept(finalBlueprintLibrary);
+            } catch (Exception e) {
+                log.error("Listener failed", e);
+            }
+        }, listenerExecutor));
     }
 
     @PreDestroy
