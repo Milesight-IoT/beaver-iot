@@ -3,7 +3,6 @@ package com.milesight.beaveriot.blueprint.core.chart.node.data.container;
 import com.milesight.beaveriot.blueprint.core.chart.node.base.AbstractMapNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.base.BlueprintNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.DataNode;
-import com.milesight.beaveriot.blueprint.core.chart.node.enums.BlueprintNodeStatus;
 import lombok.NoArgsConstructor;
 
 import java.util.Map;
@@ -18,11 +17,22 @@ public class MapDataNode extends AbstractMapNode<DataNode> implements ContainerD
 
     @Override
     public Map<String, Object> getValue() {
-        if (!BlueprintNodeStatus.FINISHED.equals(blueprintNodeStatus)) {
-            return null;
-        }
         return getTypedChildren().stream()
-                .collect(Collectors.toMap(BlueprintNode::getBlueprintNodeName, DataNode::getValue, (a, b) -> a));
+                .map(Pair::of)
+                .filter(Pair::nonNull)
+                .collect(Collectors.toMap(Pair::name, Pair::value, (a, b) -> a));
+    }
+
+    private record Pair(String name, Object value) {
+
+        public static Pair of(DataNode blueprintNode) {
+            return new Pair(blueprintNode.getBlueprintNodeName(), blueprintNode.getValue());
+        }
+
+        public boolean nonNull() {
+            return value != null;
+        }
+
     }
 
 }

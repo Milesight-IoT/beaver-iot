@@ -12,17 +12,17 @@ import java.nio.charset.StandardCharsets;
  * author: Luxb
  * create: 2025/9/9 15:09
  **/
-public class DefaultTemplateLoader implements TemplateLoader {
+public class DefaultResourceLoader implements ResourceLoader {
     private final IBlueprintLibraryResourceResolverFacade blueprintLibraryResourceFacade;
     private final BlueprintLibrary blueprintLibrary;
     private final String blueprintPath;
-    public DefaultTemplateLoader(BlueprintLibrary blueprintLibrary, String blueprintPath) {
+    public DefaultResourceLoader(BlueprintLibrary blueprintLibrary, String blueprintPath) {
         this.blueprintLibrary = blueprintLibrary;
         this.blueprintPath = blueprintPath;
         this.blueprintLibraryResourceFacade = SpringContext.getBean(IBlueprintLibraryResourceResolverFacade.class);
     }
     @Override
-    public InputStream loadTemplate(String relativePath) {
+    public InputStream loadResource(String relativePath) {
         try {
             String resourcePath = blueprintLibraryResourceFacade.buildResourcePath(blueprintPath, relativePath);
             String content = blueprintLibraryResourceFacade.getResourceContent(blueprintLibrary, resourcePath);

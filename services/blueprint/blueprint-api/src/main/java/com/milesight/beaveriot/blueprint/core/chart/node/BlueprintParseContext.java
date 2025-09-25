@@ -5,7 +5,7 @@ import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.blueprint.core.chart.node.base.BlueprintNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.template.TemplateNode;
 import com.milesight.beaveriot.blueprint.core.enums.BlueprintErrorCode;
-import com.milesight.beaveriot.blueprint.support.TemplateLoader;
+import com.milesight.beaveriot.blueprint.support.ResourceLoader;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,17 +36,17 @@ public class BlueprintParseContext {
     @Getter(AccessLevel.NONE)
     private Deque<BlueprintNode.ProcessingTask> taskStack;
 
-    private TemplateLoader templateLoader;
+    private ResourceLoader resourceLoader;
 
     private JsonNode templateJsonNode;
 
     private Map<String, Object> templateContext;
 
-    public BlueprintParseContext(Deque<BlueprintNode.ProcessingTask> taskStack, TemplateLoader templateLoader,
+    public BlueprintParseContext(Deque<BlueprintNode.ProcessingTask> taskStack, ResourceLoader resourceLoader,
                                  JsonNode templateJsonNode, Map<String, Object> templateContext) {
         this.taskStack = taskStack;
         this.templateJsonNode = templateJsonNode;
-        this.templateLoader = templateLoader;
+        this.resourceLoader = resourceLoader;
         this.templateContext = templateContext;
     }
 

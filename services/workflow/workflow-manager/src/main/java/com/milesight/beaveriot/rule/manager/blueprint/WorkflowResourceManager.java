@@ -64,17 +64,17 @@ public class WorkflowResourceManager implements ResourceManager<WorkflowResource
         } else {
             var name = accessor.getName();
             if (name == null) {
-                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'name'! Path: " + BlueprintUtils.getNodePath(workflowNode, context.getRoot()));
+                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property: 'name'.");
             }
 
             var deviceId = accessor.getDeviceId();
             if (deviceId == null) {
-                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'device_id'! Path: " + BlueprintUtils.getNodePath(workflowNode, context.getRoot()));
+                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property: 'device_id'.");
             }
 
             var data = accessor.getData();
             if (data == null) {
-                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'data'! Path: " + BlueprintUtils.getNodePath(workflowNode, context.getRoot()));
+                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property: 'data'.");
             }
 
             var remark = accessor.getRemark();

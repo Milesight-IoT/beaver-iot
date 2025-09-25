@@ -18,7 +18,7 @@ import com.milesight.beaveriot.blueprint.core.repository.BlueprintRepository;
 import com.milesight.beaveriot.blueprint.core.repository.BlueprintResourceRepository;
 import com.milesight.beaveriot.blueprint.core.utils.BlueprintUtils;
 import com.milesight.beaveriot.blueprint.facade.IBlueprintFacade;
-import com.milesight.beaveriot.blueprint.support.TemplateLoader;
+import com.milesight.beaveriot.blueprint.support.ResourceLoader;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.context.security.TenantContext;
 import lombok.NonNull;
@@ -54,11 +54,11 @@ public class BlueprintService implements IBlueprintFacade {
 
     @Override
     @Transactional
-    public Long deployBlueprint(TemplateLoader templateLoader, Map<String, Object> variables) {
+    public Long deployBlueprint(ResourceLoader resourceLoader, Map<String, Object> variables) {
         Map<String, Object> context = new HashMap<>();
-        templateParser.loadConstantsIntoContext(templateLoader, context);
+        templateParser.loadConstantsIntoContext(resourceLoader, context);
 
-        var variablesJsonSchema = templateParser.getVariableJsonSchema(templateLoader, context);
+        var variablesJsonSchema = templateParser.getVariableJsonSchema(resourceLoader, context);
         if (variablesJsonSchema != null) {
             validateVariables(variables, variablesJsonSchema);
             // ensure map is writable
@@ -71,7 +71,7 @@ public class BlueprintService implements IBlueprintFacade {
         var systemContext = getSystemContext();
         context.put(BlueprintConstants.SYSTEM_CONTEXT_KEY, systemContext);
 
-        var chart = templateParser.parseBlueprint(templateLoader, context);
+        var chart = templateParser.parseBlueprint(resourceLoader, context);
         var bindResources = blueprintDeployer.deploy(chart, context);
 
         val userId = systemContext.getUserId() != null
@@ -162,9 +162,9 @@ public class BlueprintService implements IBlueprintFacade {
 
     @Override
     @SneakyThrows
-    public JsonNode getVariableJsonSchema(TemplateLoader templateLoader) {
+    public JsonNode getVariableJsonSchema(ResourceLoader resourceLoader) {
         Map<String, Object> context = new HashMap<>();
-        templateParser.loadConstantsIntoContext(templateLoader, context);
-        return templateParser.getVariableJsonSchema(templateLoader, context);
+        templateParser.loadConstantsIntoContext(resourceLoader, context);
+        return templateParser.getVariableJsonSchema(resourceLoader, context);
     }
 }

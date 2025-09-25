@@ -60,14 +60,26 @@ public class BlueprintDeployer {
 
         var stack = new ArrayDeque<BlueprintNode>();
         stack.push(blueprintRoot);
+
         while (!stack.isEmpty()) {
             var node = stack.pop();
 
-            switch (node.getBlueprintNodeStatus()) {
-                case NOT_READY -> discoverDependencies(node, context, stack);
-                case PENDING -> deployNode(node, context, bindResources);
-                default -> {
-                    // do nothing
+            try {
+                switch (node.getBlueprintNodeStatus()) {
+                    case NOT_READY -> discoverDependencies(node, context, stack);
+                    case PENDING -> deployNode(node, context, bindResources);
+                    default -> {
+                        // do nothing
+                    }
+                }
+            } catch (Exception e) {
+                var path = BlueprintUtils.getNodePath(node, context.getRoot());
+                if (e instanceof ServiceException serviceException) {
+                    serviceException.setDetailMessage("Occurred at: '" + path + "', Cause: " + serviceException.getDetailMessage());
+                    throw serviceException;
+                } else {
+                    var errorCode = node instanceof FunctionNode ? BlueprintErrorCode.BLUEPRINT_FUNCTION_EXECUTION_FAILED : BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED;
+                    throw new ServiceException(errorCode, "Occurred at: '" + path + "', Cause: " + e.getMessage(), e);
                 }
             }
         }
@@ -100,7 +112,6 @@ public class BlueprintDeployer {
         if (node instanceof FunctionNode functionNode) {
             var executor = typeToFunctionExecutor.get(functionNode.getClass());
             if (executor == null) {
-                log.error("Function executor not found! Node: {}", BlueprintUtils.getNodePath(functionNode, context.getRoot()));
                 throw new ServiceException(BlueprintErrorCode.BLUEPRINT_FUNCTION_EXECUTOR_NOT_FOUND);
             }
             executor.execute(functionNode, context);
@@ -109,7 +120,6 @@ public class BlueprintDeployer {
         if (node instanceof ResourceNode resourceNode) {
             var manager = typeToResourceManager.get(resourceNode.getClass());
             if (manager == null) {
-                log.error("Resource manager not found! Node: {}", BlueprintUtils.getNodePath(resourceNode, context.getRoot()));
                 throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_MANAGER_NOT_FOUND);
             }
             bindResources.addAll(manager.deploy(resourceNode, context));
@@ -135,7 +145,8 @@ public class BlueprintDeployer {
                 .filter(dependency -> !BlueprintNodeStatus.FINISHED.equals(dependency.getBlueprintNodeStatus()))
                 .forEach(dependency -> {
                     switch (dependency.getBlueprintNodeStatus()) {
-                        case PENDING -> throw new ServiceException(BlueprintErrorCode.BLUEPRINT_CIRCULAR_DEPENDENCY_DETECTED);
+                        case PENDING ->
+                                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_CIRCULAR_DEPENDENCY_DETECTED);
                         case NOT_READY -> stack.push(dependency);
                         default -> {
                             // do nothing

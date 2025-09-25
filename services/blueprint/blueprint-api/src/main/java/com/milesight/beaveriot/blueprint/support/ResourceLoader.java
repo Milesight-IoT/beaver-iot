@@ -4,9 +4,9 @@ import javax.annotation.Nullable;
 import java.io.InputStream;
 
 @FunctionalInterface
-public interface TemplateLoader {
+public interface ResourceLoader {
 
     @Nullable
-    InputStream loadTemplate(String relativePath);
+    InputStream loadResource(String relativePath);
 
 }

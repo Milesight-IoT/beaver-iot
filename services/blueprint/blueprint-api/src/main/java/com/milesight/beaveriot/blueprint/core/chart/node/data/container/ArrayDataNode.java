@@ -3,7 +3,6 @@ package com.milesight.beaveriot.blueprint.core.chart.node.data.container;
 import com.milesight.beaveriot.blueprint.core.chart.node.base.AbstractArrayNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.base.BlueprintNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.DataNode;
-import com.milesight.beaveriot.blueprint.core.chart.node.enums.BlueprintNodeStatus;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
@@ -17,9 +16,6 @@ public class ArrayDataNode extends AbstractArrayNode<DataNode> implements Contai
 
     @Override
     public List<Object> getValue() {
-        if (!BlueprintNodeStatus.FINISHED.equals(blueprintNodeStatus)) {
-            return null;
-        }
         return getTypedBlueprintNodeChildren().stream().map(DataNode::getValue).toList();
     }
 

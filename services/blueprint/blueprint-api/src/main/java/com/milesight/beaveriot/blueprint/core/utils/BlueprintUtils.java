@@ -17,10 +17,13 @@ import com.milesight.beaveriot.blueprint.core.chart.node.data.value.BoolValueNod
 import com.milesight.beaveriot.blueprint.core.chart.node.data.value.DoubleValueNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.value.LongValueNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.value.StringValueNode;
+import com.milesight.beaveriot.blueprint.core.chart.node.enums.BlueprintNodeStatus;
 import com.milesight.beaveriot.blueprint.core.chart.node.template.ObjectSchemaPropertiesNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.template.TemplateNode;
 import com.milesight.beaveriot.blueprint.core.enums.BlueprintErrorCode;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.Nullable;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -52,7 +55,7 @@ public class BlueprintUtils {
     }
 
     public static BlueprintNode getChildByName(BlueprintNode blueprintNode, String name) {
-        if (name == null || name.isEmpty()) {
+        if (!StringUtils.hasText(name)) {
             return blueprintNode;
         }
         return blueprintNode.getBlueprintNodeChildren()
@@ -71,13 +74,17 @@ public class BlueprintUtils {
     }
 
     private static BlueprintNode getChildByPath(BlueprintNode blueprintNode, String path, boolean returnLongestMatch) {
-        if (path == null || path.isEmpty()) {
+        if (!StringUtils.hasText(path)) {
             return blueprintNode;
         }
 
         path = path.replace("[", ".[");
         var tokens = path.split("\\.");
         for (String name : tokens) {
+            if (name.isEmpty()) {
+                continue;
+            }
+
             var parent = blueprintNode;
             blueprintNode = getChildByName(parent, name);
             if (blueprintNode == null) {
@@ -92,13 +99,17 @@ public class BlueprintUtils {
     }
 
     public static JsonNode getChildByPath(JsonNode jsonNode, String path) {
-        if (path == null || path.isEmpty()) {
+        if (!StringUtils.hasText(path)) {
             return jsonNode;
         }
 
         path = path.replace("[", ".[");
         var tokens = path.split("\\.");
         for (String token : tokens) {
+            if (token.isEmpty()) {
+                continue;
+            }
+
             if (jsonNode instanceof ObjectNode objectNode) {
                 jsonNode = objectNode.get(token);
             } else if (jsonNode instanceof ArrayNode arrayNode) {
@@ -168,6 +179,14 @@ public class BlueprintUtils {
     }
 
     public static DataNode convertToDataNode(String nodeName, BlueprintNode parentNode, Object data) {
+        if (data == null) {
+            return null;
+        }
+
+        if (data instanceof DataNode dataNode) {
+            return dataNode;
+        }
+
         var jsonNode = data instanceof String str
                 ? JsonUtils.getObjectMapper().getNodeFactory().textNode(str)
                 : JsonUtils.toJsonNode(data);
@@ -179,44 +198,43 @@ public class BlueprintUtils {
             return null;
         }
 
+        DataNode result = null;
         if (data instanceof BooleanNode boolNode) {
-            return new BoolValueNode(parentNode, nodeName, boolNode.booleanValue());
-        }
-
-        if (data instanceof TextNode textNode) {
-            return new StringValueNode(parentNode, nodeName, textNode.textValue());
-        }
-
-        if (data instanceof NumericNode numericNode) {
+            result = new BoolValueNode(parentNode, nodeName, boolNode.booleanValue());
+        } else if (data instanceof TextNode textNode) {
+            result = new StringValueNode(parentNode, nodeName, textNode.textValue());
+        } else if (data instanceof NumericNode numericNode) {
             if (numericNode.isBigInteger() || numericNode.isBigDecimal()) {
                 var nodePath = getNodePath(nodeName, parentNode);
                 throw new ServiceException(BlueprintErrorCode.BLUEPRINT_TEMPLATE_PARSING_FAILED,
                         "Big number is unsupported. Path: " + nodePath);
             } else if (numericNode.isIntegralNumber()) {
-                return new LongValueNode(parentNode, nodeName, numericNode.longValue());
+                result = new LongValueNode(parentNode, nodeName, numericNode.longValue());
             } else if (numericNode.isFloatingPointNumber()) {
-                return new DoubleValueNode(parentNode, nodeName, numericNode.doubleValue());
+                result = new DoubleValueNode(parentNode, nodeName, numericNode.doubleValue());
             }
-        }
-
-        if (data instanceof ObjectNode objectNode) {
+        } else if (data instanceof ObjectNode objectNode) {
             var mapDataNode = new MapDataNode(parentNode, nodeName);
             objectNode.fields().forEachRemaining(entry ->
                             mapDataNode.addChildNode(convertToDataNode(entry.getKey(), mapDataNode, entry.getValue())));
-            return mapDataNode;
-        }
-
-        if (data instanceof ArrayNode arrayNode) {
+            result = mapDataNode;
+        } else if (data instanceof ArrayNode arrayNode) {
             var arrayDataNode = new ArrayDataNode(parentNode, nodeName);
             for (var i = 0; i < arrayNode.size(); i++) {
                 var item = arrayNode.get(i);
                 var itemName = "[" + i + "]";
                 arrayDataNode.addChildNode(convertToDataNode(itemName, arrayDataNode, item));
             }
-            return arrayDataNode;
+            result = arrayDataNode;
         }
 
-        return null;
+        if (result == null) {
+            return null;
+        }
+
+        // The data node not contains any functions will be marked as finished directly
+        result.setBlueprintNodeStatus(BlueprintNodeStatus.FINISHED);
+        return result;
     }
 
     public static void loadObjectSchemaDefaultValues(JsonNode objectSchema, Map<String, Object> defaultValues) {
@@ -228,6 +246,32 @@ public class BlueprintUtils {
                 }
             });
         }
+    }
+
+    @Nullable
+    @SuppressWarnings("unchecked")
+    public static <T> T convertValue(Object value, Class<T> type) {
+        if (value == null) {
+            return null;
+        }
+
+        if (type.isInstance(value)) {
+            return (T) value;
+        }
+
+        if (String.class.equals(type) && (value instanceof Number || value instanceof Boolean)) {
+            return (T) String.valueOf(value);
+        }
+
+        if (Number.class.isAssignableFrom(type) || Boolean.class.equals(type)) {
+            try {
+                return JsonUtils.cast(value, type);
+            } catch (IllegalArgumentException e) {
+                log.warn("Convert value to {} failed.", type.getSimpleName(), e);
+            }
+        }
+
+        return null;
     }
 
 }

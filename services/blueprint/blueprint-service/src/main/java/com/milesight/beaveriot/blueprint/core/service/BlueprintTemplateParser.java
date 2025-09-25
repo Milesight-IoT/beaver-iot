@@ -14,7 +14,7 @@ import com.milesight.beaveriot.blueprint.core.enums.BlueprintErrorCode;
 import com.milesight.beaveriot.blueprint.core.model.ConstantsTemplate;
 import com.milesight.beaveriot.blueprint.core.model.ParametersObjectSchema;
 import com.milesight.beaveriot.blueprint.core.model.VariablesTemplate;
-import com.milesight.beaveriot.blueprint.support.TemplateLoader;
+import com.milesight.beaveriot.blueprint.support.ResourceLoader;
 import io.pebbletemplates.pebble.PebbleEngine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,8 +43,8 @@ public class BlueprintTemplateParser implements IBlueprintTemplateParser {
 
     @Override
     @Nullable
-    public JsonNode getVariableJsonSchema(TemplateLoader templateLoader, Map<String, Object> context) {
-        var variables = readTemplateAsType(templateLoader, BlueprintConstants.VARIABLES_TEMPLATE_FILE_NAME, context, VariablesTemplate.class);
+    public JsonNode getVariableJsonSchema(ResourceLoader resourceLoader, Map<String, Object> context) {
+        var variables = readTemplateAsType(resourceLoader, BlueprintConstants.VARIABLES_TEMPLATE_FILE_NAME, context, VariablesTemplate.class);
         if (variables == null) {
             log.info("variables.peb not found.");
             return null;
@@ -53,14 +53,14 @@ public class BlueprintTemplateParser implements IBlueprintTemplateParser {
     }
 
     @Override
-    public TemplateNode parseBlueprint(TemplateLoader templateLoader, Map<String, Object> context) {
-        var indexTemplateJsonNode = readTemplateAsJsonNode(templateLoader, BlueprintConstants.INDEX_TEMPLATE_FILE_NAME, context);
+    public TemplateNode parseBlueprint(ResourceLoader resourceLoader, Map<String, Object> context) {
+        var indexTemplateJsonNode = readTemplateAsJsonNode(resourceLoader, BlueprintConstants.INDEX_TEMPLATE_FILE_NAME, context);
         if (indexTemplateJsonNode == null) {
             throw new ServiceException(BlueprintErrorCode.BLUEPRINT_TEMPLATE_PARSING_FAILED, "index.peb not found.");
         }
 
         var tasks = new ArrayDeque<BlueprintNode.ProcessingTask>();
-        var blueprintChartContext = new BlueprintParseContext(tasks, templateLoader, indexTemplateJsonNode, context);
+        var blueprintChartContext = new BlueprintParseContext(tasks, resourceLoader, indexTemplateJsonNode, context);
         var root = templateNodeParser.parse(null, indexTemplateJsonNode, null, blueprintChartContext);
         blueprintChartContext.setRoot(root);
 
@@ -72,21 +72,21 @@ public class BlueprintTemplateParser implements IBlueprintTemplateParser {
     }
 
     @Override
-    public void loadConstantsIntoContext(TemplateLoader templateLoader, Map<String, Object> context) {
-        var constantsTemplate = readTemplateAsType(templateLoader, BlueprintConstants.CONSTANTS_TEMPLATE_FILE_NAME, context, ConstantsTemplate.class);
+    public void loadConstantsIntoContext(ResourceLoader resourceLoader, Map<String, Object> context) {
+        var constantsTemplate = readTemplateAsType(resourceLoader, BlueprintConstants.CONSTANTS_TEMPLATE_FILE_NAME, context, ConstantsTemplate.class);
         if (constantsTemplate != null && !CollectionUtils.isEmpty(constantsTemplate.getValues())) {
             context.put(BlueprintConstants.CONSTANTS_KEY, constantsTemplate.getValues());
         }
     }
 
     @Override
-    public <T> T readTemplateAsType(TemplateLoader templateLoader, String relativePath, Map<String, Object> context, Class<T> clazz) {
-        return JsonUtils.cast(readTemplateAsJsonNode(templateLoader, relativePath, context), clazz);
+    public <T> T readTemplateAsType(ResourceLoader resourceLoader, String relativePath, Map<String, Object> context, Class<T> clazz) {
+        return JsonUtils.cast(readTemplateAsJsonNode(resourceLoader, relativePath, context), clazz);
     }
 
     @Override
-    public JsonNode readTemplateAsJsonNode(TemplateLoader templateLoader, String relativePath, Map<String, Object> context) {
-        var yaml = readTemplateAsYaml(templateLoader, relativePath, context);
+    public JsonNode readTemplateAsJsonNode(ResourceLoader resourceLoader, String relativePath, Map<String, Object> context) {
+        var yaml = readTemplateAsYaml(resourceLoader, relativePath, context);
         if (yaml == null) {
             return null;
         }
@@ -95,8 +95,8 @@ public class BlueprintTemplateParser implements IBlueprintTemplateParser {
 
 
     @Override
-    public String readTemplateAsYaml(TemplateLoader templateLoader, String relativePath, Map<String, Object> context) {
-        try (var templateInputStream = templateLoader.loadTemplate(relativePath)) {
+    public String readTemplateAsYaml(ResourceLoader resourceLoader, String relativePath, Map<String, Object> context) {
+        try (var templateInputStream = resourceLoader.loadResource(relativePath)) {
             if (templateInputStream == null) {
                 return null;
             }

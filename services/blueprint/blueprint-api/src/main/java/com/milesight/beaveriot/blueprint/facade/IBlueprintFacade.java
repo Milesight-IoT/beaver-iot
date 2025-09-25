@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.blueprint.facade;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.milesight.beaveriot.blueprint.support.TemplateLoader;
+import com.milesight.beaveriot.blueprint.support.ResourceLoader;
 
 import java.util.Map;
 
@@ -11,12 +11,12 @@ import java.util.Map;
  **/
 public interface IBlueprintFacade {
 
-    Long deployBlueprint(TemplateLoader templateLoader, Map<String, Object> variables);
+    Long deployBlueprint(ResourceLoader resourceLoader, Map<String, Object> variables);
 
 
     void removeBlueprint(Long blueprintId);
 
 
-    JsonNode getVariableJsonSchema(TemplateLoader templateLoader);
+    JsonNode getVariableJsonSchema(ResourceLoader resourceLoader);
 
 }

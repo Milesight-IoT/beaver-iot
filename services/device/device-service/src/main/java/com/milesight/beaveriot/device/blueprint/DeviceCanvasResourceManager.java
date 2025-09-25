@@ -69,13 +69,13 @@ public class DeviceCanvasResourceManager implements ResourceManager<DeviceCanvas
         } else {
             var deviceId = accessor.getDeviceId();
             if (deviceId == null) {
-                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'device_id'! Path: " + BlueprintUtils.getNodePath(canvasNode, context.getRoot()));
+                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property: 'device_id'.");
             }
             log.info("blueprint create canvas for device: {}", deviceId);
 
             var data = accessor.getData();
             if (data == null) {
-                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property 'data'! Path: " + BlueprintUtils.getNodePath(canvasNode, context.getRoot()));
+                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property: 'data'.");
             }
 
             var deviceCanvasResponse = deviceCanvasService.getOrCreateDeviceCanvas(deviceId);

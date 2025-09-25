@@ -26,7 +26,7 @@ import java.util.Map;
  * Allows snakeyaml to parse YAML templates that contain short forms of
  * Blueprint intrinsic functions.
  * <p>
- * Inspired by jenkinsci/aws-sam-plugin (https://github.com/jenkinsci/aws-sam-plugin/blob/master/src/main/java/com/amazonaws/jenkins/plugins/sam/util/IntrinsicsYamlConstructor.java)
+ * Inspired by <a href="https://github.com/jenkinsci/aws-sam-plugin/blob/master/src/main/java/com/amazonaws/jenkins/plugins/sam/util/IntrinsicsYamlConstructor.java">jenkinsci/aws-sam-plugin</a>
  * License: MIT
  */
 @Slf4j

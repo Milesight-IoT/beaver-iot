@@ -79,14 +79,14 @@ public class IncludeNode extends AbstractObjectNode {
             templateContext.put(BlueprintConstants.PARAMETERS_KEY, parameterValues);
 
             var preRenderedTemplateJsonNode = blueprintTemplateParser.readTemplateAsJsonNode(
-                    context.getTemplateLoader(), templatePath.asText(), templateContext);
+                    context.getResourceLoader(), templatePath.asText(), templateContext);
             if (preRenderedTemplateJsonNode.get(TemplateNode.Fields.parameters) instanceof ObjectNode parameterSchema) {
                 var defaultValues = new HashMap<String, Object>();
                 BlueprintUtils.loadObjectSchemaDefaultValues(parameterSchema, defaultValues);
                 defaultValues.forEach((key, value) -> parameterValues.computeIfAbsent(key, k -> value));
             }
 
-            return blueprintTemplateParser.readTemplateAsJsonNode(context.getTemplateLoader(), templatePath.asText(), templateContext);
+            return blueprintTemplateParser.readTemplateAsJsonNode(context.getResourceLoader(), templatePath.asText(), templateContext);
         }
 
     }
