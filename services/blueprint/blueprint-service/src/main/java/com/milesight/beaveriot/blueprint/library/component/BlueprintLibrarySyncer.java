@@ -14,6 +14,7 @@ import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySyncStatus;
 import com.milesight.beaveriot.context.security.TenantContext;
+import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
 import com.milesight.beaveriot.user.facade.ITenantFacade;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +47,7 @@ public class BlueprintLibrarySyncer {
     private final BlueprintLibraryResourceService blueprintLibraryResourceService;
     private final BlueprintLibraryResourceResolver blueprintLibraryResourceResolver;
     private final ITenantFacade tenantFacade;
+    private final ResourceManagerFacade resourceManagerFacade;
     private final ApplicationProperties applicationProperties;
     private final List<Consumer<BlueprintLibrary>> listeners;
     private static final ExecutorService listenerExecutor = Executors.newCachedThreadPool();
@@ -56,7 +58,7 @@ public class BlueprintLibrarySyncer {
                                   BlueprintLibrarySubscriptionService blueprintLibrarySubscriptionService,
                                   BlueprintLibraryResourceService blueprintLibraryResourceService,
                                   BlueprintLibraryResourceResolver blueprintLibraryResourceResolver,
-                                  ITenantFacade tenantFacade,
+                                  ITenantFacade tenantFacade, ResourceManagerFacade resourceManagerFacade,
                                   ApplicationProperties applicationProperties) {
         this.blueprintLibraryAddressService = blueprintLibraryAddressService;
         this.blueprintLibraryService = blueprintLibraryService;
@@ -65,6 +67,7 @@ public class BlueprintLibrarySyncer {
         this.blueprintLibraryResourceService = blueprintLibraryResourceService;
         this.blueprintLibraryResourceResolver = blueprintLibraryResourceResolver;
         this.tenantFacade = tenantFacade;
+        this.resourceManagerFacade = resourceManagerFacade;
         this.applicationProperties = applicationProperties;
         this.listeners = new CopyOnWriteArrayList<>();
     }
@@ -158,78 +161,92 @@ public class BlueprintLibrarySyncer {
         }
 
         List<BlueprintLibraryResource> blueprintLibraryResources = new ArrayList<>();
-        Request request = new Request.Builder().url(codeZipUrl).build();
-        try (Response response = OkHttpUtil.getClient().newCall(request).execute();
-             InputStream inputStream = response.body() != null ? response.body().byteStream() : null) {
-            if (inputStream == null) {
-                throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
+        if (blueprintLibrary.getSourceType() == BlueprintLibrarySourceType.Upload) {
+            try (InputStream inputStream = resourceManagerFacade.getDataByUrl(codeZipUrl)) {
+                processZipFileInputStream(inputStream, blueprintLibrary, manifest, blueprintLibraryAddress, blueprintLibraryResources);
             }
-            try (ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
+        } else {
+            Request request = new Request.Builder().url(codeZipUrl).build();
+            try (Response response = OkHttpUtil.getClient().newCall(request).execute();
+                 InputStream inputStream = response.body() != null ? response.body().byteStream() : null) {
                 if (!response.isSuccessful()) {
                     throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
                 }
 
-                ZipEntry rootEntry = zipInputStream.getNextEntry();
-                if (rootEntry == null) {
-                    throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
-                }
-
-                String rootPrefix = rootEntry.getName();
-                if (!rootEntry.isDirectory() || !rootPrefix.endsWith("/")) {
-                    throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
-                }
-                zipInputStream.closeEntry();
-
-                ZipEntry entry;
-                while ((entry = zipInputStream.getNextEntry()) != null) {
-                    if (entry.isDirectory()) {
-                        zipInputStream.closeEntry();
-                        continue;
-                    }
-
-                    String entryName = entry.getName();
-                    if (!entryName.startsWith(rootPrefix)) {
-                        zipInputStream.closeEntry();
-                        continue;
-                    }
-
-                    String relativePath = entryName.substring(rootPrefix.length());
-                    if (relativePath.isEmpty()) {
-                        zipInputStream.closeEntry();
-                        continue;
-                    }
-
-                    byte[] bytes = zipInputStream.readAllBytes();
-                    String content = new String(bytes, StandardCharsets.UTF_8);
-                    BlueprintLibraryResource blueprintLibraryResource = BlueprintLibraryResource.builder()
-                            .path(relativePath)
-                            .content(content)
-                            .libraryId(blueprintLibrary.getId())
-                            .libraryVersion(manifest.getVersion())
-                            .build();
-                    blueprintLibraryResources.add(blueprintLibraryResource);
-                    zipInputStream.closeEntry();
-                }
+                processZipFileInputStream(inputStream, blueprintLibrary, manifest, blueprintLibraryAddress, blueprintLibraryResources);
             }
-
-            if (blueprintLibraryResources.isEmpty()) {
-                throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
-            }
-
-            blueprintLibraryResourceService.deleteAllByLibraryIdAndLibraryVersion(blueprintLibrary.getId(), manifest.getVersion());
-            blueprintLibraryResourceService.batchSave(blueprintLibraryResources);
-
-            BlueprintLibrary oldBlueprintLibrary = BlueprintLibrary.clone(blueprintLibrary);
-            blueprintLibrary.setCurrentVersion(manifest.getVersion());
-            syncDoneWithMessage(blueprintLibrary, "Synced blueprint library successfully");
-            saveBlueprintLibraryVersion(blueprintLibrary);
-            updateBlueprintLibrarySubscriptionsForAllTenants(blueprintLibrary, blueprintLibraryAddress);
-
-            tenantFacade.runWithAllTenants(() -> evictCaches(oldBlueprintLibrary));
         }
 
         notifyListeners(blueprintLibrary);
         log.debug("Fishing syncing blueprint library: {}, time: {} ms", blueprintLibraryAddress.getKey(), System.currentTimeMillis() - start);
+    }
+
+    private void processZipFileInputStream(InputStream inputStream, BlueprintLibrary blueprintLibrary,
+                   BlueprintLibraryManifest manifest,
+                   BlueprintLibraryAddress blueprintLibraryAddress,
+                   List<BlueprintLibraryResource> blueprintLibraryResources) throws Exception {
+        if (inputStream == null) {
+            throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
+        }
+
+        try (ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
+            ZipEntry rootEntry = zipInputStream.getNextEntry();
+            if (rootEntry == null) {
+                throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
+            }
+
+            String rootPrefix = rootEntry.getName();
+            if (!rootEntry.isDirectory() || !rootPrefix.endsWith("/")) {
+                throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
+            }
+            zipInputStream.closeEntry();
+
+            ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                if (entry.isDirectory()) {
+                    zipInputStream.closeEntry();
+                    continue;
+                }
+
+                String entryName = entry.getName();
+                if (!entryName.startsWith(rootPrefix)) {
+                    zipInputStream.closeEntry();
+                    continue;
+                }
+
+                String relativePath = entryName.substring(rootPrefix.length());
+                if (relativePath.isEmpty()) {
+                    zipInputStream.closeEntry();
+                    continue;
+                }
+
+                byte[] bytes = zipInputStream.readAllBytes();
+                String content = new String(bytes, StandardCharsets.UTF_8);
+                BlueprintLibraryResource blueprintLibraryResource = BlueprintLibraryResource.builder()
+                        .path(relativePath)
+                        .content(content)
+                        .libraryId(blueprintLibrary.getId())
+                        .libraryVersion(manifest.getVersion())
+                        .build();
+                blueprintLibraryResources.add(blueprintLibraryResource);
+                zipInputStream.closeEntry();
+            }
+        }
+
+        if (blueprintLibraryResources.isEmpty()) {
+            throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
+        }
+
+        blueprintLibraryResourceService.deleteAllByLibraryIdAndLibraryVersion(blueprintLibrary.getId(), manifest.getVersion());
+        blueprintLibraryResourceService.batchSave(blueprintLibraryResources);
+
+        BlueprintLibrary oldBlueprintLibrary = BlueprintLibrary.clone(blueprintLibrary);
+        blueprintLibrary.setCurrentVersion(manifest.getVersion());
+        syncDoneWithMessage(blueprintLibrary, "Synced blueprint library successfully");
+        saveBlueprintLibraryVersion(blueprintLibrary);
+        updateBlueprintLibrarySubscriptionsForAllTenants(blueprintLibrary, blueprintLibraryAddress);
+
+        tenantFacade.runWithAllTenants(() -> evictCaches(oldBlueprintLibrary));
     }
 
     private void saveBlueprintLibraryVersion(BlueprintLibrary blueprintLibrary) {
