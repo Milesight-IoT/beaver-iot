@@ -20,9 +20,12 @@ public interface BlueprintLibrarySubscriptionRepository extends BaseJpaRepositor
         return findAll();
     }
 
-    List<BlueprintLibrarySubscriptionPO> findAllByLibraryIdAndLibraryVersion(Long libraryId, String libraryVersion);
-
     List<BlueprintLibrarySubscriptionPO> findAllByLibraryId(Long libraryId);
+
+    @Tenant(enable = false)
+    default List<BlueprintLibrarySubscriptionPO> findAllByActiveTrueIgnoreTenant() {
+        return findAllByActiveTrue();
+    }
 
     List<BlueprintLibrarySubscriptionPO> findAllByActiveTrue();
 

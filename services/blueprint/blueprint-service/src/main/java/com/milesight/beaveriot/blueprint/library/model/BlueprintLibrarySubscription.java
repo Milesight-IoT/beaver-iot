@@ -14,4 +14,5 @@ public class BlueprintLibrarySubscription {
     private Long libraryId;
     private String libraryVersion;
     private Boolean active;
+    private String tenantId;
 }
