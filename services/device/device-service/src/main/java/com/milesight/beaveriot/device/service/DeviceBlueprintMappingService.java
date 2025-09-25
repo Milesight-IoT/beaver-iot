@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * author: Luxb
@@ -41,6 +42,10 @@ public class DeviceBlueprintMappingService implements IDeviceBlueprintMappingFac
         }
 
         return mappingPOs.get(0).getBlueprintId();
+    }
+
+    public List<DeviceBlueprintMappingPO> getBlueprintIdByDeviceIdList(List<Long> deviceIdList) {
+        return deviceBlueprintMappingRepository.findAllByDeviceIdIn(deviceIdList);
     }
 
     @Override

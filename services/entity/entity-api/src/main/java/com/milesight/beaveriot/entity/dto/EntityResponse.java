@@ -50,4 +50,6 @@ public class EntityResponse {
 
     private List<EntityTag> entityTags;
 
+    private EntityWorkflowData workflowData;
+
 }

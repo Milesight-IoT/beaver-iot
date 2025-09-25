@@ -12,3 +12,6 @@ CREATE TABLE `t_device_blueprint_mapping` (
 );
 
 CREATE INDEX idx_device_blueprint_mapping_tenant_id ON `t_device_blueprint_mapping` (tenant_id);
+
+--changeset simon:device_blueprint_mapping_v1.3.0_20250924_163000
+CREATE INDEX idx_device_blueprint_mapping_blueprint_id ON `t_device_blueprint_mapping` (blueprint_id);

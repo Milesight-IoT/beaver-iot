@@ -494,6 +494,7 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
                         .createdAt(devicePO.getCreatedAt())
                         .integrationId(devicePO.getIntegration())
                         .integrationConfig(integrationMap.get(devicePO.getIntegration()))
+                        .identifier(devicePO.getIdentifier())
                         .build())
                 .peek(device -> {
                     List<DeviceGroupPO> deviceGroupPOList = deviceIdToGroups.get(device.getId());
