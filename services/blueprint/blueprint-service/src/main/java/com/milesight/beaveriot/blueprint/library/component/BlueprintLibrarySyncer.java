@@ -13,6 +13,7 @@ import com.milesight.beaveriot.context.integration.model.BlueprintDeviceVendor;
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySyncStatus;
+import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.user.facade.ITenantFacade;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -324,14 +325,25 @@ public class BlueprintLibrarySyncer {
     }
 
     private void notifyListeners(BlueprintLibrary blueprintLibrary) {
-        BlueprintLibrary finalBlueprintLibrary = BlueprintLibrary.clone(blueprintLibrary);
-        listeners.forEach(listener -> CompletableFuture.runAsync(() -> {
-            try {
-                listener.accept(finalBlueprintLibrary);
-            } catch (Exception e) {
-                log.error("Listener failed", e);
+        List<BlueprintLibrarySubscription> blueprintLibrarySubscriptions = blueprintLibrarySubscriptionService.findAllByActiveTrueIgnoreTenant();
+        if (CollectionUtils.isEmpty(blueprintLibrarySubscriptions)) {
+            return;
+        }
+
+        for (BlueprintLibrarySubscription blueprintLibrarySubscription : blueprintLibrarySubscriptions) {
+            if (blueprintLibrarySubscription.getLibraryId().equals(blueprintLibrary.getId())) {
+                String tenantId = blueprintLibrarySubscription.getTenantId();
+                BlueprintLibrary finalBlueprintLibrary = BlueprintLibrary.clone(blueprintLibrary);
+                listeners.forEach(listener -> CompletableFuture.runAsync(() -> {
+                    try {
+                        TenantContext.setTenantId(tenantId);
+                        listener.accept(finalBlueprintLibrary);
+                    } catch (Exception e) {
+                        log.error("Listener failed", e);
+                    }
+                }, listenerExecutor));
             }
-        }, listenerExecutor));
+        }
     }
 
     @PreDestroy

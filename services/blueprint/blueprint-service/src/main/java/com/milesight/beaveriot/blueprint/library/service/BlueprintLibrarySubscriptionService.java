@@ -35,14 +35,6 @@ public class BlueprintLibrarySubscriptionService {
                 .toList();
     }
 
-    public BlueprintLibrarySubscription findByLibraryIdAndLibraryVersion(Long libraryId, String libraryVersion) {
-        return blueprintLibrarySubscriptionRepository.findAllByLibraryIdAndLibraryVersion(libraryId, libraryVersion)
-                .stream()
-                .map(this::convertPOtoModel)
-                .findFirst()
-                .orElse(null);
-    }
-
     public BlueprintLibrarySubscription findByLibraryId(Long libraryId) {
         return blueprintLibrarySubscriptionRepository.findAllByLibraryId(libraryId)
                 .stream()
@@ -53,6 +45,13 @@ public class BlueprintLibrarySubscriptionService {
 
     public void save(BlueprintLibrarySubscription model) {
         blueprintLibrarySubscriptionRepository.save(convertModelToPO(model));
+    }
+
+    public List<BlueprintLibrarySubscription> findAllByActiveTrueIgnoreTenant() {
+        return blueprintLibrarySubscriptionRepository.findAllByActiveTrueIgnoreTenant()
+                .stream()
+                .map(this::convertPOtoModel)
+                .toList();
     }
 
     public BlueprintLibrarySubscription findByActiveTrue() {
@@ -87,6 +86,7 @@ public class BlueprintLibrarySubscriptionService {
                 .libraryId(po.getLibraryId())
                 .libraryVersion(po.getLibraryVersion())
                 .active(po.getActive())
+                .tenantId(po.getTenantId())
                 .build();
     }
 }

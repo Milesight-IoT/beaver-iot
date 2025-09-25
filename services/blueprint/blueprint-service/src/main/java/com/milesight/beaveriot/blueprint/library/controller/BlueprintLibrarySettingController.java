@@ -17,6 +17,8 @@ import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySyncStatus;
 import com.milesight.beaveriot.context.model.BlueprintLibraryType;
+import com.milesight.beaveriot.permission.aspect.OperationPermission;
+import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.resource.manager.dto.ResourceRefDTO;
 import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +48,7 @@ public class BlueprintLibrarySettingController {
         this.resourceManagerFacade = resourceManagerFacade;
     }
 
+    @OperationPermission(codes = {OperationPermissionCode.CREDENTIALS_VIEW, OperationPermissionCode.CREDENTIALS_EDIT})
     @GetMapping("")
     public ResponseBody<QueryBlueprintLibrarySettingResponse> getBlueprintLibrarySetting() {
         QueryBlueprintLibrarySettingResponse response = new QueryBlueprintLibrarySettingResponse();
@@ -79,6 +82,7 @@ public class BlueprintLibrarySettingController {
         return url.substring(url.lastIndexOf("/") + 1);
     }
 
+    @OperationPermission(codes = OperationPermissionCode.CREDENTIALS_EDIT)
     @PostMapping("")
     public ResponseBody<Void> saveBlueprintLibrarySetting(@RequestBody SaveBlueprintLibrarySettingRequest request) throws Exception {
         String sourceType = request.getSourceType();
