@@ -10,6 +10,9 @@ import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.event.EntityEvent;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.context.security.TenantContext;
+import com.milesight.beaveriot.rule.manager.model.BlueprintDeviceData;
+import com.milesight.beaveriot.device.dto.DeviceNameDTO;
+import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.eventbus.annotations.EventSubscribe;
 import com.milesight.beaveriot.permission.aspect.OperationPermission;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
@@ -53,12 +56,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
@@ -81,6 +79,9 @@ public class WorkflowService {
 
     @Autowired
     WorkflowEntityRelationService workflowEntityRelationService;
+
+    @Autowired
+    IDeviceFacade deviceFacade;
 
     @Autowired
     MessagePubSub messagePubSub;
@@ -146,20 +147,48 @@ public class WorkflowService {
 
         // get user nicknames
         Map<String, String> userNicknameMap = new HashMap<>();
-        List<Long> userIds = workflowPOPage.map(WorkflowPO::getUserId).stream().distinct().toList();
+        Map<String, DeviceNameDTO> deviceNameMap = new HashMap<>();
+        Set<Long> userIds = new HashSet<>();
+        Set<Long> deviceIds = new HashSet<>();
+        workflowPOPage.forEach(workflowPO -> {
+            userIds.add(workflowPO.getUserId());
+            WorkflowAdditionalData additionalData = workflowPO.getAdditionalData();
+            if (additionalData != null && additionalData.getDeviceId() != null) {
+                deviceIds.add(Long.valueOf(additionalData.getDeviceId()));
+            }
+        });
         if (!userIds.isEmpty()) {
-            userFacade.getUserByIds(userIds).forEach(userDTO -> userNicknameMap.put(userDTO.getUserId(), userDTO.getNickname()));
+            userFacade.getUserByIds(userIds.stream().toList()).forEach(userDTO -> userNicknameMap.put(userDTO.getUserId(), userDTO.getNickname()));
+        }
+        if (!deviceIds.isEmpty()) {
+            deviceFacade.getDeviceNameByIds(deviceIds.stream().toList()).forEach(deviceNameDTO -> deviceNameMap.put(deviceNameDTO.getId().toString(), deviceNameDTO));
         }
 
-        return workflowPOPage.map(workflowPO -> WorkflowResponse.builder()
-                .id(workflowPO.getId().toString())
-                .name(workflowPO.getName())
-                .remark(workflowPO.getRemark())
-                .enabled(workflowPO.getEnabled())
-                .updatedAt(workflowPO.getUpdatedAt())
-                .createdAt(workflowPO.getCreatedAt())
-                .userNickname(userNicknameMap.get(workflowPO.getUserId().toString()))
-                .build()
+        return workflowPOPage.map(workflowPO -> {
+            WorkflowResponse response = WorkflowResponse.builder()
+                    .id(workflowPO.getId().toString())
+                    .name(workflowPO.getName())
+                    .remark(workflowPO.getRemark())
+                    .enabled(workflowPO.getEnabled())
+                    .updatedAt(workflowPO.getUpdatedAt())
+                    .createdAt(workflowPO.getCreatedAt())
+                    .userNickname(userNicknameMap.get(workflowPO.getUserId().toString()))
+                    .build();
+            WorkflowAdditionalData additionalData = workflowPO.getAdditionalData();
+            if (additionalData != null && additionalData.getDeviceId() != null) {
+                DeviceNameDTO deviceNameDTO = deviceNameMap.get(additionalData.getDeviceId());
+                if (deviceNameDTO == null) {
+                    return response;
+                }
+
+                BlueprintDeviceData deviceDataDTO = new BlueprintDeviceData();
+                deviceDataDTO.setId(deviceNameDTO.getId().toString());
+                deviceDataDTO.setIdentifier(deviceNameDTO.getIdentifier());
+                deviceDataDTO.setName(deviceNameDTO.getName());
+                response.setDeviceData(deviceDataDTO);
+            }
+            return response;
+        }
         );
     }
 

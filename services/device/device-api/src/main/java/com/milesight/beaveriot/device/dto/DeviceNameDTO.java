@@ -8,6 +8,7 @@ import lombok.*;
 public class DeviceNameDTO {
     private Long id;
     private String key;
+    private String identifier;
     private Long userId;
     private String integrationId;
     private String template;
