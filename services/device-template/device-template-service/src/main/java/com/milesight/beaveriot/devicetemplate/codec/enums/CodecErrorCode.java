@@ -7,7 +7,8 @@ import java.text.MessageFormat;
 
 public enum CodecErrorCode implements ErrorCodeSpec {
     CODEC_DECODE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR.value(), "codec_decode_failed", "Codec decode failed"),
-    CODEC_ENCODE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR.value(), "codec_encode_failed", "Codec encode failed");
+    CODEC_ENCODE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR.value(), "codec_encode_failed", "Codec encode failed"),
+    CODEC_EXECUTOR_BUILD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR.value(), "codec_executor_build_failed", "Codec executor build failed");
 
     private final String errorCode;
     private String errorMessage;

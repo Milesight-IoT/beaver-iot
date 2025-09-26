@@ -659,8 +659,14 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         String blueprintPath = blueprintLibraryResourceResolverFacade.buildResourcePath(workDir, blueprint.getDir());
         ResourceLoader loader = new DefaultResourceLoader(blueprintLibrary, blueprintPath);
         Map<String, Object> blueprintValues = buildBlueprintValues(device, blueprint.getValues());
-        Long blueprintId = blueprintFacade.deployBlueprint(loader, blueprintValues);
-        if (blueprintId == null) {
+
+        Long blueprintId;
+        try {
+            blueprintId = blueprintFacade.deployBlueprint(loader, blueprintValues);
+            if (blueprintId == null) {
+                throw ServiceException.with(ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorCode(), ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorMessage()).build();
+            }
+        } catch (Exception e) {
             throw ServiceException.with(ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorCode(), ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorMessage()).build();
         }
 
@@ -678,6 +684,9 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         DeviceTemplate deviceTemplate = deviceTemplateService.findByBlueprintLibrary(blueprintLibrary.getId(), blueprintLibrary.getCurrentVersion(), vendor, model);
         if (deviceTemplate == null) {
             String content = blueprintLibraryResourceResolverFacade.getDeviceTemplateContent(blueprintLibrary, vendor, model);
+            if (!validate(content)) {
+                return null;
+            }
             deviceTemplate = new DeviceTemplateBuilder(IntegrationConstants.SYSTEM_INTEGRATION_ID)
                     .name(DeviceTemplateHelper.getTemplateName(vendor, model))
                     .identifier(deviceTemplateIdentifier)

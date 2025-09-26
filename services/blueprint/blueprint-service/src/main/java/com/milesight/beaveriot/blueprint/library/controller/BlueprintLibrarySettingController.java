@@ -16,7 +16,6 @@ import com.milesight.beaveriot.blueprint.library.service.BlueprintLibrarySubscri
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySyncStatus;
-import com.milesight.beaveriot.context.model.BlueprintLibraryType;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.permission.aspect.OperationPermission;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
@@ -146,7 +145,7 @@ public class BlueprintLibrarySettingController {
     }
 
     private void tryLinkResource(BlueprintLibraryAddress blueprintLibraryAddress) {
-        if (blueprintLibraryAddress.getType() == BlueprintLibraryType.Zip) {
+        if (blueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.Upload) {
             try {
                 ResourceRefDTO resourceRefDTO = new ResourceRefDTO(blueprintLibraryAddress.getKey(), BlueprintLibraryAddress.RESOURCE_TYPE);
                 resourceManagerFacade.linkByUrl(blueprintLibraryAddress.getUrl(), resourceRefDTO);
