@@ -363,7 +363,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                 // Save device
                 deviceServiceProvider.save(device);
 
-                createDeviceBlueprint(device, blueprintLibrary, deviceTemplate.getVendor(), deviceTemplateModel, BlueprintCreationStrategy.Optional);
+                createDeviceBlueprint(device, blueprintLibrary, deviceTemplate.getVendor(), deviceTemplateModel, BlueprintCreationStrategy.OPTIONAL);
                 result.setDeviceAutoSaved(true);
             }
         }
@@ -524,7 +524,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                     deviceName,
                     false,
                     null,
-                    BlueprintCreationStrategy.Never);
+                    BlueprintCreationStrategy.NEVER);
         } catch (Exception e) {
             log.error(e.getMessage());
             if (e instanceof ServiceException) {
@@ -549,7 +549,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                     deviceIdentifier,
                     deviceName,
                     beforeSaveDevice,
-                    BlueprintCreationStrategy.Optional);
+                    BlueprintCreationStrategy.OPTIONAL);
         } catch (Exception e) {
             log.error(e.getMessage());
             if (e instanceof ServiceException) {
@@ -637,13 +637,13 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     }
 
     private void createDeviceBlueprint(Device device, BlueprintLibrary blueprintLibrary, String vendor, DeviceTemplateModel deviceTemplateModel, BlueprintCreationStrategy strategy) {
-        if (strategy == null || strategy == BlueprintCreationStrategy.Never) {
+        if (strategy == null || strategy == BlueprintCreationStrategy.NEVER) {
             return;
         }
 
         DeviceTemplateModel.Blueprint blueprint = deviceTemplateModel.getBlueprint();
         if (blueprint == null) {
-            if (strategy == BlueprintCreationStrategy.Optional) {
+            if (strategy == BlueprintCreationStrategy.OPTIONAL) {
                 return;
             }
 

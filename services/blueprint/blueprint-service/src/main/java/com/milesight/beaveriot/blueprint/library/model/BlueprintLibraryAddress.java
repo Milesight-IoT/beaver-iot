@@ -33,9 +33,9 @@ public abstract class BlueprintLibraryAddress {
         BlueprintLibraryType addressType = BlueprintLibraryType.of(type);
         BlueprintLibrarySourceType librarySourceType = BlueprintLibrarySourceType.of(sourceType);
         BlueprintLibraryAddress address = switch (addressType) {
-            case Github -> new BlueprintLibraryGithubAddress();
-            case Gitlab -> new BlueprintLibraryGitlabAddress();
-            case Zip -> new BlueprintLibraryZipAddress();
+            case GITHUB -> new BlueprintLibraryGithubAddress();
+            case GITLAB -> new BlueprintLibraryGitlabAddress();
+            case ZIP -> new BlueprintLibraryZipAddress();
         };
         address.setUrl(url);
         address.setBranch(branch);

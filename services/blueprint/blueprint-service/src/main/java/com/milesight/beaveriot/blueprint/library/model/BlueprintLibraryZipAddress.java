@@ -13,7 +13,7 @@ import lombok.EqualsAndHashCode;
 public class BlueprintLibraryZipAddress extends BlueprintLibraryAddress {
     public BlueprintLibraryZipAddress() {
         super();
-        setType(BlueprintLibraryType.Zip);
+        setType(BlueprintLibraryType.ZIP);
     }
 
     @Override

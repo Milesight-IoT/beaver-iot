@@ -108,7 +108,7 @@ public class BlueprintLibraryAddressService {
         if (activeBlueprintLibraryAddress == null) {
             activeBlueprintLibraryAddress = blueprintLibraryConfig.getDefaultBlueprintLibraryAddress();
         } else {
-            if (activeBlueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.Default && !isDefaultBlueprintLibraryAddress(activeBlueprintLibraryAddress)) {
+            if (activeBlueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.DEFAULT && !isDefaultBlueprintLibraryAddress(activeBlueprintLibraryAddress)) {
                 activeBlueprintLibraryAddress = blueprintLibraryConfig.getDefaultBlueprintLibraryAddress();
             }
         }
@@ -134,7 +134,7 @@ public class BlueprintLibraryAddressService {
         blueprintLibraryAddress.validate();
 
         String manifestContent;
-        if (blueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.Upload) {
+        if (blueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.UPLOAD) {
             manifestContent = getManifestContentFromZip(blueprintLibraryAddress.getCodeZipUrl(), blueprintLibraryAddress.getManifestFilePath());
         } else {
             String manifestUrl = blueprintLibraryAddress.getRawManifestUrl();

@@ -57,18 +57,18 @@ public class BlueprintLibrarySettingController {
         if (activeBlueprintLibraryAddress == null) {
             activeBlueprintLibraryAddress = blueprintLibraryAddressService.getDefaultBlueprintLibraryAddress();
         } else {
-            if (activeBlueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.Default && !blueprintLibraryAddressService.isDefaultBlueprintLibraryAddress(activeBlueprintLibraryAddress)) {
+            if (activeBlueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.DEFAULT && !blueprintLibraryAddressService.isDefaultBlueprintLibraryAddress(activeBlueprintLibraryAddress)) {
                 activeBlueprintLibraryAddress = blueprintLibraryAddressService.getDefaultBlueprintLibraryAddress();
             }
         }
 
         BlueprintLibrary activeBlueprintLibrary = blueprintLibraryService.getBlueprintLibrary(activeBlueprintLibraryAddress.getType().name(), activeBlueprintLibraryAddress.getUrl(), activeBlueprintLibraryAddress.getBranch());
         if (activeBlueprintLibrary != null) {
-            if (activeBlueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.Upload) {
-                response.setCurrentSourceType(BlueprintLibrarySourceType.Upload.name());
+            if (activeBlueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.UPLOAD) {
+                response.setCurrentSourceType(BlueprintLibrarySourceType.UPLOAD.name());
                 response.setFileName(getZipFileFromUrl(activeBlueprintLibrary.getUrl()));
             } else {
-                response.setCurrentSourceType(BlueprintLibrarySourceType.Default.name());
+                response.setCurrentSourceType(BlueprintLibrarySourceType.DEFAULT.name());
             }
             response.setVersion(activeBlueprintLibrary.getCurrentVersion());
             response.setUpdateTime(activeBlueprintLibrary.getSyncedAt());
@@ -99,7 +99,7 @@ public class BlueprintLibrarySettingController {
 
         // Step 1. Get blueprint library address
         BlueprintLibraryAddress blueprintLibraryAddress;
-        if (BlueprintLibrarySourceType.Default.name().equals(sourceType)) {
+        if (BlueprintLibrarySourceType.DEFAULT.name().equals(sourceType)) {
             blueprintLibraryAddress = blueprintLibraryAddressService.getDefaultBlueprintLibraryAddress();
         } else {
             blueprintLibraryAddress = BlueprintLibraryAddress.of(type, url, branch, sourceType);
@@ -131,7 +131,7 @@ public class BlueprintLibrarySettingController {
             blueprintLibrarySubscriptionService.save(blueprintLibrarySubscription);
         }
         blueprintLibrarySubscriptionService.setActiveOnlyByLibraryId(blueprintLibrary.getId());
-        if (BlueprintLibrarySourceType.Upload.name().equals(sourceType)) {
+        if (BlueprintLibrarySourceType.UPLOAD.name().equals(sourceType)) {
             tryLinkResource(blueprintLibraryAddress);
         }
 
@@ -141,11 +141,11 @@ public class BlueprintLibrarySettingController {
     }
 
     private boolean validateSourceType(String sourceType) {
-        return BlueprintLibrarySourceType.Default.name().equals(sourceType) || BlueprintLibrarySourceType.Upload.name().equals(sourceType);
+        return BlueprintLibrarySourceType.DEFAULT.name().equals(sourceType) || BlueprintLibrarySourceType.UPLOAD.name().equals(sourceType);
     }
 
     private void tryLinkResource(BlueprintLibraryAddress blueprintLibraryAddress) {
-        if (blueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.Upload) {
+        if (blueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.UPLOAD) {
             try {
                 ResourceRefDTO resourceRefDTO = new ResourceRefDTO(blueprintLibraryAddress.getKey(), BlueprintLibraryAddress.RESOURCE_TYPE);
                 resourceManagerFacade.linkByUrl(blueprintLibraryAddress.getUrl(), resourceRefDTO);

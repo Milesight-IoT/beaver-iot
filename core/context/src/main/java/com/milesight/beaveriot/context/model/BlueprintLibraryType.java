@@ -1,9 +1,9 @@
 package com.milesight.beaveriot.context.model;
 
 public enum BlueprintLibraryType {
-    Github,
-    Gitlab,
-    Zip;
+    GITHUB,
+    GITLAB,
+    ZIP;
 
     public static BlueprintLibraryType of(String type) {
         for (BlueprintLibraryType value : values()) {

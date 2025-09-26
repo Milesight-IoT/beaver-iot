@@ -225,7 +225,7 @@ application:
 blueprint:
   library:
     default_address:
-      type: Github
+      type: GITHUB
       url: https://github.com/zakersimonjack/beaver-iot-blueprint.git
       branch: main
     sync_frequency: 3h

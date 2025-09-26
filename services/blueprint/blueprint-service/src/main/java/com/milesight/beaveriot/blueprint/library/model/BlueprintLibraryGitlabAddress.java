@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 public class BlueprintLibraryGitlabAddress extends BlueprintLibraryAddress {
     public BlueprintLibraryGitlabAddress() {
         super();
-        setType(BlueprintLibraryType.Gitlab);
+        setType(BlueprintLibraryType.GITLAB);
     }
 
     @Override

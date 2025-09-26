@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 public class BlueprintLibraryGithubAddress extends BlueprintLibraryAddress {
     public BlueprintLibraryGithubAddress() {
         super();
-        setType(BlueprintLibraryType.Github);
+        setType(BlueprintLibraryType.GITHUB);
     }
 
     @Override

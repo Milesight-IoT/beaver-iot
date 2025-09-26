@@ -88,7 +88,7 @@ public class BlueprintLibrarySyncer {
                     .build();
         }
 
-        if (blueprintLibrary.getSourceType() == BlueprintLibrarySourceType.Upload && blueprintLibrary.getSyncStatus() == BlueprintLibrarySyncStatus.SYNCED) {
+        if (blueprintLibrary.getSourceType() == BlueprintLibrarySourceType.UPLOAD && blueprintLibrary.getSyncStatus() == BlueprintLibrarySyncStatus.SYNCED) {
             syncDoneWithMessage(blueprintLibrary,
                     MessageFormat.format("Skipping update for blueprint library {0} because it is already up to date", blueprintLibraryAddress.getKey()));
             return blueprintLibrary;
@@ -163,7 +163,7 @@ public class BlueprintLibrarySyncer {
 
         List<BlueprintLibraryResource> blueprintLibraryResources = new ArrayList<>();
         try {
-            if (blueprintLibrary.getSourceType() == BlueprintLibrarySourceType.Upload) {
+            if (blueprintLibrary.getSourceType() == BlueprintLibrarySourceType.UPLOAD) {
                 try (InputStream inputStream = resourceManagerFacade.getDataByUrl(codeZipUrl)) {
                     syncBlueprintLibraryResources(inputStream, blueprintLibrary, manifest, blueprintLibraryAddress, blueprintLibraryResources);
                 }
@@ -300,7 +300,7 @@ public class BlueprintLibrarySyncer {
                     blueprintLibrarySubscriptionService.setActiveOnlyByLibraryId(libraryId);
                 } else {
                     BlueprintLibrary activeBlueprintLibrary = blueprintLibraryService.findById(activeBlueprintLibrarySubscription.getLibraryId());
-                    if (!activeBlueprintLibrarySubscription.getLibraryId().equals(libraryId) && activeBlueprintLibrary.getSourceType() == BlueprintLibrarySourceType.Default) {
+                    if (!activeBlueprintLibrarySubscription.getLibraryId().equals(libraryId) && activeBlueprintLibrary.getSourceType() == BlueprintLibrarySourceType.DEFAULT) {
                         // Switch the latest default blueprint library active
                         blueprintLibrarySubscriptionService.save(blueprintLibrarySubscription);
                         blueprintLibrarySubscriptionService.setActiveOnlyByLibraryId(libraryId);
@@ -347,7 +347,7 @@ public class BlueprintLibrarySyncer {
 
                 assert activeBlueprintLibrarySubscription != null;
                 BlueprintLibrary activeBlueprintLibrary = blueprintLibraryService.findById(activeBlueprintLibrarySubscription.getLibraryId());
-                if (!activeBlueprintLibrarySubscription.getLibraryId().equals(libraryId) && activeBlueprintLibrary.getSourceType() == BlueprintLibrarySourceType.Default) {
+                if (!activeBlueprintLibrarySubscription.getLibraryId().equals(libraryId) && activeBlueprintLibrary.getSourceType() == BlueprintLibrarySourceType.DEFAULT) {
                     // Switch the latest default blueprint library active
                     blueprintLibrarySubscriptionService.setActiveOnlyByLibraryId(libraryId);
                 }
