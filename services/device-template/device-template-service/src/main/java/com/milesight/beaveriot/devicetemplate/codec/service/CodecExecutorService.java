@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.devicetemplate.codec.service;
 
+import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.blueprint.facade.IBlueprintLibraryResourceResolverFacade;
 import com.milesight.beaveriot.blueprint.model.BlueprintDeviceCodec;
@@ -11,6 +12,7 @@ import com.milesight.beaveriot.devicetemplate.codec.CodecExecutor;
 import com.milesight.beaveriot.devicetemplate.codec.chain.CodecExecutorChain;
 import com.milesight.beaveriot.devicetemplate.codec.chain.CodecExecutorDecoderChain;
 import com.milesight.beaveriot.devicetemplate.codec.chain.CodecExecutorEncoderChain;
+import com.milesight.beaveriot.devicetemplate.codec.enums.CodecErrorCode;
 import com.milesight.beaveriot.devicetemplate.facade.ICodecExecutorFacade;
 import com.milesight.beaveriot.devicetemplate.facade.IDeviceCodecExecutorFacade;
 import org.springframework.stereotype.Service;
@@ -36,12 +38,12 @@ public class CodecExecutorService implements ICodecExecutorFacade {
     public IDeviceCodecExecutorFacade getDeviceCodecExecutor(BlueprintLibrary blueprintLibrary, String vendor, String model) {
         String deviceTemplateContent = blueprintLibraryResourceResolverFacade.getDeviceTemplateContent(blueprintLibrary, vendor, model);
         if (deviceTemplateContent == null) {
-            return null;
+            throw ServiceException.with(CodecErrorCode.CODEC_EXECUTOR_BUILD_FAILED).build();
         }
 
         DeviceTemplateModel deviceTemplateModel = deviceTemplateParserProvider.parse(deviceTemplateContent);
         if (deviceTemplateModel == null) {
-            return null;
+            throw ServiceException.with(CodecErrorCode.CODEC_EXECUTOR_BUILD_FAILED).build();
         }
 
         DeviceTemplateModel.Codec codec = deviceTemplateModel.getCodec();
@@ -51,25 +53,25 @@ public class CodecExecutorService implements ICodecExecutorFacade {
 
         BlueprintDeviceCodec blueprintDeviceCodec = blueprintLibraryResourceResolverFacade.getBlueprintDeviceCodec(blueprintLibrary, vendor, codec.getRef(), codec.getId());
         if (blueprintDeviceCodec == null) {
-            return null;
+            throw ServiceException.with(CodecErrorCode.CODEC_EXECUTOR_BUILD_FAILED).build();
         }
 
         if (!blueprintDeviceCodec.validate()) {
-            return null;
+            throw ServiceException.with(CodecErrorCode.CODEC_EXECUTOR_BUILD_FAILED).build();
         }
 
         CodecExecutorDecoderChain decoderChain = createCodecExecutorChain(vendor,
                 () -> CodecExecutorDecoderChain.builder().build(),
                 blueprintDeviceCodec.getDecoder().getChain());
         if (decoderChain == null) {
-            return null;
+            throw ServiceException.with(CodecErrorCode.CODEC_EXECUTOR_BUILD_FAILED).build();
         }
 
         CodecExecutorEncoderChain encoderChain = createCodecExecutorChain(vendor,
                 () -> CodecExecutorEncoderChain.builder().build(),
                 blueprintDeviceCodec.getEncoder().getChain());
         if (encoderChain == null) {
-            return null;
+            throw ServiceException.with(CodecErrorCode.CODEC_EXECUTOR_BUILD_FAILED).build();
         }
 
         return DeviceCodecExecutorService.of(decoderChain, encoderChain);
