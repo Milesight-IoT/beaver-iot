@@ -59,7 +59,6 @@ public class EntityExportService {
         return zonedDateTime.format(DEFAULT_DATETIME_FORMATTER);
     }
 
-    @OperationPermission(codes = OperationPermissionCode.ENTITY_DATA_EXPORT)
     public void export(EntityExportRequest entityExportRequest, HttpServletResponse httpServletResponse) throws IOException {
 
         log.info("Export entity data: {}", entityExportRequest);

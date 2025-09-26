@@ -138,11 +138,15 @@ public class WorkflowService {
             request.sort(new Sorts().desc(WorkflowPO.Fields.id));
         }
 
+        String requestName = request.getName().trim();
         // get workflows
         Page<WorkflowPO> workflowPOPage = workflowRepository
-                .findAllWithDataPermission(f -> f
-                            .likeIgnoreCase(StringUtils.hasText(request.getName().trim()), WorkflowPO.Fields.name, request.getName().trim())
-                            .eq(request.getEnabled() != null, WorkflowPO.Fields.enabled, request.getEnabled())
+                .findAllWithDataPermission(f ->
+                                f.or(fo -> fo
+                                        .likeIgnoreCase(StringUtils.hasText(requestName), WorkflowPO.Fields.name, requestName)
+                                        .eq(StringUtils.hasText(requestName), WorkflowPO.Fields.id, requestName)
+                                )
+                                .eq(request.getEnabled() != null, WorkflowPO.Fields.enabled, request.getEnabled())
                         , request.toPageable());
 
         // get user nicknames

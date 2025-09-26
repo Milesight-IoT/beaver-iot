@@ -46,13 +46,27 @@ public class EntityController {
     @Autowired
     EntityExportService entityExportService;
 
-    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.ENTITY_CUSTOM_VIEW, OperationPermissionCode.ENTITY_DATA_VIEW, OperationPermissionCode.WORKFLOW_ADD, OperationPermissionCode.WORKFLOW_EDIT})
+    @OperationPermission(codes = {
+            OperationPermissionCode.DASHBOARD_EDIT,
+            OperationPermissionCode.ENTITY_CUSTOM_VIEW,
+            OperationPermissionCode.ENTITY_DATA_VIEW,
+            OperationPermissionCode.WORKFLOW_ADD,
+            OperationPermissionCode.WORKFLOW_EDIT,
+            OperationPermissionCode.DEVICE_VIEW
+    })
     @PostMapping("/advanced-search")
     public ResponseBody<Page<EntityResponse>> advancedSearch(@RequestBody EntityAdvancedSearchQuery query) {
         return ResponseBuilder.success(entityService.advancedSearch(query));
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.ENTITY_CUSTOM_VIEW, OperationPermissionCode.ENTITY_DATA_VIEW, OperationPermissionCode.WORKFLOW_ADD, OperationPermissionCode.WORKFLOW_EDIT})
+    @OperationPermission(codes = {
+            OperationPermissionCode.DASHBOARD_EDIT,
+            OperationPermissionCode.ENTITY_CUSTOM_VIEW,
+            OperationPermissionCode.ENTITY_DATA_VIEW,
+            OperationPermissionCode.WORKFLOW_ADD,
+            OperationPermissionCode.WORKFLOW_EDIT,
+            OperationPermissionCode.DEVICE_VIEW
+    })
     @PostMapping("/search")
     public ResponseBody<Page<EntityResponse>> search(@RequestBody EntityQuery entityQuery) {
         Page<EntityResponse> entityResponse = entityService.search(entityQuery);
@@ -66,7 +80,14 @@ public class EntityController {
         return ResponseBuilder.success(entityResponse);
     }
 
-    @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW, OperationPermissionCode.ENTITY_DATA_VIEW, OperationPermissionCode.WORKFLOW_ADD, OperationPermissionCode.WORKFLOW_EDIT})
+    @OperationPermission(codes = {
+            OperationPermissionCode.DASHBOARD_EDIT,
+            OperationPermissionCode.DASHBOARD_VIEW,
+            OperationPermissionCode.ENTITY_DATA_VIEW,
+            OperationPermissionCode.WORKFLOW_ADD,
+            OperationPermissionCode.WORKFLOW_EDIT,
+            OperationPermissionCode.DEVICE_VIEW
+    })
     @PostMapping("/history/search")
     public ResponseBody<Page<EntityHistoryResponse>> historySearch(@RequestBody EntityHistoryQuery entityHistoryQuery) {
         Page<EntityHistoryResponse> entityHistoryResponse = entityValueService.historySearch(entityHistoryQuery);
@@ -153,7 +174,7 @@ public class EntityController {
      * Export entity data as a CSV file
      * @param entityExportRequest request body
      */
-    @OperationPermission(codes = OperationPermissionCode.ENTITY_DATA_EXPORT)
+    @OperationPermission(codes = OperationPermissionCode.ENTITY_DATA_VIEW)
     @GetMapping("/export")
     public void export(EntityExportRequest entityExportRequest, HttpServletResponse httpServletResponse) throws IOException {
         entityExportService.export(entityExportRequest, httpServletResponse);

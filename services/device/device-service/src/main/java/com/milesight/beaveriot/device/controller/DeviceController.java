@@ -32,9 +32,9 @@ public class DeviceController {
         return ResponseBuilder.success();
     }
 
-    @OperationPermission(codes = OperationPermissionCode.DEVICE_VIEW)
+    @OperationPermission(codes = {OperationPermissionCode.DEVICE_VIEW, OperationPermissionCode.DASHBOARD_VIEW, OperationPermissionCode.DASHBOARD_EDIT})
     @PostMapping("/search")
-    public ResponseBody<Page<DeviceResponseData>> searchDevice(@RequestBody @Valid SearchDeviceRequest searchDeviceRequest) throws JsonProcessingException {
+    public ResponseBody<Page<DeviceResponseData>> searchDevice(@RequestBody @Valid SearchDeviceRequest searchDeviceRequest) {
         return ResponseBuilder.success(deviceService.searchDevice(searchDeviceRequest));
     }
 
@@ -65,7 +65,7 @@ public class DeviceController {
         return ResponseBuilder.success();
     }
 
-    @OperationPermission(codes = OperationPermissionCode.DEVICE_VIEW)
+    @OperationPermission(codes = {OperationPermissionCode.DEVICE_VIEW, OperationPermissionCode.DASHBOARD_VIEW})
     @GetMapping("/{deviceId}/canvas")
     public ResponseBody<DeviceCanvasResponse> getDeviceCanvas(@PathVariable("deviceId") Long deviceId) {
         return ResponseBuilder.success(deviceCanvasService.getOrCreateDeviceCanvas(deviceId));
