@@ -28,7 +28,6 @@ public enum OperationPermissionCode implements MenuItem {
 
     ENTITY_DATA_VIEW(4001L, "entity_data.view", MenuCode.ENTITY_DATA),
     ENTITY_DATA_EDIT(4002L, "entity_data.edit", MenuCode.ENTITY_DATA),
-    ENTITY_DATA_EXPORT(4003L, "entity_data.export", MenuCode.ENTITY_DATA),
 
     WORKFLOW_VIEW(5001L, "workflow.view", MenuCode.WORKFLOW),
     WORKFLOW_ADD(5002L, "workflow.add", MenuCode.WORKFLOW),

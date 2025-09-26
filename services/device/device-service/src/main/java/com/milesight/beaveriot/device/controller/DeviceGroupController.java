@@ -26,13 +26,13 @@ public class DeviceGroupController {
     @Autowired
     DeviceGroupService deviceGroupService;
 
-    @OperationPermission(codes = OperationPermissionCode.DEVICE_VIEW)
+    @OperationPermission(codes = {OperationPermissionCode.DEVICE_VIEW, OperationPermissionCode.DASHBOARD_EDIT})
     @PostMapping("/search")
     public ResponseBody<Page<DeviceGroupResponseData>> searchGroup(@RequestBody @Valid SearchDeviceGroupRequest request) {
         return ResponseBuilder.success(deviceGroupService.search(request));
     }
 
-    @OperationPermission(codes = OperationPermissionCode.DEVICE_VIEW)
+    @OperationPermission(codes = {OperationPermissionCode.DEVICE_VIEW, OperationPermissionCode.DASHBOARD_EDIT})
     @GetMapping("/number")
     public ResponseBody<DeviceGroupNumberResponse> countGroup() {
         return ResponseBuilder.success(new DeviceGroupNumberResponse(deviceGroupService.countDeviceGroup()));
