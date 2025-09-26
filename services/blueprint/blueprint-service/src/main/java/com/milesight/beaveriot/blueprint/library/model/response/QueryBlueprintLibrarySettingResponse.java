@@ -9,6 +9,8 @@ import lombok.Data;
 @Data
 public class QueryBlueprintLibrarySettingResponse {
     private String currentSourceType;
+    private String type;
+    private String url;
     private String fileName;
     private String version;
     private Long updateTime;

@@ -16,4 +16,5 @@ public interface ResourceManagerFacade {
     void unlinkRef(ResourceRefDTO resourceRefDTO);
 
     InputStream getDataByUrl(String url);
+    String getResourceNameByUrl(String url);
 }

@@ -64,29 +64,26 @@ public class BlueprintLibrarySettingController {
         }
 
         BlueprintLibrary activeBlueprintLibrary = blueprintLibraryService.getBlueprintLibrary(activeBlueprintLibraryAddress.getType().name(), activeBlueprintLibraryAddress.getUrl(), activeBlueprintLibraryAddress.getBranch());
-        if (activeBlueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.Upload) {
-            response.setCurrentSourceType(BlueprintLibrarySourceType.Upload.name());
-            if (activeBlueprintLibrary != null) {
-                response.setVersion(activeBlueprintLibrary.getCurrentVersion());
+        if (activeBlueprintLibrary != null) {
+            if (activeBlueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.Upload) {
+                response.setCurrentSourceType(BlueprintLibrarySourceType.Upload.name());
                 response.setFileName(getZipFileFromUrl(activeBlueprintLibrary.getUrl()));
-                boolean syncedSuccess = activeBlueprintLibrary.getSyncStatus() == BlueprintLibrarySyncStatus.SYNCED;
-                response.setSyncedSuccess(syncedSuccess);
+            } else {
+                response.setCurrentSourceType(BlueprintLibrarySourceType.Default.name());
             }
-        } else {
-            response.setCurrentSourceType(BlueprintLibrarySourceType.Default.name());
-            if (activeBlueprintLibrary != null) {
-                response.setVersion(activeBlueprintLibrary.getCurrentVersion());
-                boolean syncedSuccess = activeBlueprintLibrary.getSyncStatus() == BlueprintLibrarySyncStatus.SYNCED;
-                response.setUpdateTime(activeBlueprintLibrary.getSyncedAt());
-                response.setSyncedSuccess(syncedSuccess);
-            }
+            response.setVersion(activeBlueprintLibrary.getCurrentVersion());
+            response.setUpdateTime(activeBlueprintLibrary.getSyncedAt());
+            boolean syncedSuccess = activeBlueprintLibrary.getSyncStatus() == BlueprintLibrarySyncStatus.SYNCED;
+            response.setSyncedSuccess(syncedSuccess);
+            response.setType(activeBlueprintLibrary.getType().name());
+            response.setUrl(activeBlueprintLibrary.getUrl());
         }
 
         return ResponseBuilder.success(response);
     }
 
     private String getZipFileFromUrl(String url) {
-        return url.substring(url.lastIndexOf("/") + 1);
+        return resourceManagerFacade.getResourceNameByUrl(url);
     }
 
     @OperationPermission(codes = OperationPermissionCode.CREDENTIALS_EDIT)

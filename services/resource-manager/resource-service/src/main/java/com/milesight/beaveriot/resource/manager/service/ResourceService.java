@@ -172,6 +172,16 @@ public class ResourceService implements ResourceManagerFacade {
         return resourceStorage.get(resourcePO.getKey());
     }
 
+    @Override
+    public String getResourceNameByUrl(String url) {
+        ResourcePO resourcePO = resourceRepository.findOneByUrl(url);
+        if (resourcePO == null) {
+            throw ServiceException.with(ErrorCode.DATA_NO_FOUND.getErrorCode(), "Resource url not found: " + url).build();
+        }
+
+        return resourcePO.getName();
+    }
+
     /**
      * Detect the resources and remove those that have no links.
      *

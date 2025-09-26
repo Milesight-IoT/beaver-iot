@@ -11,7 +11,6 @@ import com.milesight.beaveriot.blueprint.library.model.BlueprintLibrarySubscript
 import com.milesight.beaveriot.blueprint.library.support.YamlConverter;
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
-import com.milesight.beaveriot.context.model.BlueprintLibraryType;
 import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -135,7 +134,7 @@ public class BlueprintLibraryAddressService {
         blueprintLibraryAddress.validate();
 
         String manifestContent;
-        if (BlueprintLibraryType.Zip == blueprintLibraryAddress.getType()) {
+        if (blueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.Upload) {
             manifestContent = getManifestContentFromZip(blueprintLibraryAddress.getCodeZipUrl(), blueprintLibraryAddress.getManifestFilePath());
         } else {
             String manifestUrl = blueprintLibraryAddress.getRawManifestUrl();
