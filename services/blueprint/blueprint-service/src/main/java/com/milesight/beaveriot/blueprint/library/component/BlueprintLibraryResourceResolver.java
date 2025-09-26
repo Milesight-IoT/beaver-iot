@@ -20,6 +20,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -131,18 +132,18 @@ public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResour
     @Cacheable(cacheNames = Constants.CACHE_NAME_DEVICE_VENDORS, key = "#p0.type + ':' + #p0.url + '@' + #p0.branch + ':' + #p0.currentVersion", unless = "#result == null")
     public List<BlueprintDeviceVendor> getDeviceVendors(BlueprintLibrary blueprintLibrary) {
         if (blueprintLibrary == null) {
-            throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_NULL).build();
+            return Collections.emptyList();
         }
 
         BlueprintLibraryManifest manifest = getManifest(blueprintLibrary);
         if (manifest == null) {
-            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_MANIFEST_NOT_FOUND).build();
+            return Collections.emptyList();
         }
 
         String vendorsContent = getResourceContent(blueprintLibrary, manifest.getDeviceVendorIndex());
         BlueprintDeviceVendors vendors = YamlConverter.from(vendorsContent, BlueprintDeviceVendors.class);
         if (vendors == null) {
-            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDORS_NOT_FOUND).build();
+            return Collections.emptyList();
         }
         return vendors.getVendors();
     }
@@ -160,16 +161,14 @@ public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResour
     public List<BlueprintDeviceModel> getDeviceModels(BlueprintLibrary blueprintLibrary, String vendorId) {
         BlueprintDeviceVendor vendorDef = getDeviceVendor(blueprintLibrary, vendorId);
         if (vendorDef == null) {
-            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDOR_NOT_FOUND.getErrorCode(),
-                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_VENDOR_NOT_FOUND.formatMessage(vendorId)).build();
+            return Collections.emptyList();
         }
 
         String resourcePath = buildResourcePath(vendorDef.getWorkDir(), vendorDef.getModelIndex());
         String devicesContent = getResourceContent(blueprintLibrary, resourcePath);
         BlueprintDeviceModels deviceModels = YamlConverter.from(devicesContent, BlueprintDeviceModels.class);
         if (deviceModels == null) {
-            throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_MODELS_NOT_FOUND.getErrorCode(),
-                    BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_MODELS_NOT_FOUND.formatMessage(vendorId)).build();
+            return Collections.emptyList();
         }
         return deviceModels.getModels();
     }

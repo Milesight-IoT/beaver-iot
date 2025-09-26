@@ -2,6 +2,7 @@ package com.milesight.beaveriot.blueprint.library.component;
 
 import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
 import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
+import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.blueprint.library.client.utils.OkHttpUtil;
@@ -14,6 +15,7 @@ import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySyncStatus;
 import com.milesight.beaveriot.context.security.TenantContext;
+import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
 import com.milesight.beaveriot.user.facade.ITenantFacade;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +48,7 @@ public class BlueprintLibrarySyncer {
     private final BlueprintLibraryResourceService blueprintLibraryResourceService;
     private final BlueprintLibraryResourceResolver blueprintLibraryResourceResolver;
     private final ITenantFacade tenantFacade;
+    private final ResourceManagerFacade resourceManagerFacade;
     private final ApplicationProperties applicationProperties;
     private final List<Consumer<BlueprintLibrary>> listeners;
     private static final ExecutorService listenerExecutor = Executors.newCachedThreadPool();
@@ -56,7 +59,7 @@ public class BlueprintLibrarySyncer {
                                   BlueprintLibrarySubscriptionService blueprintLibrarySubscriptionService,
                                   BlueprintLibraryResourceService blueprintLibraryResourceService,
                                   BlueprintLibraryResourceResolver blueprintLibraryResourceResolver,
-                                  ITenantFacade tenantFacade,
+                                  ITenantFacade tenantFacade, ResourceManagerFacade resourceManagerFacade,
                                   ApplicationProperties applicationProperties) {
         this.blueprintLibraryAddressService = blueprintLibraryAddressService;
         this.blueprintLibraryService = blueprintLibraryService;
@@ -65,6 +68,7 @@ public class BlueprintLibrarySyncer {
         this.blueprintLibraryResourceService = blueprintLibraryResourceService;
         this.blueprintLibraryResourceResolver = blueprintLibraryResourceResolver;
         this.tenantFacade = tenantFacade;
+        this.resourceManagerFacade = resourceManagerFacade;
         this.applicationProperties = applicationProperties;
         this.listeners = new CopyOnWriteArrayList<>();
     }
@@ -101,7 +105,7 @@ public class BlueprintLibrarySyncer {
             if (!isNeedUpdateLibrary(blueprintLibrary, manifest.getVersion())) {
                 syncDoneWithMessage(blueprintLibrary,
                         MessageFormat.format("Skipping update for blueprint library {0} because it is already up to date", blueprintLibraryAddress.getKey()));
-                switchBlueprintLibrarySubscriptionIfNeeded(blueprintLibrary, blueprintLibraryAddress);
+                switchDefaultBlueprintLibrarySubscriptionForAllTenantsIfNeeded(blueprintLibrary, blueprintLibraryAddress);
                 return blueprintLibrary;
             }
 
@@ -117,7 +121,7 @@ public class BlueprintLibrarySyncer {
                         blueprintLibraryAddress.getKey(),
                         currentBeaverVersion,
                         manifest.getMinimumRequiredBeaverIotVersion()));
-                switchBlueprintLibrarySubscriptionIfNeeded(blueprintLibrary, blueprintLibraryAddress);
+                switchDefaultBlueprintLibrarySubscriptionForAllTenantsIfNeeded(blueprintLibrary, blueprintLibraryAddress);
                 return blueprintLibrary;
             }
 
@@ -158,78 +162,101 @@ public class BlueprintLibrarySyncer {
         }
 
         List<BlueprintLibraryResource> blueprintLibraryResources = new ArrayList<>();
-        Request request = new Request.Builder().url(codeZipUrl).build();
-        try (Response response = OkHttpUtil.getClient().newCall(request).execute();
-             InputStream inputStream = response.body() != null ? response.body().byteStream() : null) {
-            if (inputStream == null) {
-                throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
-            }
-            try (ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
-                if (!response.isSuccessful()) {
-                    throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
+        try {
+            if (blueprintLibrary.getSourceType() == BlueprintLibrarySourceType.Upload) {
+                try (InputStream inputStream = resourceManagerFacade.getDataByUrl(codeZipUrl)) {
+                    syncBlueprintLibraryResources(inputStream, blueprintLibrary, manifest, blueprintLibraryAddress, blueprintLibraryResources);
                 }
-
-                ZipEntry rootEntry = zipInputStream.getNextEntry();
-                if (rootEntry == null) {
-                    throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
-                }
-
-                String rootPrefix = rootEntry.getName();
-                if (!rootEntry.isDirectory() || !rootPrefix.endsWith("/")) {
-                    throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
-                }
-                zipInputStream.closeEntry();
-
-                ZipEntry entry;
-                while ((entry = zipInputStream.getNextEntry()) != null) {
-                    if (entry.isDirectory()) {
-                        zipInputStream.closeEntry();
-                        continue;
+            } else {
+                Request request = new Request.Builder().url(codeZipUrl).build();
+                try (Response response = OkHttpUtil.getClient().newCall(request).execute();
+                     InputStream inputStream = response.body() != null ? response.body().byteStream() : null) {
+                    if (!response.isSuccessful()) {
+                        throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
                     }
 
-                    String entryName = entry.getName();
-                    if (!entryName.startsWith(rootPrefix)) {
-                        zipInputStream.closeEntry();
-                        continue;
-                    }
-
-                    String relativePath = entryName.substring(rootPrefix.length());
-                    if (relativePath.isEmpty()) {
-                        zipInputStream.closeEntry();
-                        continue;
-                    }
-
-                    byte[] bytes = zipInputStream.readAllBytes();
-                    String content = new String(bytes, StandardCharsets.UTF_8);
-                    BlueprintLibraryResource blueprintLibraryResource = BlueprintLibraryResource.builder()
-                            .path(relativePath)
-                            .content(content)
-                            .libraryId(blueprintLibrary.getId())
-                            .libraryVersion(manifest.getVersion())
-                            .build();
-                    blueprintLibraryResources.add(blueprintLibraryResource);
-                    zipInputStream.closeEntry();
+                    syncBlueprintLibraryResources(inputStream, blueprintLibrary, manifest, blueprintLibraryAddress, blueprintLibraryResources);
                 }
             }
 
-            if (blueprintLibraryResources.isEmpty()) {
-                throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
+            notifyListeners(blueprintLibrary);
+        } catch (Exception e) {
+            if (e instanceof ServiceException) {
+                throw e;
+            } else {
+                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
             }
-
-            blueprintLibraryResourceService.deleteAllByLibraryIdAndLibraryVersion(blueprintLibrary.getId(), manifest.getVersion());
-            blueprintLibraryResourceService.batchSave(blueprintLibraryResources);
-
-            BlueprintLibrary oldBlueprintLibrary = BlueprintLibrary.clone(blueprintLibrary);
-            blueprintLibrary.setCurrentVersion(manifest.getVersion());
-            syncDoneWithMessage(blueprintLibrary, "Synced blueprint library successfully");
-            saveBlueprintLibraryVersion(blueprintLibrary);
-            updateBlueprintLibrarySubscriptionsForAllTenants(blueprintLibrary, blueprintLibraryAddress);
-
-            tenantFacade.runWithAllTenants(() -> evictCaches(oldBlueprintLibrary));
         }
 
-        notifyListeners(blueprintLibrary);
         log.debug("Fishing syncing blueprint library: {}, time: {} ms", blueprintLibraryAddress.getKey(), System.currentTimeMillis() - start);
+    }
+
+    private void syncBlueprintLibraryResources(InputStream inputStream, BlueprintLibrary blueprintLibrary,
+                                               BlueprintLibraryManifest manifest,
+                                               BlueprintLibraryAddress blueprintLibraryAddress,
+                                               List<BlueprintLibraryResource> blueprintLibraryResources) throws Exception {
+        if (inputStream == null) {
+            throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
+        }
+
+        try (ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
+            ZipEntry rootEntry = zipInputStream.getNextEntry();
+            if (rootEntry == null) {
+                throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
+            }
+
+            String rootPrefix = rootEntry.getName();
+            if (!rootEntry.isDirectory() || !rootPrefix.endsWith("/")) {
+                throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
+            }
+            zipInputStream.closeEntry();
+
+            ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                if (entry.isDirectory()) {
+                    zipInputStream.closeEntry();
+                    continue;
+                }
+
+                String entryName = entry.getName();
+                if (!entryName.startsWith(rootPrefix)) {
+                    zipInputStream.closeEntry();
+                    continue;
+                }
+
+                String relativePath = entryName.substring(rootPrefix.length());
+                if (relativePath.isEmpty()) {
+                    zipInputStream.closeEntry();
+                    continue;
+                }
+
+                byte[] bytes = zipInputStream.readAllBytes();
+                String content = new String(bytes, StandardCharsets.UTF_8);
+                BlueprintLibraryResource blueprintLibraryResource = BlueprintLibraryResource.builder()
+                        .path(relativePath)
+                        .content(content)
+                        .libraryId(blueprintLibrary.getId())
+                        .libraryVersion(manifest.getVersion())
+                        .build();
+                blueprintLibraryResources.add(blueprintLibraryResource);
+                zipInputStream.closeEntry();
+            }
+        }
+
+        if (blueprintLibraryResources.isEmpty()) {
+            throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
+        }
+
+        blueprintLibraryResourceService.deleteAllByLibraryIdAndLibraryVersion(blueprintLibrary.getId(), manifest.getVersion());
+        blueprintLibraryResourceService.batchSave(blueprintLibraryResources);
+
+        BlueprintLibrary oldBlueprintLibrary = BlueprintLibrary.clone(blueprintLibrary);
+        blueprintLibrary.setCurrentVersion(manifest.getVersion());
+        syncDoneWithMessage(blueprintLibrary, "Synced blueprint library successfully");
+        saveBlueprintLibraryVersion(blueprintLibrary);
+        updateBlueprintLibrarySubscriptionsForAllTenants(blueprintLibrary, blueprintLibraryAddress);
+
+        tenantFacade.runWithAllTenants(() -> evictCaches(oldBlueprintLibrary));
     }
 
     private void saveBlueprintLibraryVersion(BlueprintLibrary blueprintLibrary) {
@@ -253,16 +280,8 @@ public class BlueprintLibrarySyncer {
         String libraryVersion = blueprintLibrary.getCurrentVersion();
         tenantFacade.runWithAllTenants(() -> {
             List<BlueprintLibrarySubscription> blueprintLibrarySubscriptions = blueprintLibrarySubscriptionService.findAll();
-            BlueprintLibrarySubscription blueprintLibrarySubscription = blueprintLibrarySubscriptions
-                    .stream()
-                    .filter(subscription -> subscription.getLibraryId().equals(libraryId))
-                    .findFirst()
-                    .orElse(null);
-            BlueprintLibrarySubscription activeBlueprintLibrarySubscription = blueprintLibrarySubscriptions
-                    .stream()
-                    .filter(BlueprintLibrarySubscription::getActive)
-                    .findFirst()
-                    .orElse(null);
+            BlueprintLibrarySubscription blueprintLibrarySubscription = filterBlueprintLibrarySubscription(blueprintLibrarySubscriptions, libraryId);
+            BlueprintLibrarySubscription activeBlueprintLibrarySubscription = filterActiveBlueprintLibrarySubscription(blueprintLibrarySubscriptions);
 
             boolean isDefaultBlueprintLibraryAddress = blueprintLibraryAddressService.isDefaultBlueprintLibraryAddress(blueprintLibraryAddress);
             if (isDefaultBlueprintLibraryAddress) {
@@ -300,7 +319,23 @@ public class BlueprintLibrarySyncer {
         });
     }
 
-    private void switchBlueprintLibrarySubscriptionIfNeeded(BlueprintLibrary blueprintLibrary, BlueprintLibraryAddress blueprintLibraryAddress) {
+    private BlueprintLibrarySubscription filterBlueprintLibrarySubscription(List<BlueprintLibrarySubscription> blueprintLibrarySubscriptions, Long libraryId) {
+        return blueprintLibrarySubscriptions
+                .stream()
+                .filter(subscription -> subscription.getLibraryId().equals(libraryId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private BlueprintLibrarySubscription filterActiveBlueprintLibrarySubscription(List<BlueprintLibrarySubscription> blueprintLibrarySubscriptions) {
+        return blueprintLibrarySubscriptions
+                .stream()
+                .filter(BlueprintLibrarySubscription::getActive)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private void switchDefaultBlueprintLibrarySubscriptionForAllTenantsIfNeeded(BlueprintLibrary blueprintLibrary, BlueprintLibraryAddress blueprintLibraryAddress) {
         // Switch blueprint library subscriptions for all tenants if needed
         boolean isDefaultBlueprintLibraryAddress = blueprintLibraryAddressService.isDefaultBlueprintLibraryAddress(blueprintLibraryAddress);
         if (isDefaultBlueprintLibraryAddress) {
@@ -308,11 +343,7 @@ public class BlueprintLibrarySyncer {
 
             tenantFacade.runWithAllTenants(() -> {
                 List<BlueprintLibrarySubscription> blueprintLibrarySubscriptions = blueprintLibrarySubscriptionService.findAll();
-                BlueprintLibrarySubscription activeBlueprintLibrarySubscription = blueprintLibrarySubscriptions
-                        .stream()
-                        .filter(BlueprintLibrarySubscription::getActive)
-                        .findFirst()
-                        .orElse(null);
+                BlueprintLibrarySubscription activeBlueprintLibrarySubscription = filterActiveBlueprintLibrarySubscription(blueprintLibrarySubscriptions);
 
                 assert activeBlueprintLibrarySubscription != null;
                 BlueprintLibrary activeBlueprintLibrary = blueprintLibraryService.findById(activeBlueprintLibrarySubscription.getLibraryId());
@@ -333,17 +364,21 @@ public class BlueprintLibrarySyncer {
         for (BlueprintLibrarySubscription blueprintLibrarySubscription : blueprintLibrarySubscriptions) {
             if (blueprintLibrarySubscription.getLibraryId().equals(blueprintLibrary.getId())) {
                 String tenantId = blueprintLibrarySubscription.getTenantId();
-                BlueprintLibrary finalBlueprintLibrary = BlueprintLibrary.clone(blueprintLibrary);
-                listeners.forEach(listener -> CompletableFuture.runAsync(() -> {
-                    try {
-                        TenantContext.setTenantId(tenantId);
-                        listener.accept(finalBlueprintLibrary);
-                    } catch (Exception e) {
-                        log.error("Listener failed", e);
-                    }
-                }, listenerExecutor));
+                notifyListenersWithTenant(blueprintLibrary, tenantId);
             }
         }
+    }
+
+    public void notifyListenersWithTenant(BlueprintLibrary blueprintLibrary, String tenantId) {
+        BlueprintLibrary finalBlueprintLibrary = BlueprintLibrary.clone(blueprintLibrary);
+        listeners.forEach(listener -> CompletableFuture.runAsync(() -> {
+            try {
+                TenantContext.setTenantId(tenantId);
+                listener.accept(finalBlueprintLibrary);
+            } catch (Exception e) {
+                log.error("Listener failed", e);
+            }
+        }, listenerExecutor));
     }
 
     @PreDestroy

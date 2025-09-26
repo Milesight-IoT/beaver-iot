@@ -37,6 +37,6 @@ public class BlueprintLibraryZipAddress extends BlueprintLibraryAddress {
     }
 
     public static class BlueprintLibraryAddressValidator {
-        public static final String REGEX_ADDRESS_URL = "^https?://.+\\.zip$";
+        public static final String REGEX_ADDRESS_URL = "^(https?://|/).+\\.zip$";
     }
 }

@@ -10,10 +10,9 @@ import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryManifest;
 import com.milesight.beaveriot.blueprint.library.model.BlueprintLibrarySubscription;
 import com.milesight.beaveriot.blueprint.library.support.YamlConverter;
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
-import com.milesight.beaveriot.context.model.BlueprintLibraryType;
+import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
+import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.Request;
-import okhttp3.Response;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -34,13 +33,15 @@ public class BlueprintLibraryAddressService {
     private final BlueprintLibraryConfig blueprintLibraryConfig;
     private final BlueprintLibraryService blueprintLibraryService;
     private final BlueprintLibrarySubscriptionService blueprintLibrarySubscriptionService;
+    private final ResourceManagerFacade resourceManagerFacade;
 
     public BlueprintLibraryAddressService(BlueprintLibraryConfig blueprintLibraryConfig,
                                           @Lazy BlueprintLibraryService blueprintLibraryService,
-                                          BlueprintLibrarySubscriptionService blueprintLibrarySubscriptionService) {
+                                          BlueprintLibrarySubscriptionService blueprintLibrarySubscriptionService, ResourceManagerFacade resourceManagerFacade) {
         this.blueprintLibraryConfig = blueprintLibraryConfig;
         this.blueprintLibraryService = blueprintLibraryService;
         this.blueprintLibrarySubscriptionService = blueprintLibrarySubscriptionService;
+        this.resourceManagerFacade = resourceManagerFacade;
     }
 
     public List<BlueprintLibraryAddress> getDistinctBlueprintLibraryAddresses() {
@@ -106,6 +107,10 @@ public class BlueprintLibraryAddressService {
         BlueprintLibraryAddress activeBlueprintLibraryAddress = findByActiveTrue();
         if (activeBlueprintLibraryAddress == null) {
             activeBlueprintLibraryAddress = blueprintLibraryConfig.getDefaultBlueprintLibraryAddress();
+        } else {
+            if (activeBlueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.Default && !isDefaultBlueprintLibraryAddress(activeBlueprintLibraryAddress)) {
+                activeBlueprintLibraryAddress = blueprintLibraryConfig.getDefaultBlueprintLibraryAddress();
+            }
         }
         return activeBlueprintLibraryAddress;
     }
@@ -129,7 +134,7 @@ public class BlueprintLibraryAddressService {
         blueprintLibraryAddress.validate();
 
         String manifestContent;
-        if (BlueprintLibraryType.Zip == blueprintLibraryAddress.getType()) {
+        if (blueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.Upload) {
             manifestContent = getManifestContentFromZip(blueprintLibraryAddress.getCodeZipUrl(), blueprintLibraryAddress.getManifestFilePath());
         } else {
             String manifestUrl = blueprintLibraryAddress.getRawManifestUrl();
@@ -162,17 +167,12 @@ public class BlueprintLibraryAddressService {
     }
 
     private String getManifestContentFromZip(String zipUrl, String manifestFilePath) {
-        Request request = new Request.Builder().url(zipUrl).build();
-        try (Response response = OkHttpUtil.getClient().newCall(request).execute();
-             InputStream inputStream = response.body() != null ? response.body().byteStream() : null) {
+        try (InputStream inputStream = resourceManagerFacade.getDataByUrl(zipUrl)) {
             if (inputStream == null) {
                 return null;
             }
-            try (ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
-                if (!response.isSuccessful()) {
-                    return null;
-                }
 
+            try (ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
                 ZipEntry rootEntry = zipInputStream.getNextEntry();
                 if (rootEntry == null) {
                     return null;
