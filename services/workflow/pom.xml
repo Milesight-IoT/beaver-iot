@@ -16,6 +16,7 @@
     <modules>
         <module>workflow-manager</module>
         <module>workflow-service</module>
+        <module>workflow-api</module>
     </modules>
 
     <properties>

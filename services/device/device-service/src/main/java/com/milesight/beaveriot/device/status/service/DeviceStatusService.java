@@ -1,13 +1,12 @@
 package com.milesight.beaveriot.device.status.service;
 
-import com.milesight.beaveriot.context.api.DeviceStatusServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
-import com.milesight.beaveriot.context.integration.model.ExchangePayload;
+import com.milesight.beaveriot.context.integration.model.DeviceStatus;
 import com.milesight.beaveriot.device.status.DeviceStatusManager;
 import org.springframework.stereotype.Service;
 
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -15,50 +14,34 @@ import java.util.function.Function;
  * create: 2025/9/4 11:02
  **/
 @Service
-public class DeviceStatusService implements DeviceStatusServiceProvider {
+public class DeviceStatusService {
     private final DeviceStatusManager deviceStatusManager;
 
     public DeviceStatusService(DeviceStatusManager deviceStatusManager) {
         this.deviceStatusManager = deviceStatusManager;
     }
 
-    @Override
-    public void register(String integrationId) {
-        deviceStatusManager.register(integrationId);
+    public void register(String integrationId, Function<Device, Long> offlineTimeoutFetcher) {
+        deviceStatusManager.register(integrationId, offlineTimeoutFetcher);
     }
 
-    @Override
-    public void register(String integrationId, Function<Device, Long> offlineSecondsFetcher) {
-        deviceStatusManager.register(integrationId, offlineSecondsFetcher);
+    public void register(String integrationId, Function<Device, Long> offlineTimeoutFetcher, Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher) {
+        deviceStatusManager.register(integrationId, offlineTimeoutFetcher, batchOfflineTimeoutFetcher);
     }
 
-    @Override
-    public void register(String integrationId, BiConsumer<Device, ExchangePayload> onlineUpdater, Consumer<Device> offlineUpdater, Function<Device, Long> offlineSecondsFetcher) {
-        deviceStatusManager.register(integrationId, onlineUpdater, offlineUpdater, offlineSecondsFetcher);
+    public void deregister(Device device) {
+        deviceStatusManager.deregister(device);
     }
 
-    @Override
-    public void dataUploaded(Device device) {
-        deviceStatusManager.dataUploaded(device);
+    public void online(Device device) {
+        deviceStatusManager.online(device);
     }
 
-    @Override
-    public void dataUploaded(Device device, ExchangePayload payload) {
-        deviceStatusManager.dataUploaded(device, payload);
+    public void offline(Device device) {
+        deviceStatusManager.offline(device);
     }
 
-    @Override
-    public void updateDeviceStatusToOnline(Device device) {
-        deviceStatusManager.updateDeviceStatusToOnline(device);
-    }
-
-    @Override
-    public void updateDeviceStatusToOffline(Device device) {
-        deviceStatusManager.updateDeviceStatusToOffline(device);
-    }
-
-    @Override
-    public void deviceDeleted(Device device) {
-        deviceStatusManager.deviceDeleted(device);
+    public DeviceStatus status(Device device) {
+        return deviceStatusManager.status(device);
     }
 }

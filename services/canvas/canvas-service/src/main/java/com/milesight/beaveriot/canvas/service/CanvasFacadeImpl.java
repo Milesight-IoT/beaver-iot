@@ -2,9 +2,10 @@ package com.milesight.beaveriot.canvas.service;
 
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.canvas.enums.CanvasAttachType;
-import com.milesight.beaveriot.canvas.enums.CanvasOp;
 import com.milesight.beaveriot.canvas.facade.ICanvasFacade;
-import com.milesight.beaveriot.canvas.model.CanvasDTO;
+import com.milesight.beaveriot.canvas.model.dto.CanvasDTO;
+import com.milesight.beaveriot.canvas.model.request.CanvasUpdateRequest;
+import com.milesight.beaveriot.canvas.model.response.CanvasResponse;
 import com.milesight.beaveriot.canvas.po.CanvasPO;
 import com.milesight.beaveriot.canvas.repository.CanvasRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,12 @@ public class CanvasFacadeImpl implements ICanvasFacade {
     @Autowired
     CanvasRepository canvasRepository;
 
+    @Override
+    public CanvasResponse getCanvasData(Long canvasId) {
+        return canvasService.getCanvasData(canvasId);
+    }
+
+    @Override
     public CanvasDTO createCanvas(String name, CanvasAttachType attachType, String attachId) {
         Long canvasId = SnowflakeUtil.nextId();
         CanvasPO canvasPO = new CanvasPO();
@@ -38,6 +45,11 @@ public class CanvasFacadeImpl implements ICanvasFacade {
         return covertPOToDTO(canvasPO);
     }
 
+    @Override
+    public void updateCanvas(Long canvasId, CanvasUpdateRequest canvasUpdateRequest) {
+        canvasService.updateCanvas(canvasId, canvasUpdateRequest);
+    }
+
     private CanvasDTO covertPOToDTO(CanvasPO canvasPO) {
         CanvasDTO canvasDTO = new CanvasDTO();
         canvasDTO.setId(canvasPO.getId());
@@ -47,6 +59,7 @@ public class CanvasFacadeImpl implements ICanvasFacade {
         return canvasDTO;
     }
 
+    @Override
     public void deleteCanvasByAttach(CanvasAttachType attachType, List<String> attachIdList) {
         // get all related canvas
         List<CanvasPO> canvasPOList = canvasRepository.findAll(f -> f

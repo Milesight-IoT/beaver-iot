@@ -56,4 +56,16 @@ public class DeviceTemplatePO {
     @Column(name = "updated_at")
     @LastModifiedDate
     private Long updatedAt;
+
+    @Column(name = "vendor")
+    private String vendor;
+
+    @Column(name = "model")
+    private String model;
+
+    @Column(name = "blueprint_library_id")
+    private Long blueprintLibraryId;
+
+    @Column(name = "blueprint_library_version")
+    private String blueprintLibraryVersion;
 }

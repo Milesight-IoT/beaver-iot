@@ -43,12 +43,14 @@ public abstract class DeviceAssembler {
         Map<String, Entity> entities = new HashMap<>();
         commonEntities.forEach(entity -> entities.put(entity.getFullIdentifier(), entity));
         List<Entity> deviceEntities = new ArrayList<>(commonEntities);
-        originEntities.forEach(entity -> {
-            if (!entities.containsKey(entity.getFullIdentifier())) {
-                deviceEntities.add(entity);
-                entities.put(entity.getFullIdentifier(), entity);
-            }
-        });
+        if (originEntities != null) {
+            originEntities.forEach(entity -> {
+                if (!entities.containsKey(entity.getFullIdentifier())) {
+                    deviceEntities.add(entity);
+                    entities.put(entity.getFullIdentifier(), entity);
+                }
+            });
+        }
         return deviceEntities;
     }
 }

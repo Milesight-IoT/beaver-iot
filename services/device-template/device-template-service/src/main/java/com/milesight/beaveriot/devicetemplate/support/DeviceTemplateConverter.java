@@ -26,6 +26,10 @@ public class DeviceTemplateConverter {
                     .identifier(deviceTemplatePO.getIdentifier())
                     .id(deviceTemplatePO.getId())
                     .additional(deviceTemplatePO.getAdditionalData())
+                    .vendor(deviceTemplatePO.getVendor())
+                    .model(deviceTemplatePO.getModel())
+                    .blueprintLibraryId(deviceTemplatePO.getBlueprintLibraryId())
+                    .blueprintLibraryVersion(deviceTemplatePO.getBlueprintLibraryVersion())
                     .build();
             deviceTemplate.setCreatedAt(deviceTemplatePO.getCreatedAt());
             deviceTemplate.setUpdatedAt(deviceTemplatePO.getUpdatedAt());

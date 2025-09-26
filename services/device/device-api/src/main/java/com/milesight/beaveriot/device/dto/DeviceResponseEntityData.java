@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.device.dto;
 
+import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
 import lombok.*;
@@ -17,5 +18,7 @@ public class DeviceResponseEntityData {
     private EntityType type;
     private Map<String, Object> valueAttribute;
     private EntityValueType valueType;
+    private AccessMod accessMod;
     private String description;
+    private String parent;
 }

@@ -79,7 +79,7 @@ public class ServiceException extends BaseException {
     }
 
     public ServiceException(ErrorCodeSpec errorCodeSpec, Object args, Throwable throwable) {
-        this(errorCodeSpec.getStatus(), errorCodeSpec.getErrorCode(), errorCodeSpec.getErrorMessage(), errorCodeSpec.getDetailMessage(), args, throwable);
+        this(errorCodeSpec, errorCodeSpec.getDetailMessage(), args, throwable);
     }
 
     public ServiceException(ErrorCodeSpec errorCodeSpec, String detailMessage, Object args, Throwable throwable) {
@@ -100,11 +100,15 @@ public class ServiceException extends BaseException {
 
     @Override
     public String getMessage() {
-        return StringUtils.hasText(detailMessage) ? super.getMessage() + "," + detailMessage : super.getMessage();
+        return StringUtils.hasText(detailMessage) ? super.getMessage() + ": " + detailMessage : super.getMessage();
     }
 
     public String getDetailMessage() {
         return detailMessage;
+    }
+
+    public void setDetailMessage(String detailMessage) {
+        this.detailMessage = detailMessage;
     }
 
     public Object getArgs() {

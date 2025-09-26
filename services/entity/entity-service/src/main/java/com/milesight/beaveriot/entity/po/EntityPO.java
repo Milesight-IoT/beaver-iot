@@ -394,7 +394,7 @@ public class EntityPO {
             return;
         }
 
-        if (!(important instanceof Boolean)) {
+        if (!ValidationUtils.isPositiveInteger(important.toString())) {
             errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_ATTRIBUTE_IMPORTANT_INVALID.getErrorCode(),
                     EntityErrorCode.ENTITY_ATTRIBUTE_IMPORTANT_INVALID.formatMessage(entityKey),
                     entityData));

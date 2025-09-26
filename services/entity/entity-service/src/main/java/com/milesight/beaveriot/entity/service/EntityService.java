@@ -30,6 +30,7 @@ import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.entity.dto.EntityDeviceGroup;
 import com.milesight.beaveriot.entity.dto.EntityQuery;
 import com.milesight.beaveriot.entity.dto.EntityResponse;
+import com.milesight.beaveriot.entity.dto.EntityWorkflowData;
 import com.milesight.beaveriot.entity.enums.EntitySearchColumn;
 import com.milesight.beaveriot.entity.model.dto.EntityAdvancedSearchCondition;
 import com.milesight.beaveriot.entity.model.request.*;
@@ -41,6 +42,8 @@ import com.milesight.beaveriot.entity.repository.EntityRepository;
 import com.milesight.beaveriot.eventbus.EventBus;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
+import com.milesight.beaveriot.rule.dto.WorkflowNameDTO;
+import com.milesight.beaveriot.rule.facade.IWorkflowFacade;
 import com.milesight.beaveriot.user.dto.MenuDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
@@ -99,6 +102,9 @@ public class EntityService implements EntityServiceProvider {
 
     @Autowired
     private EntityTagService entityTagService;
+
+    @Autowired
+    private IWorkflowFacade workflowFacade;
 
     private static Entity convertPOToEntity(EntityPO entityPO, Map<String, DeviceNameDTO> deviceIdToDetails) {
         String integrationId = null;
@@ -585,7 +591,8 @@ public class EntityService implements EntityServiceProvider {
     private EntityResponse convertEntityPOToEntityResponse(EntityPO entityPO,
                                                            Map<String, Integration> integrationMap,
                                                            Map<String, DeviceNameDTO> deviceIdToDetails,
-                                                           Map<String, EntityPO> parentKeyMap) {
+                                                           Map<String, EntityPO> parentKeyMap,
+                                                           Map<Long, WorkflowNameDTO> entityWorkflowMap) {
         String deviceName = null;
         String deviceGroupId = null;
         String deviceGroupName = null;
@@ -612,7 +619,6 @@ public class EntityService implements EntityServiceProvider {
         }
 
         final EntityPO parentEntity = parentKeyMap.get(entityPO.getParent());
-        final String parentName = parentEntity == null ? null : parentEntity.getName();
         final EntityDeviceGroup deviceGroup = deviceGroupId == null ? null : new EntityDeviceGroup(deviceGroupId, deviceGroupName);
 
         EntityResponse response = new EntityResponse();
@@ -623,7 +629,7 @@ public class EntityService implements EntityServiceProvider {
         response.setEntityKey(entityPO.getKey());
         response.setEntityType(entityPO.getType());
         response.setEntityName(entityPO.getName());
-        response.setEntityParentName(entityPO.getParent() == null ? null : parentName);
+        response.setEntityParentName(parentEntity == null ? null : parentEntity.getName());
         response.setEntityValueAttribute(entityPO.getValueAttribute());
         response.setEntityValueType(entityPO.getValueType());
         response.setEntityIsCustomized(entityPO.checkIsCustomizedEntity());
@@ -631,6 +637,10 @@ public class EntityService implements EntityServiceProvider {
         response.setEntityUpdatedAt(entityPO.getUpdatedAt());
         response.setEntityDescription(entityPO.getDescription());
         response.setDeviceGroup(deviceGroup);
+        response.setWorkflowData(Optional.ofNullable(entityWorkflowMap.get(parentEntity == null ? entityPO.getId() : parentEntity.getId()))
+                .map(workflowNameDTO -> new EntityWorkflowData(workflowNameDTO.getWorkflowId().toString(), workflowNameDTO.getName()))
+                .orElse(null)
+        );
         return response;
     }
 
@@ -713,6 +723,12 @@ public class EntityService implements EntityServiceProvider {
                 .distinct()
                 .toList();
         Map<String, DeviceNameDTO> deviceIdToDetails = deviceIdToDetails(foundDeviceIds);
+        Map<Long, WorkflowNameDTO> entityWorkflowMap = new HashMap<>();
+        workflowFacade.getWorkflowsByEntities(parentEntityPOList.stream()
+                .filter(entityPO -> entityPO.getType().equals(EntityType.SERVICE))
+                .map(EntityPO::getId)
+                .toList()
+        ).forEach(workflowNameDTO -> entityWorkflowMap.put(workflowNameDTO.getEntityId(),  workflowNameDTO));
         Set<String> integrationIds = entityPOPage.stream()
                 .filter(entityPO -> AttachTargetType.INTEGRATION.equals(entityPO.getAttachTarget()))
                 .map(EntityPO::getAttachTargetId)
@@ -720,7 +736,7 @@ public class EntityService implements EntityServiceProvider {
         Map<String, Integration> integrationMap = integrationServiceProvider.findIntegrations(i -> integrationIds.contains(i.getId()))
                 .stream()
                 .collect(Collectors.toMap(Integration::getId, Function.identity(), (v1, v2) -> v1));
-        return entityPOPage.map(entityPO -> convertEntityPOToEntityResponse(entityPO, integrationMap, deviceIdToDetails, parentKeyMap));
+        return entityPOPage.map(entityPO -> convertEntityPOToEntityResponse(entityPO, integrationMap, deviceIdToDetails, parentKeyMap, entityWorkflowMap));
     }
 
     public EntityMetaResponse getEntityMeta(Long entityId) {

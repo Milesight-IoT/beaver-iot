@@ -89,12 +89,21 @@ public class EntityTemplate {
         SpELTemplateEvaluator evaluator = SpELTemplateEvaluator.getInstance();
         name = (String) evaluator.evaluate(name);
         description = (String) evaluator.evaluate(description);
-        if (attributes != null && attributes.get(AttributeBuilder.ATTRIBUTE_ENUM) != null) {
+
+        if (attributes != null) {
             Map<String, String> enums = (Map<String, String>) attributes.get(AttributeBuilder.ATTRIBUTE_ENUM);
-            enums.forEach((key, value) -> {
-                String newValue = (String) evaluator.evaluate(value);
-                enums.put(key, newValue);
-            });
+            if (enums != null) {
+                enums.forEach((key, value) -> {
+                    String newValue = (String) evaluator.evaluate(value);
+                    enums.put(key, newValue);
+                });
+            }
+
+            String unit = (String) attributes.get(AttributeBuilder.ATTRIBUTE_UNIT);
+            if (unit != null) {
+                String newValue = (String) evaluator.evaluate(unit);
+                attributes.put(AttributeBuilder.ATTRIBUTE_UNIT, newValue);
+            }
         }
     }
 

@@ -10,21 +10,34 @@ import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.event.EntityEvent;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.context.security.TenantContext;
+import com.milesight.beaveriot.rule.manager.model.BlueprintDeviceData;
+import com.milesight.beaveriot.device.dto.DeviceNameDTO;
+import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.eventbus.annotations.EventSubscribe;
 import com.milesight.beaveriot.permission.aspect.OperationPermission;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.pubsub.MessagePubSub;
 import com.milesight.beaveriot.rule.RuleEngineComponentManager;
 import com.milesight.beaveriot.rule.RuleEngineLifecycleManager;
+import com.milesight.beaveriot.rule.manager.model.WorkflowAdditionalData;
+import com.milesight.beaveriot.rule.manager.model.WorkflowCreateContext;
 import com.milesight.beaveriot.rule.manager.model.event.BaseWorkflowEvent;
 import com.milesight.beaveriot.rule.manager.model.event.WorkflowDeployEvent;
 import com.milesight.beaveriot.rule.manager.model.event.WorkflowRemoveEvent;
-import com.milesight.beaveriot.rule.manager.support.WorkflowTenantCache;
-import com.milesight.beaveriot.rule.manager.model.request.*;
-import com.milesight.beaveriot.rule.manager.model.response.*;
+import com.milesight.beaveriot.rule.manager.model.request.SaveWorkflowRequest;
+import com.milesight.beaveriot.rule.manager.model.request.SearchWorkflowRequest;
+import com.milesight.beaveriot.rule.manager.model.request.TestWorkflowNodeRequest;
+import com.milesight.beaveriot.rule.manager.model.request.TestWorkflowRequest;
+import com.milesight.beaveriot.rule.manager.model.request.ValidateWorkflowRequest;
+import com.milesight.beaveriot.rule.manager.model.response.SaveWorkflowResponse;
+import com.milesight.beaveriot.rule.manager.model.response.WorkflowComponentData;
+import com.milesight.beaveriot.rule.manager.model.response.WorkflowDesignResponse;
+import com.milesight.beaveriot.rule.manager.model.response.WorkflowResponse;
 import com.milesight.beaveriot.rule.manager.po.WorkflowHistoryPO;
 import com.milesight.beaveriot.rule.manager.po.WorkflowPO;
-import com.milesight.beaveriot.rule.manager.repository.*;
+import com.milesight.beaveriot.rule.manager.repository.WorkflowHistoryRepository;
+import com.milesight.beaveriot.rule.manager.repository.WorkflowRepository;
+import com.milesight.beaveriot.rule.manager.support.WorkflowTenantCache;
 import com.milesight.beaveriot.rule.model.RuleLanguage;
 import com.milesight.beaveriot.rule.model.flow.config.RuleEdgeConfig;
 import com.milesight.beaveriot.rule.model.flow.config.RuleFlowConfig;
@@ -66,6 +79,9 @@ public class WorkflowService {
 
     @Autowired
     WorkflowEntityRelationService workflowEntityRelationService;
+
+    @Autowired
+    IDeviceFacade deviceFacade;
 
     @Autowired
     MessagePubSub messagePubSub;
@@ -122,29 +138,61 @@ public class WorkflowService {
             request.sort(new Sorts().desc(WorkflowPO.Fields.id));
         }
 
+        String requestName = request.getName().trim();
         // get workflows
         Page<WorkflowPO> workflowPOPage = workflowRepository
-                .findAllWithDataPermission(f -> f
-                            .likeIgnoreCase(StringUtils.hasText(request.getName().trim()), WorkflowPO.Fields.name, request.getName().trim())
-                            .eq(request.getEnabled() != null, WorkflowPO.Fields.enabled, request.getEnabled())
+                .findAllWithDataPermission(f ->
+                                f.or(fo -> fo
+                                        .likeIgnoreCase(StringUtils.hasText(requestName), WorkflowPO.Fields.name, requestName)
+                                        .eq(StringUtils.hasText(requestName), WorkflowPO.Fields.id, requestName)
+                                )
+                                .eq(request.getEnabled() != null, WorkflowPO.Fields.enabled, request.getEnabled())
                         , request.toPageable());
 
         // get user nicknames
         Map<String, String> userNicknameMap = new HashMap<>();
-        List<Long> userIds = workflowPOPage.map(WorkflowPO::getUserId).stream().distinct().toList();
+        Map<String, DeviceNameDTO> deviceNameMap = new HashMap<>();
+        Set<Long> userIds = new HashSet<>();
+        Set<Long> deviceIds = new HashSet<>();
+        workflowPOPage.forEach(workflowPO -> {
+            userIds.add(workflowPO.getUserId());
+            WorkflowAdditionalData additionalData = workflowPO.getAdditionalData();
+            if (additionalData != null && additionalData.getDeviceId() != null) {
+                deviceIds.add(Long.valueOf(additionalData.getDeviceId()));
+            }
+        });
         if (!userIds.isEmpty()) {
-            userFacade.getUserByIds(userIds).forEach(userDTO -> userNicknameMap.put(userDTO.getUserId(), userDTO.getNickname()));
+            userFacade.getUserByIds(userIds.stream().toList()).forEach(userDTO -> userNicknameMap.put(userDTO.getUserId(), userDTO.getNickname()));
+        }
+        if (!deviceIds.isEmpty()) {
+            deviceFacade.getDeviceNameByIds(deviceIds.stream().toList()).forEach(deviceNameDTO -> deviceNameMap.put(deviceNameDTO.getId().toString(), deviceNameDTO));
         }
 
-        return workflowPOPage.map(workflowPO -> WorkflowResponse.builder()
-                .id(workflowPO.getId().toString())
-                .name(workflowPO.getName())
-                .remark(workflowPO.getRemark())
-                .enabled(workflowPO.getEnabled())
-                .updatedAt(workflowPO.getUpdatedAt())
-                .createdAt(workflowPO.getCreatedAt())
-                .userNickname(userNicknameMap.get(workflowPO.getUserId().toString()))
-                .build()
+        return workflowPOPage.map(workflowPO -> {
+            WorkflowResponse response = WorkflowResponse.builder()
+                    .id(workflowPO.getId().toString())
+                    .name(workflowPO.getName())
+                    .remark(workflowPO.getRemark())
+                    .enabled(workflowPO.getEnabled())
+                    .updatedAt(workflowPO.getUpdatedAt())
+                    .createdAt(workflowPO.getCreatedAt())
+                    .userNickname(userNicknameMap.get(workflowPO.getUserId().toString()))
+                    .build();
+            WorkflowAdditionalData additionalData = workflowPO.getAdditionalData();
+            if (additionalData != null && additionalData.getDeviceId() != null) {
+                DeviceNameDTO deviceNameDTO = deviceNameMap.get(additionalData.getDeviceId());
+                if (deviceNameDTO == null) {
+                    return response;
+                }
+
+                BlueprintDeviceData deviceDataDTO = new BlueprintDeviceData();
+                deviceDataDTO.setId(deviceNameDTO.getId().toString());
+                deviceDataDTO.setIdentifier(deviceNameDTO.getIdentifier());
+                deviceDataDTO.setName(deviceNameDTO.getName());
+                response.setDeviceData(deviceDataDTO);
+            }
+            return response;
+        }
         );
     }
 
@@ -282,6 +330,7 @@ public class WorkflowService {
                 .remark(workflowPO.getRemark())
                 .enabled(workflowPO.getEnabled())
                 .designData(workflowPO.getDesignData())
+                .additionalData(workflowPO.getAdditionalData())
                 .version(workflowPO.getVersion())
                 .build();
         if (version != null) {
@@ -349,7 +398,7 @@ public class WorkflowService {
 
     @OperationPermission(codes = {OperationPermissionCode.WORKFLOW_ADD})
     @Transactional(rollbackFor = Exception.class)
-    public SaveWorkflowResponse createWorkflow(SaveWorkflowRequest request) {
+    public SaveWorkflowResponse createWorkflow(SaveWorkflowRequest request, WorkflowCreateContext createContext) {
         assertWorkflowPrepared();
         WorkflowPO workflowPO = new WorkflowPO();
         workflowPO.setId(SnowflakeUtil.nextId());
@@ -360,6 +409,12 @@ public class WorkflowService {
         workflowPO.setRemark(request.getRemark());
         workflowPO.setEnabled(request.getEnabled());
         workflowPO.setDesignData(request.getDesignData());
+
+        if (createContext != null && createContext.getDeviceId() != null) {
+            WorkflowAdditionalData additionalData = new WorkflowAdditionalData();
+            additionalData.setDeviceId(createContext.getDeviceId().toString());
+            workflowPO.setAdditionalData(additionalData);
+        }
 
         final String workflowIdStr = workflowPO.getId().toString();
         RuleFlowConfig ruleFlowConfig = parseRuleFlowConfig(workflowIdStr, request.getDesignData());

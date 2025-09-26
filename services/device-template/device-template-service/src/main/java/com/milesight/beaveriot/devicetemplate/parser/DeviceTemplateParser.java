@@ -8,20 +8,48 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.utils.StringUtils;
+import com.milesight.beaveriot.base.utils.ValidationUtils;
+import com.milesight.beaveriot.blueprint.facade.IBlueprintFacade;
+import com.milesight.beaveriot.blueprint.facade.IBlueprintLibraryFacade;
+import com.milesight.beaveriot.blueprint.facade.IBlueprintLibraryResourceResolverFacade;
+import com.milesight.beaveriot.blueprint.support.DefaultResourceLoader;
+import com.milesight.beaveriot.blueprint.support.ResourceLoader;
 import com.milesight.beaveriot.context.api.DeviceServiceProvider;
-import com.milesight.beaveriot.context.api.DeviceTemplateServiceProvider;
+import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
+import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.i18n.locale.LocaleContext;
 import com.milesight.beaveriot.context.i18n.message.MergedResourceBundleMessageSource;
-import com.milesight.beaveriot.context.integration.model.*;
+import com.milesight.beaveriot.context.integration.model.BlueprintCreationStrategy;
+import com.milesight.beaveriot.context.integration.model.BlueprintDeviceVendor;
+import com.milesight.beaveriot.context.integration.model.Device;
+import com.milesight.beaveriot.context.integration.model.DeviceBuilder;
+import com.milesight.beaveriot.context.integration.model.DeviceTemplate;
+import com.milesight.beaveriot.context.integration.model.DeviceTemplateBuilder;
+import com.milesight.beaveriot.context.integration.model.Entity;
+import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.config.EntityConfig;
+import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.DeviceTemplateModel;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateInputResult;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateOutputResult;
+import com.milesight.beaveriot.device.facade.IDeviceBlueprintMappingFacade;
 import com.milesight.beaveriot.devicetemplate.enums.ServerErrorCode;
+import com.milesight.beaveriot.devicetemplate.facade.ICodecExecutorFacade;
+import com.milesight.beaveriot.devicetemplate.facade.IDeviceCodecExecutorFacade;
 import com.milesight.beaveriot.devicetemplate.facade.IDeviceTemplateParserFacade;
-import com.networknt.schema.*;
+import com.milesight.beaveriot.devicetemplate.service.DeviceTemplateService;
+import com.milesight.beaveriot.devicetemplate.support.DeviceTemplateHelper;
+import com.networknt.schema.InputFormat;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.PathType;
+import com.networknt.schema.SchemaValidatorsConfig;
+import com.networknt.schema.SpecVersion;
+import com.networknt.schema.ValidationMessage;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +62,14 @@ import org.yaml.snakeyaml.scanner.ScannerException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.BiFunction;
 
 /**
  * author: Luxb
@@ -45,13 +80,33 @@ import java.util.*;
 public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     private final IntegrationServiceProvider integrationServiceProvider;
     private final DeviceServiceProvider deviceServiceProvider;
-    private final DeviceTemplateServiceProvider deviceTemplateServiceProvider;
+    private final DeviceTemplateService deviceTemplateService;
+    private final IBlueprintLibraryFacade blueprintLibraryFacade;
+    private final IBlueprintLibraryResourceResolverFacade blueprintLibraryResourceResolverFacade;
+    private final IDeviceBlueprintMappingFacade deviceBlueprintMappingFacade;
+    private final IBlueprintFacade blueprintFacade;
+    private final EntityServiceProvider entityServiceProvider;
+    private final ICodecExecutorFacade codecExecutorFacade;
     private final MergedResourceBundleMessageSource messageSource;
 
-    public DeviceTemplateParser(IntegrationServiceProvider integrationServiceProvider, DeviceServiceProvider deviceServiceProvider, DeviceTemplateServiceProvider deviceTemplateServiceProvider, MergedResourceBundleMessageSource messageSource) {
+    public DeviceTemplateParser(IntegrationServiceProvider integrationServiceProvider,
+                                DeviceServiceProvider deviceServiceProvider,
+                                DeviceTemplateService deviceTemplateService, IBlueprintLibraryFacade blueprintLibraryFacade,
+                                IBlueprintLibraryResourceResolverFacade blueprintLibraryResourceResolverFacade,
+                                IDeviceBlueprintMappingFacade deviceBlueprintMappingFacade,
+                                IBlueprintFacade blueprintFacade,
+                                EntityServiceProvider entityServiceProvider,
+                                @Lazy ICodecExecutorFacade codecExecutorFacade,
+                                MergedResourceBundleMessageSource messageSource) {
         this.integrationServiceProvider = integrationServiceProvider;
         this.deviceServiceProvider = deviceServiceProvider;
-        this.deviceTemplateServiceProvider = deviceTemplateServiceProvider;
+        this.deviceTemplateService = deviceTemplateService;
+        this.blueprintLibraryFacade = blueprintLibraryFacade;
+        this.blueprintLibraryResourceResolverFacade = blueprintLibraryResourceResolverFacade;
+        this.deviceBlueprintMappingFacade = deviceBlueprintMappingFacade;
+        this.blueprintFacade = blueprintFacade;
+        this.entityServiceProvider = entityServiceProvider;
+        this.codecExecutorFacade = codecExecutorFacade;
         this.messageSource = messageSource;
     }
 
@@ -66,6 +121,10 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
 
     public boolean validate(String deviceTemplateContent) {
         try {
+            if (StringUtils.isEmpty(deviceTemplateContent)) {
+                throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_EMPTY.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_EMPTY.getErrorMessage()).build();
+            }
+
             Yaml yaml = new Yaml();
             Object loadedYaml = yaml.load(deviceTemplateContent);
             if (loadedYaml == null) {
@@ -144,52 +203,10 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public DeviceTemplateInputResult input(String integration, Long deviceTemplateId, String jsonData) {
-        DeviceTemplateInputResult result = new DeviceTemplateInputResult();
+    @Override
+    public DeviceTemplateInputResult input(String integration, Long deviceTemplateId, Object data) {
         try {
-            DeviceTemplate deviceTemplate = getAndValidateDeviceTemplate(integration, deviceTemplateId);
-            if (deviceTemplate == null) {
-                return null;
-            }
-
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode jsonNode = mapper.readTree(jsonData);
-
-            DeviceTemplateModel deviceTemplateModel = parse(deviceTemplate.getContent());
-
-            Map<String, JsonNode> flatJsonDataMap = new HashMap<>();
-            flattenJsonData(jsonNode, flatJsonDataMap, "");
-
-            Map<String, DeviceTemplateModel.Definition.InputJsonObject> flatJsonInputDescriptionMap = new HashMap<>();
-            flattenJsonInputDescription(deviceTemplateModel.getDefinition().getInput().getProperties(), flatJsonInputDescriptionMap, "");
-
-            String deviceIdKey = getDeviceIdKey(flatJsonInputDescriptionMap);
-            String deviceNameKey = getDeviceNameKey(flatJsonInputDescriptionMap);
-
-            if (deviceIdKey == null || flatJsonDataMap.get(deviceIdKey) == null) {
-                throw ServiceException.with(ServerErrorCode.DEVICE_ID_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_ID_NOT_FOUND.formatMessage(deviceIdKey)).build();
-            }
-
-            // Validate json data
-            validateJsonData(flatJsonDataMap, flatJsonInputDescriptionMap);
-
-            // Build device
-            String deviceId = flatJsonDataMap.get(deviceIdKey).asText();
-            String deviceName = (deviceNameKey == null || flatJsonDataMap.get(deviceNameKey) == null) ? deviceId : flatJsonDataMap.get(deviceNameKey).asText();
-            Device device = buildDevice(integration, deviceId, deviceName, deviceTemplate.getKey());
-
-            // Build device entities
-            List<Entity> deviceEntities = buildDeviceEntities(integration, device.getKey(), deviceTemplateModel.getInitialEntities());
-            device.setEntities(deviceEntities);
-            Map<String, Entity> flatDeviceEntityMap = new HashMap<>();
-            flattenDeviceEntities(deviceEntities, flatDeviceEntityMap, "");
-
-            // Build device entity values payload
-            ExchangePayload payload = buildDeviceEntityValuesPayload(flatJsonDataMap, flatJsonInputDescriptionMap, flatDeviceEntityMap);
-
-            result.setDevice(device);
-            result.setPayload(payload);
-            return result;
+            return input(integration, deviceTemplateId, null, null, null, data, null);
         } catch (Exception e) {
             log.error(e.getMessage());
             if (e instanceof ServiceException) {
@@ -198,6 +215,178 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                 throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
             }
         }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public DeviceTemplateInputResult input(String integration, Long deviceTemplateId, String deviceIdentifier, String deviceName, Object data) {
+        try {
+            return input(integration, deviceTemplateId, deviceIdentifier, deviceName, null, data, null);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            if (e instanceof ServiceException) {
+                throw (ServiceException) e;
+            } else {
+                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+            }
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public DeviceTemplateInputResult input(String integration, Long deviceTemplateId, Object data, Map<String, Object> codecArgContext) {
+        try {
+            return input(integration, deviceTemplateId, null, null, null, data, codecArgContext);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            if (e instanceof ServiceException) {
+                throw (ServiceException) e;
+            } else {
+                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+            }
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public DeviceTemplateInputResult input(String integration, Long deviceTemplateId, String deviceIdentifier, String deviceName, Object data, Map<String, Object> codecArgContext) {
+        try {
+            return input(integration, deviceTemplateId, deviceIdentifier, deviceName, null, data, codecArgContext);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            if (e instanceof ServiceException) {
+                throw (ServiceException) e;
+            } else {
+                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+            }
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public DeviceTemplateInputResult input(String deviceKey, Object data, Map<String, Object> codecArgContext) {
+        try {
+            return input(null, null, null, null, deviceKey, data, codecArgContext);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            if (e instanceof ServiceException) {
+                throw (ServiceException) e;
+            } else {
+                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+            }
+        }
+    }
+
+    private DeviceTemplateInputResult input(String integration, Long deviceTemplateId, String deviceIdentifier, String deviceName, String deviceKey, Object data, Map<String, Object> codecArgContext) throws Exception {
+        DeviceTemplateInputResult result = new DeviceTemplateInputResult();
+        // Either (integration, deviceTemplateId) or deviceKey must be provided
+        if ((integration == null || deviceTemplateId == null) && deviceKey == null) {
+            throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorMessage()).build();
+        }
+
+        DeviceTemplate deviceTemplate;
+        Device device = null;
+        if (deviceTemplateId != null) {
+            deviceTemplate = deviceTemplateService.findById(deviceTemplateId);
+        } else {
+            device = deviceServiceProvider.findByKey(deviceKey);
+            if (device == null) {
+                throw ServiceException.with(ServerErrorCode.DEVICE_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_NOT_FOUND.getErrorMessage()).build();
+            }
+
+            deviceIdentifier = device.getIdentifier();
+            deviceName = device.getName();
+            String deviceTemplateKey = device.getTemplate();
+            deviceTemplate = deviceTemplateService.findByKey(deviceTemplateKey);
+        }
+
+        String deviceTemplateContent = getContentAndValidateDeviceTemplate(integration, deviceTemplate);
+        DeviceTemplateModel deviceTemplateModel = parse(deviceTemplateContent);
+        JsonNode jsonNode;
+        BlueprintLibrary blueprintLibrary = null;
+        if (data instanceof byte[] byteData) {
+            blueprintLibrary = getBlueprintLibrary(deviceTemplate);
+            IDeviceCodecExecutorFacade deviceCodecExecutorFacade = codecExecutorFacade.getDeviceCodecExecutor(blueprintLibrary, deviceTemplate.getVendor(), deviceTemplate.getModel());
+            if (deviceCodecExecutorFacade == null) {
+                throw ServiceException.with(ServerErrorCode.DEVICE_DATA_DECODE_FAILED.getErrorCode(), ServerErrorCode.DEVICE_DATA_DECODE_FAILED.getErrorMessage()).build();
+            }
+            try {
+                jsonNode = deviceCodecExecutorFacade.decode(byteData, codecArgContext);
+            } catch (Exception e) {
+                throw ServiceException.with(ServerErrorCode.DEVICE_DATA_DECODE_FAILED.getErrorCode(), ServerErrorCode.DEVICE_DATA_DECODE_FAILED.getErrorMessage()).build();
+            }
+        } else if (data instanceof String jsonStringData) {
+            ObjectMapper mapper = new ObjectMapper();
+            jsonNode = mapper.readTree(jsonStringData);
+        } else if (data instanceof JsonNode jsonData){
+            jsonNode = jsonData;
+        } else {
+            throw ServiceException.with(ServerErrorCode.DEVICE_DATA_UNKNOWN_TYPE.getErrorCode(), ServerErrorCode.DEVICE_DATA_UNKNOWN_TYPE.getErrorMessage()).build();
+        }
+
+        Map<String, JsonNode> flatJsonDataMap = new HashMap<>();
+        flattenJsonData(jsonNode, flatJsonDataMap, "");
+
+        Map<String, DeviceTemplateModel.Definition.InputJsonObject> flatJsonInputDescriptionMap = new HashMap<>();
+        flattenJsonInputDescription(deviceTemplateModel.getDefinition().getInput().getProperties(), flatJsonInputDescriptionMap, "");
+
+        ObjectMapper mapper = new ObjectMapper();
+        String deviceIdKey = getDeviceIdKey(flatJsonInputDescriptionMap);
+        if (deviceIdKey != null && flatJsonDataMap.get(deviceIdKey) == null && deviceIdentifier != null) {
+            flatJsonDataMap.put(deviceIdKey, mapper.valueToTree(deviceIdentifier));
+        }
+        String deviceNameKey = getDeviceNameKey(flatJsonInputDescriptionMap);
+        if (deviceNameKey != null && flatJsonDataMap.get(deviceNameKey) == null && deviceName != null) {
+            flatJsonDataMap.put(deviceNameKey, mapper.valueToTree(deviceName));
+        }
+        // Validate json data
+        validateJsonData(flatJsonDataMap, flatJsonInputDescriptionMap);
+
+        if (device == null) {
+            if (deviceIdKey == null || flatJsonDataMap.get(deviceIdKey) == null) {
+                throw ServiceException.with(ServerErrorCode.DEVICE_ID_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_ID_NOT_FOUND.formatMessage(deviceIdKey)).build();
+            }
+            deviceIdentifier = flatJsonDataMap.get(deviceIdKey).asText();
+            deviceName = (deviceNameKey == null || flatJsonDataMap.get(deviceNameKey) == null) ? deviceIdentifier : flatJsonDataMap.get(deviceNameKey).asText();
+
+            // Build device and device entities
+            device = buildDeviceAndDeviceEntities(integration, deviceIdentifier, deviceName, deviceTemplate, deviceTemplateModel);
+
+            Device existDevice = deviceServiceProvider.findByKey(device.getKey());
+            if (existDevice != null) {
+                device.setId(existDevice.getId());
+                device.setName(existDevice.getName());
+            }
+
+            DeviceTemplateModel.Blueprint blueprint = deviceTemplateModel.getBlueprint();
+            if (blueprint != null) {
+                // Save device
+                deviceServiceProvider.save(device);
+
+                createDeviceBlueprint(device, blueprintLibrary, deviceTemplate.getVendor(), deviceTemplateModel, BlueprintCreationStrategy.OPTIONAL);
+                result.setDeviceAutoSaved(true);
+            }
+        }
+
+        Map<String, Entity> flatDeviceEntityMap = new HashMap<>();
+        flattenDeviceEntities(device.getEntities(), flatDeviceEntityMap, "");
+
+        // Build device entity values payload
+        ExchangePayload payload = buildDeviceEntityValuesPayload(flatJsonDataMap, flatJsonInputDescriptionMap, flatDeviceEntityMap);
+
+        result.setDevice(device);
+        result.setPayload(payload);
+        return result;
+    }
+
+    private BlueprintLibrary getBlueprintLibrary(DeviceTemplate deviceTemplate) {
+        BlueprintLibrary blueprintLibrary = blueprintLibraryFacade.findById(deviceTemplate.getBlueprintLibraryId());
+        if (blueprintLibrary == null) {
+            throw ServiceException.with(ServerErrorCode.BLUEPRINT_LIBRARY_NOT_FOUND.getErrorCode(), ServerErrorCode.BLUEPRINT_LIBRARY_NOT_FOUND.formatMessage(deviceTemplate.getBlueprintLibraryId())).build();
+        }
+
+        blueprintLibrary.setCurrentVersion(deviceTemplate.getBlueprintLibraryVersion());
+        return blueprintLibrary;
     }
 
     private String getDeviceIdKey(Map<String, DeviceTemplateModel.Definition.InputJsonObject> flatJsonInputDescriptionMap) {
@@ -258,7 +447,23 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         return deviceIdInputJsonObjects;
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public DeviceTemplateOutputResult output(String deviceKey, ExchangePayload payload) {
+        try {
+            return output(deviceKey, payload, null);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            if (e instanceof ServiceException) {
+                throw (ServiceException) e;
+            } else {
+                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+            }
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public DeviceTemplateOutputResult output(String deviceKey, ExchangePayload payload, Map<String, Object> codecArgContext) {
         try {
             DeviceTemplateOutputResult result = new DeviceTemplateOutputResult();
             Device device = deviceServiceProvider.findByKey(deviceKey);
@@ -266,26 +471,24 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                 throw ServiceException.with(ServerErrorCode.DEVICE_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_NOT_FOUND.getErrorMessage()).build();
             }
 
-            DeviceTemplate deviceTemplate = deviceTemplateServiceProvider.findByKey(device.getTemplate());
-            if (deviceTemplate == null) {
-                throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorMessage()).build();
-            }
-
-            DeviceTemplateModel deviceTemplateModel = parse(deviceTemplate.getContent());
+            DeviceTemplate deviceTemplate = deviceTemplateService.findByKey(device.getTemplate());
+            String deviceTemplateContent = getContentAndValidateDeviceTemplate(null, deviceTemplate);
+            DeviceTemplateModel deviceTemplateModel = parse(deviceTemplateContent);
             if (deviceTemplateModel.getDefinition().getOutput() == null) {
                 throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_DEFINITION_OUTPUT_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_DEFINITION_OUTPUT_NOT_FOUND.getErrorMessage()).build();
             }
 
-            ObjectMapper mapper = new ObjectMapper();
-            ObjectNode rootNode = mapper.createObjectNode();
-            deviceTemplateModel.getDefinition().getOutput().getProperties().forEach(outputJsonObject -> {
-                JsonNode jsonNode = parseJsonNode(outputJsonObject, deviceKey, payload, "");
-                if (jsonNode != null) {
-                    rootNode.set(outputJsonObject.getKey(), jsonNode);
-                }
-            });
+            JsonNode outputData = buildJsonNode(deviceTemplateModel.getDefinition().getOutput(), deviceKey, payload);
 
-            result.setOutput(mapper.writeValueAsString(rootNode));
+            BlueprintLibrary blueprintLibrary = getBlueprintLibrary(deviceTemplate);
+            IDeviceCodecExecutorFacade deviceCodecExecutorFacade = codecExecutorFacade.getDeviceCodecExecutor(blueprintLibrary, deviceTemplate.getVendor(), deviceTemplate.getModel());
+            if (deviceCodecExecutorFacade == null) {
+                result.setOutput(outputData);
+                return result;
+            }
+
+            byte[] encodedData = deviceCodecExecutorFacade.encode(outputData, codecArgContext);
+            result.setOutput(encodedData);
             return result;
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -297,22 +500,31 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         }
     }
 
+    private JsonNode buildJsonNode(DeviceTemplateModel.Definition.Output outputRoot, String deviceKey, ExchangePayload payload) {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode rootNode = mapper.createObjectNode();
+        outputRoot.getProperties().forEach(outputJsonObject -> {
+            JsonNode jsonNode = parseJsonNode(outputJsonObject, deviceKey, payload, "");
+            if (jsonNode != null) {
+                rootNode.set(outputJsonObject.getKey(), jsonNode);
+            }
+        });
+        return rootNode;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
     @Override
-    public Device createDevice(String integration, Long deviceTemplateId, String deviceId, String deviceName) {
+    public Device createDevice(String integration, Long deviceTemplateId, String deviceIdentifier, String deviceName) {
         try {
             DeviceTemplate deviceTemplate = getAndValidateDeviceTemplate(integration, deviceTemplateId);
-            if (deviceTemplate == null) {
-                return null;
-            }
-
-            DeviceTemplateModel deviceTemplateModel = parse(deviceTemplate.getContent());
-            // Build device
-            Device device = buildDevice(integration, deviceId, deviceName, deviceTemplate.getKey());
-
-            // Build device entities
-            List<Entity> deviceEntities = buildDeviceEntities(integration, device.getKey(), deviceTemplateModel.getInitialEntities());
-            device.setEntities(deviceEntities);
-            return device;
+            return createDevice(integration,
+                    null,
+                    deviceTemplate,
+                    deviceIdentifier,
+                    deviceName,
+                    false,
+                    null,
+                    BlueprintCreationStrategy.NEVER);
         } catch (Exception e) {
             log.error(e.getMessage());
             if (e instanceof ServiceException) {
@@ -323,12 +535,203 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         }
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    public Device createDevice(String integration,
+                               String vendor,
+                               String model,
+                               String deviceIdentifier,
+                               String deviceName,
+                               BiFunction<Device, Map<String, Object>, Boolean> beforeSaveDevice) {
+        try {
+            return createDevice(integration,
+                    vendor,
+                    model,
+                    deviceIdentifier,
+                    deviceName,
+                    beforeSaveDevice,
+                    BlueprintCreationStrategy.OPTIONAL);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            if (e instanceof ServiceException) {
+                throw (ServiceException) e;
+            } else {
+                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+            }
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public Device createDevice(String integration,
+                               String vendor,
+                               String model,
+                               String deviceIdentifier,
+                               String deviceName,
+                               BiFunction<Device, Map<String, Object>, Boolean> beforeSaveDevice,
+                               BlueprintCreationStrategy strategy) {
+        try {
+            DeviceTemplate deviceTemplate = getLatestDeviceTemplate(vendor, model);
+            return createDevice(integration,
+                    vendor,
+                    deviceTemplate,
+                    deviceIdentifier,
+                    deviceName,
+                    true,
+                    beforeSaveDevice,
+                    strategy);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            if (e instanceof ServiceException) {
+                throw (ServiceException) e;
+            } else {
+                throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+            }
+        }
+    }
+
+    private Device createDevice(String integration,
+                               String vendor,
+                               DeviceTemplate deviceTemplate,
+                               String deviceIdentifier,
+                               String deviceName,
+                               boolean shouldSaveDevice,
+                               BiFunction<Device, Map<String, Object>, Boolean> beforeSaveDevice,
+                               BlueprintCreationStrategy strategy) {
+        String deviceTemplateContent = getContentAndValidateDeviceTemplate(integration, deviceTemplate);
+
+        DeviceTemplateModel deviceTemplateModel = parse(deviceTemplateContent);
+
+        // Build device and device entities
+        Device device = buildDeviceAndDeviceEntities(integration, deviceIdentifier, deviceName, deviceTemplate, deviceTemplateModel);
+
+        if (beforeSaveDevice != null && !beforeSaveDevice.apply(device, deviceTemplateModel.getMetadata())) {
+            return null;
+        }
+
+        if (!shouldSaveDevice) {
+            return device;
+        }
+
+        Device existDevice = deviceServiceProvider.findByKey(device.getKey());
+        if (existDevice != null) {
+            return existDevice;
+        }
+
+        // Save device
+        deviceServiceProvider.save(device);
+
+        BlueprintLibrary blueprintLibrary = getBlueprintLibrary(deviceTemplate);
+        // Create device blueprint
+        createDeviceBlueprint(device, blueprintLibrary, vendor, deviceTemplateModel, strategy);
+        return device;
+    }
+
+    private Device buildDeviceAndDeviceEntities(String integration, String deviceIdentifier, String deviceName, DeviceTemplate deviceTemplate, DeviceTemplateModel deviceTemplateModel) {
+        // Build device
+        Device device = buildDevice(integration, deviceIdentifier, deviceName, deviceTemplate.getKey());
+
+        // Build device entities
+        List<Entity> deviceEntities = buildDeviceEntities(integration, device.getKey(), deviceTemplateModel.getInitialEntities());
+        device.setEntities(deviceEntities);
+        return device;
+    }
+
+    private void createDeviceBlueprint(Device device, BlueprintLibrary blueprintLibrary, String vendor, DeviceTemplateModel deviceTemplateModel, BlueprintCreationStrategy strategy) {
+        if (strategy == null || strategy == BlueprintCreationStrategy.NEVER) {
+            return;
+        }
+
+        DeviceTemplateModel.Blueprint blueprint = deviceTemplateModel.getBlueprint();
+        if (blueprint == null) {
+            if (strategy == BlueprintCreationStrategy.OPTIONAL) {
+                return;
+            }
+
+            throw ServiceException.with(ServerErrorCode.DEVICE_BLUEPRINT_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_BLUEPRINT_NOT_FOUND.getErrorMessage()).build();
+        }
+
+        if (!blueprint.validate()) {
+            throw ServiceException.with(ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorCode(), ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorMessage()).build();
+        }
+
+        if (deviceBlueprintMappingFacade.getBlueprintIdByDeviceId(device.getId()) != null) {
+            return;
+        }
+
+        BlueprintDeviceVendor deviceVendor = blueprintLibraryResourceResolverFacade.getDeviceVendor(blueprintLibrary, vendor);
+        String workDir = deviceVendor.getWorkDir();
+        String blueprintPath = blueprintLibraryResourceResolverFacade.buildResourcePath(workDir, blueprint.getDir());
+        ResourceLoader loader = new DefaultResourceLoader(blueprintLibrary, blueprintPath);
+        Map<String, Object> blueprintValues = buildBlueprintValues(device, blueprint.getValues());
+
+        Long blueprintId;
+        try {
+            blueprintId = blueprintFacade.deployBlueprint(loader, blueprintValues);
+            if (blueprintId == null) {
+                throw ServiceException.with(ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorCode(), ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorMessage()).build();
+            }
+        } catch (Exception e) {
+            throw ServiceException.with(ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorCode(), ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorMessage()).build();
+        }
+
+        deviceBlueprintMappingFacade.saveMapping(device.getId(), blueprintId);
+    }
+
+    @Override
+    public DeviceTemplate getLatestDeviceTemplate(String vendor, String model) {
+        BlueprintLibrary blueprintLibrary = blueprintLibraryFacade.getCurrentBlueprintLibrary();
+        if (blueprintLibrary == null) {
+            return null;
+        }
+
+        String deviceTemplateIdentifier = DeviceTemplateHelper.getTemplateIdentifier(blueprintLibrary.getId(), blueprintLibrary.getCurrentVersion(), vendor, model);
+        DeviceTemplate deviceTemplate = deviceTemplateService.findByBlueprintLibrary(blueprintLibrary.getId(), blueprintLibrary.getCurrentVersion(), vendor, model);
+        if (deviceTemplate == null) {
+            String content = blueprintLibraryResourceResolverFacade.getDeviceTemplateContent(blueprintLibrary, vendor, model);
+            if (!validate(content)) {
+                return null;
+            }
+            deviceTemplate = new DeviceTemplateBuilder(IntegrationConstants.SYSTEM_INTEGRATION_ID)
+                    .name(DeviceTemplateHelper.getTemplateName(vendor, model))
+                    .identifier(deviceTemplateIdentifier)
+                    .content(content)
+                    .blueprintLibraryId(blueprintLibrary.getId())
+                    .blueprintLibraryVersion(blueprintLibrary.getCurrentVersion())
+                    .vendor(vendor)
+                    .model(model)
+                    .build();
+            deviceTemplateService.save(deviceTemplate);
+        }
+        return deviceTemplate;
+    }
+
+    private Map<String, Object> buildBlueprintValues(Device device, Map<String, DeviceTemplateModel.Blueprint.Value> values) {
+        Map<String, Object> blueprintValues = new HashMap<>();
+        values.forEach((key, value) -> {
+            Object valueObject;
+            if (DeviceTemplateModel.Blueprint.Value.TYPE_ENTITY_ID.equals(value.getType())) {
+                Entity entity = entityServiceProvider.findByKey(device.getKey() + "." + value.getIdentifier());
+                valueObject = entity.getId();
+            } else if (DeviceTemplateModel.Blueprint.Value.TYPE_ENTITY_KEY.equals(value.getType())) {
+                valueObject = device.getKey() + "." + value.getIdentifier();
+            } else if (DeviceTemplateModel.Blueprint.Value.TYPE_DEVICE_ID.equals(value.getType())) {
+                valueObject = device.getId();
+            } else if (DeviceTemplateModel.Blueprint.Value.TYPE_DEVICE_KEY.equals(value.getType())) {
+                valueObject = device.getKey();
+            } else {
+                valueObject = value.getValue();
+            }
+            blueprintValues.put(key, valueObject);
+        });
+        return blueprintValues;
+    }
+
     private DeviceTemplate getAndValidateDeviceTemplate(String integration, Long deviceTemplateId) {
         if (integrationServiceProvider.getIntegration(integration) == null) {
             throw ServiceException.with(ServerErrorCode.INTEGRATION_NOT_FOUND.getErrorCode(), ServerErrorCode.INTEGRATION_NOT_FOUND.getErrorMessage()).build();
         }
 
-        DeviceTemplate deviceTemplate = deviceTemplateServiceProvider.findById(deviceTemplateId);
+        DeviceTemplate deviceTemplate = deviceTemplateService.findById(deviceTemplateId);
         if (deviceTemplate == null) {
             throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorMessage()).build();
         }
@@ -338,6 +741,23 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         }
 
         return deviceTemplate;
+    }
+
+    private String getContentAndValidateDeviceTemplate(String integration, DeviceTemplate deviceTemplate) {
+        if (integration != null && integrationServiceProvider.getIntegration(integration) == null) {
+            throw ServiceException.with(ServerErrorCode.INTEGRATION_NOT_FOUND.getErrorCode(), ServerErrorCode.INTEGRATION_NOT_FOUND.getErrorMessage()).build();
+        }
+
+        if (deviceTemplate == null) {
+            throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorMessage()).build();
+        }
+
+        String content = deviceTemplate.getContent();
+        if (!validate(content)) {
+            return null;
+        }
+
+        return content;
     }
 
     public DeviceTemplateModel parse(String deviceTemplateContent) {
@@ -384,23 +804,37 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     }
 
     private void validateEntityValue(String currentKey, String entityKey, DeviceTemplateModel.JsonType definitionType, Object value) {
-        DeviceTemplateModel.JsonType targetType = DeviceTemplateModel.JsonType.STRING;
-        if (value instanceof Boolean) {
-            targetType = DeviceTemplateModel.JsonType.BOOLEAN;
-        } else if (value instanceof Double || value instanceof Float) {
-            targetType = DeviceTemplateModel.JsonType.DOUBLE;
-        } else if (value instanceof Long || value instanceof Integer) {
-            targetType = DeviceTemplateModel.JsonType.LONG;
-        }
-        if (!definitionType.equals(targetType)) {
+        Class<?> clazz = value.getClass();
+        if (!isMatchType(definitionType, value)) {
             throw ServiceException.with(ServerErrorCode.DEVICE_ENTITY_VALUE_VALIDATE_ERROR.getErrorCode(),
                     MessageFormat.format("Invalid value type for json key ''{0}'': requires type {1}, but entity key ''{2}'' provides type {3} with value {4}",
                             currentKey,
                             definitionType.getTypeName(),
                             entityKey,
-                            targetType.getTypeName(),
-                            targetType.equals(DeviceTemplateModel.JsonType.STRING) ? "'" + value + "'" : value)).build();
+                            clazz.getSimpleName(),
+                            value instanceof String ? "'" + value + "'" : value)).build();
         }
+    }
+
+    private boolean isMatchType(DeviceTemplateModel.JsonType definitionType, Object value) {
+        return switch (definitionType) {
+            case DOUBLE -> ValidationUtils.isNumber(value.toString());
+            case LONG -> ValidationUtils.isInteger(value.toString());
+            case BOOLEAN -> {
+                if (value instanceof Boolean) {
+                    yield true;
+                }
+
+                if (ValidationUtils.isInteger(value.toString())) {
+                    long longValue = Long.parseLong(value.toString());
+                    yield longValue == 0 || longValue == 1;
+                }
+
+                yield false;
+            }
+            case STRING -> value instanceof String;
+            default -> false;
+        };
     }
 
     private ExchangePayload buildDeviceEntityValuesPayload(Map<String, JsonNode> flatJsonDataMap,
@@ -460,7 +894,18 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         return switch (inputJsonObject.getType()) {
             case DOUBLE -> jsonNode.isFloat() || jsonNode.isDouble() || jsonNode.isInt() || jsonNode.isLong();
             case LONG -> jsonNode.isInt() || jsonNode.isLong();
-            case BOOLEAN -> jsonNode.isBoolean();
+            case BOOLEAN -> {
+                if (jsonNode.isBoolean()) {
+                    yield true;
+                }
+
+                if (jsonNode.isInt() || jsonNode.isLong()) {
+                    long value = jsonNode.asLong();
+                    yield value == 0 || value == 1;
+                }
+
+                yield false;
+            }
             case STRING -> jsonNode.isTextual();
             case OBJECT -> jsonNode.isObject();
         };

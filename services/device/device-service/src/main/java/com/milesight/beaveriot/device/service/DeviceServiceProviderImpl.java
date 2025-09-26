@@ -147,17 +147,11 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
         Device device = findById(id);
         Assert.notNull(device, "Delete failed. Cannot find device " + id.toString());
         deviceService.deleteDevice(device);
-        deviceStatusServiceProvider.deviceDeleted(device);
     }
 
     @Override
     public Device findById(Long id) {
-        return deviceRepository
-                .findOne(f -> f
-                        .eq(DevicePO.Fields.id, id)
-                )
-                .map(deviceConverter::convertPO)
-                .orElse(null);
+        return deviceService.findById(id);
     }
 
     @Override
@@ -239,7 +233,6 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
         List<Device> devices = deviceConverter.convertPO(devicePOs);
         devices.forEach(device -> {
             deviceService.deleteDevice(device);
-            deviceStatusServiceProvider.deviceDeleted(device);
         });
     }
 

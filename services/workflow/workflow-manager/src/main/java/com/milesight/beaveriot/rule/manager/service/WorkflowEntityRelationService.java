@@ -1,14 +1,19 @@
 package com.milesight.beaveriot.rule.manager.service;
 
+import com.milesight.beaveriot.base.enums.ErrorCode;
+import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
+import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
 import com.milesight.beaveriot.context.integration.model.AttributeBuilder;
+import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.EntityBuilder;
 import com.milesight.beaveriot.entity.facade.IEntityFacade;
 import com.milesight.beaveriot.rule.manager.model.TriggerNodeParameters;
+import com.milesight.beaveriot.rule.manager.model.WorkflowAdditionalData;
 import com.milesight.beaveriot.rule.manager.po.WorkflowEntityRelationPO;
 import com.milesight.beaveriot.rule.manager.po.WorkflowPO;
 import com.milesight.beaveriot.rule.manager.repository.WorkflowEntityRelationRepository;
@@ -38,6 +43,10 @@ public class WorkflowEntityRelationService {
     @Autowired
     IEntityFacade entityFacade;
 
+
+    @Autowired
+    DeviceServiceProvider deviceServiceProvider;
+
     public RuleNodeConfig getTriggerNode(RuleFlowConfig ruleFlowConfig) {
         if (ruleFlowConfig == null) {
             return null;
@@ -66,7 +75,8 @@ public class WorkflowEntityRelationService {
 
         if (triggerNodeConfig == null) {
             if (serviceEntity != null) {
-                entityFacade.deleteCustomizedEntitiesByIds(List.of(serviceEntity.getId()));
+                entityFacade.deleteEntitiesByIds(List.of(serviceEntity.getId()));
+                workflowEntityRelationRepository.delete(relationPO);
             }
 
             return;
@@ -92,7 +102,29 @@ public class WorkflowEntityRelationService {
         }
 
         if (serviceEntity == null) {
-            EntityBuilder eb = new EntityBuilder(IntegrationConstants.SYSTEM_INTEGRATION_ID);
+            // create service entity
+            EntityBuilder eb;
+
+            WorkflowAdditionalData additionalData = workflowPO.getAdditionalData();
+            // create device entity or custom entity
+            if (additionalData == null || additionalData.getDeviceId() == null) {
+                eb = new EntityBuilder(IntegrationConstants.SYSTEM_INTEGRATION_ID);
+            } else {
+                Long relatedDeviceId = Long.valueOf(additionalData.getDeviceId());
+                Device relatedDevice = deviceServiceProvider.findById(relatedDeviceId);
+                if (relatedDevice == null) {
+                    throw ServiceException.with(ErrorCode.DATA_NO_FOUND.getErrorCode(), "Device Not Found: " + relatedDeviceId).build();
+                }
+
+                eb = new EntityBuilder(relatedDevice.getIntegrationId(), relatedDevice.getKey());
+
+                if (ruleFlowConfig.getMetadata() != null && ruleFlowConfig.getMetadata().getDeviceImportantEntity() != null) {
+                    AttributeBuilder ab = new AttributeBuilder();
+                    ab.important(ruleFlowConfig.getMetadata().getDeviceImportantEntity());
+                    eb.attributes(ab.build());
+                }
+            }
+
             serviceEntity = eb.identifier(workflowPO.getId().toString())
                     .service(workflowPO.getName())
                     .valueType(EntityValueType.OBJECT)
@@ -106,12 +138,12 @@ public class WorkflowEntityRelationService {
             relationPO.setFlowId(workflowPO.getId());
             workflowEntityRelationRepository.save(relationPO);
         } else {
+            // update service entity
             serviceEntity.setName(workflowPO.getName());
             serviceEntity.setChildren(childEntities);
             serviceEntity.setDescription(workflowPO.getRemark());
             entityServiceProvider.save(serviceEntity);
         }
-
     }
 
     public void deleteEntityByFlowIds(List<Long> flowIds) {
@@ -123,8 +155,13 @@ public class WorkflowEntityRelationService {
                     .stream().map(WorkflowEntityRelationPO::getEntityId)
                     .toList();
             workflowEntityRelationRepository.deleteAll(relations);
-            entityFacade.deleteCustomizedEntitiesByIds(entityIds);
+            entityFacade.deleteEntitiesByIds(entityIds);
         }
+    }
+
+    public boolean entityFlowExists(Long entityId) {
+        return workflowEntityRelationRepository
+                .findOne(f -> f.eq(WorkflowEntityRelationPO.Fields.entityId, entityId)).isPresent();
     }
 
     public WorkflowPO getFlowByEntityId(Long entityId) {

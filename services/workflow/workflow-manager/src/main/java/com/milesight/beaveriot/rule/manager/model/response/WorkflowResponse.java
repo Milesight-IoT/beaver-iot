@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.rule.manager.model.response;
 
+import com.milesight.beaveriot.rule.manager.model.BlueprintDeviceData;
 import lombok.Builder;
 import lombok.Data;
 
@@ -19,4 +20,6 @@ public class WorkflowResponse {
     private Long createdAt;
 
     private Long updatedAt;
+
+    private BlueprintDeviceData deviceData;
 }

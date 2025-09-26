@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>blueprint</artifactId>
+        <groupId>com.milesight.beaveriot</groupId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>blueprint-api</artifactId>
+    <name>blueprint-api</name>
+    <description>An open-source platform designed for rapid and intuitive IoT application development.</description>
+    <url>https://github.com/milesight-iot/beaver-iot</url>
+    <scm>
+        <url>https://github.com/milesight-iot/beaver-iot</url>
+    </scm>
+    <organization>
+        <name>Milesight</name>
+        <url>https://www.milesight.com</url>
+    </organization>
+    <developers>
+        <developer>
+            <id>Simon</id>
+            <name>Simon Zhao</name>
+            <email>simon.zhao@milesight.com</email>
+        </developer>
+    </developers>
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/license/MIT</url>
+        </license>
+    </licenses>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <okhttp3.version>4.12.0</okhttp3.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>context</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+        </dependency>
+    </dependencies>
+</project>

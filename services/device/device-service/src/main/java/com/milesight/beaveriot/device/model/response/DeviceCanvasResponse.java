@@ -11,4 +11,7 @@ import lombok.Data;
 @Data
 public class DeviceCanvasResponse {
     private String canvasId;
+
+    private String name;
+
 }

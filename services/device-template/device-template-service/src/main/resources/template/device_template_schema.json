@@ -172,7 +172,7 @@
       "properties": {
         "identifier": {
           "type": "string",
-          "pattern": "^[A-Za-z0-9_@#$\\-/\\[\\]:]+$"
+          "pattern": "^(?!@)[A-Za-z0-9_@#$\\-/\\[\\]:]+$"
         },
         "name": { "type": "string" },
         "type": {
@@ -200,14 +200,18 @@
             "format": {"type": "string"},
             "enum": {"type": "object"},
             "optional": {"type": "boolean"},
-            "important": {"type": "boolean"}
+            "important": {
+              "type": "integer",
+              "minimum": 1
+            }
           }
         },
         "visible": {
           "type": "boolean"
         },
         "important": {
-          "type": "boolean"
+          "type": "integer",
+          "minimum": 1
         },
         "children": {
           "type": "array",

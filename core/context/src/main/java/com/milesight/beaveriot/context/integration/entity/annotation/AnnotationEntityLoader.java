@@ -124,6 +124,7 @@ public class AnnotationEntityLoader implements EntityLoader {
                 .format(attribute.format())
                 .enums(enumClass)
                 .optional(attribute.optional())
+                .important(attribute.important())
                 .defaultValue(attribute.defaultValue())
                 .lengthRange(attribute.lengthRange())
                 .build();

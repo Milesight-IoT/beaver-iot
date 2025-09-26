@@ -36,12 +36,28 @@
         </dependency>
         <dependency>
             <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>device-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
             <artifactId>message-pub-sub-component</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.milesight.beaveriot</groupId>
             <artifactId>cluster</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>blueprint-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>workflow-api</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

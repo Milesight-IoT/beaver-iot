@@ -154,6 +154,15 @@ public class AttributeBuilder {
         return this;
     }
 
+    public AttributeBuilder important(Integer important) {
+        if (important == null || important == POSITIVE_INT_NAN) {
+            return this;
+        }
+
+        attributes.put(ATTRIBUTE_IMPORTANT, important);
+        return this;
+    }
+
     public Map<String, Object> build() {
         return attributes;
     }

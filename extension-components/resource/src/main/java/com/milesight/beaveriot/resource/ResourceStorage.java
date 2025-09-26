@@ -8,7 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.net.URL;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.UUID;
 
 /**
@@ -57,8 +58,13 @@ public class ResourceStorage {
     /**
      * Get resource
      */
-    public String get() {
-        return null;
+    public InputStream get(String objKey) {
+        byte[] data = resourceAdapter.get(objKey);
+        if (data == null) {
+            return null;
+        }
+
+        return new ByteArrayInputStream(data);
     }
 
     /**

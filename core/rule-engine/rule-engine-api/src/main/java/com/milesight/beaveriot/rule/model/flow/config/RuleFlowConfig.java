@@ -22,6 +22,8 @@ public class RuleFlowConfig {
 
     private List<RuleEdgeConfig> edges;
 
+    private RuleFlowConfigMetadata metadata;
+
     private List<RuleConfig> initializedNodes = new ArrayList<>();
 
     public void initialize() {

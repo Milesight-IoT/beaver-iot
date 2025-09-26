@@ -31,6 +31,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.InputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -159,6 +160,26 @@ public class ResourceService implements ResourceManagerFacade {
 
         resourceRefRepository.deleteAll(refList);
         cleanUpResources(refList.stream().map(ResourceRefPO::getResourceId).distinct().toList());
+    }
+
+    @Override
+    public InputStream getDataByUrl(String url) {
+        ResourcePO resourcePO = resourceRepository.findOneByUrl(url);
+        if (resourcePO == null) {
+            throw ServiceException.with(ErrorCode.DATA_NO_FOUND.getErrorCode(), "Resource url not found: " + url).build();
+        }
+
+        return resourceStorage.get(resourcePO.getKey());
+    }
+
+    @Override
+    public String getResourceNameByUrl(String url) {
+        ResourcePO resourcePO = resourceRepository.findOneByUrl(url);
+        if (resourcePO == null) {
+            throw ServiceException.with(ErrorCode.DATA_NO_FOUND.getErrorCode(), "Resource url not found: " + url).build();
+        }
+
+        return resourcePO.getName();
     }
 
     /**
