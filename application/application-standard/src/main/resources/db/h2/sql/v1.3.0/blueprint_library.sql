@@ -21,3 +21,7 @@ CREATE TABLE `t_blueprint_library`
 --changeset pandalxb:blueprint_library_v1.3.0_20250924_090000
 ALTER TABLE `t_blueprint_library`
     ADD COLUMN source_type VARCHAR(32) DEFAULT 'Default';
+
+--changeset simon:blueprint_library_v1.3.0_20250926_164500
+ALTER TABLE `t_blueprint_library`
+    ALTER COLUMN source_type SET NOT NULL;
