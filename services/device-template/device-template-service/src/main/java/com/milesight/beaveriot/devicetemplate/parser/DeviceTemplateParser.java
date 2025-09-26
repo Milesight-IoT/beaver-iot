@@ -310,7 +310,11 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             if (deviceCodecExecutorFacade == null) {
                 throw ServiceException.with(ServerErrorCode.DEVICE_DATA_DECODE_FAILED.getErrorCode(), ServerErrorCode.DEVICE_DATA_DECODE_FAILED.getErrorMessage()).build();
             }
-            jsonNode = deviceCodecExecutorFacade.decode(byteData, codecArgContext);
+            try {
+                jsonNode = deviceCodecExecutorFacade.decode(byteData, codecArgContext);
+            } catch (Exception e) {
+                throw ServiceException.with(ServerErrorCode.DEVICE_DATA_DECODE_FAILED.getErrorCode(), ServerErrorCode.DEVICE_DATA_DECODE_FAILED.getErrorMessage()).build();
+            }
         } else if (data instanceof String jsonStringData) {
             ObjectMapper mapper = new ObjectMapper();
             jsonNode = mapper.readTree(jsonStringData);
