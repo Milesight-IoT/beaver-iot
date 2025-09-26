@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.blueprint.core.model;
+package com.milesight.beaveriot.blueprint.core.helper;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

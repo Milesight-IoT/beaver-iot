@@ -9,4 +9,5 @@ public interface BlueprintConstants {
     String VARIABLES_KEY = "Variables";
     String PARAMETERS_KEY = "Parameters";
     String SYSTEM_CONTEXT_KEY = "System";
+    String I18N_KEY = "I18n";
 }

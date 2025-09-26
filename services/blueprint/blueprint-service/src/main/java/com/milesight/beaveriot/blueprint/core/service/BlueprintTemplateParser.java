@@ -15,6 +15,7 @@ import com.milesight.beaveriot.blueprint.core.model.ConstantsTemplate;
 import com.milesight.beaveriot.blueprint.core.model.ParametersObjectSchema;
 import com.milesight.beaveriot.blueprint.core.model.VariablesTemplate;
 import com.milesight.beaveriot.blueprint.support.ResourceLoader;
+import com.milesight.beaveriot.context.i18n.locale.LocaleContext;
 import io.pebbletemplates.pebble.PebbleEngine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -104,7 +105,7 @@ public class BlueprintTemplateParser implements IBlueprintTemplateParser {
             log.debug("read template {}:\n{}", relativePath, templateString);
             var template = pebbleEngine.getTemplate(templateString);
             var stringWriter = new StringWriter();
-            template.evaluate(stringWriter, context);
+            template.evaluate(stringWriter, context, LocaleContext.getLocale());
             var result = stringWriter.toString();
             log.debug("pebble evaluated:\n{}", result);
             return result;

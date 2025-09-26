@@ -38,9 +38,17 @@ public abstract class AbstractFunctionExecutor<F extends FunctionNode> implement
     }
 
     public DataNode getParameter(FunctionNode function, int pos) {
+        return getParameter(function, pos, true);
+    }
+
+    public DataNode getParameter(FunctionNode function, int pos, boolean required) {
         var parameters = function.getParameters();
         if (parameters.size() - 1 < pos) {
-            throw new ServiceException(BlueprintErrorCode.BLUEPRINT_FUNCTION_EXECUTION_FAILED, "Invalid parameter count.");
+            if (required) {
+                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_FUNCTION_EXECUTION_FAILED, "Invalid parameter count.");
+            } else {
+                return null;
+            }
         }
         return parameters.get(pos);
     }

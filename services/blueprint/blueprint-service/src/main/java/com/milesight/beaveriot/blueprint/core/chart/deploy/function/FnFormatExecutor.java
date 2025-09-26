@@ -1,48 +1,40 @@
 package com.milesight.beaveriot.blueprint.core.chart.deploy.function;
 
 import com.milesight.beaveriot.blueprint.core.chart.deploy.BlueprintDeployContext;
+import com.milesight.beaveriot.blueprint.core.chart.node.data.DataNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.function.FnFormatNode;
+import com.milesight.beaveriot.blueprint.core.helper.MapFormat;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
+import java.text.MessageFormat;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
+import java.util.Optional;
 
 @Slf4j
 @Component
 public class FnFormatExecutor extends AbstractFunctionExecutor<FnFormatNode> {
 
-    public static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{(\\w+)}");
-
     @SuppressWarnings("unchecked")
     @Override
     public void execute(FnFormatNode function, BlueprintDeployContext context) {
-        setResult(function, format(
-                getParameter(function, 0, String.class),
-                getParameter(function, 1, Map.class)
-        ));
-    }
+        var template = getParameter(function, 0, String.class);
+        var params = Optional.ofNullable(getParameter(function, 1, false))
+                .map(DataNode::getValue)
+                .orElse(null);
 
-    /**
-     * Inspired by <a href="https://www.baeldung.com/java-string-formatting-named-placeholders">this article</a>
-     */
-    private String format(String template, Map<Object, Object> params) {
-        var args = new ArrayList<>();
-        var newTemplate = new StringBuilder(template);
-        var matcher = PLACEHOLDER_PATTERN.matcher(template);
-
-        while (matcher.find()) {
-            var key = matcher.group(1);
-            var placeHolder = "${" + key + "}";
-            int index = newTemplate.indexOf(placeHolder);
-            if (index != -1) {
-                newTemplate.replace(index, index + placeHolder.length(), "%s");
-                args.add(params.getOrDefault(key, ""));
-            }
+        String result;
+        if (params instanceof Map<?, ?> map) {
+            result = MapFormat.format(template, (Map<Object, Object>) map);
+        } else if (params instanceof List<?> list) {
+            result = MessageFormat.format(template, list.toArray());
+        } else {
+            result = MapFormat.format(template, Collections.emptyMap());
         }
 
-        return String.format(newTemplate.toString(), args.toArray());
+        setResult(function, result);
     }
 
     @Override

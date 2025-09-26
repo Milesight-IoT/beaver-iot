@@ -11,7 +11,8 @@ import com.milesight.beaveriot.blueprint.core.chart.node.template.TemplateNode;
 import com.milesight.beaveriot.blueprint.core.chart.parser.IBlueprintTemplateParser;
 import com.milesight.beaveriot.blueprint.core.constant.BlueprintConstants;
 import com.milesight.beaveriot.blueprint.core.enums.BlueprintErrorCode;
-import com.milesight.beaveriot.blueprint.core.model.SystemContext;
+import com.milesight.beaveriot.blueprint.core.helper.I18n;
+import com.milesight.beaveriot.blueprint.core.helper.SystemContext;
 import com.milesight.beaveriot.blueprint.core.po.BlueprintPO;
 import com.milesight.beaveriot.blueprint.core.po.BlueprintResourcePO;
 import com.milesight.beaveriot.blueprint.core.repository.BlueprintRepository;
@@ -19,6 +20,7 @@ import com.milesight.beaveriot.blueprint.core.repository.BlueprintResourceReposi
 import com.milesight.beaveriot.blueprint.core.utils.BlueprintUtils;
 import com.milesight.beaveriot.blueprint.facade.IBlueprintFacade;
 import com.milesight.beaveriot.blueprint.support.ResourceLoader;
+import com.milesight.beaveriot.context.i18n.locale.LocaleContext;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.context.security.TenantContext;
 import lombok.NonNull;
@@ -70,6 +72,7 @@ public class BlueprintService implements IBlueprintFacade {
 
         var systemContext = getSystemContext();
         context.put(BlueprintConstants.SYSTEM_CONTEXT_KEY, systemContext);
+        context.put(BlueprintConstants.I18N_KEY, getI18n(resourceLoader));
 
         var chart = templateParser.parseBlueprint(resourceLoader, context);
         var bindResources = blueprintDeployer.deploy(chart, context);
@@ -117,6 +120,11 @@ public class BlueprintService implements IBlueprintFacade {
             systemContext.setTenantId(tenantId);
         }
         return systemContext;
+    }
+
+    @NonNull
+    private static I18n getI18n(ResourceLoader resourceLoader) {
+        return new I18n(resourceLoader, LocaleContext.getLocale());
     }
 
     private static void validateVariables(Map<String, Object> variables, JsonNode variablesJsonSchema) {

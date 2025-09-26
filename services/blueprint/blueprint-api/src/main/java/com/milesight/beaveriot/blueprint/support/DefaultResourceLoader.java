@@ -32,7 +32,7 @@ public class DefaultResourceLoader implements ResourceLoader {
 
             return new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {
-            throw new RuntimeException("Failed to load template: " + relativePath, e);
+            throw new RuntimeException("Failed to load resource: " + relativePath, e);
         }
     }
 }
