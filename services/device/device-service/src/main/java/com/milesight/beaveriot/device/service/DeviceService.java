@@ -145,7 +145,7 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
         }
 
         payload.validate();
-        payload.putContext(DEVICE_NAME_ON_ADD, createDeviceRequest.getName());
+        payload.putContext(DEVICE_NAME_ON_ADD, createDeviceRequest.getName().trim());
         payload.putContext(DEVICE_TEMPLATE_KEY_ON_ADD, createDeviceRequest.getTemplate());
 
         boolean hasGroup = StringUtils.hasText(createDeviceRequest.getGroupName());
@@ -383,7 +383,7 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
         }
 
         DevicePO device = findResult.get();
-        String newName = updateDeviceRequest.getName();
+        String newName = updateDeviceRequest.getName().trim();
         if (device.getName().equals(newName)) {
             return;
         }

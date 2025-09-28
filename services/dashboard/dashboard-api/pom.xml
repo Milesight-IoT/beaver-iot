@@ -46,6 +46,11 @@
             <artifactId>lombok</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>eventbus-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-commons</artifactId>
             <exclusions>

@@ -17,5 +17,5 @@ public class CanvasDataFieldConstants {
 
     public static final int DEVICE_MAX_COUNT_PER_CANVAS = 500;
 
-    public static final int CANVAS_NAME_MAX_LENGTH = 25;
+    public static final int CANVAS_NAME_MAX_LENGTH = 64;
 }
