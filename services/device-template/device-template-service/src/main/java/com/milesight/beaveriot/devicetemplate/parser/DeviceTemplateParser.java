@@ -668,10 +668,10 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         try {
             blueprintId = blueprintFacade.deployBlueprint(loader, blueprintValues);
             if (blueprintId == null) {
-                throw ServiceException.with(ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorCode(), ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorMessage()).build();
+                throw ServiceException.with(ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED).build();
             }
         } catch (Exception e) {
-            throw ServiceException.with(ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorCode(), ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorMessage()).build();
+            throw new ServiceException(ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED, e);
         }
 
         deviceBlueprintMappingFacade.saveMapping(device.getId(), blueprintId);
