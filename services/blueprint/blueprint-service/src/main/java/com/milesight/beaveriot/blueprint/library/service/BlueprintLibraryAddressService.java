@@ -9,6 +9,7 @@ import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryAddress;
 import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryManifest;
 import com.milesight.beaveriot.blueprint.library.model.BlueprintLibrarySubscription;
 import com.milesight.beaveriot.blueprint.library.support.YamlConverter;
+import com.milesight.beaveriot.blueprint.library.support.ZipInputStreamScanner;
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
 import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
@@ -18,10 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * author: Luxb
@@ -47,18 +46,18 @@ public class BlueprintLibraryAddressService {
     public List<BlueprintLibraryAddress> getDistinctBlueprintLibraryAddresses() {
         List<BlueprintLibraryAddress> distinctBlueprintLibraryAddresses = new ArrayList<>();
 
-        List<BlueprintLibrarySubscription> allTenantsBlueprintLibrarySubscriptions = blueprintLibrarySubscriptionService.findAllIgnoreTenant();
-        List<BlueprintLibraryAddress> allTenantsBlueprintLibraryAddresses = convertSubscriptionsToAddresses(allTenantsBlueprintLibrarySubscriptions);
+        List<BlueprintLibrarySubscription> allTenantsActiveBlueprintLibrarySubscriptions = blueprintLibrarySubscriptionService.findAllByActiveTrueIgnoreTenant();
+        List<Long> activeBlueprintLibraryIds = getActiveBlueprintLibraryIds(allTenantsActiveBlueprintLibrarySubscriptions);
+        List<BlueprintLibraryAddress> allTenantsActiveBlueprintLibraryAddresses = convertLibraryIdsToAddresses(activeBlueprintLibraryIds);
         BlueprintLibraryAddress defaultBlueprintLibraryAddress = blueprintLibraryConfig.getDefaultBlueprintLibraryAddress();
-        List<BlueprintLibraryAddress> allBlueprintLibraryAddresses = new ArrayList<>(allTenantsBlueprintLibraryAddresses);
+        List<BlueprintLibraryAddress> allBlueprintLibraryAddresses = new ArrayList<>();
         allBlueprintLibraryAddresses.add(defaultBlueprintLibraryAddress);
+        if (!CollectionUtils.isEmpty(allTenantsActiveBlueprintLibraryAddresses)) {
+            allBlueprintLibraryAddresses.addAll(allTenantsActiveBlueprintLibraryAddresses);
+        }
 
         Set<String> keys = new HashSet<>();
         for (BlueprintLibraryAddress blueprintLibraryAddress : allBlueprintLibraryAddresses) {
-            if (!blueprintLibraryAddress.logicEquals(defaultBlueprintLibraryAddress) && !blueprintLibraryAddress.getActive()) {
-                continue;
-            }
-
             if (!keys.contains(blueprintLibraryAddress.getKey())) {
                 keys.add(blueprintLibraryAddress.getKey());
                 distinctBlueprintLibraryAddresses.add(blueprintLibraryAddress);
@@ -67,23 +66,28 @@ public class BlueprintLibraryAddressService {
         return distinctBlueprintLibraryAddresses;
     }
 
+    private List<Long> getActiveBlueprintLibraryIds(List<BlueprintLibrarySubscription> blueprintLibrarySubscriptions) {
+        Set<Long> activeLibraryIds = new TreeSet<>();
+        for (BlueprintLibrarySubscription blueprintLibrarySubscription : blueprintLibrarySubscriptions) {
+            if (blueprintLibrarySubscription.getActive()) {
+                activeLibraryIds.add(blueprintLibrarySubscription.getLibraryId());
+            }
+        }
+        return new ArrayList<>(activeLibraryIds);
+    }
+
     public boolean isDefaultBlueprintLibraryAddress(BlueprintLibraryAddress blueprintLibraryAddress) {
         return blueprintLibraryConfig.getDefaultBlueprintLibraryAddress().logicEquals(blueprintLibraryAddress);
     }
 
-    private List<BlueprintLibraryAddress> convertSubscriptionsToAddresses(List<BlueprintLibrarySubscription> blueprintLibrarySubscriptions) {
-        if (CollectionUtils.isEmpty(blueprintLibrarySubscriptions)) {
+    private List<BlueprintLibraryAddress> convertLibraryIdsToAddresses(List<Long> blueprintLibraryIds) {
+        if (CollectionUtils.isEmpty(blueprintLibraryIds)) {
             return Collections.emptyList();
         }
 
         List<BlueprintLibraryAddress> blueprintLibraryAddresses = new ArrayList<>();
-        Map<Long, BlueprintLibrary> blueprintLibraryCache = new HashMap<>();
-        for (BlueprintLibrarySubscription blueprintLibrarySubscription : blueprintLibrarySubscriptions) {
-            if (!blueprintLibrarySubscription.getActive()) {
-                continue;
-            }
-
-            BlueprintLibrary blueprintLibrary = blueprintLibraryCache.computeIfAbsent(blueprintLibrarySubscription.getLibraryId(), blueprintLibraryService::findById);
+        for (Long blueprintLibraryId : blueprintLibraryIds) {
+            BlueprintLibrary blueprintLibrary = blueprintLibraryService.findById(blueprintLibraryId);
             BlueprintLibraryAddress blueprintLibraryAddress = convertLibraryToAddress(blueprintLibrary);
             blueprintLibraryAddresses.add(blueprintLibraryAddress);
         }
@@ -168,52 +172,23 @@ public class BlueprintLibraryAddressService {
 
     private String getManifestContentFromZip(String zipUrl, String manifestFilePath) {
         try (InputStream inputStream = resourceManagerFacade.getDataByUrl(zipUrl)) {
-            if (inputStream == null) {
+            AtomicReference<String> manifestContent = new AtomicReference<>();
+            boolean isSuccess = ZipInputStreamScanner.scan(inputStream, (relativePath, content) -> {
+                if (relativePath.equals(manifestFilePath)) {
+                    manifestContent.set(content);
+                    return false;
+                } else {
+                    return true;
+                }
+            });
+
+            if (isSuccess) {
+                return manifestContent.get();
+            } else {
                 return null;
-            }
-
-            try (ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
-                ZipEntry rootEntry = zipInputStream.getNextEntry();
-                if (rootEntry == null) {
-                    return null;
-                }
-
-                String rootPrefix = rootEntry.getName();
-                if (!rootEntry.isDirectory() || !rootPrefix.endsWith("/")) {
-                    return null;
-                }
-                zipInputStream.closeEntry();
-
-                ZipEntry entry;
-                while ((entry = zipInputStream.getNextEntry()) != null) {
-                    if (entry.isDirectory()) {
-                        zipInputStream.closeEntry();
-                        continue;
-                    }
-
-                    String entryName = entry.getName();
-                    if (!entryName.startsWith(rootPrefix)) {
-                        zipInputStream.closeEntry();
-                        continue;
-                    }
-
-                    String relativePath = entryName.substring(rootPrefix.length());
-                    if (relativePath.isEmpty()) {
-                        zipInputStream.closeEntry();
-                        continue;
-                    }
-
-                    byte[] bytes = zipInputStream.readAllBytes();
-                    String content = new String(bytes, StandardCharsets.UTF_8);
-                    zipInputStream.closeEntry();
-                    if (relativePath.equals(manifestFilePath)) {
-                        return content;
-                    }
-                }
             }
         } catch (Exception e) {
             return null;
         }
-        return null;
     }
 }
