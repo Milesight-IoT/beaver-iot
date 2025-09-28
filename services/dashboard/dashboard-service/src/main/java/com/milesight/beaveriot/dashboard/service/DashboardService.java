@@ -6,10 +6,11 @@ import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.canvas.enums.CanvasAttachType;
 import com.milesight.beaveriot.canvas.facade.ICanvasFacade;
 import com.milesight.beaveriot.canvas.model.dto.CanvasDTO;
-import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.dashboard.convert.DashboardConvert;
+import com.milesight.beaveriot.dashboard.dto.DashboardDTO;
 import com.milesight.beaveriot.dashboard.enums.DashboardErrorCode;
+import com.milesight.beaveriot.dashboard.event.DashboardEvent;
 import com.milesight.beaveriot.dashboard.model.request.DashboardBatchDeleteRequest;
 import com.milesight.beaveriot.dashboard.model.request.DashboardCanvasCreateRequest;
 import com.milesight.beaveriot.dashboard.model.request.DashboardInfoRequest;
@@ -22,7 +23,7 @@ import com.milesight.beaveriot.dashboard.po.DashboardHomePO;
 import com.milesight.beaveriot.dashboard.po.DashboardPO;
 import com.milesight.beaveriot.dashboard.repository.DashboardHomeRepository;
 import com.milesight.beaveriot.dashboard.repository.DashboardRepository;
-import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
+import com.milesight.beaveriot.eventbus.EventBus;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,21 +57,18 @@ public class DashboardService {
     IUserFacade userFacade;
 
     @Autowired
-    ResourceManagerFacade resourceManagerFacade;
-
-    @Autowired
-    private EntityServiceProvider entityServiceProvider;
-
-    @Autowired
     DashboardCoverService dashboardCoverService;
 
     @Autowired
     ICanvasFacade canvasFacade;
 
+    @Autowired
+    private EventBus<DashboardEvent> eventBus;
+
     @Transactional(rollbackFor = Throwable.class)
     public CreateDashboardResponse createDashboard(DashboardInfoRequest dashboardInfoRequest) {
         // check dashboard name
-        String name = dashboardInfoRequest.getName();
+        String name = dashboardInfoRequest.getName().trim();
         if (!StringUtils.hasText(name)) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("name is empty").build();
         }
@@ -97,6 +95,8 @@ public class DashboardService {
 
         userFacade.associateResource(userId, ResourceType.DASHBOARD, Collections.singletonList(dashboardPO.getId()));
 
+        eventBus.publish(DashboardEvent.of(DashboardConvert.INSTANCE.convertDTO(dashboardPO), DashboardEvent.EventType.CREATED));
+
         CreateDashboardResponse createDashboardResponse = new CreateDashboardResponse();
         createDashboardResponse.setDashboardId(dashboardId.toString());
         createDashboardResponse.setMainCanvasId(defaultCanvasId.toString());
@@ -104,7 +104,7 @@ public class DashboardService {
     }
 
     public void updateDashboard(Long dashboardId, DashboardInfoRequest updateDashboardRequest) {
-        String name = updateDashboardRequest.getName();
+        String name = updateDashboardRequest.getName().trim();
         DashboardPO dashboardPO = dashboardRepository.findOne(filterable -> filterable.eq(DashboardPO.Fields.name, name)).orElse(null);
         if (dashboardPO != null && !Objects.equals(dashboardPO.getId(), dashboardId)) {
             throw ServiceException.with(DashboardErrorCode.DASHBOARD_NAME_EXIST).build();
@@ -118,6 +118,7 @@ public class DashboardService {
         dashboardPO.setDescription(updateDashboardRequest.getDescription());
         dashboardCoverService.applyCover(dashboardPO, updateDashboardRequest.getCoverType(), updateDashboardRequest.getCoverData());
         dashboardRepository.save(dashboardPO);
+        eventBus.publish(DashboardEvent.of(DashboardConvert.INSTANCE.convertDTO(dashboardPO), DashboardEvent.EventType.UPDATED));
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -138,6 +139,7 @@ public class DashboardService {
 
         dashboardPOList.forEach(dashboardCoverService::destroyCover);
         dashboardRepository.deleteAllById(dashboardIdList);
+        dashboardPOList.forEach(dashboardPO -> eventBus.publish(DashboardEvent.of(DashboardConvert.INSTANCE.convertDTO(dashboardPO), DashboardEvent.EventType.DELETED)));
 
         userFacade.deleteResource(ResourceType.DASHBOARD, dashboardIdList);
     }
@@ -160,7 +162,10 @@ public class DashboardService {
                         () -> dashboardResponseList.forEach(dashboardResponse -> dashboardResponse.setHome(false))
                 );
 
-        dashboardResponseList.sort(Comparator.comparing(DashboardListItemResponse::getHome).reversed().thenComparing(DashboardListItemResponse::getCreatedAt));
+        dashboardResponseList.sort(Comparator.comparing(
+                DashboardListItemResponse::getHome, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(DashboardListItemResponse::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+        );
         return dashboardResponseList;
     }
 

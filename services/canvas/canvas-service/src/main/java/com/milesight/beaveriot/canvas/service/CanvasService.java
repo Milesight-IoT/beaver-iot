@@ -12,10 +12,8 @@ import com.milesight.beaveriot.canvas.po.CanvasPO;
 import com.milesight.beaveriot.canvas.po.CanvasWidgetPO;
 import com.milesight.beaveriot.canvas.repository.CanvasRepository;
 import com.milesight.beaveriot.canvas.repository.CanvasWidgetRepository;
-import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.device.dto.DeviceResponseData;
-import com.milesight.beaveriot.entity.facade.IEntityFacade;
 import com.milesight.beaveriot.permission.enums.DataPermissionType;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.permission.facade.IPermissionFacade;
@@ -51,12 +49,6 @@ public class CanvasService {
 
     @Autowired
     IPermissionFacade permissionFacade;
-
-    @Autowired
-    IEntityFacade entityFacade;
-
-    @Autowired
-    EntityServiceProvider entityServiceProvider;
 
     @Autowired
     ResourceManagerFacade resourceManagerFacade;
