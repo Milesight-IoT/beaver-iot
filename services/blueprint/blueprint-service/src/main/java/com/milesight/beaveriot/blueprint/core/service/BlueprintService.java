@@ -66,13 +66,13 @@ public class BlueprintService implements IBlueprintFacade {
             // ensure map is writable
             variables = new HashMap<>(variables);
             BlueprintUtils.loadObjectSchemaDefaultValues(variablesJsonSchema, variables);
-            context.put(BlueprintConstants.VARIABLES_KEY, variables);
-            context.put(BlueprintConstants.PARAMETERS_KEY, variables);
         }
 
         var systemContext = getSystemContext();
         context.put(BlueprintConstants.SYSTEM_CONTEXT_KEY, systemContext);
         context.put(BlueprintConstants.I18N_KEY, getI18n(resourceLoader));
+        context.put(BlueprintConstants.VARIABLES_KEY, variables);
+        context.put(BlueprintConstants.PARAMETERS_KEY, variables);
 
         var chart = templateParser.parseBlueprint(resourceLoader, context);
         var bindResources = blueprintDeployer.deploy(chart, context);

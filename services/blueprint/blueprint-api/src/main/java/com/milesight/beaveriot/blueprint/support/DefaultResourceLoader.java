@@ -4,6 +4,7 @@ import com.milesight.beaveriot.blueprint.facade.IBlueprintLibraryResourceResolve
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.support.SpringContext;
 
+import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -21,13 +22,15 @@ public class DefaultResourceLoader implements ResourceLoader {
         this.blueprintPath = blueprintPath;
         this.blueprintLibraryResourceFacade = SpringContext.getBean(IBlueprintLibraryResourceResolverFacade.class);
     }
+
+    @Nullable
     @Override
     public InputStream loadResource(String relativePath) {
         try {
             String resourcePath = blueprintLibraryResourceFacade.buildResourcePath(blueprintPath, relativePath);
             String content = blueprintLibraryResourceFacade.getResourceContent(blueprintLibrary, resourcePath);
             if (content == null) {
-                throw new IllegalArgumentException("Resource content is null for path: " + resourcePath);
+                return null;
             }
 
             return new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
