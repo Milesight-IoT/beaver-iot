@@ -9,6 +9,7 @@ import com.milesight.beaveriot.blueprint.library.client.utils.OkHttpUtil;
 import com.milesight.beaveriot.blueprint.library.enums.BlueprintLibraryErrorCode;
 import com.milesight.beaveriot.blueprint.library.model.*;
 import com.milesight.beaveriot.blueprint.library.service.*;
+import com.milesight.beaveriot.blueprint.library.support.ZipInputStreamScanner;
 import com.milesight.beaveriot.context.application.ApplicationProperties;
 import com.milesight.beaveriot.context.integration.model.BlueprintDeviceVendor;
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
@@ -25,14 +26,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 /**
  * author: Luxb
@@ -194,53 +192,20 @@ public class BlueprintLibrarySyncer {
     private void syncBlueprintLibraryResources(InputStream inputStream, BlueprintLibrary blueprintLibrary,
                                                BlueprintLibraryManifest manifest,
                                                BlueprintLibraryAddress blueprintLibraryAddress,
-                                               List<BlueprintLibraryResource> blueprintLibraryResources) throws Exception {
-        if (inputStream == null) {
+                                               List<BlueprintLibraryResource> blueprintLibraryResources) {
+        boolean isSuccess = ZipInputStreamScanner.scan(inputStream, (relativePath, content) -> {
+            BlueprintLibraryResource blueprintLibraryResource = BlueprintLibraryResource.builder()
+                    .path(relativePath)
+                    .content(content)
+                    .libraryId(blueprintLibrary.getId())
+                    .libraryVersion(manifest.getVersion())
+                    .build();
+            blueprintLibraryResources.add(blueprintLibraryResource);
+            return true;
+        });
+
+        if (!isSuccess) {
             throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
-        }
-
-        try (ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
-            ZipEntry rootEntry = zipInputStream.getNextEntry();
-            if (rootEntry == null) {
-                throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
-            }
-
-            String rootPrefix = rootEntry.getName();
-            if (!rootEntry.isDirectory() || !rootPrefix.endsWith("/")) {
-                throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
-            }
-            zipInputStream.closeEntry();
-
-            ZipEntry entry;
-            while ((entry = zipInputStream.getNextEntry()) != null) {
-                if (entry.isDirectory()) {
-                    zipInputStream.closeEntry();
-                    continue;
-                }
-
-                String entryName = entry.getName();
-                if (!entryName.startsWith(rootPrefix)) {
-                    zipInputStream.closeEntry();
-                    continue;
-                }
-
-                String relativePath = entryName.substring(rootPrefix.length());
-                if (relativePath.isEmpty()) {
-                    zipInputStream.closeEntry();
-                    continue;
-                }
-
-                byte[] bytes = zipInputStream.readAllBytes();
-                String content = new String(bytes, StandardCharsets.UTF_8);
-                BlueprintLibraryResource blueprintLibraryResource = BlueprintLibraryResource.builder()
-                        .path(relativePath)
-                        .content(content)
-                        .libraryId(blueprintLibrary.getId())
-                        .libraryVersion(manifest.getVersion())
-                        .build();
-                blueprintLibraryResources.add(blueprintLibraryResource);
-                zipInputStream.closeEntry();
-            }
         }
 
         if (blueprintLibraryResources.isEmpty()) {
