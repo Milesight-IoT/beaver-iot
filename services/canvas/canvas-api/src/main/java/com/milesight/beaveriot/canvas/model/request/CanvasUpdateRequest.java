@@ -4,7 +4,11 @@ import com.milesight.beaveriot.canvas.model.dto.CanvasWidgetDTO;
 import com.milesight.beaveriot.canvas.constants.CanvasDataFieldConstants;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.FieldNameConstants;
 
 import java.util.List;
 
@@ -15,6 +19,10 @@ import java.util.List;
  * @date 2025/9/10
  */
 @Data
+@Builder
+@FieldNameConstants
+@AllArgsConstructor
+@NoArgsConstructor
 public class CanvasUpdateRequest {
     @Size(max = CanvasDataFieldConstants.CANVAS_NAME_MAX_LENGTH)
     @NotBlank

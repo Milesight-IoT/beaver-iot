@@ -42,6 +42,9 @@ public class WorkflowResourceNode extends AbstractResourceNode {
 
     private DataNode data;
 
+    @JsonIgnore
+    private DataNode trigger;
+
     @Override
     public String getResourceType() {
         return RESOURCE_TYPE;
@@ -126,7 +129,11 @@ public class WorkflowResourceNode extends AbstractResourceNode {
         }
 
         public void setData(JsonNode data) {
-            node.setData(BlueprintUtils.convertToDataNode(WorkflowResourceNode.Fields.data, node, data));
+            node.setData(BlueprintUtils.convertToDataNode(Fields.data, node, data));
+        }
+
+        public void setTrigger(JsonNode entity) {
+            node.setData(BlueprintUtils.convertToDataNode(Fields.trigger, node, entity));
         }
 
     }

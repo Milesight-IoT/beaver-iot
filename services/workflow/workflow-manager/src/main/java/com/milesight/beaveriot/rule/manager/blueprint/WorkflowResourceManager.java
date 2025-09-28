@@ -3,6 +3,7 @@ package com.milesight.beaveriot.rule.manager.blueprint;
 import com.google.common.primitives.Longs;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.blueprint.core.chart.deploy.BlueprintDeployContext;
 import com.milesight.beaveriot.blueprint.core.chart.deploy.resource.ResourceManager;
 import com.milesight.beaveriot.blueprint.core.chart.deploy.resource.ResourceMatcher;
@@ -10,6 +11,7 @@ import com.milesight.beaveriot.blueprint.core.chart.node.resource.WorkflowResour
 import com.milesight.beaveriot.blueprint.core.enums.BlueprintErrorCode;
 import com.milesight.beaveriot.blueprint.core.model.BindResource;
 import com.milesight.beaveriot.blueprint.core.utils.BlueprintUtils;
+import com.milesight.beaveriot.rule.facade.IWorkflowFacade;
 import com.milesight.beaveriot.rule.manager.model.WorkflowAdditionalData;
 import com.milesight.beaveriot.rule.manager.model.WorkflowCreateContext;
 import com.milesight.beaveriot.rule.manager.model.request.SaveWorkflowRequest;
@@ -30,6 +32,10 @@ public class WorkflowResourceManager implements ResourceManager<WorkflowResource
     @Lazy
     @Autowired
     private WorkflowService workflowService;
+
+    @Lazy
+    @Autowired
+    private IWorkflowFacade workflowFacade;
 
     @Override
     public Class<WorkflowResourceNode> getMatchedNodeType() {
@@ -90,6 +96,11 @@ public class WorkflowResourceManager implements ResourceManager<WorkflowResource
             var response = workflowService.createWorkflow(request, new WorkflowCreateContext(deviceId));
             flowId = response.getFlowId();
             accessor.setId(flowId);
+        }
+
+        var trigger = workflowFacade.getTriggerEntityByWorkflow(Long.valueOf(flowId));
+        if (trigger != null) {
+            accessor.setTrigger(JsonUtils.toJsonNode(trigger));
         }
 
         workflowNode.setManaged(isManaged);
