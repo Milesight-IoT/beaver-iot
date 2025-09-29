@@ -37,12 +37,40 @@ public abstract class BaseDeviceStatusManager {
         this.entityTemplateServiceProvider = entityTemplateServiceProvider;
     }
 
-    public void register(String integrationId, Function<Device, Long> offlineTimeoutFetcher) {
-        register(integrationId, offlineTimeoutFetcher, null);
+    public void register(String integrationId,
+                         Consumer<Device> onlineListener,
+                         Consumer<Device> offlineListener) {
+        register(integrationId, null, null, onlineListener, offlineListener);
     }
 
-    public void register(String integrationId, Function<Device, Long> offlineTimeoutFetcher, Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher) {
-        DeviceStatusConfig config = DeviceStatusConfig.of(this::updateDeviceStatusToOnline, this::updateDeviceStatusToOffline, offlineTimeoutFetcher, batchOfflineTimeoutFetcher);
+    public void register(String integrationId,
+                         Function<Device, Long> offlineTimeoutFetcher) {
+        register(integrationId, offlineTimeoutFetcher, null, null, null);
+    }
+
+    public void register(String integrationId,
+                  Function<Device, Long> offlineTimeoutFetcher,
+                  Consumer<Device> onlineListener,
+                  Consumer<Device> offlineListener) {
+        register(integrationId, offlineTimeoutFetcher, null, onlineListener, offlineListener);
+    }
+
+    public void register(String integrationId,
+                         Function<Device, Long> offlineTimeoutFetcher,
+                         Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher) {
+        register(integrationId, offlineTimeoutFetcher, batchOfflineTimeoutFetcher, null, null);
+    }
+
+    public void register(String integrationId,
+                         Function<Device, Long> offlineTimeoutFetcher,
+                         Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher,
+                         Consumer<Device> onlineListener,
+                         Consumer<Device> offlineListener) {
+        DeviceStatusConfig config = DeviceStatusConfig.of(
+                offlineTimeoutFetcher,
+                batchOfflineTimeoutFetcher,
+                onlineListener,
+                offlineListener);
         integrationDeviceStatusConfigs.put(integrationId, config);
         afterRegister(integrationId, config);
     }
@@ -63,12 +91,18 @@ public abstract class BaseDeviceStatusManager {
 
     protected abstract void afterRegister(String integrationId, DeviceStatusConfig config);
 
-    protected void deviceOnlineCallback(Device device, Long expirationTime) {
+    protected void deviceOnlineCallback(Device device, Long expirationTime, Consumer<Device> onlineListener) {
         log.debug("Device(id={}, key={}) status updated to online, expiration time: {}", device.getId(), device.getKey(), expirationTime == null ? "-" :expirationTime / 1000);
+        if (onlineListener != null) {
+            onlineListener.accept(device);
+        }
     }
 
-    protected void deviceOfflineCallback(Device device) {
+    protected void deviceOfflineCallback(Device device, Consumer<Device> offlineListener) {
         log.debug("Device(id={}, key={}) status updated to offline", device.getId(), device.getKey());
+        if (offlineListener != null) {
+            offlineListener.accept(device);
+        }
     }
 
     protected void updateDeviceStatusToOnline(Device device) {
@@ -136,20 +170,20 @@ public abstract class BaseDeviceStatusManager {
 
     @Data
     public static class DeviceStatusConfig {
-        private Consumer<Device> onlineUpdater;
-        private Consumer<Device> offlineUpdater;
         private Function<Device, Long> offlineTimeoutFetcher;
         private Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher;
+        private Consumer<Device> onlineListener;
+        private Consumer<Device> offlineListener;
 
-        public static DeviceStatusConfig of(Consumer<Device> onlineUpdater,
-                                            Consumer<Device> offlineUpdater,
-                                            Function<Device, Long> offlineTimeoutFetcher,
-                                            Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher) {
+        public static DeviceStatusConfig of(Function<Device, Long> offlineTimeoutFetcher,
+                                            Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher,
+                                            Consumer<Device> onlineListener,
+                                            Consumer<Device> offlineListener) {
             DeviceStatusConfig config = new DeviceStatusConfig();
-            config.setOnlineUpdater(onlineUpdater);
-            config.setOfflineUpdater(offlineUpdater);
             config.setOfflineTimeoutFetcher(offlineTimeoutFetcher);
             config.setBatchOfflineTimeoutFetcher(batchOfflineTimeoutFetcher);
+            config.setOnlineListener(onlineListener);
+            config.setOfflineListener(offlineListener);
             return config;
         }
     }
