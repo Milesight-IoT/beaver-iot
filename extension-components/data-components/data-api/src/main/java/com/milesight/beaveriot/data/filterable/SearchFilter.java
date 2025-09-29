@@ -127,7 +127,8 @@ public class SearchFilter extends CompositeCondition implements Filterable{
     }
     @Override
     public Filterable eq(String name, Object value) {
-        return addCompareCondition(!ObjectUtils.isEmpty(value), SearchOperator.EQ, name, value);
+        this.searchConditions.add(new CompareCondition(name, value, SearchOperator.EQ));
+        return this;
     }
 
     @Override
