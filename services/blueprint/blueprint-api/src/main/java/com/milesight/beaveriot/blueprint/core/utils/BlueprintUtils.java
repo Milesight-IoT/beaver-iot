@@ -99,6 +99,10 @@ public class BlueprintUtils {
     }
 
     public static JsonNode getChildByPath(JsonNode jsonNode, String path) {
+        if (jsonNode == null) {
+            return null;
+        }
+
         if (!StringUtils.hasText(path)) {
             return jsonNode;
         }
@@ -187,10 +191,7 @@ public class BlueprintUtils {
             return dataNode;
         }
 
-        var jsonNode = data instanceof String str
-                ? JsonUtils.getObjectMapper().getNodeFactory().textNode(str)
-                : JsonUtils.toJsonNode(data);
-        return convertToDataNode(nodeName, parentNode, jsonNode);
+        return convertToDataNode(nodeName, parentNode, JsonUtils.cast(data, JsonNode.class));
     }
 
     public static DataNode convertToDataNode(String nodeName, BlueprintNode parentNode, JsonNode data) {
@@ -215,8 +216,8 @@ public class BlueprintUtils {
             }
         } else if (data instanceof ObjectNode objectNode) {
             var mapDataNode = new MapDataNode(parentNode, nodeName);
-            objectNode.fields().forEachRemaining(entry ->
-                            mapDataNode.addChildNode(convertToDataNode(entry.getKey(), mapDataNode, entry.getValue())));
+            objectNode.fields().forEachRemaining(entry -> mapDataNode
+                    .addChildNode(convertToDataNode(entry.getKey(), mapDataNode, entry.getValue())));
             result = mapDataNode;
         } else if (data instanceof ArrayNode arrayNode) {
             var arrayDataNode = new ArrayDataNode(parentNode, nodeName);
@@ -250,8 +251,34 @@ public class BlueprintUtils {
 
     @Nullable
     @SuppressWarnings("unchecked")
+    public static <T> T convertValue(Object value, String type) {
+        if (type == null) {
+            return (T) value;
+        }
+
+        type = type.toLowerCase();
+        if (type.equals("json")) {
+            return (T) JsonUtils.toJSON(value);
+        }
+
+        var clazz = switch (type) {
+            case "string", "text" -> String.class;
+            case "integer", "int", "long" -> Long.class;
+            case "number", "float", "double" -> Double.class;
+            case "boolean", "bool" -> Boolean.class;
+            case "object", "map", "dict" -> ObjectNode.class;
+            case "array", "list" -> ArrayNode.class;
+            case "null" -> null;
+            default -> throw new IllegalArgumentException("Invalid type: " + type);
+        };
+
+        return (T) convertValue(value, clazz);
+    }
+
+    @Nullable
+    @SuppressWarnings("unchecked")
     public static <T> T convertValue(Object value, Class<T> type) {
-        if (value == null) {
+        if (value == null || type == null) {
             return null;
         }
 
@@ -259,19 +286,19 @@ public class BlueprintUtils {
             return (T) value;
         }
 
-        if (String.class.equals(type) && (value instanceof Number || value instanceof Boolean)) {
+        if (String.class.equals(type)) {
             return (T) String.valueOf(value);
         }
 
-        if (Number.class.isAssignableFrom(type) || Boolean.class.equals(type)) {
-            try {
-                return JsonUtils.cast(value, type);
-            } catch (IllegalArgumentException e) {
-                log.warn("Convert value to {} failed.", type.getSimpleName(), e);
+        if (Boolean.class.equals(type)) {
+            if (value instanceof Number number) {
+                return (T) (Boolean) !number.equals(0);
+            } else {
+                return (T) Boolean.valueOf(value.toString());
             }
         }
 
-        return null;
+        return JsonUtils.cast(value, type);
     }
 
 }

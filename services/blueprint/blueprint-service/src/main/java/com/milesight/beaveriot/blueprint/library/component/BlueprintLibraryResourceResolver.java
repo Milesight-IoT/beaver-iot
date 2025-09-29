@@ -5,19 +5,24 @@ import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.blueprint.facade.IBlueprintLibraryResourceResolverFacade;
 import com.milesight.beaveriot.blueprint.library.enums.BlueprintLibraryErrorCode;
 import com.milesight.beaveriot.blueprint.library.enums.BlueprintLibraryResourceErrorCode;
-import com.milesight.beaveriot.blueprint.library.model.*;
+import com.milesight.beaveriot.blueprint.library.model.BlueprintDeviceCodecs;
+import com.milesight.beaveriot.blueprint.library.model.BlueprintDeviceModels;
+import com.milesight.beaveriot.blueprint.library.model.BlueprintDeviceVendors;
+import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryManifest;
+import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryResource;
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryResourceService;
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryService;
 import com.milesight.beaveriot.blueprint.library.support.YamlConverter;
 import com.milesight.beaveriot.blueprint.model.BlueprintDeviceCodec;
-import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.integration.model.BlueprintDeviceModel;
 import com.milesight.beaveriot.context.integration.model.BlueprintDeviceVendor;
+import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.support.SpringContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Collections;
@@ -275,9 +280,7 @@ public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResour
             throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_NULL).build();
         }
 
-        if (StringUtils.isEmpty(resourcePath)) {
-            return null;
-        }
+        Assert.hasText(resourcePath, "'resourcePath' cannot be empty.");
 
         BlueprintLibraryResource blueprintLibraryResource = blueprintLibraryResourceService.getResource(blueprintLibrary.getId(), blueprintLibrary.getCurrentVersion(), resourcePath);
         if (blueprintLibraryResource == null) {

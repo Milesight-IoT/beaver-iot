@@ -78,15 +78,20 @@ public class IncludeNode extends AbstractObjectNode {
             }
             templateContext.put(BlueprintConstants.PARAMETERS_KEY, parameterValues);
 
+            var templatePathStr = templatePath.asText();
             var preRenderedTemplateJsonNode = blueprintTemplateParser.readTemplateAsJsonNode(
-                    context.getResourceLoader(), templatePath.asText(), templateContext);
+                    context.getResourceLoader(), templatePathStr, templateContext);
+            if (preRenderedTemplateJsonNode == null) {
+                throw new ServiceException(BlueprintErrorCode.BLUEPRINT_TEMPLATE_PARSING_FAILED, "Template not found: " + templatePathStr);
+            }
+
             if (preRenderedTemplateJsonNode.get(TemplateNode.Fields.parameters) instanceof ObjectNode parameterSchema) {
                 var defaultValues = new HashMap<String, Object>();
                 BlueprintUtils.loadObjectSchemaDefaultValues(parameterSchema, defaultValues);
                 defaultValues.forEach((key, value) -> parameterValues.computeIfAbsent(key, k -> value));
             }
 
-            return blueprintTemplateParser.readTemplateAsJsonNode(context.getResourceLoader(), templatePath.asText(), templateContext);
+            return blueprintTemplateParser.readTemplateAsJsonNode(context.getResourceLoader(), templatePathStr, templateContext);
         }
 
     }

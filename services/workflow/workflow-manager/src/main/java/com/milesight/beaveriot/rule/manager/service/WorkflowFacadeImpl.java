@@ -1,5 +1,8 @@
 package com.milesight.beaveriot.rule.manager.service;
 
+import com.milesight.beaveriot.context.api.EntityServiceProvider;
+import com.milesight.beaveriot.context.integration.enums.EntityType;
+import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.rule.dto.WorkflowNameDTO;
 import com.milesight.beaveriot.rule.facade.IWorkflowFacade;
 import com.milesight.beaveriot.rule.manager.po.WorkflowEntityRelationPO;
@@ -7,6 +10,7 @@ import com.milesight.beaveriot.rule.manager.po.WorkflowPO;
 import com.milesight.beaveriot.rule.manager.repository.WorkflowEntityRelationRepository;
 import com.milesight.beaveriot.rule.manager.repository.WorkflowRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -29,6 +33,10 @@ public class WorkflowFacadeImpl implements IWorkflowFacade {
     @Autowired
     WorkflowRepository workflowRepository;
 
+    @Lazy
+    @Autowired
+    EntityServiceProvider entityServiceProvider;
+
     @Override
     public List<WorkflowNameDTO> getWorkflowsByEntities(List<Long> entityIdList) {
         List<WorkflowEntityRelationPO> relationPOList = workflowEntityRelationRepository.findAllByEntityIdIn(entityIdList);
@@ -50,4 +58,21 @@ public class WorkflowFacadeImpl implements IWorkflowFacade {
 
         return result;
     }
+
+    @Override
+    public Entity getTriggerEntityByWorkflow(Long flowId) {
+        var flowEntities = workflowEntityRelationRepository.findAllByFlowId(flowId);
+        if (flowEntities.isEmpty()) {
+            return null;
+        }
+
+        var ids = flowEntities.stream()
+                .map(WorkflowEntityRelationPO::getEntityId)
+                .toList();
+        return entityServiceProvider.findByIds(ids).stream()
+                .filter(entity -> EntityType.SERVICE.equals(entity.getType()))
+                .findFirst()
+                .orElse(null);
+    }
+
 }

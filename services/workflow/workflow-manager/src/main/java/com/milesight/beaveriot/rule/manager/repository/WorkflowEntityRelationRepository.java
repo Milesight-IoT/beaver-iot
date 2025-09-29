@@ -7,4 +7,7 @@ import java.util.List;
 
 public interface WorkflowEntityRelationRepository extends BaseJpaRepository<WorkflowEntityRelationPO, Long> {
     List<WorkflowEntityRelationPO> findAllByEntityIdIn(List<Long> entityIdList);
+
+    List<WorkflowEntityRelationPO> findAllByFlowId(Long flowId);
+
 }

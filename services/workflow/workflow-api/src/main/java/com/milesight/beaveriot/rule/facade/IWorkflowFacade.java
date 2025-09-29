@@ -1,8 +1,8 @@
 package com.milesight.beaveriot.rule.facade;
 
+import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.rule.dto.WorkflowNameDTO;
 
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -19,4 +19,7 @@ public interface IWorkflowFacade {
      * @return
      */
     List<WorkflowNameDTO> getWorkflowsByEntities(List<Long> entityIdList);
+
+    Entity getTriggerEntityByWorkflow(Long flowId);
+
 }

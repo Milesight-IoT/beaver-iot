@@ -1,9 +1,11 @@
 package com.milesight.beaveriot.device.blueprint;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.primitives.Longs;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.JsonUtils;
+import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.blueprint.core.chart.deploy.BlueprintDeployContext;
 import com.milesight.beaveriot.blueprint.core.chart.deploy.resource.ResourceManager;
 import com.milesight.beaveriot.blueprint.core.chart.deploy.resource.ResourceMatcher;
@@ -13,6 +15,7 @@ import com.milesight.beaveriot.blueprint.core.model.BindResource;
 import com.milesight.beaveriot.blueprint.core.utils.BlueprintUtils;
 import com.milesight.beaveriot.canvas.enums.CanvasAttachType;
 import com.milesight.beaveriot.canvas.facade.ICanvasFacade;
+import com.milesight.beaveriot.canvas.model.dto.CanvasWidgetDTO;
 import com.milesight.beaveriot.canvas.model.request.CanvasUpdateRequest;
 import com.milesight.beaveriot.device.service.DeviceCanvasService;
 import lombok.extern.slf4j.Slf4j;
@@ -81,8 +84,19 @@ public class DeviceCanvasResourceManager implements ResourceManager<DeviceCanvas
             var deviceCanvasResponse = deviceCanvasService.getOrCreateDeviceCanvas(deviceId);
             canvasId = deviceCanvasResponse.getCanvasId();
 
-            var canvasUpdateRequest = JsonUtils.withCamelCaseStrategy().cast(data, CanvasUpdateRequest.class);
-            canvasUpdateRequest.setName(deviceCanvasResponse.getName());
+            var canvasWidgets = JsonUtils.withCamelCaseStrategy().cast(data.get(CanvasUpdateRequest.Fields.widgets), new TypeReference<List<CanvasWidgetDTO>>() {
+            });
+            var entityIds = JsonUtils.cast(data.get(StringUtils.toSnakeCase(CanvasUpdateRequest.Fields.entityIds)), new TypeReference<List<Long>>() {
+            });
+            var deviceIds = JsonUtils.cast(data.get(StringUtils.toSnakeCase(CanvasUpdateRequest.Fields.deviceIds)), new TypeReference<List<Long>>() {
+            });
+
+            var canvasUpdateRequest = CanvasUpdateRequest.builder()
+                    .name(deviceCanvasResponse.getName())
+                    .widgets(canvasWidgets)
+                    .entityIds(entityIds)
+                    .deviceIds(deviceIds)
+                    .build();
             canvasFacade.updateCanvas(Longs.tryParse(canvasId), canvasUpdateRequest);
             accessor.setId(canvasId);
         }
