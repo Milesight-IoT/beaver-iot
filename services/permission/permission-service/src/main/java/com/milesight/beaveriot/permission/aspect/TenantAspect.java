@@ -4,7 +4,6 @@ import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.permission.context.DataAspectContext;
-import com.milesight.beaveriot.permission.support.ProceedingJoinPointSupport;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -26,7 +25,7 @@ import org.springframework.util.StringUtils;
 @ConditionalOnClass(Pointcut.class)
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @Order
-public class TenantAspect {
+public class TenantAspect extends JpaRepositoryAspect {
 
     @Pointcut("execution(* com.milesight.beaveriot..*Repository.*(..))")
     public void pointCut() {
@@ -45,7 +44,7 @@ public class TenantAspect {
 
         String tableName = RepositoryAspectUtils.getTableName(repositoryInterface);
         if (tableName == null || tenant == null || !tenant.enable()) {
-            return ProceedingJoinPointSupport.proceed(joinPoint);
+            return proceed(joinPoint);
         }
 
         String columnName = tenant.column();
@@ -64,7 +63,7 @@ public class TenantAspect {
                 .build());
 
         try {
-            return ProceedingJoinPointSupport.proceed(joinPoint);
+            return proceed(joinPoint);
         } finally {
             RepositoryAspectUtils.doAfterTransactionCompletion(DataAspectContext::clearTenantContext);
         }
