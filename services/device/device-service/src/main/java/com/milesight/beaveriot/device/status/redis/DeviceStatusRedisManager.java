@@ -6,6 +6,7 @@ import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
+import com.milesight.beaveriot.context.integration.model.DeviceStatusConfig;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.device.status.BaseDeviceStatusManager;
 import com.milesight.beaveriot.device.status.DeviceStatusManager;
