@@ -278,6 +278,10 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             deviceIdentifier = device.getIdentifier();
             deviceName = device.getName();
             String deviceTemplateKey = device.getTemplate();
+            if (deviceTemplateKey == null) {
+                throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorMessage()).build();
+            }
+
             deviceTemplate = deviceTemplateService.findByKey(deviceTemplateKey);
         }
 
@@ -452,7 +456,12 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                 throw ServiceException.with(ServerErrorCode.DEVICE_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_NOT_FOUND.getErrorMessage()).build();
             }
 
-            DeviceTemplate deviceTemplate = deviceTemplateService.findByKey(device.getTemplate());
+            String deviceTemplateKey = device.getTemplate();
+            if (deviceTemplateKey == null) {
+                throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND.getErrorMessage()).build();
+            }
+
+            DeviceTemplate deviceTemplate = deviceTemplateService.findByKey(deviceTemplateKey);
             String deviceTemplateContent = getContentAndValidateDeviceTemplate(null, deviceTemplate);
             DeviceTemplateModel deviceTemplateModel = parse(deviceTemplateContent);
             if (deviceTemplateModel.getDefinition().getOutput() == null) {
