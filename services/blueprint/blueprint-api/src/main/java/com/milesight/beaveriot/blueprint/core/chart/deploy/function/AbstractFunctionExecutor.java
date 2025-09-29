@@ -29,9 +29,13 @@ public abstract class AbstractFunctionExecutor<F extends FunctionNode> implement
             return null;
         }
 
-        var result = BlueprintUtils.convertValue(value, type);
-        if (result != null) {
-            return result;
+        try {
+            var result = BlueprintUtils.convertValue(value, type);
+            if (result != null) {
+                return result;
+            }
+        } catch (IllegalArgumentException e) {
+            log.warn("Convert value failed.", e);
         }
 
         throw new ServiceException(BlueprintErrorCode.BLUEPRINT_FUNCTION_EXECUTION_FAILED, "Invalid parameter type at [" + pos + "]. Expected type is '" + type.getSimpleName() + "'.");
@@ -56,6 +60,7 @@ public abstract class AbstractFunctionExecutor<F extends FunctionNode> implement
     public void setResult(FunctionNode function, Object result) {
         if (result == null) {
             function.setResult(null);
+            return;
         }
 
         if (result instanceof DataNode dataNode) {
