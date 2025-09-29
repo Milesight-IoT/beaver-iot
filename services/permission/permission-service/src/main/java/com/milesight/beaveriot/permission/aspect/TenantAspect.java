@@ -25,7 +25,7 @@ import org.springframework.util.StringUtils;
 @ConditionalOnClass(Pointcut.class)
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @Order
-public class TenantAspect {
+public class TenantAspect extends JpaRepositoryAspect {
 
     @Pointcut("execution(* com.milesight.beaveriot..*Repository.*(..))")
     public void pointCut() {
@@ -44,7 +44,7 @@ public class TenantAspect {
 
         String tableName = RepositoryAspectUtils.getTableName(repositoryInterface);
         if (tableName == null || tenant == null || !tenant.enable()) {
-            return joinPoint.proceed();
+            return proceed(joinPoint);
         }
 
         String columnName = tenant.column();
@@ -63,7 +63,7 @@ public class TenantAspect {
                 .build());
 
         try {
-            return joinPoint.proceed();
+            return proceed(joinPoint);
         } finally {
             RepositoryAspectUtils.doAfterTransactionCompletion(DataAspectContext::clearTenantContext);
         }
