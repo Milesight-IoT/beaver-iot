@@ -139,7 +139,7 @@ public class DeviceStatusRedisManager extends BaseDeviceStatusManager implements
     private void handleStatusToOnline(AvailableDeviceData availableDeviceData) {
         Device device = availableDeviceData.getDevice();
         DeviceStatusConfig config = availableDeviceData.getDeviceStatusConfig();
-        config.getOnlineUpdater().accept(device);
+        updateDeviceStatusToOnline(device);
 
         Long expirationTime = null;
         Long offlineSeconds = getDeviceOfflineSeconds(device, config);
@@ -149,7 +149,7 @@ public class DeviceStatusRedisManager extends BaseDeviceStatusManager implements
             delayedQueue.offer(device.getId(), offlineSeconds, TimeUnit.SECONDS);
         }
 
-        deviceOnlineCallback(device, expirationTime);
+        deviceOnlineCallback(device, expirationTime, config.getOnlineListener());
     }
 
     private void handleStatusToOffline(AvailableDeviceData availableDeviceData) {
@@ -169,9 +169,11 @@ public class DeviceStatusRedisManager extends BaseDeviceStatusManager implements
     }
 
     private void doUpdateDeviceStatusToOffline(AvailableDeviceData availableDeviceData) {
-        deviceExpirationTimeMap.remove(availableDeviceData.getDevice().getId());
+        DeviceStatusConfig config = availableDeviceData.getDeviceStatusConfig();
+        Device device = availableDeviceData.getDevice();
+        deviceExpirationTimeMap.remove(device.getId());
 
-        availableDeviceData.getDeviceStatusConfig().getOfflineUpdater().accept(availableDeviceData.getDevice());
-        deviceOfflineCallback(availableDeviceData.getDevice());
+        updateDeviceStatusToOffline(device);
+        deviceOfflineCallback(device, config.getOfflineListener());
     }
 }

@@ -122,7 +122,7 @@ public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements
         cancelOfflineCountdown(device);
 
         DeviceStatusConfig config = availableDeviceData.getDeviceStatusConfig();
-        config.getOnlineUpdater().accept(device);
+        updateDeviceStatusToOnline(device);
 
         Long expirationTime = null;
         Long offlineSeconds = getDeviceOfflineSeconds(device, config);
@@ -132,11 +132,12 @@ public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements
             startOfflineCountdown(device, offlineSeconds);
         }
 
-        deviceOnlineCallback(device, expirationTime);
+        deviceOnlineCallback(device, expirationTime, config.getOnlineListener());
     }
 
     private void handleStatusToOffline(AvailableDeviceData availableDeviceData) {
         Device device = availableDeviceData.getDevice();
+        DeviceStatusConfig config = availableDeviceData.getDeviceStatusConfig();
         Long expirationTime = deviceExpirationTimeMap.get(device.getId());
         if (expirationTime != null && System.currentTimeMillis() < expirationTime) {
             return;
@@ -145,8 +146,8 @@ public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements
         deviceExpirationTimeMap.remove(device.getId());
         deviceTimerFutures.remove(device.getId());
 
-        availableDeviceData.getDeviceStatusConfig().getOfflineUpdater().accept(device);
-        deviceOfflineCallback(device);
+        updateDeviceStatusToOffline(device);
+        deviceOfflineCallback(device, config.getOfflineListener());
     }
 
     private void startOfflineCountdown(Device device, long offlineSeconds) {

@@ -1,6 +1,8 @@
 package com.milesight.beaveriot.context.integration.model;
 
+import com.milesight.beaveriot.context.api.DeviceStatusServiceProvider;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
+import com.milesight.beaveriot.context.support.SpringContext;
 import com.milesight.beaveriot.eventbus.api.IdentityKey;
 import lombok.Getter;
 import lombok.Setter;
@@ -90,5 +92,10 @@ public class Device implements IdentityKey {
         Assert.notNull(integrationId, "Integration must not be null");
         this.entities = entities;
         initializeProperties(integrationId);
+    }
+
+    public DeviceStatus status() {
+        DeviceStatusServiceProvider deviceStatusServiceProvider = SpringContext.getBean(DeviceStatusServiceProvider.class);
+        return deviceStatusServiceProvider.status(this);
     }
 }

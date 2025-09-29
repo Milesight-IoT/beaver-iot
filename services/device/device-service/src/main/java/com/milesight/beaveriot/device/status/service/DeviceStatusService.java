@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -21,12 +22,36 @@ public class DeviceStatusService {
         this.deviceStatusManager = deviceStatusManager;
     }
 
-    public void register(String integrationId, Function<Device, Long> offlineTimeoutFetcher) {
+    public void register(String integrationId,
+                  Consumer<Device> onlineListener,
+                  Consumer<Device> offlineListener) {
+        deviceStatusManager.register(integrationId, onlineListener, offlineListener);
+    }
+
+    public void register(String integrationId,
+                         Function<Device, Long> offlineTimeoutFetcher) {
         deviceStatusManager.register(integrationId, offlineTimeoutFetcher);
     }
 
-    public void register(String integrationId, Function<Device, Long> offlineTimeoutFetcher, Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher) {
+    public void register(String integrationId,
+                  Function<Device, Long> offlineTimeoutFetcher,
+                  Consumer<Device> onlineListener,
+                  Consumer<Device> offlineListener) {
+        deviceStatusManager.register(integrationId, offlineTimeoutFetcher, onlineListener, offlineListener);
+    }
+
+    public void register(String integrationId,
+                         Function<Device, Long> offlineTimeoutFetcher,
+                         Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher) {
         deviceStatusManager.register(integrationId, offlineTimeoutFetcher, batchOfflineTimeoutFetcher);
+    }
+
+    public void register(String integrationId,
+                         Function<Device, Long> offlineTimeoutFetcher,
+                         Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher,
+                         Consumer<Device> onlineListener,
+                         Consumer<Device> offlineListener) {
+        deviceStatusManager.register(integrationId, offlineTimeoutFetcher, batchOfflineTimeoutFetcher, onlineListener, offlineListener);
     }
 
     public void deregister(Device device) {
