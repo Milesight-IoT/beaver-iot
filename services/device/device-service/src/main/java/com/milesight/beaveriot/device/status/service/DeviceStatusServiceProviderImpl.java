@@ -3,12 +3,8 @@ package com.milesight.beaveriot.device.status.service;
 import com.milesight.beaveriot.context.api.DeviceStatusServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.DeviceStatus;
+import com.milesight.beaveriot.context.integration.model.DeviceStatusConfig;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * author: Luxb
@@ -23,40 +19,8 @@ public class DeviceStatusServiceProviderImpl implements DeviceStatusServiceProvi
     }
 
     @Override
-    public void register(String integrationId,
-                         Consumer<Device> onlineListener,
-                         Consumer<Device> offlineListener) {
-        deviceStatusService.register(integrationId, onlineListener, offlineListener);
-    }
-
-    @Override
-    public void register(String integrationId,
-                         Function<Device, Long> offlineTimeoutFetcher) {
-        deviceStatusService.register(integrationId, offlineTimeoutFetcher);
-    }
-
-    @Override
-    public void register(String integrationId,
-                         Function<Device, Long> offlineTimeoutFetcher,
-                         Consumer<Device> onlineListener,
-                         Consumer<Device> offlineListener) {
-        deviceStatusService.register(integrationId, offlineTimeoutFetcher, onlineListener, offlineListener);
-    }
-
-    @Override
-    public void register(String integrationId,
-                         Function<Device, Long> offlineTimeoutFetcher,
-                         Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher) {
-        deviceStatusService.register(integrationId, offlineTimeoutFetcher, batchOfflineTimeoutFetcher);
-    }
-
-    @Override
-    public void register(String integrationId,
-                         Function<Device, Long> offlineTimeoutFetcher,
-                         Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher,
-                         Consumer<Device> onlineListener,
-                         Consumer<Device> offlineListener) {
-        deviceStatusService.register(integrationId, offlineTimeoutFetcher, batchOfflineTimeoutFetcher, onlineListener, offlineListener);
+    public void register(String integrationId, DeviceStatusConfig config) {
+        deviceStatusService.register(integrationId, config);
     }
 
     @Override

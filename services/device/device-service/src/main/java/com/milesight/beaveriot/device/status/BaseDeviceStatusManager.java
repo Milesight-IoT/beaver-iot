@@ -11,12 +11,10 @@ import jakarta.annotation.PreDestroy;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * author: Luxb
@@ -37,40 +35,7 @@ public abstract class BaseDeviceStatusManager {
         this.entityTemplateServiceProvider = entityTemplateServiceProvider;
     }
 
-    public void register(String integrationId,
-                         Consumer<Device> onlineListener,
-                         Consumer<Device> offlineListener) {
-        register(integrationId, null, null, onlineListener, offlineListener);
-    }
-
-    public void register(String integrationId,
-                         Function<Device, Long> offlineTimeoutFetcher) {
-        register(integrationId, offlineTimeoutFetcher, null, null, null);
-    }
-
-    public void register(String integrationId,
-                  Function<Device, Long> offlineTimeoutFetcher,
-                  Consumer<Device> onlineListener,
-                  Consumer<Device> offlineListener) {
-        register(integrationId, offlineTimeoutFetcher, null, onlineListener, offlineListener);
-    }
-
-    public void register(String integrationId,
-                         Function<Device, Long> offlineTimeoutFetcher,
-                         Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher) {
-        register(integrationId, offlineTimeoutFetcher, batchOfflineTimeoutFetcher, null, null);
-    }
-
-    public void register(String integrationId,
-                         Function<Device, Long> offlineTimeoutFetcher,
-                         Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher,
-                         Consumer<Device> onlineListener,
-                         Consumer<Device> offlineListener) {
-        DeviceStatusConfig config = DeviceStatusConfig.of(
-                offlineTimeoutFetcher,
-                batchOfflineTimeoutFetcher,
-                onlineListener,
-                offlineListener);
+    public void register(String integrationId, DeviceStatusConfig config) {
         integrationDeviceStatusConfigs.put(integrationId, config);
         afterRegister(integrationId, config);
     }
@@ -166,26 +131,6 @@ public abstract class BaseDeviceStatusManager {
 
     protected String getStatusEntityKey(Device device) {
         return device.getKey() + "." + DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS;
-    }
-
-    @Data
-    public static class DeviceStatusConfig {
-        private Function<Device, Long> offlineTimeoutFetcher;
-        private Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher;
-        private Consumer<Device> onlineListener;
-        private Consumer<Device> offlineListener;
-
-        public static DeviceStatusConfig of(Function<Device, Long> offlineTimeoutFetcher,
-                                            Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher,
-                                            Consumer<Device> onlineListener,
-                                            Consumer<Device> offlineListener) {
-            DeviceStatusConfig config = new DeviceStatusConfig();
-            config.setOfflineTimeoutFetcher(offlineTimeoutFetcher);
-            config.setBatchOfflineTimeoutFetcher(batchOfflineTimeoutFetcher);
-            config.setOnlineListener(onlineListener);
-            config.setOfflineListener(offlineListener);
-            return config;
-        }
     }
 
     @Data

@@ -2,9 +2,8 @@ package com.milesight.beaveriot.context.api;
 
 import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.DeviceStatus;
+import com.milesight.beaveriot.context.integration.model.DeviceStatusConfig;
 
-import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -16,61 +15,18 @@ public interface DeviceStatusServiceProvider {
     /**
      * Registers an integration with the device status manager.
      *
-     * @param integrationId         the ID of the integration
-     * @param onlineListener        a {@link Consumer} that is called when a device goes online
-     * @param offlineListener       a {@link Consumer} that is called when a device goes offline
+     * @param integrationId the ID of the integration
+     * @param config        configuration object containing the following:
+     *                      <ul>
+     *                        <li><b>offlineTimeoutFetcher:</b> a {@link Function} that returns the offline timeout in seconds for a given device
+     *                          (e.g., returning a fixed value or calculating based on device)</li>
+     *                        <li><b>batchOfflineTimeoutFetcher:</b> a {@link Function} that returns a map of offline timeout in seconds for a given list of devices</li>
+     *                        <li><b>onlineListener:</b> a {@link Consumer} that is called when a device goes online</li>
+     *                        <li><b>offlineListener:</b> a {@link Consumer} that is called when a device goes offline</li>
+     *                      </ul>
+     * @see DeviceStatusConfig
      */
-    void register(String integrationId,
-                  Consumer<Device> onlineListener,
-                  Consumer<Device> offlineListener);
-    /**
-     * Registers an integration with the device status manager.
-     *
-     * @param integrationId         the ID of the integration
-     * @param offlineTimeoutFetcher a {@link Function} that returns the offline timeout in seconds for a given device
-     *                              (e.g., returning a fixed value or calculating based on device)
-     */
-    void register(String integrationId,
-                  Function<Device, Long> offlineTimeoutFetcher);
-    /**
-     * Registers an integration with the device status manager.
-     *
-     * @param integrationId         the ID of the integration
-     * @param offlineTimeoutFetcher a {@link Function} that returns the offline timeout in seconds for a given device
-     *                              (e.g., returning a fixed value or calculating based on device)
-     * @param onlineListener        a {@link Consumer} that is called when a device goes online
-     * @param offlineListener       a {@link Consumer} that is called when a device goes offline
-     */
-    void register(String integrationId,
-                  Function<Device, Long> offlineTimeoutFetcher,
-                  Consumer<Device> onlineListener,
-                  Consumer<Device> offlineListener);
-    /**
-     * Registers an integration with the device status manager.
-     *
-     * @param integrationId                   the ID of the integration
-     * @param offlineTimeoutFetcher           a {@link Function} that returns the offline timeout in seconds for a given device
-     *                                        (e.g., returning a fixed value or calculating based on device)
-     * @param batchOfflineTimeoutFetcher      a {@link Function} that returns a map of offline timeout in seconds for a given list of devices
-     */
-    void register(String integrationId,
-                  Function<Device, Long> offlineTimeoutFetcher,
-                  Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher);
-    /**
-     * Registers an integration with the device status manager.
-     *
-     * @param integrationId                   the ID of the integration
-     * @param offlineTimeoutFetcher           a {@link Function} that returns the offline timeout in seconds for a given device
-     *                                        (e.g., returning a fixed value or calculating based on device)
-     * @param batchOfflineTimeoutFetcher      a {@link Function} that returns a map of offline timeout in seconds for a given list of devices
-     * @param onlineListener        a {@link Consumer} that is called when a device goes online
-     * @param offlineListener       a {@link Consumer} that is called when a device goes offline
-     */
-    void register(String integrationId,
-                  Function<Device, Long> offlineTimeoutFetcher,
-                  Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher,
-                  Consumer<Device> onlineListener,
-                  Consumer<Device> offlineListener);
+    void register(String integrationId, DeviceStatusConfig config);
     /**
      * Updates the device status to "ONLINE",
      * then reverts to "OFFLINE" upon timeout. (If the integration was registered with the device status manager.)
