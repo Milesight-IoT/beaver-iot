@@ -2,11 +2,11 @@ package com.milesight.beaveriot.permission.aspect;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
-import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.permission.context.DataAspectContext;
 import com.milesight.beaveriot.permission.dto.PermissionDTO;
 import com.milesight.beaveriot.permission.enums.DataPermissionType;
-import com.milesight.beaveriot.permission.service.*;
+import com.milesight.beaveriot.permission.service.PermissionService;
+import com.milesight.beaveriot.permission.support.ProceedingJoinPointSupport;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -49,7 +49,7 @@ public class DataPermissionAspect {
 
         String tableName = RepositoryAspectUtils.getTableName(repositoryInterface);
         if (tableName == null || dataPermission == null) {
-            return joinPoint.proceed();
+            return ProceedingJoinPointSupport.proceed(joinPoint);
         }
 
         DataPermissionType type = dataPermission.type();
@@ -65,7 +65,7 @@ public class DataPermissionAspect {
         PermissionDTO permissionDTO = permissionService.getDataPermission(type);
 
         if (permissionDTO.isHaveAllPermissions()) {
-            return joinPoint.proceed();
+            return ProceedingJoinPointSupport.proceed(joinPoint);
         }
 
         List<String> dataIds = permissionDTO.getIds();
