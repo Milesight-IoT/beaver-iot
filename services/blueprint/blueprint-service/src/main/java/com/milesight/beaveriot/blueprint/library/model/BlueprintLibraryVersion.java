@@ -14,4 +14,8 @@ public class BlueprintLibraryVersion {
     private Long libraryId;
     private String libraryVersion;
     private Long syncedAt;
+
+    public String getKey() {
+        return libraryId + ":" + libraryVersion;
+    }
 }

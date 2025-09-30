@@ -26,5 +26,7 @@ public interface IDeviceFacade {
 
     Long countByIntegrationId(String integrationId);
 
+    Long countByTemplateInIgnoreTenant(List<String> templates);
+
     Device findById(Long id);
 }

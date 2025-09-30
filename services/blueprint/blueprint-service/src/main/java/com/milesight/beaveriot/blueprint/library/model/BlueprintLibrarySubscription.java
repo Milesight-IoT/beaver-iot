@@ -15,4 +15,8 @@ public class BlueprintLibrarySubscription {
     private String libraryVersion;
     private Boolean active;
     private String tenantId;
+
+    public String getKey() {
+        return libraryId + ":" + libraryVersion;
+    }
 }

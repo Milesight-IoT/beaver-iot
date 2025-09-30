@@ -359,7 +359,7 @@ public class BlueprintLibrarySyncer {
         }
     }
 
-    private void evictCaches(BlueprintLibrary oldBlueprintLibrary) {
+    public void evictCaches(BlueprintLibrary oldBlueprintLibrary) {
         if (oldBlueprintLibrary.getCurrentVersion() == null) {
             return;
         }

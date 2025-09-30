@@ -22,6 +22,13 @@ public interface DeviceRepository extends BaseJpaRepository<DevicePO, Long> {
     @Query("SELECT r.integration, COUNT(r) FROM DevicePO r WHERE r.integration IN :integrations GROUP BY r.integration")
     List<Object[]> countByIntegrations(@Param("integrations") List<String> integrations);
 
+    @Tenant(enable = false)
+    default Long countByTemplateInIgnoreTenant(List<String> templates) {
+        return countByTemplateIn(templates);
+    }
+
+    Long countByTemplateIn(List<String> templates);
+
     @DataPermission(type = DataPermissionType.DEVICE, column = "id")
     default List<DevicePO> findAllWithDataPermission(Consumer<Filterable> filterable){
         return findAll(filterable);

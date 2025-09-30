@@ -5,6 +5,9 @@ import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryVersion;
 import com.milesight.beaveriot.blueprint.library.po.BlueprintLibraryVersionPO;
 import com.milesight.beaveriot.blueprint.library.repository.BlueprintLibraryVersionRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * author: Luxb
@@ -50,5 +53,21 @@ public class BlueprintLibraryVersionService {
                 .libraryVersion(po.getLibraryVersion())
                 .syncedAt(po.getSyncedAt())
                 .build();
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteByLibraryIdAndLibraryVersion(Long libraryId, String libraryVersion) {
+        blueprintLibraryVersionRepository.deleteByLibraryIdAndLibraryVersion(libraryId, libraryVersion);
+    }
+
+    public Long countByLibraryId(Long libraryId) {
+        return blueprintLibraryVersionRepository.countByLibraryId(libraryId);
+    }
+
+    public List<BlueprintLibraryVersion> findAll() {
+        return blueprintLibraryVersionRepository.findAll()
+                .stream()
+                .map(this::convertPOtoModel)
+                .toList();
     }
 }

@@ -99,7 +99,7 @@ public class BlueprintLibraryAddressService {
         return convertLibraryToAddress(blueprintLibrary);
     }
 
-    private BlueprintLibraryAddress convertLibraryToAddress(BlueprintLibrary blueprintLibrary) {
+    public BlueprintLibraryAddress convertLibraryToAddress(BlueprintLibrary blueprintLibrary) {
         return BlueprintLibraryAddress.of(blueprintLibrary.getType().name(), blueprintLibrary.getUrl(), blueprintLibrary.getBranch(), blueprintLibrary.getSourceType().name());
     }
 
