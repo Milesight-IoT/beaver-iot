@@ -18,6 +18,8 @@ public interface DeviceTemplateRepository extends BaseJpaRepository<DeviceTempla
 
     List<DeviceTemplatePO> findByBlueprintLibraryIdAndBlueprintLibraryVersionAndVendorAndModel(Long blueprintLibraryId, String blueprintLibraryVersion, String vendor, String model);
 
+    List<DeviceTemplatePO> findByBlueprintLibraryIdAndBlueprintLibraryVersion(Long blueprintLibraryId, String blueprintLibraryVersion);
+
     @Query("SELECT r.integration, COUNT(r) FROM DeviceTemplatePO r WHERE r.integration IN :integrations GROUP BY r.integration")
     List<Object[]> countByIntegrations(@Param("integrations") List<String> integrations);
 

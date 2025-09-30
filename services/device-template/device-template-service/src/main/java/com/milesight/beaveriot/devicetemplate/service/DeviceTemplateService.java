@@ -218,6 +218,10 @@ public class DeviceTemplateService implements IDeviceTemplateFacade {
         return deviceTemplateConverter.convertPO(deviceTemplatePOs.get(0));
     }
 
+    public List<DeviceTemplate> findByBlueprintLibrary(Long blueprintLibraryId, String blueprintLibraryVersion) {
+        return deviceTemplateConverter.convertPO(deviceTemplateRepository.findByBlueprintLibraryIdAndBlueprintLibraryVersion(blueprintLibraryId, blueprintLibraryVersion));
+    }
+
     @Override
     public List<DeviceTemplate> findByKeys(List<String> deviceTemplateKeys) {
         if (ObjectUtils.isEmpty(deviceTemplateKeys)) {

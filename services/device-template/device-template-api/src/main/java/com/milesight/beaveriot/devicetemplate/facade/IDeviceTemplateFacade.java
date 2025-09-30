@@ -19,6 +19,7 @@ public interface IDeviceTemplateFacade {
     DeviceTemplate findByIdentifier(String identifier, String integrationId);
     List<DeviceTemplate> findByIdentifiers(List<String> identifier, String integrationId);
     DeviceTemplate findByBlueprintLibrary(Long blueprintLibraryId, String blueprintLibraryVersion, String vendor, String model);
+    List<DeviceTemplate> findByBlueprintLibrary(Long blueprintLibraryId, String blueprintLibraryVersion);
     List<DeviceTemplate> findAll(String integrationId);
     List<DeviceTemplate> findAllCustom(String integrationId);
     void batchDelete(List<Long> ids);
