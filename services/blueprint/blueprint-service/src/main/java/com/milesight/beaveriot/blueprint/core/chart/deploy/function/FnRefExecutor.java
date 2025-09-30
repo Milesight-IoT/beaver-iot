@@ -8,11 +8,13 @@ import com.milesight.beaveriot.blueprint.core.chart.node.data.DataNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.function.FnRefNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.data.function.FunctionNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.resource.ResourceNode;
+import com.milesight.beaveriot.blueprint.core.chart.node.template.TemplateNode;
 import com.milesight.beaveriot.blueprint.core.enums.BlueprintErrorCode;
 import com.milesight.beaveriot.blueprint.core.utils.BlueprintUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,7 +24,7 @@ import java.util.List;
 @Component
 public class FnRefExecutor extends AbstractFunctionExecutor<FnRefNode> implements NodeDependencyDiscoverer<FnRefNode> {
 
-    public static final String PARAMETERS_PATH_PREFIX = "parameters.";
+    public static final String PARAMETERS_PATH_PREFIX = TemplateNode.Fields.parameters + ".";
 
     @Override
     public void execute(FnRefNode function, BlueprintDeployContext context) {
@@ -31,7 +33,7 @@ public class FnRefExecutor extends AbstractFunctionExecutor<FnRefNode> implement
         BlueprintNode searchFrom = currentTemplate;
 
         String type = null;
-        if (path.startsWith(PARAMETERS_PATH_PREFIX)) {
+        if (StringUtils.uncapitalize(path).startsWith(PARAMETERS_PATH_PREFIX)) {
             if (currentTemplate.getBlueprintNodeParent() == null) {
                 // index template can get parameter values from variables
                 var variable = BlueprintUtils.getChildByPath(context.getVariables(), path);
@@ -87,7 +89,7 @@ public class FnRefExecutor extends AbstractFunctionExecutor<FnRefNode> implement
         BlueprintNode searchFrom = currentTemplate;
 
         BlueprintNode parameterTypeNode = null;
-        if (path.startsWith(PARAMETERS_PATH_PREFIX)) {
+        if (StringUtils.uncapitalize(path).startsWith(PARAMETERS_PATH_PREFIX)) {
             var parameterSubPath = path.substring(PARAMETERS_PATH_PREFIX.length());
             if (currentTemplate != context.getRoot()) {
                 searchFrom = currentTemplate.getParameterValues();
