@@ -7,6 +7,7 @@ import com.milesight.beaveriot.canvas.model.dto.CanvasExchangePayload;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.MqttPubSubServiceProvider;
 import com.milesight.beaveriot.context.constants.ExchangeContextKeys;
+import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
@@ -36,7 +37,7 @@ public class CanvasNotifyService {
     @Autowired
     private MqttPubSubServiceProvider mqttPubSubServiceProvider;
 
-    @EventSubscribe(payloadKeyExpression = "*", eventType = ExchangeEvent.EventType.UPDATE_PROPERTY)
+    @EventSubscribe(payloadKeyExpression = "*")
     public void onCanvasNotify(ExchangeEvent exchangeEvent) {
         doCanvasNotify(exchangeEvent.getPayload());
     }
@@ -47,10 +48,10 @@ public class CanvasNotifyService {
             if (!StringUtils.hasText(tenantId)) {
                 throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("tenantId is not exist").build();
             }
-            List<String> entityKeys = exchangePayload.keySet().stream().toList();
-            List<String> entityIds = entityServiceProvider.findByKeys(entityKeys)
+            List<String> entityIds = exchangePayload.getExchangeEntities()
                     .values()
                     .stream()
+                    .filter(entity -> EntityType.PROPERTY.equals(entity.getType()))
                     .map(Entity::getId)
                     .map(String::valueOf)
                     .toList();
