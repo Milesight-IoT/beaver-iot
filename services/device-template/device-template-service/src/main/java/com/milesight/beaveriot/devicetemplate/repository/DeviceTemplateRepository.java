@@ -18,6 +18,13 @@ public interface DeviceTemplateRepository extends BaseJpaRepository<DeviceTempla
 
     List<DeviceTemplatePO> findByBlueprintLibraryIdAndBlueprintLibraryVersionAndVendorAndModel(Long blueprintLibraryId, String blueprintLibraryVersion, String vendor, String model);
 
+    @Tenant(enable = false)
+    default List<DeviceTemplatePO> findByBlueprintLibraryIdAndBlueprintLibraryVersionIgnoreTenant(Long blueprintLibraryId, String blueprintLibraryVersion) {
+        return findByBlueprintLibraryIdAndBlueprintLibraryVersion(blueprintLibraryId, blueprintLibraryVersion);
+    }
+
+    List<DeviceTemplatePO> findByBlueprintLibraryIdAndBlueprintLibraryVersion(Long blueprintLibraryId, String blueprintLibraryVersion);
+
     @Query("SELECT r.integration, COUNT(r) FROM DeviceTemplatePO r WHERE r.integration IN :integrations GROUP BY r.integration")
     List<Object[]> countByIntegrations(@Param("integrations") List<String> integrations);
 
@@ -32,4 +39,11 @@ public interface DeviceTemplateRepository extends BaseJpaRepository<DeviceTempla
     default List<DeviceTemplatePO> findByIdInWithDataPermission(List<Long> ids) {
         return findByIdIn(ids);
     }
+
+    @Tenant(enable = false)
+    default void deleteByIdInIgnoreTenant(List<Long> ids) {
+        deleteByIdIn(ids);
+    }
+
+    void deleteByIdIn(List<Long> ids);
 }

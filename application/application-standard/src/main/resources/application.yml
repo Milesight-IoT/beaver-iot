@@ -229,6 +229,7 @@ blueprint:
       url: https://github.com/zakersimonjack/beaver-iot-blueprint.git
       branch: main
     sync_frequency: 3h
+    clean_frequency: 1d
 
 logging:
   level:

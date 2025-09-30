@@ -19,6 +19,7 @@ import java.time.Duration;
 public class BlueprintLibraryConfig {
     private Duration syncFrequency;
     private BlueprintLibraryAddressProperties defaultAddress;
+    private Duration cleanFrequency;
 
     public BlueprintLibraryAddress getDefaultBlueprintLibraryAddress() {
         return BlueprintLibraryAddress.of(defaultAddress.getType(), defaultAddress.getUrl(), defaultAddress.getBranch(), BlueprintLibrarySourceType.DEFAULT.name());

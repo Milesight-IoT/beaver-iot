@@ -218,6 +218,14 @@ public class DeviceTemplateService implements IDeviceTemplateFacade {
         return deviceTemplateConverter.convertPO(deviceTemplatePOs.get(0));
     }
 
+    public List<DeviceTemplate> findByBlueprintLibrary(Long blueprintLibraryId, String blueprintLibraryVersion) {
+        return deviceTemplateConverter.convertPO(deviceTemplateRepository.findByBlueprintLibraryIdAndBlueprintLibraryVersion(blueprintLibraryId, blueprintLibraryVersion));
+    }
+
+    public List<DeviceTemplate> findByBlueprintLibraryIgnoreTenant(Long blueprintLibraryId, String blueprintLibraryVersion) {
+        return deviceTemplateConverter.convertPO(deviceTemplateRepository.findByBlueprintLibraryIdAndBlueprintLibraryVersionIgnoreTenant(blueprintLibraryId, blueprintLibraryVersion));
+    }
+
     @Override
     public List<DeviceTemplate> findByKeys(List<String> deviceTemplateKeys) {
         if (ObjectUtils.isEmpty(deviceTemplateKeys)) {
@@ -410,5 +418,10 @@ public class DeviceTemplateService implements IDeviceTemplateFacade {
         deviceTemplateRepository.deleteById(deviceTemplate.getId());
 
         deviceServiceProvider.deleteByDeviceTemplateKey(deviceTemplate.getKey());
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteDeviceTemplateByIdInIgnoreTenant(List<Long> ids) {
+        deviceTemplateRepository.deleteByIdInIgnoreTenant(ids);
     }
 }

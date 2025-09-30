@@ -1,0 +1,196 @@
+package com.milesight.beaveriot.blueprint.library.component;
+
+import com.milesight.beaveriot.blueprint.library.config.BlueprintLibraryConfig;
+import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryAddress;
+import com.milesight.beaveriot.blueprint.library.model.BlueprintLibrarySubscription;
+import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryVersion;
+import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryAddressService;
+import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryService;
+import com.milesight.beaveriot.blueprint.library.service.BlueprintLibrarySubscriptionService;
+import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryVersionService;
+import com.milesight.beaveriot.context.integration.model.DeviceTemplate;
+import com.milesight.beaveriot.context.model.BlueprintLibrary;
+import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
+import com.milesight.beaveriot.device.facade.IDeviceFacade;
+import com.milesight.beaveriot.devicetemplate.facade.IDeviceTemplateFacade;
+import com.milesight.beaveriot.scheduler.core.Scheduler;
+import com.milesight.beaveriot.scheduler.core.model.ScheduleRule;
+import com.milesight.beaveriot.scheduler.core.model.ScheduleSettings;
+import com.milesight.beaveriot.scheduler.core.model.ScheduleType;
+import jakarta.annotation.PreDestroy;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * author: Luxb
+ * create: 2025/9/30 8:55
+ **/
+@Slf4j
+@Service
+@Order(2)
+public class BlueprintLibraryCleanScheduler implements CommandLineRunner {
+    private final BlueprintLibraryConfig blueprintLibraryConfig;
+    private final Scheduler scheduler;
+    private final BlueprintLibraryAddressService blueprintLibraryAddressService;
+    private final IDeviceTemplateFacade deviceTemplateFacade;
+    private final IDeviceFacade deviceFacade;
+    private final BlueprintLibrarySubscriptionService blueprintLibrarySubscriptionService;
+    private final BlueprintLibraryVersionService blueprintLibraryVersionService;
+    private final BlueprintLibraryService blueprintLibraryService;
+    private final BlueprintLibraryCleaner blueprintLibraryCleaner;
+    private final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
+    public BlueprintLibraryCleanScheduler(BlueprintLibraryConfig blueprintLibraryConfig, Scheduler scheduler, BlueprintLibraryAddressService blueprintLibraryAddressService, IDeviceTemplateFacade deviceTemplateFacade, IDeviceFacade deviceFacade, BlueprintLibrarySubscriptionService blueprintLibrarySubscriptionService, BlueprintLibraryVersionService blueprintLibraryVersionService, BlueprintLibraryService blueprintLibraryService, BlueprintLibraryCleaner blueprintLibraryCleaner) {
+        this.blueprintLibraryConfig = blueprintLibraryConfig;
+        this.scheduler = scheduler;
+        this.blueprintLibraryAddressService = blueprintLibraryAddressService;
+        this.deviceTemplateFacade = deviceTemplateFacade;
+        this.deviceFacade = deviceFacade;
+        this.blueprintLibrarySubscriptionService = blueprintLibrarySubscriptionService;
+        this.blueprintLibraryVersionService = blueprintLibraryVersionService;
+        this.blueprintLibraryService = blueprintLibraryService;
+        this.blueprintLibraryCleaner = blueprintLibraryCleaner;
+    }
+
+    @Override
+    public void run(String... args) {
+        // Start blueprint library clean scheduled task
+        start();
+    }
+
+    public void start() {
+        cleanBlueprintLibraries();
+
+        ScheduleRule rule = new ScheduleRule();
+        rule.setPeriodSecond(blueprintLibraryConfig.getCleanFrequency().toSeconds());
+        ScheduleSettings settings = new ScheduleSettings();
+        settings.setScheduleType(ScheduleType.FIXED_RATE);
+        settings.setScheduleRule(rule);
+        scheduler.schedule("clean-blueprint-library", settings, task -> this.cleanBlueprintLibraries());
+    }
+
+    protected void cleanBlueprintLibraries() {
+        long start = System.currentTimeMillis();
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failedCount = new AtomicInteger(0);
+        try {
+            List<BlueprintLibraryVersion> unusedBlueprintLibraryVersions = getUnusedBlueprintLibraryVersions();
+            if (CollectionUtils.isEmpty(unusedBlueprintLibraryVersions)) {
+                log.debug("Skipping clean blueprint library versions because all are in use");
+                return;
+            }
+
+            log.info("Start cleaning blueprint library versions, total: {}", unusedBlueprintLibraryVersions.size());
+
+            List<CompletableFuture<Void>> futures = new ArrayList<>();
+            unusedBlueprintLibraryVersions.forEach(unusedBlueprintLibraryVersion -> {
+                CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                    try {
+                        blueprintLibraryCleaner.clean(unusedBlueprintLibraryVersion);
+                        successCount.incrementAndGet();
+                    } catch (Exception e) {
+                        log.error("Error occurred while cleaning blueprint library version (libraryId:{}, libraryVersion:{})",
+                                unusedBlueprintLibraryVersion.getLibraryId(),
+                                unusedBlueprintLibraryVersion.getLibraryVersion(), e);
+                        failedCount.incrementAndGet();
+                    }
+                }, executor);
+                futures.add(future);
+            });
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        } catch (Exception e) {
+            log.error("Error occurred while scheduling clean for blueprint library versions", e);
+        }
+        log.info("Finish cleaning blueprint library versions, success: {}, failed: {}, time: {} ms",
+                successCount.get(), failedCount.get(), System.currentTimeMillis() - start);
+    }
+
+    private List<BlueprintLibraryVersion> getUnusedBlueprintLibraryVersions() {
+        List<BlueprintLibrarySubscription> blueprintLibrarySubscriptions = blueprintLibrarySubscriptionService.findAllIgnoreTenant();
+        if (CollectionUtils.isEmpty(blueprintLibrarySubscriptions)) {
+            return null;
+        }
+
+        Set<String> allBlueprintLibrarySubscriptionKeys = new TreeSet<>();
+        Set<String> activeBlueprintLibrarySubscriptionKeys = new TreeSet<>();
+        Map<String, BlueprintLibraryVersion> blueprintLibraryVersionMap = new HashMap<>();
+        Map<Long, BlueprintLibrary> blueprintLibraryCache = new HashMap<>();
+        for (BlueprintLibrarySubscription blueprintLibrarySubscription : blueprintLibrarySubscriptions) {
+            String key = blueprintLibrarySubscription.getKey();
+            BlueprintLibrary blueprintLibrary = blueprintLibraryCache.computeIfAbsent(blueprintLibrarySubscription.getLibraryId(), blueprintLibraryService::findById);
+            BlueprintLibraryAddress blueprintLibraryAddress = blueprintLibraryAddressService.convertLibraryToAddress(blueprintLibrary);
+            if (blueprintLibraryAddressService.isDefaultBlueprintLibraryAddress(blueprintLibraryAddress) || blueprintLibrarySubscription.getActive()) {
+                activeBlueprintLibrarySubscriptionKeys.add(key);
+            }
+            allBlueprintLibrarySubscriptionKeys.add(key);
+            BlueprintLibraryVersion blueprintLibraryVersion = convertSubscriptionToVersion(blueprintLibrarySubscription);
+            blueprintLibraryVersionMap.put(key, blueprintLibraryVersion);
+        }
+
+        Set<String> inactiveBlueprintLibrarySubscriptionKeys = new TreeSet<>(allBlueprintLibrarySubscriptionKeys);
+        inactiveBlueprintLibrarySubscriptionKeys.removeAll(activeBlueprintLibrarySubscriptionKeys);
+
+        List<BlueprintLibraryVersion> blueprintLibraryVersions = blueprintLibraryVersionService.findAll();
+        for (BlueprintLibraryVersion blueprintLibraryVersion : blueprintLibraryVersions) {
+            String key = blueprintLibraryVersion.getKey();
+            BlueprintLibrary blueprintLibrary = blueprintLibraryCache.computeIfAbsent(blueprintLibraryVersion.getLibraryId(), blueprintLibraryService::findById);
+            BlueprintLibraryAddress blueprintLibraryAddress = blueprintLibraryAddressService.convertLibraryToAddress(blueprintLibrary);
+            if (blueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.DEFAULT && !blueprintLibraryAddressService.isDefaultBlueprintLibraryAddress(blueprintLibraryAddress)) {
+                if (!activeBlueprintLibrarySubscriptionKeys.contains(key)) {
+                    inactiveBlueprintLibrarySubscriptionKeys.add(key);
+                    blueprintLibraryVersionMap.put(key, blueprintLibraryVersion);
+                }
+            }
+        }
+
+        if (CollectionUtils.isEmpty(inactiveBlueprintLibrarySubscriptionKeys)) {
+            return null;
+        }
+
+        List<BlueprintLibraryVersion> unusedBlueprintLibraryVersions = new ArrayList<>();
+        List<BlueprintLibraryVersion> inactiveBlueprintLibraryVersions = inactiveBlueprintLibrarySubscriptionKeys.stream().map(blueprintLibraryVersionMap::get).toList();
+        for (BlueprintLibraryVersion inactiveBlueprintLibraryVersion : inactiveBlueprintLibraryVersions) {
+            List<DeviceTemplate> deviceTemplates = deviceTemplateFacade.findByBlueprintLibraryIgnoreTenant(inactiveBlueprintLibraryVersion.getLibraryId(), inactiveBlueprintLibraryVersion.getLibraryVersion());
+            if (CollectionUtils.isEmpty(deviceTemplates)) {
+                unusedBlueprintLibraryVersions.add(inactiveBlueprintLibraryVersion);
+                continue;
+            }
+
+            List<String> deviceTemplateKeys = deviceTemplates.stream().map(DeviceTemplate::getKey).distinct().toList();
+            long deviceCount = deviceFacade.countByTemplateInIgnoreTenant(deviceTemplateKeys);
+            if (deviceCount == 0) {
+                unusedBlueprintLibraryVersions.add(inactiveBlueprintLibraryVersion);
+            }
+        }
+        return unusedBlueprintLibraryVersions;
+    }
+
+    private BlueprintLibraryVersion convertSubscriptionToVersion(BlueprintLibrarySubscription blueprintLibrarySubscription) {
+        return BlueprintLibraryVersion.builder()
+                .libraryId(blueprintLibrarySubscription.getLibraryId())
+                .libraryVersion(blueprintLibrarySubscription.getLibraryVersion())
+                .build();
+    }
+
+    @PreDestroy
+    public void destroy() {
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+        }
+    }
+}

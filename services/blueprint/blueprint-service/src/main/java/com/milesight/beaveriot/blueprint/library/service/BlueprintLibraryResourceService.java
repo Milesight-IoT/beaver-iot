@@ -66,7 +66,7 @@ public class BlueprintLibraryResourceService {
         return convertPOToModel(blueprintLibraryResourcePO);
     }
 
-    @Transactional(rollbackFor = Throwable.class)
+    @Transactional(rollbackFor = Exception.class)
     public void deleteAllByLibraryIdAndLibraryVersion(Long libraryId, String libraryVersion) {
         blueprintLibraryResourceRepository.deleteAllByLibraryIdAndLibraryVersion(libraryId, libraryVersion);
     }

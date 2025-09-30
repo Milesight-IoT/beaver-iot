@@ -38,4 +38,11 @@ public interface BlueprintLibrarySubscriptionRepository extends BaseJpaRepositor
     void setActiveOnlyByLibraryId(
             @Param("libraryId") Long libraryId
     );
+
+    @Tenant(enable = false)
+    default void deleteByLibraryIdAndLibraryVersionIgnoreTenant(Long libraryId, String libraryVersion) {
+        deleteByLibraryIdAndLibraryVersion(libraryId, libraryVersion);
+    }
+
+    void deleteByLibraryIdAndLibraryVersion(Long libraryId, String libraryVersion);
 }

@@ -562,6 +562,11 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
     }
 
     @Override
+    public Long countByTemplateInIgnoreTenant(List<String> templates) {
+        return deviceRepository.countByTemplateInIgnoreTenant(templates);
+    }
+
+    @Override
     public Long countByIntegrationId(String integrationId) {
         return deviceRepository.count(f -> f.eq(DevicePO.Fields.integration, integrationId));
     }

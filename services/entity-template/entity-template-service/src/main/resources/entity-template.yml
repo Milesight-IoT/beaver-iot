@@ -13,11 +13,14 @@ entity-template:
       name: ${ fn.i18n('entity-template-service.entity.location.name') }
       value_type: object
       type: property
-      access_mod: RW
+      access_mod: R
       children:
         - identifier: '@address'
           name: ${ fn.i18n('entity-template-service.entity.location.children.address.name') }
           value_type: string
+          attributes:
+            min_length: 1
+            max_length: 255
         - identifier: '@longitude'
           name: ${ fn.i18n('entity-template-service.entity.location.children.longitude.name') }
           value_type: double

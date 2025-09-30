@@ -89,4 +89,9 @@ public class BlueprintLibrarySubscriptionService {
                 .tenantId(po.getTenantId())
                 .build();
     }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteByLibraryIdAndLibraryVersionIgnoreTenant(Long libraryId, String libraryVersion) {
+        blueprintLibrarySubscriptionRepository.deleteByLibraryIdAndLibraryVersionIgnoreTenant(libraryId, libraryVersion);
+    }
 }

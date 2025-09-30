@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * author: Luxb
@@ -59,6 +60,7 @@ public class BlueprintLibraryService implements IBlueprintLibraryFacade {
         return blueprintLibraryRepository.findById(id).map(this::convertPOToModel).orElse(null);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public void deleteById(Long id) {
         blueprintLibraryRepository.deleteById(id);
