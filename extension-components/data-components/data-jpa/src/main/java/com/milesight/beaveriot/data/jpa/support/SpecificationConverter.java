@@ -56,7 +56,7 @@ public class SpecificationConverter {
 
     private static <T> void buildCompositeCondition(CompositeCondition compositeCondition, Root<T> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
         List<Predicate> compositePredicates = toPredicateList(root, query, criteriaBuilder, compositeCondition.getConditions(), new ArrayList<>());
-        if(!CollectionUtils.isEmpty(compositePredicates)
+        if(!CollectionUtils.isEmpty(compositePredicates)) {
             if(compositeCondition.getBooleanOperator() == BooleanOperator.AND) {
                 predicates.add(criteriaBuilder.and(compositePredicates.toArray(new Predicate[0])));
             }else{
