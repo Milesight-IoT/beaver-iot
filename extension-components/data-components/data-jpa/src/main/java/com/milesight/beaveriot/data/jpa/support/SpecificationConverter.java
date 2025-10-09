@@ -86,24 +86,16 @@ public class SpecificationConverter {
                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get(compareCondition.getName()), (Comparable) compareCondition.getValue()));
                 break;
             case CASE_IGNORE_LIKE:
-                if(!ObjectUtils.isEmpty(compareCondition.getValue())){
-                    predicates.add(criteriaBuilder.like(criteriaBuilder.upper(root.get(compareCondition.getName())), "%" + compareCondition.getValue().toString().toUpperCase() + "%"));
-                }
+                predicates.add(criteriaBuilder.like(criteriaBuilder.upper(root.get(compareCondition.getName())), "%" + compareCondition.getValue().toString().toUpperCase() + "%"));
                 break;
             case CASE_IGNORE_NOT_LIKE:
-                if(!ObjectUtils.isEmpty(compareCondition.getValue())){
-                    predicates.add(criteriaBuilder.notLike(criteriaBuilder.upper(root.get(compareCondition.getName())), "%" + compareCondition.getValue().toString().toUpperCase() + "%"));
-                }
+                predicates.add(criteriaBuilder.notLike(criteriaBuilder.upper(root.get(compareCondition.getName())), "%" + compareCondition.getValue().toString().toUpperCase() + "%"));
                 break;
             case CASE_IGNORE_STARTS_WITH:
-                if(!ObjectUtils.isEmpty(compareCondition.getValue())){
-                    predicates.add(criteriaBuilder.like(criteriaBuilder.upper(root.get(compareCondition.getName())), compareCondition.getValue().toString().toUpperCase() + "%"));
-                }
+                predicates.add(criteriaBuilder.like(criteriaBuilder.upper(root.get(compareCondition.getName())), compareCondition.getValue().toString().toUpperCase() + "%"));
                 break;
             case CASE_IGNORE_ENDS_WITH:
-                if(!ObjectUtils.isEmpty(compareCondition.getValue())){
-                    predicates.add(criteriaBuilder.like(criteriaBuilder.upper(root.get(compareCondition.getName())), "%" + compareCondition.getValue().toString().toUpperCase()));
-                }
+                predicates.add(criteriaBuilder.like(criteriaBuilder.upper(root.get(compareCondition.getName())), "%" + compareCondition.getValue().toString().toUpperCase()));
                 break;
             case LIKE:
                 predicates.add(criteriaBuilder.like(root.get(compareCondition.getName()), "%" + compareCondition.getValue() + "%"));
