@@ -28,24 +28,24 @@ public class SpecificationConverter {
     private SpecificationConverter() {
     }
 
-    public static <T> Specification<T> toSpecification(Consumer<Filterable> consumer){
+    public static <T> Specification<T> toSpecification(Consumer<Filterable> consumer) {
         SearchFilter nextQuerySpecs = new SearchFilter(BooleanOperator.AND, new ArrayList<>());
         consumer.accept(nextQuerySpecs);
         return SpecificationConverter.toSpecification(nextQuerySpecs);
     }
 
-    public static <T> Specification<T> toSpecification(SearchFilter searchFilter){
+    public static <T> Specification<T> toSpecification(SearchFilter searchFilter) {
         return  (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = toPredicateList(root, query, criteriaBuilder, searchFilter.getConditions(), new ArrayList<>());
             return query.where(predicates.toArray(new Predicate[0])).getRestriction();
         };
     }
 
-    private static <T> List<Predicate> toPredicateList(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder, List<Condition> conditions, List<Predicate> predicates){
+    private static <T> List<Predicate> toPredicateList(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder, List<Condition> conditions, List<Predicate> predicates) {
         for (Condition condition : conditions) {
-            if (condition instanceof CompareCondition compareCondition){
+            if (condition instanceof CompareCondition compareCondition) {
                 buildCompareCondition(compareCondition, root, predicates, criteriaBuilder);
-            }else if(condition instanceof CompositeCondition compositeCondition){
+            }else if(condition instanceof CompositeCondition compositeCondition) {
                 buildCompositeCondition(compositeCondition, root, query, criteriaBuilder, predicates );
             }else{
                 throw new DataAccessException("Unsupported condition type");
@@ -56,7 +56,7 @@ public class SpecificationConverter {
 
     private static <T> void buildCompositeCondition(CompositeCondition compositeCondition, Root<T> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
         List<Predicate> compositePredicates = toPredicateList(root, query, criteriaBuilder, compositeCondition.getConditions(), new ArrayList<>());
-        if(!CollectionUtils.isEmpty(compositePredicates)){
+        if(!CollectionUtils.isEmpty(compositePredicates)) {
             if(compositeCondition.getBooleanOperator() == BooleanOperator.AND) {
                 predicates.add(criteriaBuilder.and(compositePredicates.toArray(new Predicate[0])));
             }else{
@@ -66,7 +66,7 @@ public class SpecificationConverter {
     }
 
     private static <T> void buildCompareCondition(CompareCondition compareCondition,Root<T> root, List<Predicate> predicates, CriteriaBuilder criteriaBuilder) {
-        switch (compareCondition.getSearchOperator()){
+        switch (compareCondition.getSearchOperator()) {
             case EQ:
                 predicates.add(criteriaBuilder.equal(root.get(compareCondition.getName()), compareCondition.getValue()));
                 break;
@@ -86,24 +86,16 @@ public class SpecificationConverter {
                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get(compareCondition.getName()), (Comparable) compareCondition.getValue()));
                 break;
             case CASE_IGNORE_LIKE:
-                if(!ObjectUtils.isEmpty(compareCondition.getValue())){
-                    predicates.add(criteriaBuilder.like(criteriaBuilder.upper(root.get(compareCondition.getName())), "%" + compareCondition.getValue().toString().toUpperCase() + "%"));
-                }
+                predicates.add(criteriaBuilder.like(criteriaBuilder.upper(root.get(compareCondition.getName())), "%" + compareCondition.getValue().toString().toUpperCase() + "%"));
                 break;
             case CASE_IGNORE_NOT_LIKE:
-                if(!ObjectUtils.isEmpty(compareCondition.getValue())){
-                    predicates.add(criteriaBuilder.notLike(criteriaBuilder.upper(root.get(compareCondition.getName())), "%" + compareCondition.getValue().toString().toUpperCase() + "%"));
-                }
+                predicates.add(criteriaBuilder.notLike(criteriaBuilder.upper(root.get(compareCondition.getName())), "%" + compareCondition.getValue().toString().toUpperCase() + "%"));
                 break;
             case CASE_IGNORE_STARTS_WITH:
-                if(!ObjectUtils.isEmpty(compareCondition.getValue())){
-                    predicates.add(criteriaBuilder.like(criteriaBuilder.upper(root.get(compareCondition.getName())), compareCondition.getValue().toString().toUpperCase() + "%"));
-                }
+                predicates.add(criteriaBuilder.like(criteriaBuilder.upper(root.get(compareCondition.getName())), compareCondition.getValue().toString().toUpperCase() + "%"));
                 break;
             case CASE_IGNORE_ENDS_WITH:
-                if(!ObjectUtils.isEmpty(compareCondition.getValue())){
-                    predicates.add(criteriaBuilder.like(criteriaBuilder.upper(root.get(compareCondition.getName())), "%" + compareCondition.getValue().toString().toUpperCase()));
-                }
+                predicates.add(criteriaBuilder.like(criteriaBuilder.upper(root.get(compareCondition.getName())), "%" + compareCondition.getValue().toString().toUpperCase()));
                 break;
             case LIKE:
                 predicates.add(criteriaBuilder.like(root.get(compareCondition.getName()), "%" + compareCondition.getValue() + "%"));
