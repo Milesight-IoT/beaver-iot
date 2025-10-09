@@ -10,7 +10,6 @@ import com.milesight.beaveriot.blueprint.library.service.BlueprintLibrarySubscri
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryVersionService;
 import com.milesight.beaveriot.context.integration.model.DeviceTemplate;
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
-import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.devicetemplate.facade.IDeviceTemplateFacade;
 import com.milesight.beaveriot.scheduler.core.Scheduler;
@@ -116,49 +115,52 @@ public class BlueprintLibraryCleanScheduler implements CommandLineRunner {
     }
 
     private List<BlueprintLibraryVersion> getUnusedBlueprintLibraryVersions() {
-        List<BlueprintLibrarySubscription> blueprintLibrarySubscriptions = blueprintLibrarySubscriptionService.findAllIgnoreTenant();
-        if (CollectionUtils.isEmpty(blueprintLibrarySubscriptions)) {
+        List<BlueprintLibraryVersion> allBlueprintLibraryVersions = blueprintLibraryVersionService.findAll();
+        if (CollectionUtils.isEmpty(allBlueprintLibraryVersions)) {
             return null;
         }
 
-        Set<String> allBlueprintLibrarySubscriptionKeys = new TreeSet<>();
-        Set<String> activeBlueprintLibrarySubscriptionKeys = new TreeSet<>();
-        Map<String, BlueprintLibraryVersion> blueprintLibraryVersionMap = new HashMap<>();
-        Map<Long, BlueprintLibrary> blueprintLibraryCache = new HashMap<>();
-        for (BlueprintLibrarySubscription blueprintLibrarySubscription : blueprintLibrarySubscriptions) {
-            String key = blueprintLibrarySubscription.getKey();
-            BlueprintLibrary blueprintLibrary = blueprintLibraryCache.computeIfAbsent(blueprintLibrarySubscription.getLibraryId(), blueprintLibraryService::findById);
-            BlueprintLibraryAddress blueprintLibraryAddress = blueprintLibraryAddressService.convertLibraryToAddress(blueprintLibrary);
-            if (blueprintLibraryAddressService.isDefaultBlueprintLibraryAddress(blueprintLibraryAddress) || blueprintLibrarySubscription.getActive()) {
-                activeBlueprintLibrarySubscriptionKeys.add(key);
-            }
-            allBlueprintLibrarySubscriptionKeys.add(key);
-            BlueprintLibraryVersion blueprintLibraryVersion = convertSubscriptionToVersion(blueprintLibrarySubscription);
-            blueprintLibraryVersionMap.put(key, blueprintLibraryVersion);
+        Map<Long, BlueprintLibrary> blueprintLibraryMap = new HashMap<>();
+        Map<Long, List<BlueprintLibraryVersion>> blueprintLibraryVersionMap = new TreeMap<>();
+        for (BlueprintLibraryVersion blueprintLibraryVersion : allBlueprintLibraryVersions) {
+            Long libraryId = blueprintLibraryVersion.getLibraryId();
+            List<BlueprintLibraryVersion> blueprintLibraryVersions = blueprintLibraryVersionMap.computeIfAbsent(libraryId, k -> new ArrayList<>());
+            blueprintLibraryVersions.add(blueprintLibraryVersion);
+            blueprintLibraryMap.putIfAbsent(libraryId, blueprintLibraryService.findById(libraryId));
         }
 
-        Set<String> inactiveBlueprintLibrarySubscriptionKeys = new TreeSet<>(allBlueprintLibrarySubscriptionKeys);
-        inactiveBlueprintLibrarySubscriptionKeys.removeAll(activeBlueprintLibrarySubscriptionKeys);
-
-        List<BlueprintLibraryVersion> blueprintLibraryVersions = blueprintLibraryVersionService.findAll();
-        for (BlueprintLibraryVersion blueprintLibraryVersion : blueprintLibraryVersions) {
-            String key = blueprintLibraryVersion.getKey();
-            BlueprintLibrary blueprintLibrary = blueprintLibraryCache.computeIfAbsent(blueprintLibraryVersion.getLibraryId(), blueprintLibraryService::findById);
-            BlueprintLibraryAddress blueprintLibraryAddress = blueprintLibraryAddressService.convertLibraryToAddress(blueprintLibrary);
-            if (blueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.DEFAULT && !blueprintLibraryAddressService.isDefaultBlueprintLibraryAddress(blueprintLibraryAddress)) {
-                if (!activeBlueprintLibrarySubscriptionKeys.contains(key)) {
-                    inactiveBlueprintLibrarySubscriptionKeys.add(key);
-                    blueprintLibraryVersionMap.put(key, blueprintLibraryVersion);
+        Set<String> activeBlueprintLibrarySubscriptionKeys = new HashSet<>();
+        List<BlueprintLibrarySubscription> blueprintLibrarySubscriptions = blueprintLibrarySubscriptionService.findAllIgnoreTenant();
+        if (!CollectionUtils.isEmpty(blueprintLibrarySubscriptions)) {
+            for (BlueprintLibrarySubscription blueprintLibrarySubscription : blueprintLibrarySubscriptions) {
+                String key = blueprintLibrarySubscription.getKey();
+                if (blueprintLibrarySubscription.getActive()) {
+                    activeBlueprintLibrarySubscriptionKeys.add(key);
                 }
             }
         }
 
-        if (CollectionUtils.isEmpty(inactiveBlueprintLibrarySubscriptionKeys)) {
+        List<BlueprintLibraryVersion> inactiveBlueprintLibraryVersions = new ArrayList<>();
+        for (Long libraryId : blueprintLibraryVersionMap.keySet()) {
+            BlueprintLibrary blueprintLibrary = blueprintLibraryMap.get(libraryId);
+            BlueprintLibraryAddress blueprintLibraryAddress = blueprintLibraryAddressService.convertLibraryToAddress(blueprintLibrary);
+            if (blueprintLibraryAddressService.isDefaultBlueprintLibraryAddress(blueprintLibraryAddress)) {
+                continue;
+            }
+
+            List<BlueprintLibraryVersion> blueprintLibraryVersions = blueprintLibraryVersionMap.get(libraryId);
+            for (BlueprintLibraryVersion blueprintLibraryVersion : blueprintLibraryVersions) {
+                if (!activeBlueprintLibrarySubscriptionKeys.contains(blueprintLibraryVersion.getKey())) {
+                    inactiveBlueprintLibraryVersions.add(blueprintLibraryVersion);
+                }
+            }
+        }
+
+        if (CollectionUtils.isEmpty(inactiveBlueprintLibraryVersions)) {
             return null;
         }
 
         List<BlueprintLibraryVersion> unusedBlueprintLibraryVersions = new ArrayList<>();
-        List<BlueprintLibraryVersion> inactiveBlueprintLibraryVersions = inactiveBlueprintLibrarySubscriptionKeys.stream().map(blueprintLibraryVersionMap::get).toList();
         for (BlueprintLibraryVersion inactiveBlueprintLibraryVersion : inactiveBlueprintLibraryVersions) {
             List<DeviceTemplate> deviceTemplates = deviceTemplateFacade.findByBlueprintLibraryIgnoreTenant(inactiveBlueprintLibraryVersion.getLibraryId(), inactiveBlueprintLibraryVersion.getLibraryVersion());
             if (CollectionUtils.isEmpty(deviceTemplates)) {
@@ -173,13 +175,6 @@ public class BlueprintLibraryCleanScheduler implements CommandLineRunner {
             }
         }
         return unusedBlueprintLibraryVersions;
-    }
-
-    private BlueprintLibraryVersion convertSubscriptionToVersion(BlueprintLibrarySubscription blueprintLibrarySubscription) {
-        return BlueprintLibraryVersion.builder()
-                .libraryId(blueprintLibrarySubscription.getLibraryId())
-                .libraryVersion(blueprintLibrarySubscription.getLibraryVersion())
-                .build();
     }
 
     @PreDestroy
