@@ -70,11 +70,11 @@ public class BlueprintLibraryCleaner {
 
             blueprintLibrarySubscriptionService.deleteByLibraryIdAndLibraryVersionIgnoreTenant(libraryId, libraryVersion);
             blueprintLibraryResourceService.deleteAllByLibraryIdAndLibraryVersion(libraryId, libraryVersion);
-            long existVersionCount = blueprintLibraryVersionService.countByLibraryId(libraryId);
             blueprintLibraryVersionService.deleteByLibraryIdAndLibraryVersion(libraryId, libraryVersion);
 
             BlueprintLibrary blueprintLibrary = blueprintLibraryService.findById(libraryId);
-            if (existVersionCount <= 1) {
+            long existVersionCount = blueprintLibraryVersionService.countByLibraryId(libraryId);
+            if (existVersionCount == 0) {
                 self().deleteBlueprintLibrary(blueprintLibrary);
             }
 
