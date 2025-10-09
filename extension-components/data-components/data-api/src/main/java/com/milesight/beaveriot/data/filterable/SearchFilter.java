@@ -17,7 +17,7 @@ import java.util.function.Consumer;
 /**
  * @author leon
  */
-public class SearchFilter extends CompositeCondition implements Filterable{
+public class SearchFilter extends CompositeCondition implements Filterable {
 
     public SearchFilter(BooleanOperator operator, List<Condition> searchConditions) {
         super(operator, searchConditions);
@@ -105,7 +105,7 @@ public class SearchFilter extends CompositeCondition implements Filterable{
 
     @Override
     public Filterable allEq(Map<String, Object> params) {
-        if(!ObjectUtils.isEmpty(params)){
+        if(!ObjectUtils.isEmpty(params)) {
             params.forEach(this::eq);
         }
         return this;
@@ -113,7 +113,7 @@ public class SearchFilter extends CompositeCondition implements Filterable{
 
     @Override
     public Filterable allEq(boolean condition, Map<String, Object> params) {
-        if(!ObjectUtils.isEmpty(params)){
+        if(!ObjectUtils.isEmpty(params)) {
             params.forEach((key, value) -> eq(condition, key, value));
         }
         return this;
@@ -240,16 +240,16 @@ public class SearchFilter extends CompositeCondition implements Filterable{
         return addCompareCondition(true, searchOperator, name, value);
     }
 
-    private Filterable addCompareCondition(boolean condition, SearchOperator searchOperator, String name, Object value){
-        if(condition){
+    private Filterable addCompareCondition(boolean condition, SearchOperator searchOperator, String name, Object value) {
+        if(condition) {
             Assert.notNull(value, "value must not be null");
             this.searchConditions.add(new CompareCondition(name, value,  searchOperator));
         }
         return this;
     }
 
-    private Filterable addNullCompareCondition(boolean condition, SearchOperator searchOperator, String name){
-        if(condition){
+    private Filterable addNullCompareCondition(boolean condition, SearchOperator searchOperator, String name) {
+        if(condition) {
             this.searchConditions.add(new CompareCondition(name, null, searchOperator));
         }
         return this;
