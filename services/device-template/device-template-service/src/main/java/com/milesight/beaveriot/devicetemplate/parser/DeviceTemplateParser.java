@@ -1,15 +1,13 @@
 package com.milesight.beaveriot.devicetemplate.parser;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.base.utils.ValidationUtils;
+import com.milesight.beaveriot.base.utils.YamlUtils;
 import com.milesight.beaveriot.blueprint.facade.IBlueprintFacade;
 import com.milesight.beaveriot.blueprint.facade.IBlueprintLibraryFacade;
 import com.milesight.beaveriot.blueprint.facade.IBlueprintLibraryResourceResolverFacade;
@@ -42,7 +40,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StreamUtils;
-import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.parser.ParserException;
 import org.yaml.snakeyaml.scanner.ScannerException;
 
@@ -59,6 +56,8 @@ import java.util.function.BiFunction;
 @Slf4j
 @Service
 public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
+    private static JsonSchema schema;
+    private static String defaultContent;
     private final IntegrationServiceProvider integrationServiceProvider;
     private final DeviceServiceProvider deviceServiceProvider;
     private final DeviceTemplateService deviceTemplateService;
@@ -69,6 +68,35 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     private final EntityServiceProvider entityServiceProvider;
     private final ICodecExecutorFacade codecExecutorFacade;
     private final MergedResourceBundleMessageSource messageSource;
+
+    static {
+        initSchema();
+        initDefaultContent();
+    }
+
+    private static void initSchema() {
+        InputStream schemaInputStream = DeviceTemplateParser.class.getClassLoader()
+                .getResourceAsStream("template/device_template_schema.json");
+        if (schemaInputStream == null) {
+            throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_SCHEMA_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_SCHEMA_NOT_FOUND.getErrorMessage()).build();
+        }
+
+        JsonSchemaFactory factory = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7))
+                .build();
+        schema = factory.getSchema(schemaInputStream, InputFormat.YAML,
+                SchemaValidatorsConfig.builder()
+                        .locale(LocaleContext.getLocale())
+                        .pathType(PathType.JSON_PATH)
+                        .build());
+    }
+
+    private static void initDefaultContent() {
+        try {
+            defaultContent = StreamUtils.copyToString(new ClassPathResource("template/default_device_template.yaml").getInputStream(), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+        }
+    }
 
     public DeviceTemplateParser(IntegrationServiceProvider integrationServiceProvider,
                                 DeviceServiceProvider deviceServiceProvider,
@@ -93,11 +121,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
 
     @Override
     public String defaultContent() {
-        try {
-            return StreamUtils.copyToString(new ClassPathResource("template/default_device_template.yaml").getInputStream(), StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
-        }
+        return defaultContent;
     }
 
     public boolean validate(String deviceTemplateContent) {
@@ -106,28 +130,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                 throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_EMPTY.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_EMPTY.getErrorMessage()).build();
             }
 
-            Yaml yaml = new Yaml();
-            Object loadedYaml = yaml.load(deviceTemplateContent);
-            if (loadedYaml == null) {
-                throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_EMPTY.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_EMPTY.getErrorMessage()).build();
-            }
-
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode jsonData = mapper.readTree(mapper.writeValueAsBytes(loadedYaml));
-
-            InputStream schemaInputStream = DeviceTemplateParser.class.getClassLoader()
-                    .getResourceAsStream("template/device_template_schema.json");
-            if (schemaInputStream == null) {
-                throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_SCHEMA_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_SCHEMA_NOT_FOUND.getErrorMessage()).build();
-            }
-
-            JsonSchemaFactory factory = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7))
-                    .build();
-            JsonSchema schema = factory.getSchema(schemaInputStream, InputFormat.YAML,
-                    SchemaValidatorsConfig.builder()
-                            .locale(LocaleContext.getLocale())
-                            .pathType(PathType.JSON_PATH)
-                            .build());
+            JsonNode jsonData = YamlUtils.fromYAML(deviceTemplateContent);
             Set<ValidationMessage> errors = schema.validate(jsonData);
 
             if (!errors.isEmpty()) {
@@ -258,7 +261,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         }
     }
 
-    private DeviceTemplateInputResult input(String integration, Long deviceTemplateId, String deviceIdentifier, String deviceName, String deviceKey, Object data, Map<String, Object> codecArgContext) throws Exception {
+    private DeviceTemplateInputResult input(String integration, Long deviceTemplateId, String deviceIdentifier, String deviceName, String deviceKey, Object data, Map<String, Object> codecArgContext) {
         DeviceTemplateInputResult result = new DeviceTemplateInputResult();
         // Either (integration, deviceTemplateId) or deviceKey must be provided
         if ((integration == null || deviceTemplateId == null) && deviceKey == null) {
@@ -301,8 +304,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                 throw ServiceException.with(ServerErrorCode.DEVICE_DATA_DECODE_FAILED.getErrorCode(), ServerErrorCode.DEVICE_DATA_DECODE_FAILED.getErrorMessage()).build();
             }
         } else if (data instanceof String jsonStringData) {
-            ObjectMapper mapper = new ObjectMapper();
-            jsonNode = mapper.readTree(jsonStringData);
+            jsonNode = JsonUtils.toJsonNode(jsonStringData);
         } else if (data instanceof JsonNode jsonData){
             jsonNode = jsonData;
         } else {
@@ -315,14 +317,13 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
         Map<String, DeviceTemplateModel.Definition.InputJsonObject> flatJsonInputDescriptionMap = new HashMap<>();
         flattenJsonInputDescription(deviceTemplateModel.getDefinition().getInput().getProperties(), flatJsonInputDescriptionMap, "");
 
-        ObjectMapper mapper = new ObjectMapper();
         String deviceIdKey = getDeviceIdKey(flatJsonInputDescriptionMap);
         if (deviceIdKey != null && flatJsonDataMap.get(deviceIdKey) == null && deviceIdentifier != null) {
-            flatJsonDataMap.put(deviceIdKey, mapper.valueToTree(deviceIdentifier));
+            flatJsonDataMap.put(deviceIdKey, JsonUtils.getObjectMapper().valueToTree(deviceIdentifier));
         }
         String deviceNameKey = getDeviceNameKey(flatJsonInputDescriptionMap);
         if (deviceNameKey != null && flatJsonDataMap.get(deviceNameKey) == null && deviceName != null) {
-            flatJsonDataMap.put(deviceNameKey, mapper.valueToTree(deviceName));
+            flatJsonDataMap.put(deviceNameKey, JsonUtils.getObjectMapper().valueToTree(deviceName));
         }
         // Validate json data
         validateJsonData(flatJsonDataMap, flatJsonInputDescriptionMap);
@@ -491,8 +492,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     }
 
     private JsonNode buildJsonNode(DeviceTemplateModel.Definition.Output outputRoot, String deviceKey, ExchangePayload payload) {
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode rootNode = mapper.createObjectNode();
+        ObjectNode rootNode = JsonUtils.getObjectMapper().createObjectNode();
         outputRoot.getProperties().forEach(outputJsonObject -> {
             JsonNode jsonNode = parseJsonNode(outputJsonObject, deviceKey, payload, "");
             if (jsonNode != null) {
@@ -752,18 +752,14 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
 
     public DeviceTemplateModel parse(String deviceTemplateContent) {
         try {
-            ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-            return objectMapper.readValue(deviceTemplateContent, DeviceTemplateModel.class);
+            return YamlUtils.fromYAML(deviceTemplateContent, DeviceTemplateModel.class);
         } catch (Exception e) {
             throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
         }
     }
 
     private JsonNode parseJsonNode(DeviceTemplateModel.Definition.OutputJsonObject outputJsonObject, String deviceKey, ExchangePayload payload, String parentKey) {
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode jsonNode = mapper.createObjectNode();
+        ObjectNode jsonNode = JsonUtils.getObjectMapper().createObjectNode();
         String currentKey = parentKey + outputJsonObject.getKey();
         if (DeviceTemplateModel.JsonType.OBJECT.equals(outputJsonObject.getType())) {
             if (outputJsonObject.getProperties() != null) {
@@ -776,7 +772,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             }
         } else {
             if (outputJsonObject.getValue() != null) {
-                return mapper.valueToTree(outputJsonObject.getValue());
+                return JsonUtils.getObjectMapper().valueToTree(outputJsonObject.getValue());
             } else {
                 if (outputJsonObject.getEntityMapping() == null) {
                     return null;
@@ -787,7 +783,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                 }
                 Object value = payload.get(entityKey);
                 validateEntityValue(currentKey, entityKey, outputJsonObject.getType(), value);
-                return mapper.valueToTree(value);
+                return JsonUtils.getObjectMapper().valueToTree(value);
             }
         }
         return jsonNode;
