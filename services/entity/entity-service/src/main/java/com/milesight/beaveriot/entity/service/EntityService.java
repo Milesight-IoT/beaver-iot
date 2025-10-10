@@ -60,6 +60,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
@@ -724,9 +725,10 @@ public class EntityService implements EntityServiceProvider {
                 .toList();
         Map<String, DeviceNameDTO> deviceIdToDetails = deviceIdToDetails(foundDeviceIds);
         Map<Long, WorkflowNameDTO> entityWorkflowMap = new HashMap<>();
-        workflowFacade.getWorkflowsByEntities(parentEntityPOList.stream()
-                .filter(entityPO -> entityPO.getType().equals(EntityType.SERVICE))
+        workflowFacade.getWorkflowsByEntities(Stream.concat(parentEntityPOList.stream(), entityPOPage.stream())
+                .filter(entityPO -> entityPO.getType().equals(EntityType.SERVICE) && ObjectUtils.isEmpty(entityPO.getParent()))
                 .map(EntityPO::getId)
+                .distinct()
                 .toList()
         ).forEach(workflowNameDTO -> entityWorkflowMap.put(workflowNameDTO.getEntityId(),  workflowNameDTO));
         Set<String> integrationIds = entityPOPage.stream()
