@@ -60,6 +60,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
@@ -704,18 +705,18 @@ public class EntityService implements EntityServiceProvider {
     }
 
     private Page<EntityResponse> convertEntityPOPageToEntityResponses(Page<EntityPO> entityPOPage) {
-        List<String> parentKeys = entityPOPage.stream()
+        List<String> relatedParentKeys = entityPOPage.stream()
                 .map(EntityPO::getParent)
                 .filter(StringUtils::hasText)
                 .distinct()
                 .toList();
-        List<EntityPO> parentEntityPOList = new ArrayList<>();
-        if (!parentKeys.isEmpty()) {
-            parentEntityPOList.addAll(entityRepository.findAllWithDataPermission(f -> f.in(EntityPO.Fields.key, parentKeys.toArray())));
+        List<EntityPO> relatedParentEntityPOList = new ArrayList<>();
+        if (!relatedParentKeys.isEmpty()) {
+            relatedParentEntityPOList.addAll(entityRepository.findAllWithDataPermission(f -> f.in(EntityPO.Fields.key, relatedParentKeys.toArray())));
         }
-        Map<String, EntityPO> parentKeyMap = new HashMap<>();
-        if (!parentEntityPOList.isEmpty()) {
-            parentKeyMap.putAll(parentEntityPOList.stream().collect(Collectors.toMap(EntityPO::getKey, Function.identity())));
+        Map<String, EntityPO> relatedParentKeyMap = new HashMap<>();
+        if (!relatedParentEntityPOList.isEmpty()) {
+            relatedParentKeyMap.putAll(relatedParentEntityPOList.stream().collect(Collectors.toMap(EntityPO::getKey, Function.identity())));
         }
         List<Long> foundDeviceIds = entityPOPage.stream()
                 .filter(entityPO -> AttachTargetType.DEVICE.equals(entityPO.getAttachTarget()))
@@ -724,9 +725,10 @@ public class EntityService implements EntityServiceProvider {
                 .toList();
         Map<String, DeviceNameDTO> deviceIdToDetails = deviceIdToDetails(foundDeviceIds);
         Map<Long, WorkflowNameDTO> entityWorkflowMap = new HashMap<>();
-        workflowFacade.getWorkflowsByEntities(parentEntityPOList.stream()
-                .filter(entityPO -> entityPO.getType().equals(EntityType.SERVICE))
+        workflowFacade.getWorkflowsByEntities(Stream.concat(relatedParentEntityPOList.stream(), entityPOPage.stream())
+                .filter(entityPO -> entityPO.getType().equals(EntityType.SERVICE) && ObjectUtils.isEmpty(entityPO.getParent()))
                 .map(EntityPO::getId)
+                .distinct()
                 .toList()
         ).forEach(workflowNameDTO -> entityWorkflowMap.put(workflowNameDTO.getEntityId(),  workflowNameDTO));
         Set<String> integrationIds = entityPOPage.stream()
@@ -736,7 +738,7 @@ public class EntityService implements EntityServiceProvider {
         Map<String, Integration> integrationMap = integrationServiceProvider.findIntegrations(i -> integrationIds.contains(i.getId()))
                 .stream()
                 .collect(Collectors.toMap(Integration::getId, Function.identity(), (v1, v2) -> v1));
-        return entityPOPage.map(entityPO -> convertEntityPOToEntityResponse(entityPO, integrationMap, deviceIdToDetails, parentKeyMap, entityWorkflowMap));
+        return entityPOPage.map(entityPO -> convertEntityPOToEntityResponse(entityPO, integrationMap, deviceIdToDetails, relatedParentKeyMap, entityWorkflowMap));
     }
 
     public EntityMetaResponse getEntityMeta(Long entityId) {
