@@ -212,7 +212,8 @@ public class DashboardService {
         MainDashboardCanvasResponse response = new MainDashboardCanvasResponse();
         List<DashboardPO> dashboardPOList = dashboardRepository
                 .findAllWithDataPermission()
-                .stream().sorted(Comparator.comparing(DashboardPO::getCreatedAt))
+                .stream()
+                .sorted(Comparator.comparing(DashboardPO::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
         if (dashboardPOList.isEmpty()) {
             return response;
