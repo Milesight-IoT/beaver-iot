@@ -10,6 +10,7 @@ import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.base.utils.ValidationUtils;
+import com.milesight.beaveriot.base.utils.YamlUtils;
 import com.milesight.beaveriot.blueprint.facade.IBlueprintFacade;
 import com.milesight.beaveriot.blueprint.facade.IBlueprintLibraryFacade;
 import com.milesight.beaveriot.blueprint.facade.IBlueprintLibraryResourceResolverFacade;
@@ -42,7 +43,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StreamUtils;
-import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.parser.ParserException;
 import org.yaml.snakeyaml.scanner.ScannerException;
 
@@ -59,6 +59,8 @@ import java.util.function.BiFunction;
 @Slf4j
 @Service
 public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
+    private static JsonSchema schema;
+    private static String defaultContent;
     private final IntegrationServiceProvider integrationServiceProvider;
     private final DeviceServiceProvider deviceServiceProvider;
     private final DeviceTemplateService deviceTemplateService;
@@ -69,6 +71,35 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     private final EntityServiceProvider entityServiceProvider;
     private final ICodecExecutorFacade codecExecutorFacade;
     private final MergedResourceBundleMessageSource messageSource;
+
+    static {
+        initSchema();
+        initDefaultContent();
+    }
+
+    private static void initSchema() {
+        InputStream schemaInputStream = DeviceTemplateParser.class.getClassLoader()
+                .getResourceAsStream("template/device_template_schema.json");
+        if (schemaInputStream == null) {
+            throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_SCHEMA_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_SCHEMA_NOT_FOUND.getErrorMessage()).build();
+        }
+
+        JsonSchemaFactory factory = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7))
+                .build();
+        schema = factory.getSchema(schemaInputStream, InputFormat.YAML,
+                SchemaValidatorsConfig.builder()
+                        .locale(LocaleContext.getLocale())
+                        .pathType(PathType.JSON_PATH)
+                        .build());
+    }
+
+    private static void initDefaultContent() {
+        try {
+            defaultContent = StreamUtils.copyToString(new ClassPathResource("template/default_device_template.yaml").getInputStream(), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
+        }
+    }
 
     public DeviceTemplateParser(IntegrationServiceProvider integrationServiceProvider,
                                 DeviceServiceProvider deviceServiceProvider,
@@ -93,11 +124,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
 
     @Override
     public String defaultContent() {
-        try {
-            return StreamUtils.copyToString(new ClassPathResource("template/default_device_template.yaml").getInputStream(), StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
-        }
+        return defaultContent;
     }
 
     public boolean validate(String deviceTemplateContent) {
@@ -106,28 +133,7 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                 throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_EMPTY.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_EMPTY.getErrorMessage()).build();
             }
 
-            Yaml yaml = new Yaml();
-            Object loadedYaml = yaml.load(deviceTemplateContent);
-            if (loadedYaml == null) {
-                throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_EMPTY.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_EMPTY.getErrorMessage()).build();
-            }
-
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode jsonData = mapper.readTree(mapper.writeValueAsBytes(loadedYaml));
-
-            InputStream schemaInputStream = DeviceTemplateParser.class.getClassLoader()
-                    .getResourceAsStream("template/device_template_schema.json");
-            if (schemaInputStream == null) {
-                throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_SCHEMA_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_TEMPLATE_SCHEMA_NOT_FOUND.getErrorMessage()).build();
-            }
-
-            JsonSchemaFactory factory = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7))
-                    .build();
-            JsonSchema schema = factory.getSchema(schemaInputStream, InputFormat.YAML,
-                    SchemaValidatorsConfig.builder()
-                            .locale(LocaleContext.getLocale())
-                            .pathType(PathType.JSON_PATH)
-                            .build());
+            JsonNode jsonData = YamlUtils.fromYAML(deviceTemplateContent);
             Set<ValidationMessage> errors = schema.validate(jsonData);
 
             if (!errors.isEmpty()) {
