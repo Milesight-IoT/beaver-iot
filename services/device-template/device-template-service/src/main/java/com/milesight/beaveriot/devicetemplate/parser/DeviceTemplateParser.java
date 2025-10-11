@@ -786,6 +786,10 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                     return null;
                 }
                 Object value = payload.get(entityKey);
+                if (value == null) {
+                    return null;
+                }
+
                 validateEntityValue(currentKey, entityKey, outputJsonObject.getType(), value);
                 return mapper.valueToTree(value);
             }
