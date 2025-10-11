@@ -123,10 +123,12 @@ public abstract class BaseDeviceStatusManager {
         }
 
         String existValue = (String) entityValueServiceProvider.findValueByKey(statusEntityKey);
-        if (!deviceStatus.equals(existValue)) {
-            ExchangePayload payload = ExchangePayload.create(statusEntityKey, deviceStatus);
-            entityValueServiceProvider.saveValuesAndPublishAsync(payload);
+        if (existValue == null && deviceStatus.equals(DeviceStatus.OFFLINE.name()) || deviceStatus.equals(existValue)) {
+            return;
         }
+
+        ExchangePayload payload = ExchangePayload.create(statusEntityKey, deviceStatus);
+        entityValueServiceProvider.saveValuesAndPublishAsync(payload);
     }
 
     protected String getStatusEntityKey(Device device) {
