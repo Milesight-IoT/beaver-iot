@@ -18,7 +18,7 @@ public interface IBlueprintLibraryResourceResolverFacade {
     BlueprintDeviceVendor getDeviceVendor(BlueprintLibrary blueprintLibrary, String vendorId);
     List<BlueprintDeviceModel> getDeviceModels(String vendorId);
     BlueprintDeviceModel getDeviceModel(String vendorId, String modelId);
-    String getResourceContent(String vendorId, String relativePath);
+    String getResourceContent(BlueprintLibrary blueprintLibrary, String vendorId, String relativePath);
     String getResourceContent(BlueprintLibrary blueprintLibrary, String resourcePath);
     String buildResourcePath(String basePath, String relativePath);
     String getDeviceTemplateContent(String vendorId, String modelId);
