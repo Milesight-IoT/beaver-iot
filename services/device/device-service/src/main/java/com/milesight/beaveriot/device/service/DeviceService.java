@@ -110,6 +110,8 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
     private DeviceService self;
 
     public static final String TENANT_PARAM_DEVICE_GROUP_ID = "DEVICE_GROUP_ID";
+    public static final String TENANT_PARAM_DEVICE_LONGITUDE = "DEVICE_LONGITUDE";
+    public static final String TENANT_PARAM_DEVICE_LATITUDE = "DEVICE_LATITUDE";
     private static final Set<String> entityTemplateKeys = ConcurrentHashMap.newKeySet();
 
     @IntegrationPermission
@@ -158,6 +160,10 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
         }
 
         TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_ID, deviceGroupId);
+        if (createDeviceRequest.getLongitude() != null && createDeviceRequest.getLatitude() != null) {
+            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LONGITUDE, createDeviceRequest.getLongitude());
+            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LATITUDE, createDeviceRequest.getLatitude());
+        }
 
         try {
             // call service for adding
@@ -165,6 +171,10 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
         } finally {
             if (hasGroup) {
                 TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_ID, null);
+            }
+            if (createDeviceRequest.getLongitude() != null && createDeviceRequest.getLatitude() != null) {
+                TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LONGITUDE, null);
+                TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LATITUDE, null);
             }
         }
     }
