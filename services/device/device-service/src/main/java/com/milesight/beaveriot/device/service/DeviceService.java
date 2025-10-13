@@ -110,6 +110,7 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
     private DeviceService self;
 
     public static final String TENANT_PARAM_DEVICE_GROUP_ID = "DEVICE_GROUP_ID";
+    public static final String TENANT_PARAM_DEVICE_ADDRESS = "DEVICE_ADDRESS";
     public static final String TENANT_PARAM_DEVICE_LONGITUDE = "DEVICE_LONGITUDE";
     public static final String TENANT_PARAM_DEVICE_LATITUDE = "DEVICE_LATITUDE";
     private static final Set<String> entityTemplateKeys = ConcurrentHashMap.newKeySet();
@@ -160,10 +161,9 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
         }
 
         TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_ID, deviceGroupId);
-        if (createDeviceRequest.getLongitude() != null && createDeviceRequest.getLatitude() != null) {
-            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LONGITUDE, createDeviceRequest.getLongitude());
-            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LATITUDE, createDeviceRequest.getLatitude());
-        }
+        TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_ADDRESS, createDeviceRequest.getAddress());
+        TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LONGITUDE, createDeviceRequest.getLongitude());
+        TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LATITUDE, createDeviceRequest.getLatitude());
 
         try {
             // call service for adding
@@ -172,10 +172,9 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
             if (hasGroup) {
                 TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_ID, null);
             }
-            if (createDeviceRequest.getLongitude() != null && createDeviceRequest.getLatitude() != null) {
-                TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LONGITUDE, null);
-                TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LATITUDE, null);
-            }
+            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_ADDRESS, null);
+            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LONGITUDE, null);
+            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LATITUDE, null);
         }
     }
 

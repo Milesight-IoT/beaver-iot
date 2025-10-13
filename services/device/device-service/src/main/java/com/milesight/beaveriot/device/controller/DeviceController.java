@@ -1,12 +1,15 @@
 package com.milesight.beaveriot.device.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
+import com.milesight.beaveriot.context.integration.model.Device;
+import com.milesight.beaveriot.device.dto.DeviceResponseData;
+import com.milesight.beaveriot.device.location.model.DeviceLocation;
+import com.milesight.beaveriot.device.location.service.DeviceLocationService;
 import com.milesight.beaveriot.device.model.request.*;
 import com.milesight.beaveriot.device.model.response.DeviceCanvasResponse;
 import com.milesight.beaveriot.device.model.response.DeviceDetailResponse;
-import com.milesight.beaveriot.device.dto.DeviceResponseData;
+import com.milesight.beaveriot.device.model.response.DeviceLocationResponse;
 import com.milesight.beaveriot.device.service.DeviceCanvasService;
 import com.milesight.beaveriot.device.service.DeviceService;
 import com.milesight.beaveriot.permission.aspect.OperationPermission;
@@ -24,6 +27,9 @@ public class DeviceController {
 
     @Autowired
     DeviceCanvasService deviceCanvasService;
+
+    @Autowired
+    DeviceLocationService deviceLocationService;
 
     @OperationPermission(codes = OperationPermissionCode.DEVICE_ADD)
     @PostMapping
@@ -69,5 +75,40 @@ public class DeviceController {
     @GetMapping("/{deviceId}/canvas")
     public ResponseBody<DeviceCanvasResponse> getDeviceCanvas(@PathVariable("deviceId") Long deviceId) {
         return ResponseBuilder.success(deviceCanvasService.getOrCreateDeviceCanvas(deviceId));
+    }
+
+    @OperationPermission(codes = OperationPermissionCode.DEVICE_EDIT)
+    @PutMapping("/{deviceId}/location")
+    public ResponseBody<Void> setDeviceLocation(@PathVariable("deviceId") Long deviceId, @RequestBody SetDeviceLocationRequest request) {
+        Device device = deviceService.findById(deviceId);
+        if (device != null) {
+            DeviceLocation location = DeviceLocation.of(request.getAddress(), request.getLongitude(), request.getLatitude());
+            deviceLocationService.setLocation(device, location);
+        }
+        return ResponseBuilder.success();
+    }
+
+    @OperationPermission(codes = OperationPermissionCode.DEVICE_VIEW)
+    @GetMapping("/{deviceId}/location")
+    public ResponseBody<DeviceLocationResponse> getDeviceLocation(@PathVariable("deviceId") Long deviceId) {
+        Device device = deviceService.findById(deviceId);
+        DeviceLocation location = deviceLocationService.getLocation(device);
+        DeviceLocationResponse response = new DeviceLocationResponse();
+        if (location != null) {
+            response.setAddress(location.getAddress());
+            response.setLongitude(location.getLongitude());
+            response.setLatitude(location.getLatitude());
+        }
+        return ResponseBuilder.success(response);
+    }
+
+    @OperationPermission(codes = OperationPermissionCode.DEVICE_EDIT)
+    @PostMapping("/{deviceId}/clear-location")
+    public ResponseBody<Void> clearDeviceLocation(@PathVariable("deviceId") Long deviceId) {
+        Device device = deviceService.findById(deviceId);
+        if (device != null) {
+            deviceLocationService.clearLocation(device);
+        }
+        return ResponseBuilder.success();
     }
 }

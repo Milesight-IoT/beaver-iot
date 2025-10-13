@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.device.location.service;
 
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
+import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.device.location.model.DeviceLocation;
 import com.milesight.beaveriot.device.location.support.DeviceLocationSupport;
@@ -23,7 +24,8 @@ public class DeviceLocationService {
         this.entityValueServiceProvider = entityValueServiceProvider;
     }
 
-    public DeviceLocation getDeviceLocation(String deviceKey) {
+    public DeviceLocation getLocation(Device device) {
+        String deviceKey = device.getKey();
         List<String> locationKeys = new ArrayList<>();
         String addressKey = DeviceLocationSupport.getAddressKey(deviceKey);
         String longitudeKey = DeviceLocationSupport.getLongitudeKey(deviceKey);
@@ -37,13 +39,14 @@ public class DeviceLocationService {
             return null;
         }
 
-        String address = (String) values.getOrDefault(addressKey, "");
+        String address = (String) values.get(addressKey);
         Double longitude = (Double) values.get(longitudeKey);
         Double latitude = (Double) values.get(latitudeKey);
         return DeviceLocation.of(address, longitude, latitude);
     }
 
-    public void setDeviceLocation(String deviceKey, DeviceLocation deviceLocation) {
+    public void setLocation(Device device, DeviceLocation deviceLocation) {
+        String deviceKey = device.getKey();
         String addressKey = DeviceLocationSupport.getAddressKey(deviceKey);
         String longitudeKey = DeviceLocationSupport.getLongitudeKey(deviceKey);
         String latitudeKey = DeviceLocationSupport.getLatitudeKey(deviceKey);
@@ -58,6 +61,26 @@ public class DeviceLocationService {
         if (deviceLocation.getLatitude() != null) {
             exchangePayload.put(latitudeKey, deviceLocation.getLatitude());
         }
+
+        if (exchangePayload.isEmpty()) {
+            return;
+        }
+
+        exchangePayload.validate();
+        entityValueServiceProvider.saveValues(exchangePayload);
+    }
+
+    public void clearLocation(Device device) {
+        String deviceKey = device.getKey();
+        String addressKey = DeviceLocationSupport.getAddressKey(deviceKey);
+        String longitudeKey = DeviceLocationSupport.getLongitudeKey(deviceKey);
+        String latitudeKey = DeviceLocationSupport.getLatitudeKey(deviceKey);
+
+        ExchangePayload exchangePayload = new ExchangePayload();
+        exchangePayload.put(addressKey, null);
+        exchangePayload.put(longitudeKey, null);
+        exchangePayload.put(latitudeKey, null);
+
         entityValueServiceProvider.saveValues(exchangePayload);
     }
 }

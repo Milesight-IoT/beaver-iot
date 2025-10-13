@@ -14,10 +14,6 @@ public class DeviceLocation {
     private Double longitude;
     private Double latitude;
 
-    public static DeviceLocation of(Double longitude, Double latitude) {
-        return of("", longitude, latitude);
-    }
-
     public static DeviceLocation of(String address, Double longitude, Double latitude) {
         return DeviceLocation.builder()
                 .address(address)

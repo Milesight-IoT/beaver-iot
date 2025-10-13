@@ -146,12 +146,21 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
             deviceGroupService.moveDevicesToGroupId(deviceGroupId, List.of(devicePO.getId()));
         }
 
+        DeviceLocation.DeviceLocationBuilder deviceLocationBuilder = DeviceLocation.builder();
+        String address = (String) TenantContext.tryGetTenantParam(DeviceService.TENANT_PARAM_DEVICE_ADDRESS).orElse(null);
+        if (address != null) {
+            deviceLocationBuilder.address(address);
+        }
+
         Double longitude = (Double) TenantContext.tryGetTenantParam(DeviceService.TENANT_PARAM_DEVICE_LONGITUDE).orElse(null);
         Double latitude = (Double) TenantContext.tryGetTenantParam(DeviceService.TENANT_PARAM_DEVICE_LATITUDE).orElse(null);
         if (longitude != null && latitude != null) {
-            DeviceLocation deviceLocation = DeviceLocation.of(longitude, latitude);
-            deviceLocationService.setDeviceLocation(device.getKey(), deviceLocation);
+            deviceLocationBuilder.longitude(longitude);
+            deviceLocationBuilder.latitude(latitude);
         }
+
+        DeviceLocation deviceLocation = deviceLocationBuilder.build();
+        deviceLocationService.setLocation(device, deviceLocation);
     }
 
     @Override

@@ -21,6 +21,9 @@ public class CreateDeviceRequest {
     @Size(max = DeviceDataFieldConstants.DEVICE_GROUP_NAME_MAX_LENGTH)
     private String groupName;
 
+    @Size(max = DeviceDataFieldConstants.DEVICE_ADDRESS_MAX_LENGTH)
+    private String address;
+
     @Range(min = -180, max = 180)
     private Double longitude;
 
