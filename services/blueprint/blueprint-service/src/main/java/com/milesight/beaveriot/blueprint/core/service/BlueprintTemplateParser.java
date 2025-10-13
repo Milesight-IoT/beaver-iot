@@ -9,6 +9,7 @@ import com.milesight.beaveriot.blueprint.core.chart.node.BlueprintParseContext;
 import com.milesight.beaveriot.blueprint.core.chart.node.base.BlueprintNode;
 import com.milesight.beaveriot.blueprint.core.chart.node.template.TemplateNode;
 import com.milesight.beaveriot.blueprint.core.chart.parser.IBlueprintTemplateParser;
+import com.milesight.beaveriot.blueprint.core.config.BlueprintIntrinsicsYamlConstructor;
 import com.milesight.beaveriot.blueprint.core.constant.BlueprintConstants;
 import com.milesight.beaveriot.blueprint.core.enums.BlueprintErrorCode;
 import com.milesight.beaveriot.blueprint.core.model.ConstantsTemplate;
@@ -37,7 +38,7 @@ public class BlueprintTemplateParser implements IBlueprintTemplateParser {
     private PebbleEngine pebbleEngine;
 
     @Autowired
-    private Yaml blueprintSnakeYaml;
+    private BlueprintIntrinsicsYamlConstructor blueprintIntrinsicsYamlConstructor;
 
     @Autowired
     private TemplateNode.Parser templateNodeParser;
@@ -92,11 +93,14 @@ public class BlueprintTemplateParser implements IBlueprintTemplateParser {
 
     @Override
     public JsonNode readTemplateAsJsonNode(ResourceLoader resourceLoader, String relativePath, Map<String, Object> context) {
-        var yaml = readTemplateAsYaml(resourceLoader, relativePath, context);
-        if (yaml == null) {
+        var yamlStr = readTemplateAsYaml(resourceLoader, relativePath, context);
+        if (yamlStr == null) {
             return null;
         }
-        return JsonUtils.toJsonNode(blueprintSnakeYaml.load(yaml));
+
+        // It is recommended to create a Yaml instance for every YAML stream.
+        var snakeYaml = new Yaml(blueprintIntrinsicsYamlConstructor);
+        return JsonUtils.toJsonNode(snakeYaml.load(yamlStr));
     }
 
 

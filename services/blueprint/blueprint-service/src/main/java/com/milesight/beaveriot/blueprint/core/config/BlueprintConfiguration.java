@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.util.unit.DataSize;
 import org.yaml.snakeyaml.LoaderOptions;
-import org.yaml.snakeyaml.Yaml;
 
 import java.util.List;
 
@@ -46,11 +45,6 @@ public class BlueprintConfiguration {
     @ConditionalOnMissingBean
     public BlueprintIntrinsicsYamlConstructor blueprintIntrinsicsYamlConstructor(LoaderOptions loaderOptions, List<BlueprintRuntimeFunctionName> functionParsers) {
         return new BlueprintIntrinsicsYamlConstructor(loaderOptions, functionParsers);
-    }
-
-    @Bean
-    public Yaml blueprintSnakeYaml(BlueprintIntrinsicsYamlConstructor blueprintIntrinsicsYamlConstructor) {
-        return new Yaml(blueprintIntrinsicsYamlConstructor);
     }
 
 }
