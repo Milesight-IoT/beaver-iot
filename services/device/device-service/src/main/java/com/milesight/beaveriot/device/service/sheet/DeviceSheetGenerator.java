@@ -155,7 +155,8 @@ public class DeviceSheetGenerator {
         cell.setCellValue(column.getName());
         cell.setCellStyle(generateDeviceHeaderStyle(column));
         this.resolveInputConstraint(columnIndex, column);
-        getDeviceSheet().setColumnWidth(columnIndex, (column.getName().length() * 256) + DeviceSheetConstants.ADDITIONAL_COLUMN_WIDTH);
+        getDeviceSheet().autoSizeColumn(columnIndex);
+        getDeviceSheet().setColumnWidth(columnIndex, getDeviceSheet().getColumnWidth(columnIndex) +  + DeviceSheetConstants.ADDITIONAL_COLUMN_WIDTH);
 
         // add column meta data
         this.addColumnMeta(columnIndex, column);
