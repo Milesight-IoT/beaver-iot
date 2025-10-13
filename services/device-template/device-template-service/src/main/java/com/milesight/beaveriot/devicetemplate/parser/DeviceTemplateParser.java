@@ -2,6 +2,7 @@ package com.milesight.beaveriot.devicetemplate.parser;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.JsonUtils;
@@ -25,6 +26,7 @@ import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.DeviceTemplateModel;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateInputResult;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateOutputResult;
+import com.milesight.beaveriot.context.support.SpringContext;
 import com.milesight.beaveriot.device.facade.IDeviceBlueprintMappingFacade;
 import com.milesight.beaveriot.devicetemplate.enums.ServerErrorCode;
 import com.milesight.beaveriot.devicetemplate.facade.ICodecExecutorFacade;
@@ -37,6 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StreamUtils;
@@ -674,25 +677,43 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             return null;
         }
 
-        String deviceTemplateIdentifier = DeviceTemplateHelper.getTemplateIdentifier(blueprintLibrary.getId(), blueprintLibrary.getCurrentVersion(), vendor, model);
         DeviceTemplate deviceTemplate = deviceTemplateService.findByBlueprintLibrary(blueprintLibrary.getId(), blueprintLibrary.getCurrentVersion(), vendor, model);
         if (deviceTemplate == null) {
-            String content = blueprintLibraryResourceResolverFacade.getDeviceTemplateContent(blueprintLibrary, vendor, model);
-            if (!validate(content)) {
-                return null;
-            }
-            deviceTemplate = new DeviceTemplateBuilder(IntegrationConstants.SYSTEM_INTEGRATION_ID)
-                    .name(DeviceTemplateHelper.getTemplateName(vendor, model))
-                    .identifier(deviceTemplateIdentifier)
-                    .content(content)
-                    .blueprintLibraryId(blueprintLibrary.getId())
-                    .blueprintLibraryVersion(blueprintLibrary.getCurrentVersion())
-                    .vendor(vendor)
-                    .model(model)
-                    .build();
-            deviceTemplateService.save(deviceTemplate);
+            deviceTemplate = self().getOrCreateDeviceTemplate(blueprintLibrary, vendor, model);
         }
         return deviceTemplate;
+    }
+
+    @DistributedLock(name="device-template-get-or-create-#{#p0.id}@#{#p0.currentVersion}:#{#p2}@#{#p1}", waitForLock = "5s", throwOnLockFailure = false)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public DeviceTemplate getOrCreateDeviceTemplate(BlueprintLibrary blueprintLibrary, String vendor, String model) {
+        // Double check
+        DeviceTemplate deviceTemplate = deviceTemplateService.findByBlueprintLibrary(blueprintLibrary.getId(), blueprintLibrary.getCurrentVersion(), vendor, model);
+        if (deviceTemplate != null) {
+            return deviceTemplate;
+        }
+
+        String deviceTemplateIdentifier = DeviceTemplateHelper.getTemplateIdentifier(blueprintLibrary.getId(), blueprintLibrary.getCurrentVersion(), vendor, model);
+        String content = blueprintLibraryResourceResolverFacade.getDeviceTemplateContent(blueprintLibrary, vendor, model);
+        if (!validate(content)) {
+            return null;
+        }
+
+        deviceTemplate = new DeviceTemplateBuilder(IntegrationConstants.SYSTEM_INTEGRATION_ID)
+                .name(DeviceTemplateHelper.getTemplateName(vendor, model))
+                .identifier(deviceTemplateIdentifier)
+                .content(content)
+                .blueprintLibraryId(blueprintLibrary.getId())
+                .blueprintLibraryVersion(blueprintLibrary.getCurrentVersion())
+                .vendor(vendor)
+                .model(model)
+                .build();
+        deviceTemplateService.save(deviceTemplate);
+        return deviceTemplate;
+    }
+
+    public DeviceTemplateParser self() {
+        return SpringContext.getBean(DeviceTemplateParser.class);
     }
 
     private Map<String, Object> buildBlueprintValues(Device device, Map<String, DeviceTemplateModel.Blueprint.Value> values) {
