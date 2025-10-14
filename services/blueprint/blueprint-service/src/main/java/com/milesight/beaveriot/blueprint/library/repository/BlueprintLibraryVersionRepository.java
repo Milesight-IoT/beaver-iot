@@ -11,6 +11,7 @@ import java.util.List;
  **/
 public interface BlueprintLibraryVersionRepository extends BaseJpaRepository<BlueprintLibraryVersionPO, Long> {
     List<BlueprintLibraryVersionPO> findAllByLibraryIdAndLibraryVersion(Long libraryId, String libraryVersion);
+    List<BlueprintLibraryVersionPO> findAllByLibraryId(Long libraryId);
     void deleteByLibraryIdAndLibraryVersion(Long libraryId, String libraryVersion);
     Long countByLibraryId(Long libraryId);
 }

@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * author: Luxb
@@ -91,27 +92,66 @@ public class BlueprintLibraryCleanScheduler implements CommandLineRunner {
 
             log.info("Start cleaning blueprint library versions, total: {}", unusedBlueprintLibraryVersions.size());
 
-            List<CompletableFuture<Void>> futures = new ArrayList<>();
-            unusedBlueprintLibraryVersions.forEach(unusedBlueprintLibraryVersion -> {
-                CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                    try {
-                        blueprintLibraryCleaner.clean(unusedBlueprintLibraryVersion);
-                        successCount.incrementAndGet();
-                    } catch (Exception e) {
-                        log.error("Error occurred while cleaning blueprint library version (libraryId:{}, libraryVersion:{})",
-                                unusedBlueprintLibraryVersion.getLibraryId(),
-                                unusedBlueprintLibraryVersion.getLibraryVersion(), e);
-                        failedCount.incrementAndGet();
-                    }
-                }, executor);
-                futures.add(future);
+            Map<Long, List<BlueprintLibraryVersion>> unusedBlueprintLibraryVersionsMap = unusedBlueprintLibraryVersions.stream()
+                    .collect(Collectors.groupingBy(BlueprintLibraryVersion::getLibraryId));
+            unusedBlueprintLibraryVersionsMap.forEach((libraryId, eachUnusedBlueprintLibraryVersions) -> {
+                List<CompletableFuture<Void>> futures = new ArrayList<>();
+                eachUnusedBlueprintLibraryVersions.forEach(unusedBlueprintLibraryVersion -> {
+                    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                        try {
+                            blueprintLibraryCleaner.clean(unusedBlueprintLibraryVersion);
+                            successCount.incrementAndGet();
+                        } catch (Exception e) {
+                            log.error("Error occurred while cleaning blueprint library version (libraryId:{}, libraryVersion:{})",
+                                    unusedBlueprintLibraryVersion.getLibraryId(),
+                                    unusedBlueprintLibraryVersion.getLibraryVersion(), e);
+                            failedCount.incrementAndGet();
+                        }
+                    }, executor);
+                    futures.add(future);
+                });
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+                // Set the current version to the latest version for each blueprint library
+                BlueprintLibrary blueprintLibrary = blueprintLibraryService.findById(libraryId);
+                if (blueprintLibrary == null) {
+                    return;
+                }
+
+                List<BlueprintLibraryVersion> blueprintLibraryVersions = blueprintLibraryVersionService.findAllByLibraryId(libraryId)
+                        .stream()
+                        .sorted(Comparator.comparing(BlueprintLibraryVersion::getLibraryVersion, this::compareVersion).reversed())
+                        .toList();
+                String latestVersion = blueprintLibraryVersions.get(0).getLibraryVersion();
+                if (blueprintLibrary.getCurrentVersion().equals(latestVersion)) {
+                    return;
+                }
+
+                blueprintLibrary.setCurrentVersion(latestVersion);
+                blueprintLibraryService.save(blueprintLibrary);
+                blueprintLibraryService.evictCacheBlueprintLibrary(blueprintLibrary.getType().name(), blueprintLibrary.getUrl(), blueprintLibrary.getBranch());
             });
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         } catch (Exception e) {
             log.error("Error occurred while scheduling clean for blueprint library versions", e);
         }
         log.info("Finish cleaning blueprint library versions, success: {}, failed: {}, time: {} ms",
                 successCount.get(), failedCount.get(), System.currentTimeMillis() - start);
+    }
+
+    private int compareVersion(String version, String otherVersion) {
+        String[] versionParts = version.split("\\.");
+        int versionMajor = Integer.parseInt(versionParts[0]);
+        int versionMinor = Integer.parseInt(versionParts[1]);
+
+        String[] otherVersionParts = otherVersion.split("\\.");
+        int otherVersionMajor = Integer.parseInt(otherVersionParts[0]);
+        int otherVersionMinor = Integer.parseInt(otherVersionParts[1]);
+
+        if (versionMajor != otherVersionMajor) {
+            return Integer.compare(versionMajor, otherVersionMajor);
+        }
+
+        return Integer.compare(versionMinor, otherVersionMinor);
     }
 
     private List<BlueprintLibraryVersion> getUnusedBlueprintLibraryVersions() {
