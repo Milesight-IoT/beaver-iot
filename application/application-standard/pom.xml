@@ -71,6 +71,24 @@
         </dependency>
 
         <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>data-timeseries-repository</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>data-timeseries-jpa</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>data-timeseries-influxdb</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.milesight.beaveriot</groupId>
+        <artifactId>data-timeseries</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>data-timeseries-influxdb</artifactId>
+    <name>data-timeseries-influxdb</name>
+    <description>An open-source platform designed for rapid and intuitive IoT application development.</description>
+    <url>https://github.com/milesight-iot/beaver-iot</url>
+    <scm>
+        <url>https://github.com/milesight-iot/beaver-iot</url>
+    </scm>
+    <organization>
+        <name>Milesight</name>
+        <url>https://www.milesight.com</url>
+    </organization>
+    <developers>
+        <developer>
+            <id>Simon</id>
+            <name>Simon Zhao</name>
+            <email>simon.zhao@milesight.com</email>
+        </developer>
+    </developers>
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/license/MIT</url>
+        </license>
+    </licenses>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>data-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>data-timeseries-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.influxdb</groupId>
+            <artifactId>influxdb-client-java</artifactId>
+            <version>7.3.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>
