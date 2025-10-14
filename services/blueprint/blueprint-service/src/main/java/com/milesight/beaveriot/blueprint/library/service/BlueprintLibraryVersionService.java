@@ -29,6 +29,13 @@ public class BlueprintLibraryVersionService {
                 .orElse(null);
     }
 
+    public List<BlueprintLibraryVersion> findAllByLibraryId(Long libraryId) {
+        return blueprintLibraryVersionRepository.findAllByLibraryId(libraryId)
+                .stream()
+                .map(this::convertPOtoModel)
+                .toList();
+    }
+
     public void save(BlueprintLibraryVersion model) {
         blueprintLibraryVersionRepository.save(convertModelToPO(model));
     }
