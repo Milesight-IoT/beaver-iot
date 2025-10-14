@@ -103,6 +103,7 @@ public class BlueprintLibraryCleaner {
 
         BlueprintLibraryAddress blueprintLibraryAddress = blueprintLibraryAddressService.convertLibraryToAddress(blueprintLibrary);
         blueprintLibraryService.deleteById(blueprintLibrary.getId());
+        blueprintLibraryService.evictCacheBlueprintLibrary(blueprintLibrary.getType().name(), blueprintLibrary.getUrl(), blueprintLibrary.getBranch());
         tryUnlinkResource(blueprintLibraryAddress);
     }
 
