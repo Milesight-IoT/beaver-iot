@@ -11,6 +11,8 @@ import com.milesight.beaveriot.blueprint.core.chart.node.resource.WorkflowResour
 import com.milesight.beaveriot.blueprint.core.enums.BlueprintErrorCode;
 import com.milesight.beaveriot.blueprint.core.model.BindResource;
 import com.milesight.beaveriot.blueprint.core.utils.BlueprintUtils;
+import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
+import com.milesight.beaveriot.permission.helper.TemporaryPermission;
 import com.milesight.beaveriot.rule.facade.IWorkflowFacade;
 import com.milesight.beaveriot.rule.manager.model.WorkflowAdditionalData;
 import com.milesight.beaveriot.rule.manager.model.WorkflowCreateContext;
@@ -49,7 +51,9 @@ public class WorkflowResourceManager implements ResourceManager<WorkflowResource
         var isManaged = flowId == null;
         if (!isManaged) {
             try {
-                var existsWorkflow = workflowService.getWorkflowDesign(Longs.tryParse(flowId), null);
+                var flowIdNumber = Longs.tryParse(flowId);
+                var existsWorkflow = TemporaryPermission.with(OperationPermissionCode.WORKFLOW_VIEW)
+                        .supply(() -> workflowService.getWorkflowDesign(flowIdNumber, null));
                 Optional.ofNullable(existsWorkflow.getAdditionalData())
                         .map(WorkflowAdditionalData::getDeviceId)
                         .map(Longs::tryParse)
@@ -93,7 +97,8 @@ public class WorkflowResourceManager implements ResourceManager<WorkflowResource
 
             log.info("create workflow: {}", name);
 
-            var response = workflowService.createWorkflow(request, new WorkflowCreateContext(deviceId));
+            var response = TemporaryPermission.with(OperationPermissionCode.WORKFLOW_ADD)
+                    .supply(() -> workflowService.createWorkflow(request, new WorkflowCreateContext(deviceId)));
             flowId = response.getFlowId();
             accessor.setId(flowId);
         }
@@ -120,7 +125,8 @@ public class WorkflowResourceManager implements ResourceManager<WorkflowResource
             var flowId = Longs.tryParse(id);
             if (flowId != null) {
                 log.info("delete workflow: {}", flowId);
-                workflowService.batchDelete(List.of(flowId));
+                TemporaryPermission.with(OperationPermissionCode.WORKFLOW_DELETE)
+                                .run(() -> workflowService.batchDelete(List.of(flowId)));
                 return true;
             }
         }

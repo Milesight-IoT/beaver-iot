@@ -20,7 +20,14 @@ import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.i18n.locale.LocaleContext;
 import com.milesight.beaveriot.context.i18n.message.MergedResourceBundleMessageSource;
-import com.milesight.beaveriot.context.integration.model.*;
+import com.milesight.beaveriot.context.integration.model.BlueprintCreationStrategy;
+import com.milesight.beaveriot.context.integration.model.BlueprintDeviceVendor;
+import com.milesight.beaveriot.context.integration.model.Device;
+import com.milesight.beaveriot.context.integration.model.DeviceBuilder;
+import com.milesight.beaveriot.context.integration.model.DeviceTemplate;
+import com.milesight.beaveriot.context.integration.model.DeviceTemplateBuilder;
+import com.milesight.beaveriot.context.integration.model.Entity;
+import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.config.EntityConfig;
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.DeviceTemplateModel;
@@ -34,7 +41,13 @@ import com.milesight.beaveriot.devicetemplate.facade.IDeviceCodecExecutorFacade;
 import com.milesight.beaveriot.devicetemplate.facade.IDeviceTemplateParserFacade;
 import com.milesight.beaveriot.devicetemplate.service.DeviceTemplateService;
 import com.milesight.beaveriot.devicetemplate.support.DeviceTemplateHelper;
-import com.networknt.schema.*;
+import com.networknt.schema.InputFormat;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.PathType;
+import com.networknt.schema.SchemaValidatorsConfig;
+import com.networknt.schema.SpecVersion;
+import com.networknt.schema.ValidationMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ClassPathResource;
@@ -49,7 +62,13 @@ import org.yaml.snakeyaml.scanner.ScannerException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 
 /**
@@ -640,11 +659,11 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                 return;
             }
 
-            throw ServiceException.with(ServerErrorCode.DEVICE_BLUEPRINT_NOT_FOUND.getErrorCode(), ServerErrorCode.DEVICE_BLUEPRINT_NOT_FOUND.getErrorMessage()).build();
+            throw ServiceException.with(ServerErrorCode.DEVICE_BLUEPRINT_NOT_FOUND).build();
         }
 
         if (!blueprint.validate()) {
-            throw ServiceException.with(ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorCode(), ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorMessage()).build();
+            throw ServiceException.with(ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED).build();
         }
 
         if (deviceBlueprintMappingFacade.getBlueprintIdByDeviceId(device.getId()) != null) {
@@ -664,7 +683,10 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                 throw ServiceException.with(ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED).build();
             }
         } catch (Exception e) {
-            throw new ServiceException(ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED, e);
+            var errorMessage = e instanceof ServiceException serviceException
+                    ? serviceException.getErrorMessage()
+                    : ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorMessage();
+            throw new ServiceException(ServerErrorCode.DEVICE_BLUEPRINT_CREATION_FAILED.getErrorCode(), errorMessage, e);
         }
 
         deviceBlueprintMappingFacade.saveMapping(device.getId(), blueprintId);

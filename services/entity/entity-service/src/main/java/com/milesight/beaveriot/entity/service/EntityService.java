@@ -33,7 +33,11 @@ import com.milesight.beaveriot.entity.dto.EntityResponse;
 import com.milesight.beaveriot.entity.dto.EntityWorkflowData;
 import com.milesight.beaveriot.entity.enums.EntitySearchColumn;
 import com.milesight.beaveriot.entity.model.dto.EntityAdvancedSearchCondition;
-import com.milesight.beaveriot.entity.model.request.*;
+import com.milesight.beaveriot.entity.model.request.EntityAdvancedSearchQuery;
+import com.milesight.beaveriot.entity.model.request.EntityCreateRequest;
+import com.milesight.beaveriot.entity.model.request.EntityModifyRequest;
+import com.milesight.beaveriot.entity.model.request.ServiceCallRequest;
+import com.milesight.beaveriot.entity.model.request.UpdatePropertyEntityRequest;
 import com.milesight.beaveriot.entity.model.response.EntityMetaResponse;
 import com.milesight.beaveriot.entity.po.EntityPO;
 import com.milesight.beaveriot.entity.repository.EntityHistoryRepository;
@@ -42,9 +46,9 @@ import com.milesight.beaveriot.entity.repository.EntityRepository;
 import com.milesight.beaveriot.eventbus.EventBus;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
+import com.milesight.beaveriot.permission.facade.IPermissionFacade;
 import com.milesight.beaveriot.rule.dto.WorkflowNameDTO;
 import com.milesight.beaveriot.rule.facade.IWorkflowFacade;
-import com.milesight.beaveriot.user.dto.MenuDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import jakarta.annotation.Nullable;
@@ -63,7 +67,16 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -106,6 +119,9 @@ public class EntityService implements EntityServiceProvider {
 
     @Autowired
     private IWorkflowFacade workflowFacade;
+
+    @Autowired
+    IPermissionFacade permissionFacade;
 
     private static Entity convertPOToEntity(EntityPO entityPO, Map<String, DeviceNameDTO> deviceIdToDetails) {
         String integrationId = null;
@@ -521,8 +537,7 @@ public class EntityService implements EntityServiceProvider {
         boolean isExcludeChildren = entityQuery.getExcludeChildren() != null && entityQuery.getExcludeChildren();
         List<String> attachTargetIds = searchAttachTargetIdsByKeyword(entityQuery.getKeyword());
 
-        List<MenuDTO> menuDTOList = getAndCheckUserMenuPermission();
-        boolean hasEntityCustomViewPermission = menuDTOList.stream().anyMatch(menuDTO -> OperationPermissionCode.ENTITY_CUSTOM_VIEW.getCode().equals(menuDTO.getMenuCode()));
+        boolean hasEntityCustomViewPermission = permissionFacade.hasMenuPermission(OperationPermissionCode.ENTITY_CUSTOM_VIEW);
         if (!hasEntityCustomViewPermission) {
             entityQuery.setCustomized(false);
         }
@@ -574,19 +589,6 @@ public class EntityService implements EntityServiceProvider {
         Page<EntityPO> entityPOPage = PageConverter.convertToPage(entityPOList, entityQuery.toPageable());
 
         return convertEntityPOPageToEntityResponses(entityPOPage);
-    }
-
-    @NonNull
-    private List<MenuDTO> getAndCheckUserMenuPermission() {
-        Long userId = SecurityUserContext.getUserId();
-        if (userId == null) {
-            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user not logged in").build();
-        }
-        List<MenuDTO> menuDTOList = userFacade.getMenusByUserId(userId);
-        if (menuDTOList == null || menuDTOList.isEmpty()) {
-            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have permission").build();
-        }
-        return menuDTOList;
     }
 
     private EntityResponse convertEntityPOToEntityResponse(EntityPO entityPO,
@@ -938,8 +940,7 @@ public class EntityService implements EntityServiceProvider {
 
     public Page<EntityResponse> advancedSearch(EntityAdvancedSearchQuery entityQuery) {
 
-        List<MenuDTO> menuDTOList = getAndCheckUserMenuPermission();
-        boolean hasEntityCustomViewPermission = menuDTOList.stream().anyMatch(menuDTO -> OperationPermissionCode.ENTITY_CUSTOM_VIEW.getCode().equals(menuDTO.getMenuCode()));
+        boolean hasEntityCustomViewPermission = permissionFacade.hasMenuPermission(OperationPermissionCode.ENTITY_CUSTOM_VIEW);
 
         val columnToCondition = entityQuery.getEntityFilter();
 
