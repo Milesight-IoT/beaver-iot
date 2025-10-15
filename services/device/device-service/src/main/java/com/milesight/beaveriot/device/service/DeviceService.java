@@ -22,6 +22,7 @@ import com.milesight.beaveriot.device.dto.DeviceResponseData;
 import com.milesight.beaveriot.device.dto.DeviceResponseEntityData;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.device.facade.IDeviceResponseFacade;
+import com.milesight.beaveriot.device.location.model.DeviceLocation;
 import com.milesight.beaveriot.device.model.request.*;
 import com.milesight.beaveriot.device.model.response.DeviceDetailResponse;
 import com.milesight.beaveriot.device.po.DeviceGroupMappingPO;
@@ -161,9 +162,14 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
         }
 
         TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_ID, deviceGroupId);
-        TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_ADDRESS, createDeviceRequest.getAddress());
-        TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LONGITUDE, createDeviceRequest.getLongitude());
-        TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LATITUDE, createDeviceRequest.getLatitude());
+
+        DeviceLocation location = createDeviceRequest.getLocation();
+        boolean hasLocation = location != null;
+        if (hasLocation) {
+            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_ADDRESS, location.getAddress());
+            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LONGITUDE, location.getLongitude());
+            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LATITUDE, location.getLatitude());
+        }
 
         try {
             // call service for adding
@@ -172,9 +178,12 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
             if (hasGroup) {
                 TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_ID, null);
             }
-            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_ADDRESS, null);
-            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LONGITUDE, null);
-            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LATITUDE, null);
+
+            if (hasLocation) {
+                TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_ADDRESS, null);
+                TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LONGITUDE, null);
+                TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LATITUDE, null);
+            }
         }
     }
 

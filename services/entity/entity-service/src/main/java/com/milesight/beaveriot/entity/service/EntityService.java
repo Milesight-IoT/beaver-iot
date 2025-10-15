@@ -120,6 +120,7 @@ public class EntityService implements EntityServiceProvider {
     @Autowired
     private IWorkflowFacade workflowFacade;
 
+    @Lazy
     @Autowired
     IPermissionFacade permissionFacade;
 
