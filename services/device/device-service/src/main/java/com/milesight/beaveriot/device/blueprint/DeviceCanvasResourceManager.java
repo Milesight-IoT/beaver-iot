@@ -18,6 +18,8 @@ import com.milesight.beaveriot.canvas.facade.ICanvasFacade;
 import com.milesight.beaveriot.canvas.model.dto.CanvasWidgetDTO;
 import com.milesight.beaveriot.canvas.model.request.CanvasUpdateRequest;
 import com.milesight.beaveriot.device.service.DeviceCanvasService;
+import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
+import com.milesight.beaveriot.permission.helper.TemporaryPermission;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -49,7 +51,9 @@ public class DeviceCanvasResourceManager implements ResourceManager<DeviceCanvas
         var isManaged = canvasId == null;
         if (!isManaged) {
             try {
-                var existsCanvasData = canvasFacade.getCanvasData(Longs.tryParse(canvasId));
+                var canvasIdNumber = Longs.tryParse(canvasId);
+                var existsCanvasData = TemporaryPermission.with(OperationPermissionCode.DEVICE_VIEW, OperationPermissionCode.DEVICE_EDIT)
+                        .supply(() -> canvasFacade.getCanvasData(canvasIdNumber));
 
                 if (CanvasAttachType.DEVICE.equals(existsCanvasData.getAttachType())) {
                     accessor.setDeviceId(Longs.tryParse(existsCanvasData.getAttachId()));
@@ -81,7 +85,8 @@ public class DeviceCanvasResourceManager implements ResourceManager<DeviceCanvas
                 throw new ServiceException(BlueprintErrorCode.BLUEPRINT_RESOURCE_DEPLOYMENT_FAILED, "Invalid property: 'data'.");
             }
 
-            var deviceCanvasResponse = deviceCanvasService.getOrCreateDeviceCanvas(deviceId);
+            var deviceCanvasResponse = TemporaryPermission.with(OperationPermissionCode.DEVICE_VIEW, OperationPermissionCode.DEVICE_EDIT)
+                    .supply(() -> deviceCanvasService.getOrCreateDeviceCanvas(deviceId));
             canvasId = deviceCanvasResponse.getCanvasId();
 
             var canvasWidgets = JsonUtils.withCamelCaseStrategy().cast(data.get(CanvasUpdateRequest.Fields.widgets), new TypeReference<List<CanvasWidgetDTO>>() {
@@ -97,7 +102,9 @@ public class DeviceCanvasResourceManager implements ResourceManager<DeviceCanvas
                     .entityIds(entityIds)
                     .deviceIds(deviceIds)
                     .build();
-            canvasFacade.updateCanvas(Longs.tryParse(canvasId), canvasUpdateRequest);
+            var canvasIdNumber = Longs.tryParse(canvasId);
+            TemporaryPermission.with(OperationPermissionCode.DEVICE_VIEW, OperationPermissionCode.DEVICE_EDIT)
+                    .run(() -> canvasFacade.updateCanvas(canvasIdNumber, canvasUpdateRequest));
             accessor.setId(canvasId);
         }
 
@@ -118,7 +125,8 @@ public class DeviceCanvasResourceManager implements ResourceManager<DeviceCanvas
             var canvasId = Longs.tryParse(id);
             if (canvasId != null) {
                 log.info("delete canvas: {}", canvasId);
-                canvasFacade.deleteCanvasByIds(List.of(canvasId));
+                TemporaryPermission.with(OperationPermissionCode.DASHBOARD_DELETE, OperationPermissionCode.DEVICE_DELETE)
+                        .run(() -> canvasFacade.deleteCanvasByIds(List.of(canvasId)));
                 return true;
             }
         }

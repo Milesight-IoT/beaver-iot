@@ -232,6 +232,12 @@
                 <version>${shedlock.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>eu.ciechanowiec</groupId>
+                <artifactId>sneakyfun</artifactId>
+                <version>1.0.0</version>
+            </dependency>
+
             <!-- reusable dependencies -->
             <dependency>
                 <groupId>org.graalvm.polyglot</groupId>

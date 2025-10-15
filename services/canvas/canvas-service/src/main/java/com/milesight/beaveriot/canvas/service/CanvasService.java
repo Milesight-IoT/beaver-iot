@@ -59,15 +59,15 @@ public class CanvasService {
     protected void checkCanvasPermission(CanvasPO canvasPO, CanvasOp userOp) {
         if (canvasPO.getAttachType().equals(CanvasAttachType.DASHBOARD)) {
             switch (userOp) {
-                case READ -> permissionFacade.checkMenuPermission(new OperationPermissionCode[]{OperationPermissionCode.DASHBOARD_VIEW});
-                case UPDATE -> permissionFacade.checkMenuPermission(new OperationPermissionCode[]{OperationPermissionCode.DASHBOARD_EDIT});
+                case READ -> permissionFacade.checkMenuPermission(OperationPermissionCode.DASHBOARD_VIEW);
+                case UPDATE -> permissionFacade.checkMenuPermission(OperationPermissionCode.DASHBOARD_EDIT);
             }
 
             permissionFacade.checkDataPermission(DataPermissionType.DASHBOARD, canvasPO.getAttachId());
         } else if (canvasPO.getAttachType().equals(CanvasAttachType.DEVICE)) {
             switch (userOp) {
-                case READ -> permissionFacade.checkMenuPermission(new OperationPermissionCode[]{OperationPermissionCode.DEVICE_VIEW});
-                case UPDATE -> permissionFacade.checkMenuPermission(new OperationPermissionCode[]{OperationPermissionCode.DEVICE_EDIT});
+                case READ -> permissionFacade.checkMenuPermission(OperationPermissionCode.DEVICE_VIEW);
+                case UPDATE -> permissionFacade.checkMenuPermission(OperationPermissionCode.DEVICE_EDIT);
             }
 
             permissionFacade.checkDataPermission(DataPermissionType.DEVICE, canvasPO.getAttachId());
