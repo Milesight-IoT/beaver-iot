@@ -597,7 +597,7 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
         userFacade.deleteResource(ResourceType.DEVICE, Collections.singletonList(device.getId()));
         userFacade.deleteResource(ResourceType.ENTITY, device.getEntities().stream().map(Entity::getId).toList());
 
-        eventBus.publish(DeviceEvent.of(DeviceEvent.EventType.DELETED, device));
+        eventBus.handle(DeviceEvent.of(DeviceEvent.EventType.DELETED, device));
     }
 
     @CacheEvict(cacheNames = CacheKeyConstants.INTEGRATION_ID_TO_DEVICE, key = "T(com.milesight.beaveriot.context.security.TenantContext).getTenantId()+':'+#p0")

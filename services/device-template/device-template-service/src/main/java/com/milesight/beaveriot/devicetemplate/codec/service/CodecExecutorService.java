@@ -60,14 +60,16 @@ public class CodecExecutorService implements ICodecExecutorFacade {
             throw ServiceException.with(CodecErrorCode.CODEC_EXECUTOR_BUILD_FAILED).build();
         }
 
-        CodecExecutorDecoderChain decoderChain = createCodecExecutorChain(vendor,
+        CodecExecutorDecoderChain decoderChain = createCodecExecutorChain(blueprintLibrary,
+                vendor,
                 () -> CodecExecutorDecoderChain.builder().build(),
                 blueprintDeviceCodec.getDecoder().getChain());
         if (decoderChain == null) {
             throw ServiceException.with(CodecErrorCode.CODEC_EXECUTOR_BUILD_FAILED).build();
         }
 
-        CodecExecutorEncoderChain encoderChain = createCodecExecutorChain(vendor,
+        CodecExecutorEncoderChain encoderChain = createCodecExecutorChain(blueprintLibrary,
+                vendor,
                 () -> CodecExecutorEncoderChain.builder().build(),
                 blueprintDeviceCodec.getEncoder().getChain());
         if (encoderChain == null) {
@@ -77,10 +79,10 @@ public class CodecExecutorService implements ICodecExecutorFacade {
         return DeviceCodecExecutorService.of(decoderChain, encoderChain);
     }
 
-    private <T extends CodecExecutorChain> T createCodecExecutorChain(String vendor, Supplier<T> chainBuilder, List<BlueprintDeviceCodec.Codec> chain) {
+    private <T extends CodecExecutorChain> T createCodecExecutorChain(BlueprintLibrary blueprintLibrary, String vendor, Supplier<T> chainBuilder, List<BlueprintDeviceCodec.Codec> chain) {
         T codecExecutorChain = chainBuilder.get();
         for (BlueprintDeviceCodec.Codec codec : chain) {
-            String code = blueprintLibraryResourceResolverFacade.getResourceContent(vendor, codec.getScript());
+            String code = blueprintLibraryResourceResolverFacade.getResourceContent(blueprintLibrary, vendor, codec.getScript());
             if (StringUtils.isEmpty(code)) {
                 return null;
             }

@@ -10,7 +10,9 @@ import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
  * @date 2025/9/10
  */
 public interface IPermissionFacade {
-    void checkMenuPermission(OperationPermissionCode[] codes);
+    void checkMenuPermission(OperationPermissionCode ...codes);
+
+    boolean hasMenuPermission(OperationPermissionCode ...codes);
 
     void checkDataPermission(DataPermissionType type, String id);
 }

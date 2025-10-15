@@ -129,11 +129,6 @@ public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResour
         return getResourceContent(blueprintLibrary, vendorId, device.getTemplate());
     }
 
-    @Override
-    public String getResourceContent(String vendorId, String relativePath) {
-        return getResourceContent(blueprintLibraryService.getCurrentBlueprintLibrary(), vendorId, relativePath);
-    }
-
     @Cacheable(cacheNames = Constants.CACHE_NAME_DEVICE_VENDORS, key = "#p0.type + ':' + #p0.url + '@' + #p0.branch + ':' + #p0.currentVersion", unless = "#result == null")
     public List<BlueprintDeviceVendor> getDeviceVendors(BlueprintLibrary blueprintLibrary) {
         if (blueprintLibrary == null) {
@@ -223,6 +218,7 @@ public class BlueprintLibraryResourceResolver implements IBlueprintLibraryResour
         throw ServiceException.with(BlueprintLibraryResourceErrorCode.BLUEPRINT_LIBRARY_RESOURCE_DEVICE_CODEC_NOT_FOUND).build();
     }
 
+    @Override
     public String getResourceContent(BlueprintLibrary blueprintLibrary, String vendorId, String relativePath) {
         String workDir = getWorkDirByVendor(blueprintLibrary, vendorId);
         String resourcePath = buildResourcePath(workDir, relativePath);
