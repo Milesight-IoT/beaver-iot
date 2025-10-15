@@ -45,21 +45,23 @@ public class DeviceLocationService {
         return DeviceLocation.of(address, longitude, latitude);
     }
 
-    public void setLocation(Device device, DeviceLocation deviceLocation) {
+    public void setLocation(Device device, DeviceLocation location) {
+        location.validate();
+
         String deviceKey = device.getKey();
         String addressKey = DeviceLocationSupport.getAddressKey(deviceKey);
         String longitudeKey = DeviceLocationSupport.getLongitudeKey(deviceKey);
         String latitudeKey = DeviceLocationSupport.getLatitudeKey(deviceKey);
 
         ExchangePayload exchangePayload = new ExchangePayload();
-        if (deviceLocation.getAddress() != null) {
-            exchangePayload.put(addressKey, deviceLocation.getAddress());
+        if (location.getAddress() != null) {
+            exchangePayload.put(addressKey, location.getAddress());
         }
-        if (deviceLocation.getLongitude() != null) {
-            exchangePayload.put(longitudeKey, deviceLocation.getLongitude());
+        if (location.getLongitude() != null) {
+            exchangePayload.put(longitudeKey, location.getLongitude());
         }
-        if (deviceLocation.getLatitude() != null) {
-            exchangePayload.put(latitudeKey, deviceLocation.getLatitude());
+        if (location.getLatitude() != null) {
+            exchangePayload.put(latitudeKey, location.getLatitude());
         }
 
         if (exchangePayload.isEmpty()) {

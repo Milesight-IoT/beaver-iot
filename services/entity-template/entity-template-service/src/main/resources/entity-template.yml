@@ -19,12 +19,14 @@ entity-template:
           name: ${ fn.i18n('entity-template-service.entity.location.children.address.name') }
           value_type: string
           attributes:
+            optional: true
             min_length: 1
             max_length: 255
         - identifier: '@longitude'
           name: ${ fn.i18n('entity-template-service.entity.location.children.longitude.name') }
           value_type: double
           attributes:
+            optional: true
             min: -180
             max: 180
             unit: '°'
@@ -32,6 +34,7 @@ entity-template:
           name: ${ fn.i18n('entity-template-service.entity.location.children.latitude.name') }
           value_type: double
           attributes:
+            optional: true
             min: -90
             max: 90
             unit: '°'
