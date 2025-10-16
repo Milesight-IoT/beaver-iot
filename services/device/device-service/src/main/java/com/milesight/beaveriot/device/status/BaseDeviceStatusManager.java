@@ -10,9 +10,9 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.CollectionUtils;
 
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
@@ -90,6 +90,33 @@ public abstract class BaseDeviceStatusManager {
         return DeviceStatus.of(deviceStatus);
     }
 
+    public Map<String, DeviceStatus> getStatusesByDeviceKeys(List<String> deviceKeys) {
+        if (CollectionUtils.isEmpty(deviceKeys)) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, String> statusEntityKeyDeviceKeyMap = new HashMap<>();
+        List<String> statusEntityKeys = new ArrayList<>();
+        deviceKeys.forEach(deviceKey -> {
+            String statusEntityKey = getStatusEntityKey(deviceKey);
+            statusEntityKeys.add(statusEntityKey);
+            statusEntityKeyDeviceKeyMap.put(statusEntityKey, deviceKey);
+        });
+
+        Map<String, Object> statusEntityValues = entityValueServiceProvider.findValuesByKeys(statusEntityKeys);
+        Map<String, DeviceStatus> statuses = new HashMap<>();
+        statusEntityValues.forEach((statusEntityKey, value) -> {
+            if (value == null) {
+                return;
+            }
+
+            String deviceKey = statusEntityKeyDeviceKeyMap.get(statusEntityKey);
+            String deviceStatus = (String) value;
+            statuses.put(deviceKey, DeviceStatus.of(deviceStatus));
+        });
+        return statuses;
+    }
+
     protected AvailableDeviceData getAvailableDeviceDataByDeviceId(Long deviceId) {
         Device device = deviceServiceProvider.findById(deviceId);
         if (device == null) {
@@ -133,6 +160,10 @@ public abstract class BaseDeviceStatusManager {
 
     protected String getStatusEntityKey(Device device) {
         return device.getKey() + "." + DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS;
+    }
+
+    protected String getStatusEntityKey(String deviceKey) {
+        return deviceKey + "." + DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS;
     }
 
     @Data
