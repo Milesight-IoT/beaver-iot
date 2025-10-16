@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 public enum UserErrorCode implements ErrorCodeSpec {
 
-    USER_REGISTER_NOT_ALLOW_VIA_THIS_API_IN_CURRENT_TENANT,
+    TENANT_USER_INITED,
     USER_REGISTER_EMAIL_EXIST,
     ROLE_DOES_NOT_EXIT,
     NAME_REPEATED,

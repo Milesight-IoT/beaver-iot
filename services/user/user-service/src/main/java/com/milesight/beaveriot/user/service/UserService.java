@@ -103,9 +103,9 @@ public class UserService {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("tenantId is not exist").build();
         }
 
-        Long userCount = userRepository.count(f -> f.eq(UserPO.Fields.tenantId, tenantId));
+        Long userCount = userRepository.count();
         if (userCount > 0) {
-            throw ServiceException.with(UserErrorCode.USER_REGISTER_NOT_ALLOW_VIA_THIS_API_IN_CURRENT_TENANT).build();
+            throw ServiceException.with(UserErrorCode.TENANT_USER_INITED).build();
         }
     }
 
