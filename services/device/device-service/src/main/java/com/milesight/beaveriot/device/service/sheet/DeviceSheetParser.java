@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.device.service.sheet;
 
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.utils.ValidationUtils;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.device.enums.DeviceErrorCode;
@@ -175,20 +176,53 @@ public class DeviceSheetParser {
             boolean rowHasValue = false;
             for (ColumnMetaData columnMetaData : this.getColumnMetaList()) {
                 Cell cell = row.getCell(columnMetaData.getColIndex());
-                if (columnMetaData.getKey().equals(DeviceSheetConstants.DEVICE_NAME_COL_KEY)) {
-                    String deviceName = getCellValue(cell);
-                    if (StringUtils.hasText(deviceName)) {
-                        createDeviceRequest.setName(deviceName);
-                        rowHasValue = true;
+                switch (columnMetaData.getKey()) {
+                    case DeviceSheetConstants.DEVICE_NAME_COL_KEY -> {
+                        String deviceName = getCellValue(cell);
+                        if (StringUtils.hasText(deviceName)) {
+                            createDeviceRequest.setName(deviceName);
+                            rowHasValue = true;
+                        }
+                        continue;
                     }
-                    continue;
-                } else if (columnMetaData.getKey().equals(DeviceSheetConstants.DEVICE_GROUP_COL_KEY)) {
-                    String groupName = getCellValue(cell).trim();
-                    if (StringUtils.hasText(groupName)) {
-                        createDeviceRequest.setGroupName(groupName);
-                        rowHasValue = true;
+                    case DeviceSheetConstants.DEVICE_GROUP_COL_KEY -> {
+                        String groupName = getCellValue(cell).trim();
+                        if (StringUtils.hasText(groupName)) {
+                            createDeviceRequest.setGroupName(groupName);
+                            rowHasValue = true;
+                        }
+                        continue;
                     }
-                    continue;
+                    case DeviceSheetConstants.DEVICE_LOCATION_LONGITUDE_COL_KEY -> {
+                        String strValue = getCellValue(cell);
+                        if (StringUtils.hasText(strValue)) {
+                            if (!ValidationUtils.isNumber(strValue)) {
+                                throw ServiceException.with(DeviceErrorCode.DEVICE_LOCATION_LONGITUDE_TYPE_ERROR).build();
+                            }
+                            createDeviceRequest.fetchLocation().setLongitude(Double.parseDouble(strValue));
+                            rowHasValue = true;
+                        }
+                        continue;
+                    }
+                    case DeviceSheetConstants.DEVICE_LOCATION_LATITUDE_COL_KEY -> {
+                        String strValue = getCellValue(cell);
+                        if (StringUtils.hasText(strValue)) {
+                            if (!ValidationUtils.isNumber(strValue)) {
+                                throw ServiceException.with(DeviceErrorCode.DEVICE_LOCATION_LATITUDE_TYPE_ERROR).build();
+                            }
+                            createDeviceRequest.fetchLocation().setLatitude(Double.parseDouble(strValue));
+                            rowHasValue = true;
+                        }
+                        continue;
+                    }
+                    case DeviceSheetConstants.DEVICE_LOCATION_ADDRESS_COL_KEY -> {
+                        String address = getCellValue(cell).trim();
+                        if (StringUtils.hasText(address)) {
+                            createDeviceRequest.fetchLocation().setAddress(address);
+                            rowHasValue = true;
+                        }
+                        continue;
+                    }
                 }
 
                 if (createDeviceRequest.getParamEntities() == null) {
@@ -219,14 +253,6 @@ public class DeviceSheetParser {
                             "entity_key", entity.getKey(),
                             "entity_name", entity.getName()
                     )).build();
-                }
-
-                if (columnMetaData.getKey().equals(DeviceSheetConstants.DEVICE_LOCATION_LONGITUDE_COL_KEY)) {
-
-                } else if (columnMetaData.getKey().equals(DeviceSheetConstants.DEVICE_LOCATION_LATITUDE_COL_KEY)) {
-
-                } else if (columnMetaData.getKey().equals(DeviceSheetConstants.DEVICE_LOCATION_ADDRESS_COL_KEY)) {
-
                 }
 
                 rowHasValue = true;
