@@ -232,6 +232,9 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
 
         initEntityTemplateKeys();
 
+        List<String> deviceKeys = dataList.stream().map(DeviceResponseData::getKey).toList();
+        Map<String, DeviceStatus> statuses = deviceStatusService.getStatusesByDeviceKeys(deviceKeys);
+
         dataList.forEach(d -> {
             Integration integration = integrationMap.get(d.getIntegration());
             if (integration == null) {
@@ -247,8 +250,7 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
                 d.setGroupId(groupPO.getId().toString());
             }
 
-            Device device = findById(Long.valueOf(d.getId()));
-            DeviceStatus status = deviceStatusService.status(device);
+            DeviceStatus status = statuses.get(d.getKey());
             if (status != null) {
                 d.setStatus(status.name());
             }

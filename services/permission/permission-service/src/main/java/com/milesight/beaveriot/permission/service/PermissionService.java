@@ -11,6 +11,7 @@ import com.milesight.beaveriot.permission.helper.TemporaryPermission;
 import com.milesight.beaveriot.user.dto.MenuDTO;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -26,15 +27,24 @@ import java.util.stream.Collectors;
  */
 @Service
 public class PermissionService implements IPermissionFacade {
+
+    @Lazy
     @Autowired
     IUserFacade userFacade;
 
+    @Lazy
     @Autowired
     EntityPermissionService entityPermissionService;
+
+    @Lazy
     @Autowired
     DashboardPermissionService dashboardPermissionService;
+
+    @Lazy
     @Autowired
     DevicePermissionService devicePermissionService;
+
+    @Lazy
     @Autowired
     WorkflowPermissionService workflowPermissionService;
 

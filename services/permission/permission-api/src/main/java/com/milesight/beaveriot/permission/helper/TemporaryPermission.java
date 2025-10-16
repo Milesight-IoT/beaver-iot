@@ -7,6 +7,7 @@ import eu.ciechanowiec.sneakyfun.SneakySupplier;
 import lombok.experimental.UtilityClass;
 
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
@@ -22,7 +23,7 @@ public class TemporaryPermission {
         return with(List.of(operationPermissionCodes));
     }
 
-    public static Context with(List<OperationPermissionCode> operationPermissionCodes) {
+    public static Context with(Collection<OperationPermissionCode> operationPermissionCodes) {
         return new Context().with(operationPermissionCodes);
     }
 
@@ -30,7 +31,7 @@ public class TemporaryPermission {
         return contains(List.of(operationPermissionCodes));
     }
 
-    public static boolean contains(List<OperationPermissionCode> operationPermissionCodes) {
+    public static boolean contains(Collection<OperationPermissionCode> operationPermissionCodes) {
         var queue = contextThreadLocal.get();
         return queue != null && queue.stream().anyMatch(context -> context.contains(operationPermissionCodes));
     }
@@ -47,7 +48,7 @@ public class TemporaryPermission {
             return with(List.of(operationPermissionCodes));
         }
 
-        public Context with(List<OperationPermissionCode> operationPermissionCodes) {
+        public Context with(Collection<OperationPermissionCode> operationPermissionCodes) {
             this.operationPermissionCodes.addAll(operationPermissionCodes);
             return this;
         }
@@ -56,7 +57,7 @@ public class TemporaryPermission {
             return contains(List.of(operationPermissionCodes));
         }
 
-        public boolean contains(List<OperationPermissionCode> operationPermissionCodes) {
+        public boolean contains(Collection<OperationPermissionCode> operationPermissionCodes) {
             return this.operationPermissionCodes.containsAll(operationPermissionCodes);
         }
 
