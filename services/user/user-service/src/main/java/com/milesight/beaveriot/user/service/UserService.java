@@ -86,6 +86,8 @@ public class UserService {
     @WithSecurityUserContext(tenantId = "#tenantId")
     @Transactional(rollbackFor = Exception.class)
     public void register(String tenantId, UserRegisterRequest userRegisterRequest) {
+        validateTenantHasUsers(tenantId);
+
         String email = userRegisterRequest.getEmail();
         String nickname = userRegisterRequest.getNickname();
         String password = userRegisterRequest.getPassword();
@@ -94,6 +96,17 @@ public class UserService {
         validateEmailPasswordAndEnsureNotExist(email, nickname, password);
         UserPO userPO = createUser(email, nickname, password);
         roleService.createUserRole(userPO.getId(), roleService.getSuperAdminRoleId());
+    }
+
+    private void validateTenantHasUsers(String tenantId) {
+        if (!StringUtils.hasText(tenantId)) {
+            throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("tenantId is not exist").build();
+        }
+
+        Long userCount = userRepository.count();
+        if (userCount > 0) {
+            throw ServiceException.with(UserErrorCode.TENANT_USER_INITED).build();
+        }
     }
 
     private void validateEmailPasswordAndEnsureNotExist(String email, String nickname, String password) {
