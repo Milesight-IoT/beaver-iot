@@ -11,7 +11,6 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
@@ -220,6 +219,14 @@ public class DeviceSheetParser {
                             "entity_key", entity.getKey(),
                             "entity_name", entity.getName()
                     )).build();
+                }
+
+                if (columnMetaData.getKey().equals(DeviceSheetConstants.DEVICE_LOCATION_LONGITUDE_COL_KEY)) {
+
+                } else if (columnMetaData.getKey().equals(DeviceSheetConstants.DEVICE_LOCATION_LATITUDE_COL_KEY)) {
+
+                } else if (columnMetaData.getKey().equals(DeviceSheetConstants.DEVICE_LOCATION_ADDRESS_COL_KEY)) {
+
                 }
 
                 rowHasValue = true;

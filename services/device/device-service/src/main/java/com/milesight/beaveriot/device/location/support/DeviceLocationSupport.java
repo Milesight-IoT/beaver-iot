@@ -20,4 +20,8 @@ public class DeviceLocationSupport {
     public static String getLatitudeKey(String deviceKey) {
         return MessageFormat.format(DeviceLocationConstants.KEY_FORMAT_DEVICE_LATITUDE, deviceKey);
     }
+
+    public static void validateAddressType(String address) {
+
+    }
 }

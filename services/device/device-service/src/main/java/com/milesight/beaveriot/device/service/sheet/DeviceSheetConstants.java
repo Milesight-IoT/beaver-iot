@@ -17,6 +17,18 @@ public class DeviceSheetConstants {
 
     public static final String DEVICE_GROUP_COL_KEY = "device-group";
 
+    public static final String DEVICE_LOCATION_LONGITUDE_COL_NAME = "Longitude";
+
+    public static final String DEVICE_LOCATION_LONGITUDE_COL_KEY = "location-longitude";
+
+    public static final String DEVICE_LOCATION_LATITUDE_COL_NAME = "Latitude";
+
+    public static final String DEVICE_LOCATION_LATITUDE_COL_KEY = "location-latitude";
+
+    public static final String DEVICE_LOCATION_ADDRESS_COL_NAME = "Address";
+
+    public static final String DEVICE_LOCATION_ADDRESS_COL_KEY = "location-address";
+
     public static final String DEVICE_SHEET_NAME = "DEVICES_LIST";
 
     public static final String HIDDEN_OPTION_SHEET = "_HIDDEN_OPT";
