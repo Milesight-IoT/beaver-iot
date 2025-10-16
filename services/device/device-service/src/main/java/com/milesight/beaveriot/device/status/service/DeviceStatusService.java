@@ -6,6 +6,9 @@ import com.milesight.beaveriot.context.integration.model.DeviceStatusConfig;
 import com.milesight.beaveriot.device.status.DeviceStatusManager;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * author: Luxb
  * create: 2025/9/4 11:02
@@ -36,5 +39,9 @@ public class DeviceStatusService {
 
     public DeviceStatus status(Device device) {
         return deviceStatusManager.status(device);
+    }
+
+    public Map<String, DeviceStatus> getStatusesByDeviceKeys(List<String> deviceKeys) {
+        return deviceStatusManager.getStatusesByDeviceKeys(deviceKeys);
     }
 }
