@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
 import com.milesight.beaveriot.base.enums.ErrorCode;
+import com.milesight.beaveriot.base.exception.MultipleErrorException;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.JsonUtils;
 import com.milesight.beaveriot.base.utils.StringUtils;
@@ -191,8 +192,8 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             return true;
         } catch (Exception e) {
             log.error(e.getMessage());
-            if (e instanceof ServiceException) {
-                throw (ServiceException) e;
+            if (e instanceof ServiceException || e instanceof MultipleErrorException) {
+                throw e;
             } else if (e instanceof ScannerException || e instanceof ParserException) {
                 throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_VALIDATE_ERROR.getErrorCode(), messageSource.getMessage(ValidationConstants.ERROR_MESSAGE_CODE_YAML_SYNTAX)).build();
             } else {
@@ -215,8 +216,8 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             return input(integration, deviceTemplateId, null, null, null, data, null);
         } catch (Exception e) {
             log.error(e.getMessage());
-            if (e instanceof ServiceException) {
-                throw (ServiceException) e;
+            if (e instanceof ServiceException || e instanceof MultipleErrorException) {
+                throw e;
             } else {
                 throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
             }
@@ -230,8 +231,8 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             return input(integration, deviceTemplateId, deviceIdentifier, deviceName, null, data, null);
         } catch (Exception e) {
             log.error(e.getMessage());
-            if (e instanceof ServiceException) {
-                throw (ServiceException) e;
+            if (e instanceof ServiceException || e instanceof MultipleErrorException) {
+                throw e;
             } else {
                 throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
             }
@@ -245,8 +246,8 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             return input(integration, deviceTemplateId, null, null, null, data, codecArgContext);
         } catch (Exception e) {
             log.error(e.getMessage());
-            if (e instanceof ServiceException) {
-                throw (ServiceException) e;
+            if (e instanceof ServiceException || e instanceof MultipleErrorException) {
+                throw e;
             } else {
                 throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
             }
@@ -260,8 +261,8 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             return input(integration, deviceTemplateId, deviceIdentifier, deviceName, null, data, codecArgContext);
         } catch (Exception e) {
             log.error(e.getMessage());
-            if (e instanceof ServiceException) {
-                throw (ServiceException) e;
+            if (e instanceof ServiceException || e instanceof MultipleErrorException) {
+                throw e;
             } else {
                 throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
             }
@@ -275,8 +276,8 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             return input(null, null, null, null, deviceKey, data, codecArgContext);
         } catch (Exception e) {
             log.error(e.getMessage());
-            if (e instanceof ServiceException) {
-                throw (ServiceException) e;
+            if (e instanceof ServiceException || e instanceof MultipleErrorException) {
+                throw e;
             } else {
                 throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
             }
@@ -461,8 +462,8 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             return output(deviceKey, payload, null);
         } catch (Exception e) {
             log.error(e.getMessage());
-            if (e instanceof ServiceException) {
-                throw (ServiceException) e;
+            if (e instanceof ServiceException || e instanceof MultipleErrorException) {
+                throw e;
             } else {
                 throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
             }
@@ -505,8 +506,8 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
             return result;
         } catch (Exception e) {
             log.error(e.getMessage());
-            if (e instanceof ServiceException) {
-                throw (ServiceException) e;
+            if (e instanceof ServiceException || e instanceof MultipleErrorException) {
+                throw e;
             } else {
                 throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
             }
@@ -539,8 +540,8 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                     BlueprintCreationStrategy.NEVER);
         } catch (Exception e) {
             log.error(e.getMessage());
-            if (e instanceof ServiceException) {
-                throw (ServiceException) e;
+            if (e instanceof ServiceException || e instanceof MultipleErrorException) {
+                throw e;
             } else {
                 throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
             }
@@ -564,8 +565,8 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                     BlueprintCreationStrategy.OPTIONAL);
         } catch (Exception e) {
             log.error(e.getMessage());
-            if (e instanceof ServiceException) {
-                throw (ServiceException) e;
+            if (e instanceof ServiceException || e instanceof MultipleErrorException) {
+                throw e;
             } else {
                 throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
             }
@@ -593,8 +594,8 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
                     strategy);
         } catch (Exception e) {
             log.error(e.getMessage());
-            if (e instanceof ServiceException) {
-                throw (ServiceException) e;
+            if (e instanceof ServiceException || e instanceof MultipleErrorException) {
+                throw e;
             } else {
                 throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), e.getMessage()).build();
             }
