@@ -27,6 +27,7 @@ import com.milesight.beaveriot.eventbus.EventBus;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -145,15 +146,26 @@ public class DashboardService {
     }
 
     public List<DashboardListItemResponse> searchDashboards(SearchDashboardRequest searchRequest) {
-        List<DashboardPO> dashboardPOList = dashboardRepository
-                .findWithDataPermission(f -> f
-                        .likeIgnoreCase(StringUtils.hasText(searchRequest.getName()), DashboardPO.Fields.name, searchRequest.getName()))
-                .stream().sorted(Comparator.comparing(DashboardPO::getCreatedAt))
-                .collect(Collectors.toList());
+        List<DashboardPO> dashboardPOList;
+        try {
+            dashboardPOList = dashboardRepository
+                    .findWithDataPermission(f -> f
+                            .likeIgnoreCase(StringUtils.hasText(searchRequest.getName()), DashboardPO.Fields.name, searchRequest.getName()))
+                    .stream().sorted(Comparator.comparing(DashboardPO::getCreatedAt))
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            if (e instanceof ServiceException serviceException
+                    && ErrorCode.NO_DATA_PERMISSION.getErrorCode().equals(serviceException.getErrorCode())) {
+                return List.of();
+            }
+
+            throw e;
+        }
 
         if (dashboardPOList.isEmpty()) {
-            return new ArrayList<>();
+            return List.of();
         }
+
         List<DashboardListItemResponse> dashboardResponseList = DashboardConvert.INSTANCE.convertResponseList(dashboardPOList);
         dashboardHomeRepository
                 .findOne(filterable -> filterable.eq(DashboardHomePO.Fields.userId, SecurityUserContext.getUserId()))
