@@ -385,7 +385,7 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
                     .map(this::convertPOToResponseData);
         } catch (Exception e) {
             if (e instanceof ServiceException serviceException
-                    && ErrorCode.FORBIDDEN_PERMISSION.getErrorCode().equals(serviceException.getErrorCode())) {
+                    && ErrorCode.NO_DATA_PERMISSION.getErrorCode().equals(serviceException.getErrorCode())) {
                 return Page.empty();
             }
             throw e;

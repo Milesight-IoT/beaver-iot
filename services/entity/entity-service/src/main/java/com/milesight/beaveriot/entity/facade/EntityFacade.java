@@ -5,7 +5,6 @@ import com.milesight.beaveriot.base.annotations.cacheable.CacheKeys;
 import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
-import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.entity.convert.EntityConverter;
@@ -22,12 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.milesight.beaveriot.context.constants.CacheKeyConstants.TENANT_PREFIX;
@@ -45,9 +39,6 @@ public class EntityFacade implements IEntityFacade {
     private EntityService entityService;
     @Autowired
     IDeviceFacade deviceFacade;
-    @Autowired
-    @Lazy
-    DeviceServiceProvider deviceServiceProvider;
 
     @Override
     public Page<EntityResponse> search(EntityQuery entityQuery) {
@@ -97,20 +88,7 @@ public class EntityFacade implements IEntityFacade {
             return 0L;
         }
 
-        long allEntityCount = 0L;
-        long integrationEntityCount = countIntegrationEntitiesByIntegrationId(integrationId);
-        allEntityCount += integrationEntityCount;
-
-        List<Device> integrationDevices = deviceServiceProvider.findAll(integrationId);
-        if (integrationDevices != null && !integrationDevices.isEmpty()) {
-            List<String> deviceIds = integrationDevices.stream().map(t -> String.valueOf(t.getId())).toList();
-            List<EntityPO> deviceEntityPOList = entityRepository.findAll(filter -> filter.eq(EntityPO.Fields.attachTarget, AttachTargetType.DEVICE).in(EntityPO.Fields.attachTargetId, deviceIds.toArray()));
-            if (deviceEntityPOList != null && !deviceEntityPOList.isEmpty()) {
-                allEntityCount += deviceEntityPOList.size();
-            }
-        }
-
-        return allEntityCount;
+        return Optional.ofNullable(countAllEntitiesByIntegrationIds(List.of(integrationId)).get(integrationId)).orElse(0L);
     }
 
     @Override
@@ -132,15 +110,13 @@ public class EntityFacade implements IEntityFacade {
             return allEntityCountMap;
         }
 
-        String[] deviceIds = integrationDevices.stream()
+        List<String> deviceIds = integrationDevices.stream()
                 .map(DeviceNameDTO::getId)
                 .map(String::valueOf)
-                .toArray(String[]::new);
-        Map<String, Long> deviceEntityCountMap = entityRepository.findAll(filter ->
-                        filter.eq(EntityPO.Fields.attachTarget, AttachTargetType.DEVICE)
-                                .in(EntityPO.Fields.attachTargetId, deviceIds))
+                .toList();
+        Map<String, Long> deviceEntityCountMap = entityRepository.countAndGroupByTargets(AttachTargetType.DEVICE, deviceIds)
                 .stream()
-                .collect(Collectors.groupingBy(EntityPO::getAttachTargetId, Collectors.counting()));
+                .collect(Collectors.toMap(objects -> (String) objects[0], objects -> (Long) objects[1]));
 
         integrationDeviceMap.forEach((integrationId, deviceList) -> {
             Long entityCount = allEntityCountMap.getOrDefault(integrationId, 0L);
