@@ -2,7 +2,7 @@ package com.milesight.beaveriot.device.model.request;
 
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.device.constants.DeviceDataFieldConstants;
-import com.milesight.beaveriot.device.location.model.DeviceLocation;
+import com.milesight.beaveriot.device.model.DeviceLocation;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;

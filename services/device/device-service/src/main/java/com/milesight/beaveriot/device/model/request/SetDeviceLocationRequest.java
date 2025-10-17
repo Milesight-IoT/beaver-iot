@@ -1,6 +1,6 @@
 package com.milesight.beaveriot.device.model.request;
 
-import com.milesight.beaveriot.device.location.model.DeviceLocation;
+import com.milesight.beaveriot.device.model.DeviceLocation;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

@@ -1,12 +1,9 @@
-package com.milesight.beaveriot.device.location.model;
+package com.milesight.beaveriot.device.model;
 
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.StringUtils;
-import com.milesight.beaveriot.device.constants.DeviceDataFieldConstants;
-import com.milesight.beaveriot.device.location.enums.DeviceLocationErrorCode;
-import jakarta.validation.constraints.Size;
+import com.milesight.beaveriot.device.enums.DeviceLocationErrorCode;
 import lombok.Data;
-import org.hibernate.validator.constraints.Range;
 
 /**
  * author: Luxb
@@ -14,13 +11,8 @@ import org.hibernate.validator.constraints.Range;
  **/
 @Data
 public class DeviceLocation {
-    @Range(min = -180, max = 180)
     private Double longitude;
-
-    @Range(min = -90, max = 90)
     private Double latitude;
-
-    @Size(max = DeviceDataFieldConstants.DEVICE_ADDRESS_MAX_LENGTH)
     private String address;
 
     public static DeviceLocation of(String address, Double longitude, Double latitude) {

@@ -9,19 +9,15 @@ import java.text.MessageFormat;
  * create: 2025/10/13 10:49
  **/
 public class DeviceLocationSupport {
-    public static String getAddressKey(String deviceKey) {
+    public static String getAddressEntityKey(String deviceKey) {
         return MessageFormat.format(DeviceLocationConstants.KEY_FORMAT_DEVICE_ADDRESS, deviceKey);
     }
 
-    public static String getLongitudeKey(String deviceKey) {
+    public static String getLongitudeEntityKey(String deviceKey) {
         return MessageFormat.format(DeviceLocationConstants.KEY_FORMAT_DEVICE_LONGITUDE, deviceKey);
     }
 
-    public static String getLatitudeKey(String deviceKey) {
+    public static String getLatitudeEntityKey(String deviceKey) {
         return MessageFormat.format(DeviceLocationConstants.KEY_FORMAT_DEVICE_LATITUDE, deviceKey);
-    }
-
-    public static void validateAddressType(String address) {
-
     }
 }
