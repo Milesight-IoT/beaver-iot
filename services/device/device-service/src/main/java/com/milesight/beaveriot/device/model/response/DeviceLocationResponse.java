@@ -8,7 +8,7 @@ import lombok.Data;
  **/
 @Data
 public class DeviceLocationResponse {
-    private String address;
     private Double longitude;
     private Double latitude;
+    private String address;
 }

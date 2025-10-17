@@ -14,14 +14,14 @@ import org.hibernate.validator.constraints.Range;
  **/
 @Data
 public class DeviceLocation {
-    @Size(max = DeviceDataFieldConstants.DEVICE_ADDRESS_MAX_LENGTH)
-    private String address;
-
     @Range(min = -180, max = 180)
     private Double longitude;
 
     @Range(min = -90, max = 90)
     private Double latitude;
+
+    @Size(max = DeviceDataFieldConstants.DEVICE_ADDRESS_MAX_LENGTH)
+    private String address;
 
     public static DeviceLocation of(String address, Double longitude, Double latitude) {
         DeviceLocation deviceLocation = new DeviceLocation();

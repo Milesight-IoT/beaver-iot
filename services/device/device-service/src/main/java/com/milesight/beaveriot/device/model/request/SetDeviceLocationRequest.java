@@ -1,22 +1,14 @@
 package com.milesight.beaveriot.device.model.request;
 
-import com.milesight.beaveriot.device.constants.DeviceDataFieldConstants;
-import jakarta.validation.constraints.Size;
+import com.milesight.beaveriot.device.location.model.DeviceLocation;
 import lombok.Data;
-import org.hibernate.validator.constraints.Range;
+import lombok.EqualsAndHashCode;
 
 /**
  * author: Luxb
  * create: 2025/10/13 14:00
  **/
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class SetDeviceLocationRequest {
-    @Size(max = DeviceDataFieldConstants.DEVICE_ADDRESS_MAX_LENGTH)
-    private String address;
-
-    @Range(min = -180, max = 180)
-    private Double longitude;
-
-    @Range(min = -90, max = 90)
-    private Double latitude;
+public class SetDeviceLocationRequest extends DeviceLocation {
 }
