@@ -33,11 +33,7 @@ import com.milesight.beaveriot.entity.dto.EntityResponse;
 import com.milesight.beaveriot.entity.dto.EntityWorkflowData;
 import com.milesight.beaveriot.entity.enums.EntitySearchColumn;
 import com.milesight.beaveriot.entity.model.dto.EntityAdvancedSearchCondition;
-import com.milesight.beaveriot.entity.model.request.EntityAdvancedSearchQuery;
-import com.milesight.beaveriot.entity.model.request.EntityCreateRequest;
-import com.milesight.beaveriot.entity.model.request.EntityModifyRequest;
-import com.milesight.beaveriot.entity.model.request.ServiceCallRequest;
-import com.milesight.beaveriot.entity.model.request.UpdatePropertyEntityRequest;
+import com.milesight.beaveriot.entity.model.request.*;
 import com.milesight.beaveriot.entity.model.response.EntityMetaResponse;
 import com.milesight.beaveriot.entity.po.EntityPO;
 import com.milesight.beaveriot.entity.repository.EntityHistoryRepository;
@@ -67,16 +63,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -120,7 +107,6 @@ public class EntityService implements EntityServiceProvider {
     @Autowired
     private IWorkflowFacade workflowFacade;
 
-    @Lazy
     @Autowired
     IPermissionFacade permissionFacade;
 
