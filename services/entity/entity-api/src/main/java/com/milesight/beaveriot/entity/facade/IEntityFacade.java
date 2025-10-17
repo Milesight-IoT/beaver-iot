@@ -28,9 +28,4 @@ public interface IEntityFacade {
     long countAllEntitiesByIntegrationId(String integrationId);
 
     Map<String, Long> countAllEntitiesByIntegrationIds(List<String> integrationIds);
-
-    long countIntegrationEntitiesByIntegrationId(String integrationId);
-
-    Map<String, Long> countIntegrationEntitiesByIntegrationIds(List<String> integrationIds);
-
 }

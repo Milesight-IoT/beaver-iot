@@ -97,7 +97,7 @@ public class EntityFacade implements IEntityFacade {
             return new HashMap<>();
         }
 
-        Map<String, Long> allEntityCountMap = new HashMap<>(countIntegrationEntitiesByIntegrationIds(integrationIds));
+        Map<String, Long> allEntityCountMap = entityService.countEntityByTarget(AttachTargetType.INTEGRATION, integrationIds);
         List<DeviceNameDTO> integrationDevices = deviceFacade.getDeviceNameByIntegrations(integrationIds);
         if (CollectionUtils.isEmpty(integrationDevices)) {
             return allEntityCountMap;
@@ -114,9 +114,7 @@ public class EntityFacade implements IEntityFacade {
                 .map(DeviceNameDTO::getId)
                 .map(String::valueOf)
                 .toList();
-        Map<String, Long> deviceEntityCountMap = entityRepository.countAndGroupByTargets(AttachTargetType.DEVICE, deviceIds)
-                .stream()
-                .collect(Collectors.toMap(objects -> (String) objects[0], objects -> (Long) objects[1]));
+        Map<String, Long> deviceEntityCountMap = entityService.countEntityByTarget(AttachTargetType.DEVICE, deviceIds);
 
         integrationDeviceMap.forEach((integrationId, deviceList) -> {
             Long entityCount = allEntityCountMap.getOrDefault(integrationId, 0L);
@@ -131,37 +129,4 @@ public class EntityFacade implements IEntityFacade {
 
         return allEntityCountMap;
     }
-
-    @Override
-    public long countIntegrationEntitiesByIntegrationId(String integrationId) {
-        if (!StringUtils.hasText(integrationId)) {
-            return 0L;
-        }
-
-        List<EntityPO> integrationEntityPOList = entityRepository.findAll(filter ->
-                filter.eq(EntityPO.Fields.attachTarget, AttachTargetType.INTEGRATION)
-                        .eq(EntityPO.Fields.attachTargetId, integrationId));
-        if (integrationEntityPOList == null || integrationEntityPOList.isEmpty()) {
-            return 0L;
-        }
-
-        return integrationEntityPOList.size();
-    }
-
-    @Override
-    public Map<String, Long> countIntegrationEntitiesByIntegrationIds(List<String> integrationIds) {
-        if (integrationIds == null || integrationIds.isEmpty()) {
-            return Collections.emptyMap();
-        }
-
-        List<EntityPO> integrationEntityPOList = entityRepository.findAll(filter ->
-                filter.eq(EntityPO.Fields.attachTarget, AttachTargetType.INTEGRATION)
-                        .in(EntityPO.Fields.attachTargetId, integrationIds.toArray()));
-        if (integrationEntityPOList == null || integrationEntityPOList.isEmpty()) {
-            return Collections.emptyMap();
-        }
-
-        return integrationEntityPOList.stream().collect(Collectors.groupingBy(EntityPO::getAttachTargetId, Collectors.counting()));
-    }
-
 }
