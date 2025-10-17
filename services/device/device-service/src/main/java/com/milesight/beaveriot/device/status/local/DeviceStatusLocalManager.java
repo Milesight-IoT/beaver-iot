@@ -13,6 +13,7 @@ import org.springframework.aop.framework.AopContext;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -58,12 +59,12 @@ public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements
     }
 
     private void initDevices(List<Device> devices, DeviceStatusConfig config) {
-        Function<List<Device>, Map<Long, Long>> batchOfflineTimeoutFetcher = config.getBatchOfflineTimeoutFetcher();
+        Function<List<Device>, Map<Long, Duration>> batchOfflineTimeoutFetcher = config.getBatchOfflineTimeoutFetcher();
         if (batchOfflineTimeoutFetcher == null) {
             devices.forEach(device -> {
-                Long offlineSeconds = getDeviceOfflineSeconds(device, config);
-                if (offlineSeconds != null) {
-                    startOfflineCountdown(device, offlineSeconds);
+                Duration offlineDuration = getDeviceOfflineDuration(device, config);
+                if (offlineDuration != null) {
+                    startOfflineCountdown(device, offlineDuration);
                 }
             });
         } else {
@@ -71,15 +72,15 @@ public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements
             for (int i = 0; i < totalSize; i += BATCH_QUERY_OFFLINE_TIMEOUT_SIZE) {
                 int endIndex = Math.min(i + BATCH_QUERY_OFFLINE_TIMEOUT_SIZE, totalSize);
                 List<Device> batchDevices = devices.subList(i, endIndex);
-                Map<Long, Long> deviceOfflineTimeoutMap = batchOfflineTimeoutFetcher.apply(batchDevices);
+                Map<Long, Duration> deviceOfflineTimeoutMap = batchOfflineTimeoutFetcher.apply(batchDevices);
                 if (CollectionUtils.isEmpty(deviceOfflineTimeoutMap)) {
                     continue;
                 }
 
                 batchDevices.forEach(device -> {
-                    Long offlineSeconds = deviceOfflineTimeoutMap.get(device.getId());
-                    if (offlineSeconds != null) {
-                        startOfflineCountdown(device, offlineSeconds);
+                    Duration offlineDuration = deviceOfflineTimeoutMap.get(device.getId());
+                    if (offlineDuration != null) {
+                        startOfflineCountdown(device, offlineDuration);
                     }
                 });
             }
@@ -90,7 +91,7 @@ public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements
     public void online(Device device) {
         AvailableDeviceData availableDeviceData = getAvailableDeviceDataByDeviceId(device.getId());
         if (availableDeviceData == null) {
-            updateDeviceStatusToOnline(device);
+            updateDeviceStatusToOnline(device, null);
             return;
         }
 
@@ -123,17 +124,14 @@ public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements
         cancelOfflineCountdown(device);
 
         DeviceStatusConfig config = availableDeviceData.getDeviceStatusConfig();
-        updateDeviceStatusToOnline(device);
+        updateDeviceStatusToOnline(device, config.getOnlineListener());
 
-        Long expirationTime = null;
-        Long offlineSeconds = getDeviceOfflineSeconds(device, config);
-        if (offlineSeconds != null) {
-            expirationTime = System.currentTimeMillis() + offlineSeconds * 1000;
+        Duration offlineDuration = getDeviceOfflineDuration(device, config);
+        if (offlineDuration != null) {
+            Long expirationTime = System.currentTimeMillis() + offlineDuration.toSeconds() * 1000;
             deviceExpirationTimeMap.put(device.getId(), expirationTime);
-            startOfflineCountdown(device, offlineSeconds);
+            startOfflineCountdown(device, offlineDuration);
         }
-
-        deviceOnlineCallback(device, expirationTime, config.getOnlineListener());
     }
 
     private void handleStatusToOffline(AvailableDeviceData availableDeviceData) {
@@ -147,11 +145,10 @@ public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements
         deviceExpirationTimeMap.remove(device.getId());
         deviceTimerFutures.remove(device.getId());
 
-        updateDeviceStatusToOffline(device);
-        deviceOfflineCallback(device, config.getOfflineListener());
+        updateDeviceStatusToOffline(device, config.getOfflineListener());
     }
 
-    private void startOfflineCountdown(Device device, long offlineSeconds) {
+    private void startOfflineCountdown(Device device, Duration offlineDuration) {
         if (deviceTimerFutures.containsKey(device.getId())) {
             return;
         }
@@ -160,7 +157,7 @@ public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements
         ScheduledFuture<?> future = scheduler.schedule(() -> {
             AvailableDeviceData availableDeviceData = getAvailableDeviceDataByDeviceId(device.getId());
             self.handleStatus(device.getId(), availableDeviceData, DeviceStatusOperation.OFFLINE);
-        }, offlineSeconds, TimeUnit.SECONDS);
+        }, offlineDuration.toSeconds(), TimeUnit.SECONDS);
         deviceTimerFutures.put(device.getId(), future);
     }
 

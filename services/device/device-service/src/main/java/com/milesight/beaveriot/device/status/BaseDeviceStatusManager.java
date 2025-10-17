@@ -12,6 +12,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -56,30 +57,35 @@ public abstract class BaseDeviceStatusManager {
 
     protected abstract void afterRegister(String integrationId, DeviceStatusConfig config);
 
-    protected void deviceOnlineCallback(Device device, Long expirationTime, Consumer<Device> onlineListener) {
-        log.debug("Device(id={}, key={}) status updated to online, expiration time: {}", device.getId(), device.getKey(), expirationTime == null ? "-" :expirationTime / 1000);
+    protected void deviceOnlineCallback(Device device, Consumer<Device> onlineListener) {
+        log.debug("Device(id={}, key={}, name={}) status updated to online", device.getId(), device.getKey(), device.getName());
         if (onlineListener != null) {
             onlineListener.accept(device);
         }
     }
 
     protected void deviceOfflineCallback(Device device, Consumer<Device> offlineListener) {
-        log.debug("Device(id={}, key={}) status updated to offline", device.getId(), device.getKey());
+        log.debug("Device(id={}, key={}, name={}) status updated to offline", device.getId(), device.getKey(), device.getName());
         if (offlineListener != null) {
             offlineListener.accept(device);
         }
     }
 
-    protected void updateDeviceStatusToOnline(Device device) {
-        updateDeviceStatus(device, DeviceStatus.ONLINE.name());
+    protected void updateDeviceStatusToOnline(Device device, Consumer<Device> onlineListener) {
+        updateDeviceStatus(device, DeviceStatus.ONLINE.name(), onlineListener);
     }
 
-    protected void updateDeviceStatusToOffline(Device device) {
-        updateDeviceStatus(device, DeviceStatus.OFFLINE.name());
+    protected void updateDeviceStatusToOffline(Device device, Consumer<Device> offlineListener) {
+        updateDeviceStatus(device, DeviceStatus.OFFLINE.name(), offlineListener);
     }
 
     public void offline(Device device) {
-        updateDeviceStatusToOffline(device);
+        DeviceStatusConfig config = integrationDeviceStatusConfigs.get(device.getIntegrationId());
+        Consumer<Device> offlineListener = null;
+        if (config != null) {
+            offlineListener = config.getOfflineListener();
+        }
+        updateDeviceStatusToOffline(device, offlineListener);
     }
 
     public DeviceStatus status(Device device) {
@@ -131,14 +137,14 @@ public abstract class BaseDeviceStatusManager {
         return AvailableDeviceData.of(device, deviceStatusConfig);
     }
 
-    protected Long getDeviceOfflineSeconds(Device device, DeviceStatusConfig config) {
+    protected Duration getDeviceOfflineDuration(Device device, DeviceStatusConfig config) {
         return Optional.ofNullable(config.getOfflineTimeoutFetcher())
                 .map(f -> f.apply(device))
-                .filter(s -> s > 0)
+                .filter(d -> d.toSeconds() > 0)
                 .orElse(null);
     }
 
-    protected void updateDeviceStatus(Device device, String deviceStatus) {
+    protected void updateDeviceStatus(Device device, String deviceStatus, Consumer<Device> statusChangedListener) {
         String statusEntityKey = getStatusEntityKey(device);
         if (entityServiceProvider.findByKey(statusEntityKey) == null) {
             EntityTemplate entityTemplate = entityTemplateServiceProvider.findByKey(DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS);
@@ -156,6 +162,12 @@ public abstract class BaseDeviceStatusManager {
 
         ExchangePayload payload = ExchangePayload.create(statusEntityKey, deviceStatus);
         entityValueServiceProvider.saveValuesAndPublishAsync(payload);
+
+        if (deviceStatus.equals(DeviceStatus.ONLINE.name())) {
+            deviceOnlineCallback(device, statusChangedListener);
+        } else {
+            deviceOfflineCallback(device, statusChangedListener);
+        }
     }
 
     protected String getStatusEntityKey(Device device) {
