@@ -1200,11 +1200,10 @@ public class EntityService implements EntityServiceProvider {
         }
     }
 
-    private String getCustomEntityKey(String identifier) {
-        if (identifier == null) {
-            return null;
-        }
-        return String.format("%s.integration.%s", IntegrationConstants.SYSTEM_INTEGRATION_ID, identifier);
+    public Map<String, Long> countEntityByTarget(AttachTargetType targetType, List<String> targetIds) {
+        return entityRepository.countAndGroupByTargets(targetType, targetIds)
+                .stream()
+                .collect(Collectors.toMap(objects -> (String) objects[0], objects -> (Long) objects[1]));
     }
 
     private EntityService self() {

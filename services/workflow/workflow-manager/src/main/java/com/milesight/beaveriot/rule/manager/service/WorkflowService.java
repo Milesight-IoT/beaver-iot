@@ -145,7 +145,7 @@ public class WorkflowService {
                 .findAllWithDataPermission(f ->
                                 f.or(fo -> fo
                                         .likeIgnoreCase(StringUtils.hasText(requestName), WorkflowPO.Fields.name, requestName)
-                                        .eq(StringUtils.hasText(requestName) && ValidationUtils.isNumber(requestName), WorkflowPO.Fields.id, requestName)
+                                        .eq(StringUtils.hasText(requestName) && ValidationUtils.isInteger(requestName), WorkflowPO.Fields.id, requestName)
                                 )
                                 .eq(request.getEnabled() != null, WorkflowPO.Fields.enabled, request.getEnabled())
                         , request.toPageable());
