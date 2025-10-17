@@ -71,10 +71,11 @@ public class EntityAssignerComponent implements ProcessorNode<Exchange> {
                             builder.append(System.lineSeparator()).append(errorHolder.getErrorMessage()));
                     message = builder.toString();
                 }
+                throw MultipleErrorException.with(multipleErrorException.getStatus(), message, multipleErrorException.getErrors());
             } else {
                 message = e.getMessage();
+                throw new RuntimeException(message);
             }
-            throw new RuntimeException(message);
         }
     }
 }
