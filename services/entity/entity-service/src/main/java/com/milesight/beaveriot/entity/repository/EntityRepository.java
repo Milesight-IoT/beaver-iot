@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.entity.repository;
 
+import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.data.jpa.repository.BaseJpaRepository;
 import com.milesight.beaveriot.entity.po.EntityPO;
@@ -9,7 +10,9 @@ import com.milesight.beaveriot.permission.enums.ColumnDataType;
 import com.milesight.beaveriot.permission.enums.DataPermissionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.FluentQuery;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -43,4 +46,6 @@ public interface EntityRepository extends BaseJpaRepository<EntityPO, Long> {
         return findAll(filterable, pageable);
     }
 
+    @Query("SELECT r.attachTargetId, COUNT(r) FROM EntityPO r WHERE r.attachTargetId IN :targetIds AND r.attachTarget = :targetType GROUP BY r.attachTargetId")
+    List<Object[]> countAndGroupByTargets(@Param("targetType") AttachTargetType targetType, @Param("targetIds") List<String> targetIds);
 }
