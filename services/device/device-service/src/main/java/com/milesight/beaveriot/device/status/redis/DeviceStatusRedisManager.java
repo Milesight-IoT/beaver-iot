@@ -18,6 +18,7 @@ import org.redisson.api.RedissonClient;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -104,7 +105,7 @@ public class DeviceStatusRedisManager extends BaseDeviceStatusManager implements
     public void online(Device device) {
         AvailableDeviceData availableDeviceData = getAvailableDeviceDataByDeviceId(device.getId());
         if (availableDeviceData == null) {
-            updateDeviceStatusToOnline(device);
+            updateDeviceStatusToOnline(device, null);
             return;
         }
 
@@ -140,17 +141,14 @@ public class DeviceStatusRedisManager extends BaseDeviceStatusManager implements
     private void handleStatusToOnline(AvailableDeviceData availableDeviceData) {
         Device device = availableDeviceData.getDevice();
         DeviceStatusConfig config = availableDeviceData.getDeviceStatusConfig();
-        updateDeviceStatusToOnline(device);
+        updateDeviceStatusToOnline(device, config.getOnlineListener());
 
-        Long expirationTime = null;
-        Long offlineSeconds = getDeviceOfflineSeconds(device, config);
-        if (offlineSeconds != null) {
-            expirationTime = System.currentTimeMillis() + offlineSeconds * 1000;
+        Duration offlineDuration = getDeviceOfflineDuration(device, config);
+        if (offlineDuration != null) {
+            Long expirationTime = System.currentTimeMillis() + offlineDuration.toSeconds() * 1000;
             deviceExpirationTimeMap.put(device.getId(), expirationTime);
-            delayedQueue.offer(device.getId(), offlineSeconds, TimeUnit.SECONDS);
+            delayedQueue.offer(device.getId(), offlineDuration.toSeconds(), TimeUnit.SECONDS);
         }
-
-        deviceOnlineCallback(device, expirationTime, config.getOnlineListener());
     }
 
     private void handleStatusToOffline(AvailableDeviceData availableDeviceData) {
@@ -174,7 +172,6 @@ public class DeviceStatusRedisManager extends BaseDeviceStatusManager implements
         Device device = availableDeviceData.getDevice();
         deviceExpirationTimeMap.remove(device.getId());
 
-        updateDeviceStatusToOffline(device);
-        deviceOfflineCallback(device, config.getOfflineListener());
+        updateDeviceStatusToOffline(device, config.getOfflineListener());
     }
 }
