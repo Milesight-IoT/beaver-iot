@@ -23,7 +23,10 @@
     </licenses>
 
     <modules>
-        <module>data-timeseries-influxdb</module>
+        <module>influxdb</module>
+        <module>repository</module>
+        <module>jpa</module>
+        <module>common</module>
     </modules>
 
     <properties>
@@ -31,22 +34,4 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.sonatype.central</groupId>
-                <artifactId>central-publishing-maven-plugin</artifactId>
-                <version>0.6.0</version>
-                <extensions>true</extensions>
-                <executions>
-                    <execution>
-                        <id>injected-central-publishing</id>
-                        <phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
-
 </project>

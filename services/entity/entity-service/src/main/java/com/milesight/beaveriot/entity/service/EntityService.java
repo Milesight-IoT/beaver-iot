@@ -40,7 +40,6 @@ import com.milesight.beaveriot.entity.model.request.ServiceCallRequest;
 import com.milesight.beaveriot.entity.model.request.UpdatePropertyEntityRequest;
 import com.milesight.beaveriot.entity.model.response.EntityMetaResponse;
 import com.milesight.beaveriot.entity.po.EntityPO;
-import com.milesight.beaveriot.entity.repository.EntityHistoryRepository;
 import com.milesight.beaveriot.entity.repository.EntityLatestRepository;
 import com.milesight.beaveriot.entity.repository.EntityRepository;
 import com.milesight.beaveriot.eventbus.EventBus;
@@ -105,9 +104,6 @@ public class EntityService implements EntityServiceProvider {
 
     @Autowired
     private EntityRepository entityRepository;
-
-    @Autowired
-    private EntityHistoryRepository entityHistoryRepository;
 
     @Autowired
     private EntityLatestRepository entityLatestRepository;
@@ -461,7 +457,7 @@ public class EntityService implements EntityServiceProvider {
         log.info("delete entities: {}", entityIdList);
 
         entityRepository.deleteAllById(entityIdList);
-        entityHistoryRepository.deleteByEntityIdIn(entityIdList);
+        entityValueService.deleteEntityHistory(entityIdList);
         entityLatestRepository.deleteByEntityIdIn(entityIdList);
         userFacade.deleteResource(ResourceType.ENTITY, entityIdList);
 
