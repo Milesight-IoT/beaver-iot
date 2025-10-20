@@ -3,6 +3,8 @@ package com.milesight.beaveriot.entity.po;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
+import com.milesight.beaveriot.data.api.SupportTimeSeries;
+import com.milesight.beaveriot.data.model.TimeSeriesCategory;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -23,6 +25,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Entity
 @FieldNameConstants
 @EntityListeners(AuditingEntityListener.class)
+@SupportTimeSeries(category = TimeSeriesCategory.TELEMETRY, timeColumn = EntityHistoryPO.Fields.timestamp, indexedColumns = {EntityHistoryPO.Fields.entityId})
 public class EntityHistoryPO {
 
     @Id

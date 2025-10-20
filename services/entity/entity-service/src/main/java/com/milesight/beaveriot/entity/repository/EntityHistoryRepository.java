@@ -23,7 +23,6 @@ import java.util.Map;
  * @date 2024/10/16 15:32
  */
 @Tenant
-@SupportTimeSeries(category = TimeSeriesCategory.TELEMETRY, entity = EntityHistoryPO.class, timeColumn = EntityHistoryPO.Fields.timestamp, indexedColumns = {EntityHistoryPO.Fields.entityId})
 public interface EntityHistoryRepository extends BaseJpaRepository<EntityHistoryPO, Long> {
 
     @Modifying

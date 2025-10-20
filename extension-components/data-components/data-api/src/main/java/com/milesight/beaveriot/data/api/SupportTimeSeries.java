@@ -14,8 +14,6 @@ public @interface SupportTimeSeries {
 
     String tableName() default "";
 
-    Class<?> entity();
-
     Class<? extends TimeSeriesDataConverter> converter() default TimeSeriesDataConverter.class;
 
     String timeColumn();

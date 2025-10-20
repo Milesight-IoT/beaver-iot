@@ -11,6 +11,7 @@ import com.milesight.beaveriot.data.model.TimeSeriesPeriodQuery;
 import com.milesight.beaveriot.data.model.TimeSeriesResult;
 import com.milesight.beaveriot.data.model.TimeSeriesTimePointQuery;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 
 import java.util.*;
@@ -24,7 +25,9 @@ import java.util.function.Consumer;
  */
 @Slf4j
 public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
-    private final InfluxDbClient client;
+    @Autowired
+    private InfluxDbClient client;
+
     private final String bucket;
     private final String tableName;
     private final String timeColumn;
@@ -32,7 +35,6 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
     private final TimeSeriesDataConverter converter;
     private final Class<T> poClass;
     public InfluxDbTimeSeriesRepository(
-            InfluxDbClient influxDbClient,
             String bucket,
             String tableName,
             String timeColumn,
@@ -40,7 +42,6 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
             TimeSeriesDataConverter converter,
             Class<T> poClass
     ) {
-        this.client = influxDbClient;
         this.bucket = bucket;
         this.tableName = tableName;
         this.timeColumn = timeColumn;

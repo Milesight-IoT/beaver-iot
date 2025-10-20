@@ -17,6 +17,8 @@ import java.util.Map;
 @Data
 @Component
 public class TimeSeriesProperty {
+    public static final String TIMESERIES_DATABASE = "timeseries.database";
+
     private String database;
 
     private Map<String, Duration> retention;
