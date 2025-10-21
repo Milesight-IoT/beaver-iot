@@ -47,7 +47,6 @@ public class BlueprintLibraryAddressZipProxy implements BlueprintLibraryAddressP
             }
 
             return new BufferedInputStream(new FileInputStream(file));
-
         } catch (IOException e) {
             throw new RuntimeException("Failed to open input stream for ZIP file: " + zipFilePath, e);
         }
