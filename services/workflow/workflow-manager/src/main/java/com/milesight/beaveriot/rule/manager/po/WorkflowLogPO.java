@@ -1,5 +1,7 @@
 package com.milesight.beaveriot.rule.manager.po;
 
+import com.milesight.beaveriot.data.api.SupportTimeSeries;
+import com.milesight.beaveriot.data.model.TimeSeriesCategory;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Data;
@@ -12,6 +14,10 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @FieldNameConstants
 @Table(name = "t_flow_log")
 @EntityListeners(AuditingEntityListener.class)
+@SupportTimeSeries(category = TimeSeriesCategory.LOG, timeColumn = WorkflowLogPO.Fields.createdAt, indexedColumns = {
+        WorkflowLogPO.Fields.flowId,
+        WorkflowLogPO.Fields.id
+})
 public class WorkflowLogPO {
     @Id
     @Column(name = "id")

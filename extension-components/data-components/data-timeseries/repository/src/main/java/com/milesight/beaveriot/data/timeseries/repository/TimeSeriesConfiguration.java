@@ -1,29 +1,31 @@
 package com.milesight.beaveriot.data.timeseries.repository;
 
 import com.milesight.beaveriot.base.utils.StringUtils;
+import com.milesight.beaveriot.context.support.PackagesScanner;
 import com.milesight.beaveriot.data.api.SupportTimeSeries;
 import com.milesight.beaveriot.data.api.TimeSeriesRepository;
-import com.milesight.beaveriot.data.jpa.repository.BaseJpaRepository;
 import com.milesight.beaveriot.data.support.TimeSeriesDataConverter;
 import com.milesight.beaveriot.data.timeseries.common.TimeSeriesProperty;
-import com.milesight.beaveriot.data.timeseries.influxdb.InfluxDbClient;
 import com.milesight.beaveriot.data.timeseries.influxdb.InfluxDbTimeSeriesRepository;
 import com.milesight.beaveriot.data.timeseries.jpa.JpaTimeSeriesRepository;
-import jakarta.persistence.EntityManager;
 import jakarta.persistence.Table;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.SmartInitializingSingleton;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Component;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.beans.factory.config.ConstructorArgumentValues;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
+import org.springframework.beans.factory.support.RootBeanDefinition;
+import org.springframework.context.EnvironmentAware;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.ResolvableType;
+import org.springframework.core.env.Environment;
 import org.springframework.util.ObjectUtils;
 
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * TimeSeriesConfiguration class.
@@ -32,42 +34,27 @@ import java.util.Map;
  * @date 2025/10/11
  */
 @Slf4j
-@Component
-public class TimeSeriesConfiguration implements SmartInitializingSingleton {
-    @Autowired
-    private ApplicationContext applicationContext;
+@Configuration
+public class TimeSeriesConfiguration implements BeanDefinitionRegistryPostProcessor, EnvironmentAware {
 
-    @Autowired
-    private EntityManager entityManager;
+    private Environment environment;
 
-    @Autowired(required = false)
-    private InfluxDbClient influxDbClient;
-
-    @Autowired
-    private TimeSeriesProperty timeSeriesProperty;
-
-    @Getter
-    private final Map<Class<?>, TimeSeriesRepository<?>> repos = new HashMap<>();
-
-    private SupportTimeSeries getAnnotation(Object repo) {
-        for (Class<?> repoInterface : repo.getClass().getInterfaces()) {
-            SupportTimeSeries[] annotations = repoInterface.getAnnotationsByType(SupportTimeSeries.class);
-            if (annotations.length > 0) {
-                return annotations[0];
-            }
+    private SupportTimeSeries getAnnotation(Class<?> entity) {
+        SupportTimeSeries[] annotations = entity.getAnnotationsByType(SupportTimeSeries.class);
+        if (annotations.length > 0) {
+            return annotations[0];
         }
 
         return null;
     }
 
-    private String getTableName(SupportTimeSeries supportTimeSeries) {
+    private String getTableName(SupportTimeSeries supportTimeSeries, Class<?> entityClass) {
         // use specified table name first
         if (!supportTimeSeries.tableName().isEmpty()) {
             return supportTimeSeries.tableName();
         }
 
         // auto find table name from entity po
-        Class<?> entityClass = supportTimeSeries.entity();
         Table[] annotations = entityClass.getAnnotationsByType(Table.class);
         if (annotations.length == 0) {
             throw new IllegalArgumentException(entityClass.getName() + " cannot find @Table to get table name");
@@ -99,32 +86,52 @@ public class TimeSeriesConfiguration implements SmartInitializingSingleton {
     }
 
     @Override
-    public void afterSingletonsInstantiated() {
-        applicationContext
-                .getBeansOfType(BaseJpaRepository.class)
-                .values()
-                .forEach(jpaRepo -> {
-                    SupportTimeSeries supportTimeSeries = getAnnotation(jpaRepo);
-                    if (supportTimeSeries != null) {
-                        String tableName = getTableName(supportTimeSeries);
-                        log.debug("loading time series table: " + tableName);
-                        TimeSeriesRepository<?> repository;
-                        if ("influxdb".equals(timeSeriesProperty.getDatabase())) {
-                            repository = new InfluxDbTimeSeriesRepository<>(
-                                    influxDbClient,
-                                    supportTimeSeries.category(),
-                                    tableName,
-                                    getTimeColumnName(supportTimeSeries),
-                                    getIndexedColumnNameList(supportTimeSeries),
-                                    createConverterInstance(supportTimeSeries),
-                                    supportTimeSeries.entity()
-                            );
-                        } else {
-                            repository = new JpaTimeSeriesRepository<>(jpaRepo, getTimeColumnName(supportTimeSeries));
-                        }
+    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+    }
 
-                        repos.put(supportTimeSeries.entity(), repository);
-                    }
-                });
+    @Override
+    public void postProcessBeanDefinitionRegistry(@NotNull BeanDefinitionRegistry registry) throws BeansException {
+        PackagesScanner packagesScanner = new PackagesScanner();
+        packagesScanner.doScan("com.milesight.beaveriot.**.*.po", entityClass -> {
+            if (!entityClass.getSimpleName().endsWith("PO")) {
+                return;
+            }
+
+            SupportTimeSeries supportTimeSeries = getAnnotation(entityClass);
+            if (supportTimeSeries == null) {
+                return;
+            }
+
+            String tableName = getTableName(supportTimeSeries, entityClass);
+            RootBeanDefinition rootBeanDefinition = new RootBeanDefinition();
+
+
+            String databaseType = environment.getProperty(TimeSeriesProperty.TIMESERIES_DATABASE);
+            if ("influxdb".equals(databaseType)) {
+                rootBeanDefinition.setTargetType(ResolvableType.forClassWithGenerics(TimeSeriesRepository.class, entityClass));
+                rootBeanDefinition.setBeanClass(InfluxDbTimeSeriesRepository.class);
+                ConstructorArgumentValues cav = rootBeanDefinition.getConstructorArgumentValues();
+                cav.addIndexedArgumentValue(0, supportTimeSeries.category());
+                cav.addIndexedArgumentValue(1, tableName);
+                cav.addIndexedArgumentValue(2, getTimeColumnName(supportTimeSeries));
+                cav.addIndexedArgumentValue(3, getIndexedColumnNameList(supportTimeSeries));
+                cav.addIndexedArgumentValue(4, createConverterInstance(supportTimeSeries));
+                cav.addIndexedArgumentValue(5, entityClass);
+            } else {
+                rootBeanDefinition.setTargetType(ResolvableType.forClassWithGenerics(TimeSeriesRepository.class, entityClass));
+                rootBeanDefinition.setBeanClass(JpaTimeSeriesRepository.class);
+                ConstructorArgumentValues cav = rootBeanDefinition.getConstructorArgumentValues();
+                cav.addIndexedArgumentValue(0, entityClass);
+                cav.addIndexedArgumentValue(1, supportTimeSeries.timeColumn());
+            }
+
+            String beanName = entityClass.getSimpleName() + "TimeSeriesRepository";
+            registry.registerBeanDefinition(beanName, rootBeanDefinition);
+        });
+    }
+
+    @Override
+    public void setEnvironment(@NotNull Environment environment) {
+        this.environment = environment;
     }
 }

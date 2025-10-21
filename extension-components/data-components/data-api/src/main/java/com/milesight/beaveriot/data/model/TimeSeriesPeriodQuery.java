@@ -18,9 +18,9 @@ public class TimeSeriesPeriodQuery extends TimeSeriesBaseQuery {
 
     private TimeSeriesQueryOrder order;
 
-    private Long pageNumber;
+    private Long pageNumber = 0L;
 
-    private Long pageSize;
+    private Long pageSize = 10L;
 
     // NEXT: Aggregation
 }
