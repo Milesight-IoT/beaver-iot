@@ -11,4 +11,5 @@ public class BlueprintLibraryAddressProperties {
     private String type;
     private String url;
     private String branch;
+    private String localZipFile;
 }

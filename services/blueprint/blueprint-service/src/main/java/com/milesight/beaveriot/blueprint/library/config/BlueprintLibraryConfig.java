@@ -1,5 +1,7 @@
 package com.milesight.beaveriot.blueprint.library.config;
 
+import com.milesight.beaveriot.base.utils.StringUtils;
+import com.milesight.beaveriot.blueprint.library.component.BlueprintLibraryAddressZipProxy;
 import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryAddress;
 import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryAddressProperties;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
@@ -22,6 +24,10 @@ public class BlueprintLibraryConfig {
     private Duration cleanFrequency;
 
     public BlueprintLibraryAddress getDefaultBlueprintLibraryAddress() {
-        return BlueprintLibraryAddress.of(defaultAddress.getType(), defaultAddress.getUrl(), defaultAddress.getBranch(), BlueprintLibrarySourceType.DEFAULT.name());
+        BlueprintLibraryAddress defaultBlueprintLibraryAddress = BlueprintLibraryAddress.of(defaultAddress.getType(), defaultAddress.getUrl(), defaultAddress.getBranch(), BlueprintLibrarySourceType.DEFAULT.name());
+        if (!StringUtils.isEmpty(defaultAddress.getLocalZipFile())) {
+            defaultBlueprintLibraryAddress.setProxy(BlueprintLibraryAddressZipProxy.of(defaultAddress.getLocalZipFile()));
+        }
+        return defaultBlueprintLibraryAddress;
     }
 }

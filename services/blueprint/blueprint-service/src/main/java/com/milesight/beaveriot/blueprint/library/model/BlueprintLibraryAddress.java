@@ -3,6 +3,7 @@ package com.milesight.beaveriot.blueprint.library.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.StringUtils;
+import com.milesight.beaveriot.blueprint.library.component.interfaces.BlueprintLibraryAddressProxy;
 import com.milesight.beaveriot.blueprint.library.enums.BlueprintLibraryAddressErrorCode;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
 import com.milesight.beaveriot.context.model.BlueprintLibraryType;
@@ -25,6 +26,8 @@ public abstract class BlueprintLibraryAddress {
     protected Boolean active;
     @JsonIgnore
     private String key;
+    private BlueprintLibraryAddressProxy proxy;
+    private boolean proxyMode = false;
 
     protected BlueprintLibraryAddress() {
     }
@@ -103,7 +106,12 @@ public abstract class BlueprintLibraryAddress {
         return Constants.PATH_MANIFEST;
     }
 
-    private static class Constants {
+    public BlueprintLibraryAddressProxy switchAndGetProxy() {
+        proxyMode = true;
+        return proxy;
+    }
+
+    public static class Constants {
         public static final String PATH_MANIFEST = "manifest.yaml";
     }
 }

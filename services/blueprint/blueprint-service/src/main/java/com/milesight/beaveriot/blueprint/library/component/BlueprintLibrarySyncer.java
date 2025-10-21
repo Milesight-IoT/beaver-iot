@@ -107,8 +107,20 @@ public class BlueprintLibrarySyncer {
                 return blueprintLibrary;
             }
 
-            log.debug("Found new version: {} for blueprint library {}", manifest.getVersion(), blueprintLibraryAddress.getKey());
             String currentBeaverVersion = getCurrentBeaverVersion();
+            if (!isBeaverVersionSupported(currentBeaverVersion, manifest.getMinimumRequiredBeaverIotVersion())) {
+                if (blueprintLibrary.getCurrentVersion() == null) {
+                    if (blueprintLibraryAddressService.isDefaultBlueprintLibraryAddress(blueprintLibraryAddress) && blueprintLibraryAddress.getProxy() != null) {
+                        log.warn("Blueprint library {} does not support the current beaver version: falling back to proxy mode", blueprintLibraryAddress.getKey());
+                        blueprintLibraryAddress.setProxyMode(true);
+                        manifest = blueprintLibraryAddressService.validateAndGetManifest(blueprintLibraryAddress);
+                    } else {
+                        throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_BEAVER_VERSION_UNSUPPORTED).build();
+                    }
+                }
+            }
+
+            log.debug("Found new version: {} for blueprint library {}", manifest.getVersion(), blueprintLibraryAddress.getKey());
             if (!isBeaverVersionSupported(currentBeaverVersion, manifest.getMinimumRequiredBeaverIotVersion())) {
                 if (blueprintLibrary.getCurrentVersion() == null) {
                     throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_BEAVER_VERSION_UNSUPPORTED).build();
@@ -161,19 +173,25 @@ public class BlueprintLibrarySyncer {
 
         List<BlueprintLibraryResource> blueprintLibraryResources = new ArrayList<>();
         try {
-            if (blueprintLibrary.getSourceType() == BlueprintLibrarySourceType.UPLOAD) {
-                try (InputStream inputStream = resourceManagerFacade.getDataByUrl(codeZipUrl)) {
+            if (blueprintLibraryAddress.isProxyMode()) {
+                try (InputStream inputStream = blueprintLibraryAddress.getProxy().getDataInputStream()) {
                     syncBlueprintLibraryResources(inputStream, blueprintLibrary, manifest, blueprintLibraryAddress, blueprintLibraryResources);
                 }
             } else {
-                Request request = new Request.Builder().url(codeZipUrl).build();
-                try (Response response = OkHttpUtil.getClient().newCall(request).execute();
-                     InputStream inputStream = response.body() != null ? response.body().byteStream() : null) {
-                    if (!response.isSuccessful()) {
-                        throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
+                if (blueprintLibrary.getSourceType() == BlueprintLibrarySourceType.UPLOAD) {
+                    try (InputStream inputStream = resourceManagerFacade.getDataByUrl(codeZipUrl)) {
+                        syncBlueprintLibraryResources(inputStream, blueprintLibrary, manifest, blueprintLibraryAddress, blueprintLibraryResources);
                     }
+                } else {
+                    Request request = new Request.Builder().url(codeZipUrl).build();
+                    try (Response response = OkHttpUtil.getClient().newCall(request).execute();
+                         InputStream inputStream = response.body() != null ? response.body().byteStream() : null) {
+                        if (!response.isSuccessful()) {
+                            throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
+                        }
 
-                    syncBlueprintLibraryResources(inputStream, blueprintLibrary, manifest, blueprintLibraryAddress, blueprintLibraryResources);
+                        syncBlueprintLibraryResources(inputStream, blueprintLibrary, manifest, blueprintLibraryAddress, blueprintLibraryResources);
+                    }
                 }
             }
 
