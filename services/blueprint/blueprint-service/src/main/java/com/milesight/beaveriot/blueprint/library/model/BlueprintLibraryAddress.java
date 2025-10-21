@@ -107,8 +107,12 @@ public abstract class BlueprintLibraryAddress {
     }
 
     public BlueprintLibraryAddressProxy switchAndGetProxy() {
-        proxyMode = true;
+        switchToProxy();
         return proxy;
+    }
+
+    public void switchToProxy() {
+        proxyMode = true;
     }
 
     public static class Constants {

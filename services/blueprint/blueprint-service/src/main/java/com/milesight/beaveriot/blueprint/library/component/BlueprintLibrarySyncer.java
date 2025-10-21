@@ -112,7 +112,7 @@ public class BlueprintLibrarySyncer {
                 if (blueprintLibrary.getCurrentVersion() == null) {
                     if (blueprintLibraryAddressService.isDefaultBlueprintLibraryAddress(blueprintLibraryAddress) && blueprintLibraryAddress.getProxy() != null) {
                         log.warn("Blueprint library {} does not support the current beaver version: falling back to proxy mode", blueprintLibraryAddress.getKey());
-                        blueprintLibraryAddress.setProxyMode(true);
+                        blueprintLibraryAddress.switchToProxy();
                         manifest = blueprintLibraryAddressService.validateAndGetManifest(blueprintLibraryAddress);
                     } else {
                         throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_BEAVER_VERSION_UNSUPPORTED).build();
