@@ -1,6 +1,8 @@
 package com.milesight.beaveriot.entity.repository;
 
+import com.milesight.beaveriot.data.api.SupportTimeSeries;
 import com.milesight.beaveriot.data.jpa.repository.BaseJpaRepository;
+import com.milesight.beaveriot.data.model.TimeSeriesCategory;
 import com.milesight.beaveriot.entity.model.dto.EntityHistoryUnionQuery;
 import com.milesight.beaveriot.entity.po.EntityHistoryPO;
 import com.milesight.beaveriot.permission.aspect.Tenant;

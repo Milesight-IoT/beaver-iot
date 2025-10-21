@@ -231,6 +231,12 @@ blueprint:
     sync_frequency: 3h
     clean_frequency: 1d
 
+timeseries:
+  database: jpa
+  retention:
+    "beaver_iot_telemetry": 365d
+    "beaver_iot_running_log": 30d
+
 logging:
   level:
     com.milesight.beaveriot: ${LOGGING_LEVEL_BEAVER_IOT:info}

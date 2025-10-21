@@ -680,6 +680,10 @@ public class EntityValueService implements EntityValueServiceProvider {
         return result;
     }
 
+    public void deleteEntityHistory(List<Long> entityIdList) {
+        entityHistoryRepository.deleteByEntityIdIn(entityIdList);
+    }
+
     private EntityValueService self() {
         return (EntityValueService) AopContext.currentProxy();
     }
