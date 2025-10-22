@@ -11,6 +11,7 @@ import com.milesight.beaveriot.blueprint.core.chart.node.resource.WorkflowResour
 import com.milesight.beaveriot.blueprint.core.enums.BlueprintErrorCode;
 import com.milesight.beaveriot.blueprint.core.model.BindResource;
 import com.milesight.beaveriot.blueprint.core.utils.BlueprintUtils;
+import com.milesight.beaveriot.permission.enums.DataPermissionType;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.permission.helper.TemporaryPermission;
 import com.milesight.beaveriot.rule.facade.IWorkflowFacade;
@@ -98,6 +99,7 @@ public class WorkflowResourceManager implements ResourceManager<WorkflowResource
             log.info("create workflow: {}", name);
 
             var response = TemporaryPermission.with(OperationPermissionCode.WORKFLOW_ADD)
+                    .with(DataPermissionType.DEVICE, String.valueOf(deviceId))
                     .supply(() -> workflowService.createWorkflow(request, new WorkflowCreateContext(deviceId)));
             flowId = response.getFlowId();
             accessor.setId(flowId);
