@@ -5,7 +5,6 @@ import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.StringUtils;
-import com.milesight.beaveriot.blueprint.library.client.utils.OkHttpUtil;
 import com.milesight.beaveriot.blueprint.library.enums.BlueprintLibraryErrorCode;
 import com.milesight.beaveriot.blueprint.library.model.*;
 import com.milesight.beaveriot.blueprint.library.service.*;
@@ -16,12 +15,9 @@ import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySyncStatus;
 import com.milesight.beaveriot.context.security.TenantContext;
-import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
 import com.milesight.beaveriot.user.facade.ITenantFacade;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.Request;
-import okhttp3.Response;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -46,7 +42,6 @@ public class BlueprintLibrarySyncer {
     private final BlueprintLibraryResourceService blueprintLibraryResourceService;
     private final BlueprintLibraryResourceResolver blueprintLibraryResourceResolver;
     private final ITenantFacade tenantFacade;
-    private final ResourceManagerFacade resourceManagerFacade;
     private final ApplicationProperties applicationProperties;
     private final List<Consumer<BlueprintLibrary>> listeners;
     private static final ExecutorService listenerExecutor = Executors.newCachedThreadPool();
@@ -57,7 +52,7 @@ public class BlueprintLibrarySyncer {
                                   BlueprintLibrarySubscriptionService blueprintLibrarySubscriptionService,
                                   BlueprintLibraryResourceService blueprintLibraryResourceService,
                                   BlueprintLibraryResourceResolver blueprintLibraryResourceResolver,
-                                  ITenantFacade tenantFacade, ResourceManagerFacade resourceManagerFacade,
+                                  ITenantFacade tenantFacade,
                                   ApplicationProperties applicationProperties) {
         this.blueprintLibraryAddressService = blueprintLibraryAddressService;
         this.blueprintLibraryService = blueprintLibraryService;
@@ -66,7 +61,6 @@ public class BlueprintLibrarySyncer {
         this.blueprintLibraryResourceService = blueprintLibraryResourceService;
         this.blueprintLibraryResourceResolver = blueprintLibraryResourceResolver;
         this.tenantFacade = tenantFacade;
-        this.resourceManagerFacade = resourceManagerFacade;
         this.applicationProperties = applicationProperties;
         this.listeners = new CopyOnWriteArrayList<>();
     }
@@ -173,26 +167,8 @@ public class BlueprintLibrarySyncer {
 
         List<BlueprintLibraryResource> blueprintLibraryResources = new ArrayList<>();
         try {
-            if (blueprintLibraryAddress.isProxyMode()) {
-                try (InputStream inputStream = blueprintLibraryAddress.getProxy().getDataInputStream()) {
-                    syncBlueprintLibraryResources(inputStream, blueprintLibrary, manifest, blueprintLibraryAddress, blueprintLibraryResources);
-                }
-            } else {
-                if (blueprintLibrary.getSourceType() == BlueprintLibrarySourceType.UPLOAD) {
-                    try (InputStream inputStream = resourceManagerFacade.getDataByUrl(codeZipUrl)) {
-                        syncBlueprintLibraryResources(inputStream, blueprintLibrary, manifest, blueprintLibraryAddress, blueprintLibraryResources);
-                    }
-                } else {
-                    Request request = new Request.Builder().url(codeZipUrl).build();
-                    try (Response response = OkHttpUtil.getClient().newCall(request).execute();
-                         InputStream inputStream = response.body() != null ? response.body().byteStream() : null) {
-                        if (!response.isSuccessful()) {
-                            throw ServiceException.with(BlueprintLibraryErrorCode.BLUEPRINT_LIBRARY_RESOURCES_FETCH_FAILED).build();
-                        }
-
-                        syncBlueprintLibraryResources(inputStream, blueprintLibrary, manifest, blueprintLibraryAddress, blueprintLibraryResources);
-                    }
-                }
+            try (InputStream inputStream = blueprintLibraryAddress.getDataInputStream()) {
+                syncBlueprintLibraryResources(inputStream, blueprintLibrary, manifest, blueprintLibraryAddress, blueprintLibraryResources);
             }
 
             notifyListeners(blueprintLibrary);
