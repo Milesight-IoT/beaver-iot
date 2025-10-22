@@ -23,7 +23,7 @@ import com.milesight.beaveriot.device.dto.DeviceResponseEntityData;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.device.facade.IDeviceResponseFacade;
 import com.milesight.beaveriot.device.location.service.DeviceLocationService;
-import com.milesight.beaveriot.device.model.DeviceLocation;
+import com.milesight.beaveriot.context.integration.model.DeviceLocation;
 import com.milesight.beaveriot.device.model.request.*;
 import com.milesight.beaveriot.device.model.response.DeviceDetailResponse;
 import com.milesight.beaveriot.device.po.DeviceGroupMappingPO;

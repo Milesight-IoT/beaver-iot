@@ -1,6 +1,6 @@
 package com.milesight.beaveriot.device.dto;
 
-import com.milesight.beaveriot.device.model.DeviceLocation;
+import com.milesight.beaveriot.context.integration.model.DeviceLocation;
 import lombok.*;
 
 import java.util.List;

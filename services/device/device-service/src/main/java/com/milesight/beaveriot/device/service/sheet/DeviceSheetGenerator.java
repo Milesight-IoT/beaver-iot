@@ -10,9 +10,6 @@ import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.usermodel.*;
 import org.springframework.util.StringUtils;
 
-import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
-import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -156,7 +153,7 @@ public class DeviceSheetGenerator {
         cell.setCellStyle(generateDeviceHeaderStyle(column));
         this.resolveInputConstraint(columnIndex, column);
         getDeviceSheet().autoSizeColumn(columnIndex);
-        getDeviceSheet().setColumnWidth(columnIndex, getDeviceSheet().getColumnWidth(columnIndex) +  + DeviceSheetConstants.ADDITIONAL_COLUMN_WIDTH);
+        getDeviceSheet().setColumnWidth(columnIndex, getDeviceSheet().getColumnWidth(columnIndex) + DeviceSheetConstants.ADDITIONAL_COLUMN_WIDTH);
 
         // add column meta data
         this.addColumnMeta(columnIndex, column);
@@ -299,7 +296,7 @@ public class DeviceSheetGenerator {
     }
 
     private void resolveInputConstraint(int columnIndex, DeviceSheetColumn column) {
-        DataValidationConstraint constraint = null;
+        DataValidationConstraint constraint;
         switch (column.getType()) {
             case DeviceSheetColumn.COLUMN_TYPE_TEXT -> constraint = createTextColumnConstraint(columnIndex, column);
             case DeviceSheetColumn.COLUMN_TYPE_BOOLEAN -> constraint = createBooleanColumnConstraint();

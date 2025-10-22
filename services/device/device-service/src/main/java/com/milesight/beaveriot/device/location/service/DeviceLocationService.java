@@ -3,7 +3,7 @@ package com.milesight.beaveriot.device.location.service;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
-import com.milesight.beaveriot.device.model.DeviceLocation;
+import com.milesight.beaveriot.context.integration.model.DeviceLocation;
 import com.milesight.beaveriot.device.location.support.DeviceLocationSupport;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -44,7 +44,7 @@ public class DeviceLocationService {
     }
 
     public void setLocation(Device device, DeviceLocation location) {
-        location.validate();
+        DeviceLocationSupport.validate(location);
 
         String deviceKey = device.getKey();
         String addressKey = DeviceLocationSupport.getAddressEntityKey(deviceKey);

@@ -1,4 +1,4 @@
-package com.milesight.beaveriot.device.enums;
+package com.milesight.beaveriot.device.location.enums;
 
 import com.milesight.beaveriot.base.exception.ErrorCodeSpec;
 import org.springframework.http.HttpStatus;
