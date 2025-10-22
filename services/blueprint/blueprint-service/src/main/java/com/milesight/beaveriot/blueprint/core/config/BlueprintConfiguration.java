@@ -43,8 +43,8 @@ public class BlueprintConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public BlueprintIntrinsicsYamlConstructor blueprintIntrinsicsYamlConstructor(LoaderOptions loaderOptions, List<BlueprintRuntimeFunctionName> functionParsers) {
-        return new BlueprintIntrinsicsYamlConstructor(loaderOptions, functionParsers);
+    public SnakeYamlFactory blueprintIntrinsicsYamlConstructor(LoaderOptions loaderOptions, List<BlueprintRuntimeFunctionName> functionParsers) {
+        return new BlueprintIntrinsicsYamlFactory(loaderOptions, functionParsers);
     }
 
 }
