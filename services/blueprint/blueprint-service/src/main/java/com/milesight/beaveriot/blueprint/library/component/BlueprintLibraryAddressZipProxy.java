@@ -2,8 +2,7 @@ package com.milesight.beaveriot.blueprint.library.component;
 
 import com.milesight.beaveriot.blueprint.library.component.interfaces.BlueprintLibraryAddressProxy;
 import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryAddress;
-import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryAddressService;
-import com.milesight.beaveriot.context.support.SpringContext;
+import com.milesight.beaveriot.blueprint.library.model.support.BlueprintLibraryAddressSupport;
 import lombok.Data;
 
 import java.io.*;
@@ -14,7 +13,6 @@ import java.io.*;
  **/
 @Data
 public class BlueprintLibraryAddressZipProxy implements BlueprintLibraryAddressProxy {
-    private BlueprintLibraryAddressService blueprintLibraryAddressService = SpringContext.getBean(BlueprintLibraryAddressService.class);
     private String zipFilePath;
 
     public static BlueprintLibraryAddressZipProxy of(String zipFilePath) {
@@ -27,7 +25,7 @@ public class BlueprintLibraryAddressZipProxy implements BlueprintLibraryAddressP
 
     @Override
     public String getManifestContent() {
-        return blueprintLibraryAddressService.getManifestContentFromZip(zipFilePath, BlueprintLibraryAddress.Constants.PATH_MANIFEST, this::getDataInputStreamByZipFilePath);
+        return BlueprintLibraryAddressSupport.getManifestContentFromZip(zipFilePath, BlueprintLibraryAddress.Constants.PATH_MANIFEST, this::getDataInputStreamByZipFilePath);
     }
 
     @Override

@@ -697,7 +697,11 @@ public class DeviceTemplateParser implements IDeviceTemplateParserFacade {
     public DeviceTemplate getLatestDeviceTemplate(String vendor, String model) {
         BlueprintLibrary blueprintLibrary = blueprintLibraryFacade.getCurrentBlueprintLibrary();
         if (blueprintLibrary == null) {
-            return null;
+            throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND).build();
+        }
+
+        if (blueprintLibrary.getCurrentVersion() == null) {
+            throw ServiceException.with(ServerErrorCode.DEVICE_TEMPLATE_NOT_FOUND).build();
         }
 
         DeviceTemplate deviceTemplate = deviceTemplateService.findByBlueprintLibrary(blueprintLibrary.getId(), blueprintLibrary.getCurrentVersion(), vendor, model);
