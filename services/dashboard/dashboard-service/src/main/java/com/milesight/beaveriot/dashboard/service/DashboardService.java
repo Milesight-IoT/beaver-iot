@@ -193,20 +193,24 @@ public class DashboardService {
 
     @Transactional(rollbackFor = Exception.class)
     public void setHomeDashboard(Long dashboardId) {
-        DashboardHomePO dashboardHomePO = dashboardHomeRepository.findOneWithDataPermission(filterable -> filterable.eq(DashboardHomePO.Fields.userId, SecurityUserContext.getUserId())).orElse(null);
-        if (dashboardHomePO != null) {
-            dashboardHomeRepository.delete(dashboardHomePO);
+        DashboardPO dashboardPO = getDashboardById(dashboardId);
+
+        List<DashboardHomePO> dashboardHomePOList = dashboardHomeRepository.findAll(filterable -> filterable.eq(DashboardHomePO.Fields.userId, SecurityUserContext.getUserId()));
+        if (!dashboardHomePOList.isEmpty()) {
+            dashboardHomeRepository.deleteAll(dashboardHomePOList);
         }
+
         DashboardHomePO newDashboardHomePO = new DashboardHomePO();
         newDashboardHomePO.setId(SnowflakeUtil.nextId());
         newDashboardHomePO.setUserId(SecurityUserContext.getUserId());
-        newDashboardHomePO.setDashboardId(dashboardId);
+        newDashboardHomePO.setDashboardId(dashboardPO.getId());
         dashboardHomeRepository.save(newDashboardHomePO);
     }
 
     public void cancelSetHomeDashboard(Long dashboardId) {
-        DashboardHomePO dashboardHomePO = dashboardHomeRepository.findOneWithDataPermission(filterable -> filterable.eq(DashboardHomePO.Fields.userId, SecurityUserContext.getUserId()).eq(DashboardHomePO.Fields.dashboardId, dashboardId)).orElseThrow(() -> ServiceException.with(ErrorCode.DATA_NO_FOUND).detailMessage("dashboard not exist").build());
-        dashboardHomeRepository.delete(dashboardHomePO);
+        dashboardHomeRepository
+                .findOne(filterable -> filterable.eq(DashboardHomePO.Fields.userId, SecurityUserContext.getUserId()).eq(DashboardHomePO.Fields.dashboardId, dashboardId))
+                .ifPresent((dashboardHomePO -> dashboardHomeRepository.delete(dashboardHomePO)));
     }
 
     public List<DashboardCanvasItemResponse> getDashboardCanvasList(Long dashboardId) {

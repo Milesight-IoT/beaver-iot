@@ -18,6 +18,7 @@ import com.milesight.beaveriot.canvas.facade.ICanvasFacade;
 import com.milesight.beaveriot.canvas.model.dto.CanvasWidgetDTO;
 import com.milesight.beaveriot.canvas.model.request.CanvasUpdateRequest;
 import com.milesight.beaveriot.device.service.DeviceCanvasService;
+import com.milesight.beaveriot.permission.enums.DataPermissionType;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.permission.helper.TemporaryPermission;
 import lombok.extern.slf4j.Slf4j;
@@ -86,6 +87,7 @@ public class DeviceCanvasResourceManager implements ResourceManager<DeviceCanvas
             }
 
             var deviceCanvasResponse = TemporaryPermission.with(OperationPermissionCode.DEVICE_VIEW, OperationPermissionCode.DEVICE_EDIT)
+                    .with(DataPermissionType.DEVICE, String.valueOf(deviceId))
                     .supply(() -> deviceCanvasService.getOrCreateDeviceCanvas(deviceId));
             canvasId = deviceCanvasResponse.getCanvasId();
 
@@ -104,6 +106,7 @@ public class DeviceCanvasResourceManager implements ResourceManager<DeviceCanvas
                     .build();
             var canvasIdNumber = Longs.tryParse(canvasId);
             TemporaryPermission.with(OperationPermissionCode.DEVICE_VIEW, OperationPermissionCode.DEVICE_EDIT)
+                    .with(DataPermissionType.DEVICE, String.valueOf(deviceId))
                     .run(() -> canvasFacade.updateCanvas(canvasIdNumber, canvasUpdateRequest));
             accessor.setId(canvasId);
         }
