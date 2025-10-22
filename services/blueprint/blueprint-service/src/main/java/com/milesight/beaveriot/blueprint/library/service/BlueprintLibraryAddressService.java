@@ -21,6 +21,7 @@ import org.springframework.util.CollectionUtils;
 import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 /**
  * author: Luxb
@@ -49,7 +50,7 @@ public class BlueprintLibraryAddressService {
         List<BlueprintLibrarySubscription> allTenantsActiveBlueprintLibrarySubscriptions = blueprintLibrarySubscriptionService.findAllByActiveTrueIgnoreTenant();
         List<Long> activeBlueprintLibraryIds = getActiveBlueprintLibraryIds(allTenantsActiveBlueprintLibrarySubscriptions);
         List<BlueprintLibraryAddress> allTenantsActiveBlueprintLibraryAddresses = convertLibraryIdsToAddresses(activeBlueprintLibraryIds);
-        BlueprintLibraryAddress defaultBlueprintLibraryAddress = blueprintLibraryConfig.getDefaultBlueprintLibraryAddress();
+        BlueprintLibraryAddress defaultBlueprintLibraryAddress = getDefaultBlueprintLibraryAddress();
         List<BlueprintLibraryAddress> allBlueprintLibraryAddresses = new ArrayList<>();
         allBlueprintLibraryAddresses.add(defaultBlueprintLibraryAddress);
         if (!CollectionUtils.isEmpty(allTenantsActiveBlueprintLibraryAddresses)) {
@@ -138,11 +139,23 @@ public class BlueprintLibraryAddressService {
         blueprintLibraryAddress.validate();
 
         String manifestContent;
-        if (blueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.UPLOAD) {
-            manifestContent = getManifestContentFromZip(blueprintLibraryAddress.getCodeZipUrl(), blueprintLibraryAddress.getManifestFilePath());
+        if (blueprintLibraryAddress.isProxyMode() && blueprintLibraryAddress.getProxy() != null) {
+            manifestContent = blueprintLibraryAddress.getProxy().getManifestContent();
         } else {
-            String manifestUrl = blueprintLibraryAddress.getRawManifestUrl();
-            manifestContent = getManifestContentFromUrl(manifestUrl);
+            if (blueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.UPLOAD) {
+                manifestContent = getManifestContentFromResourceZip(blueprintLibraryAddress.getCodeZipUrl(), blueprintLibraryAddress.getManifestFilePath());
+            } else {
+                String manifestUrl = blueprintLibraryAddress.getRawManifestUrl();
+                try {
+                    manifestContent = getManifestContentFromUrl(manifestUrl);
+                } catch (Exception e) {
+                    if (blueprintLibraryAddress.getProxy() == null) {
+                        throw e;
+                    }
+                    log.warn("Failed to access blueprint library {}: falling back to proxy mode", blueprintLibraryAddress.getKey());
+                    manifestContent = blueprintLibraryAddress.switchAndGetProxy().getManifestContent();
+                }
+            }
         }
 
         if (manifestContent == null) {
@@ -170,8 +183,12 @@ public class BlueprintLibraryAddressService {
         return response.getData();
     }
 
-    private String getManifestContentFromZip(String zipUrl, String manifestFilePath) {
-        try (InputStream inputStream = resourceManagerFacade.getDataByUrl(zipUrl)) {
+    private String getManifestContentFromResourceZip(String zipUrl, String manifestFilePath) {
+        return getManifestContentFromZip(zipUrl, manifestFilePath, resourceManagerFacade::getDataByUrl);
+    }
+
+    public String getManifestContentFromZip(String zipUrl, String manifestFilePath, Function<String, InputStream> inputStreamFetcher) {
+        try (InputStream inputStream = inputStreamFetcher.apply(zipUrl)) {
             AtomicReference<String> manifestContent = new AtomicReference<>();
             boolean isSuccess = ZipInputStreamScanner.scan(inputStream, (relativePath, content) -> {
                 if (relativePath.equals(manifestFilePath)) {
