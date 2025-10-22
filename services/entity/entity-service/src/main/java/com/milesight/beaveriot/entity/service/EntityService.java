@@ -246,19 +246,19 @@ public class EntityService implements EntityServiceProvider {
                 .toList();
         Map<String, DeviceNameDTO> deviceIdToDetails = deviceIdToDetails(deviceIds);
 
-        Map<String, List<Entity>> parentIdentifierToChildren = entityPOList.stream()
+        Map<String, List<Entity>> parentKeyToChildren = entityPOList.stream()
                 .filter(entityPO -> StringUtils.hasText(entityPO.getParent()))
                 .map(entityPO -> convertPOToEntity(entityPO, deviceIdToDetails))
-                .collect(Collectors.groupingBy(Entity::getParentIdentifier));
+                .collect(Collectors.groupingBy(Entity::getParentKey));
 
         List<Entity> parentEntities = entityPOList.stream()
                 .filter(entityPO -> !StringUtils.hasText(entityPO.getParent()))
                 .map(entityPO -> {
                     Entity entity = convertPOToEntity(entityPO, deviceIdToDetails);
-                    List<Entity> children = parentIdentifierToChildren.get(entity.getIdentifier());
+                    List<Entity> children = parentKeyToChildren.get(entity.getKey());
                     if (children != null) {
                         entity.setChildren(children);
-                        parentIdentifierToChildren.remove(entity.getIdentifier());
+                        parentKeyToChildren.remove(entity.getKey());
                     }
                     return entity;
                 })
@@ -266,7 +266,7 @@ public class EntityService implements EntityServiceProvider {
 
         return Stream.concat(parentEntities.stream(),
                         // include all children that have no parent
-                        parentIdentifierToChildren.values().stream().flatMap(List::stream))
+                        parentKeyToChildren.values().stream().flatMap(List::stream))
                 .toList();
     }
 
