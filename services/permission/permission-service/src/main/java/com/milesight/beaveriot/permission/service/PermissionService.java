@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -97,6 +98,16 @@ public class PermissionService implements IPermissionFacade {
 
         if (permissionDTO == null) {
             throw ServiceException.with(ErrorCode.PARAMETER_SYNTAX_ERROR).detailMessage("unknown data permission type").build();
+        }
+
+        var tempIds = TemporaryPermission.getResourceIds(type);
+        if (!tempIds.isEmpty()) {
+            var newIds = new ArrayList<>(tempIds);
+            var ids = permissionDTO.getIds();
+            if (ids != null && !ids.isEmpty()) {
+                newIds.addAll(ids);
+            }
+            permissionDTO.setIds(newIds);
         }
 
         return permissionDTO;
