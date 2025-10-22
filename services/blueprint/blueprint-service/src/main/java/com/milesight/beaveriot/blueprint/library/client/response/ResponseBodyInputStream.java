@@ -30,7 +30,9 @@ public class ResponseBodyInputStream extends InputStream {
                 inputStream.close();
             }
         } finally {
-            response.close();
+            if (response != null) {
+                response.close();
+            }
         }
     }
 }
