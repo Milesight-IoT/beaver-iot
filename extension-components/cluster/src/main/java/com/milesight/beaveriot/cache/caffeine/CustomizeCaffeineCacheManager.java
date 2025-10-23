@@ -4,8 +4,9 @@ import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.milesight.beaveriot.cache.autoconfigure.CustomizeCacheProperties;
-import lombok.extern.slf4j.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
+import org.springframework.cache.transaction.TransactionAwareCacheDecorator;
 import org.springframework.lang.Nullable;
 
 import java.lang.reflect.Field;
@@ -78,6 +79,11 @@ public class CustomizeCaffeineCacheManager extends CaffeineCacheManager {
             cache = this.cacheMap.computeIfAbsent(name, this::createCaffeineCache);
         }
         return cache;
+    }
+
+    @Override
+    protected org.springframework.cache.Cache createCaffeineCache(String name) {
+        return new TransactionAwareCacheDecorator(super.createCaffeineCache(name));
     }
 
 }
