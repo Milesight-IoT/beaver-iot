@@ -52,19 +52,9 @@ public class DeviceLocationService {
         String latitudeKey = DeviceLocationSupport.getLatitudeEntityKey(deviceKey);
 
         ExchangePayload exchangePayload = new ExchangePayload();
-        if (location.getAddress() != null) {
-            exchangePayload.put(addressKey, location.getAddress());
-        }
-        if (location.getLongitude() != null) {
-            exchangePayload.put(longitudeKey, location.getLongitude());
-        }
-        if (location.getLatitude() != null) {
-            exchangePayload.put(latitudeKey, location.getLatitude());
-        }
-
-        if (exchangePayload.isEmpty()) {
-            return;
-        }
+        exchangePayload.put(addressKey, location.getAddress());
+        exchangePayload.put(longitudeKey, location.getLongitude());
+        exchangePayload.put(latitudeKey, location.getLatitude());
 
         exchangePayload.validate();
         entityValueServiceProvider.saveValues(exchangePayload);
