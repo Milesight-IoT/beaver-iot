@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.entity.rule;
 
+import com.milesight.beaveriot.base.utils.TransactionUtils;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.model.event.ExchangeEvent;
 import com.milesight.beaveriot.eventbus.EventBus;
@@ -23,6 +24,7 @@ public class GenericEventSubscribeAction implements ProcessorNode<ExchangePayloa
     @Autowired
     private EventBus eventBus;
 
+    @SuppressWarnings("unchecked")
     @Override
     public void processor(ExchangePayload exchange) {
 
@@ -30,6 +32,6 @@ public class GenericEventSubscribeAction implements ProcessorNode<ExchangePayloa
 
         String eventType = (String) exchange.getContext(EXCHANGE_EVENT_TYPE);
 
-        eventBus.publish(ExchangeEvent.of(eventType, exchange));
+        TransactionUtils.executeAfterCommit(() -> eventBus.publish(ExchangeEvent.of(eventType, exchange)));
     }
 }
