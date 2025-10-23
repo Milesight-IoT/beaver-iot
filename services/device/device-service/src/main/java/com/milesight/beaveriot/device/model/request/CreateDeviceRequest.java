@@ -2,7 +2,7 @@ package com.milesight.beaveriot.device.model.request;
 
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.device.constants.DeviceDataFieldConstants;
-import com.milesight.beaveriot.context.integration.model.DeviceLocation;
+import com.milesight.beaveriot.device.location.model.DeviceLocationSetting;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -21,13 +21,13 @@ public class CreateDeviceRequest {
     @Size(max = DeviceDataFieldConstants.DEVICE_GROUP_NAME_MAX_LENGTH)
     private String groupName;
 
-    private DeviceLocation location;
+    private DeviceLocationSetting location;
 
     private ExchangePayload paramEntities;
 
-    public DeviceLocation fetchLocation() {
+    public DeviceLocationSetting fetchLocation() {
         if (location == null) {
-            location = new DeviceLocation();
+            location = new DeviceLocationSetting();
         }
         return location;
     }

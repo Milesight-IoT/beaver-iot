@@ -1,7 +1,6 @@
 package com.milesight.beaveriot.device.service.sheet;
 
 import com.milesight.beaveriot.base.exception.ServiceException;
-import com.milesight.beaveriot.base.utils.ValidationUtils;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.device.enums.DeviceErrorCode;
@@ -194,23 +193,17 @@ public class DeviceSheetParser {
                         continue;
                     }
                     case DeviceSheetConstants.DEVICE_LOCATION_LONGITUDE_COL_KEY -> {
-                        String strValue = getCellValue(cell);
-                        if (StringUtils.hasText(strValue)) {
-                            if (!ValidationUtils.isNumber(strValue)) {
-                                throw ServiceException.with(DeviceErrorCode.DEVICE_LOCATION_LONGITUDE_TYPE_ERROR).build();
-                            }
-                            createDeviceRequest.fetchLocation().setLongitude(Double.parseDouble(strValue));
+                        String longitude = getCellValue(cell);
+                        if (StringUtils.hasText(longitude)) {
+                            createDeviceRequest.fetchLocation().setLongitude(longitude);
                             rowHasValue = true;
                         }
                         continue;
                     }
                     case DeviceSheetConstants.DEVICE_LOCATION_LATITUDE_COL_KEY -> {
-                        String strValue = getCellValue(cell);
-                        if (StringUtils.hasText(strValue)) {
-                            if (!ValidationUtils.isNumber(strValue)) {
-                                throw ServiceException.with(DeviceErrorCode.DEVICE_LOCATION_LATITUDE_TYPE_ERROR).build();
-                            }
-                            createDeviceRequest.fetchLocation().setLatitude(Double.parseDouble(strValue));
+                        String latitude = getCellValue(cell);
+                        if (StringUtils.hasText(latitude)) {
+                            createDeviceRequest.fetchLocation().setLatitude(latitude);
                             rowHasValue = true;
                         }
                         continue;

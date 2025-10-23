@@ -7,16 +7,17 @@ import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.DeviceStatusServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
+import com.milesight.beaveriot.context.integration.model.DeviceLocation;
 import com.milesight.beaveriot.context.integration.model.event.DeviceEvent;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.device.constants.DeviceDataFieldConstants;
-import com.milesight.beaveriot.context.integration.model.DeviceLocation;
+import com.milesight.beaveriot.device.location.model.DeviceLocationSetting;
 import com.milesight.beaveriot.device.location.service.DeviceLocationService;
 import com.milesight.beaveriot.device.po.DevicePO;
 import com.milesight.beaveriot.device.repository.DeviceRepository;
-import com.milesight.beaveriot.device.support.DeviceConverter;
 import com.milesight.beaveriot.device.support.CommonDeviceAssembler;
+import com.milesight.beaveriot.device.support.DeviceConverter;
 import com.milesight.beaveriot.eventbus.EventBus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -146,20 +147,11 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
             deviceGroupService.moveDevicesToGroupId(deviceGroupId, List.of(devicePO.getId()));
         }
 
-        DeviceLocation location = new DeviceLocation();
-        String address = (String) TenantContext.tryGetTenantParam(DeviceService.TENANT_PARAM_DEVICE_ADDRESS).orElse(null);
-        if (address != null) {
-            location.setAddress(address);
+        DeviceLocationSetting locationSetting = (DeviceLocationSetting) TenantContext.tryGetTenantParam(DeviceService.TENANT_PARAM_DEVICE_LOCATION).orElse(null);
+        if (locationSetting != null) {
+            DeviceLocation location = locationSetting.buildLocation();
+            deviceLocationService.setLocation(device, location);
         }
-        Double longitude = (Double) TenantContext.tryGetTenantParam(DeviceService.TENANT_PARAM_DEVICE_LONGITUDE).orElse(null);
-        if (longitude != null) {
-            location.setLongitude(longitude);
-        }
-        Double latitude = (Double) TenantContext.tryGetTenantParam(DeviceService.TENANT_PARAM_DEVICE_LATITUDE).orElse(null);
-        if (latitude != null) {
-            location.setLatitude(latitude);
-        }
-        deviceLocationService.setLocation(device, location);
     }
 
     @Override

@@ -22,8 +22,8 @@ import com.milesight.beaveriot.device.dto.DeviceResponseData;
 import com.milesight.beaveriot.device.dto.DeviceResponseEntityData;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.device.facade.IDeviceResponseFacade;
+import com.milesight.beaveriot.device.location.model.DeviceLocationSetting;
 import com.milesight.beaveriot.device.location.service.DeviceLocationService;
-import com.milesight.beaveriot.context.integration.model.DeviceLocation;
 import com.milesight.beaveriot.device.model.request.*;
 import com.milesight.beaveriot.device.model.response.DeviceDetailResponse;
 import com.milesight.beaveriot.device.po.DeviceGroupMappingPO;
@@ -115,9 +115,7 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
     private DeviceService self;
 
     public static final String TENANT_PARAM_DEVICE_GROUP_ID = "DEVICE_GROUP_ID";
-    public static final String TENANT_PARAM_DEVICE_LONGITUDE = "DEVICE_LONGITUDE";
-    public static final String TENANT_PARAM_DEVICE_LATITUDE = "DEVICE_LATITUDE";
-    public static final String TENANT_PARAM_DEVICE_ADDRESS = "DEVICE_ADDRESS";
+    public static final String TENANT_PARAM_DEVICE_LOCATION = "DEVICE_LOCATION";
     private static final Set<String> entityTemplateKeys = ConcurrentHashMap.newKeySet();
 
     @IntegrationPermission
@@ -167,12 +165,10 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
 
         TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_ID, deviceGroupId);
 
-        DeviceLocation location = createDeviceRequest.getLocation();
+        DeviceLocationSetting location = createDeviceRequest.getLocation();
         boolean hasLocation = location != null;
         if (hasLocation) {
-            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LONGITUDE, location.getLongitude());
-            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LATITUDE, location.getLatitude());
-            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_ADDRESS, location.getAddress());
+            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LOCATION, location);
         }
 
         try {
@@ -184,9 +180,7 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
             }
 
             if (hasLocation) {
-                TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LONGITUDE, null);
-                TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LATITUDE, null);
-                TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_ADDRESS, null);
+                TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LOCATION, null);
             }
         }
     }

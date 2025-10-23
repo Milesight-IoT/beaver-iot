@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.base.error;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
+import com.milesight.beaveriot.base.exception.ErrorCodeSpec;
 import com.milesight.beaveriot.base.exception.MultipleErrorException;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import lombok.Data;
@@ -40,6 +41,10 @@ public class ErrorHolder {
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;
         this.args = args;
+    }
+
+    public static ErrorHolder of(ErrorCodeSpec errorCodeSpec) {
+        return new ErrorHolder(errorCodeSpec.getErrorCode(), errorCodeSpec.getErrorMessage());
     }
 
     public static ErrorHolder of(String errorCode, String errorMessage) {

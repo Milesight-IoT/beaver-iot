@@ -1,6 +1,6 @@
 package com.milesight.beaveriot.device.model.request;
 
-import com.milesight.beaveriot.context.integration.model.DeviceLocation;
+import com.milesight.beaveriot.device.location.model.DeviceLocationSetting;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -10,5 +10,5 @@ import lombok.EqualsAndHashCode;
  **/
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class SetDeviceLocationRequest extends DeviceLocation {
+public class SetDeviceLocationRequest extends DeviceLocationSetting {
 }

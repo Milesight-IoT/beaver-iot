@@ -82,7 +82,7 @@ public class DeviceController {
     public ResponseBody<Void> setDeviceLocation(@PathVariable("deviceId") Long deviceId, @RequestBody SetDeviceLocationRequest request) {
         Device device = deviceService.findById(deviceId);
         if (device != null) {
-            DeviceLocation location = DeviceLocation.of(request.getAddress(), request.getLongitude(), request.getLatitude());
+            DeviceLocation location = request.buildLocation();
             deviceLocationService.setLocation(device, location);
         }
         return ResponseBuilder.success();
