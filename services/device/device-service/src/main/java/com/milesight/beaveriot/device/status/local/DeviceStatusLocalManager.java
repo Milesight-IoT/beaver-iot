@@ -10,7 +10,6 @@ import com.milesight.beaveriot.context.integration.model.DeviceStatusConfig;
 import com.milesight.beaveriot.device.status.BaseDeviceStatusManager;
 import com.milesight.beaveriot.device.status.DeviceStatusManager;
 import org.springframework.aop.framework.AopContext;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.time.Duration;
@@ -102,7 +101,6 @@ public class DeviceStatusLocalManager extends BaseDeviceStatusManager implements
         return (DeviceStatusLocalManager) AopContext.currentProxy();
     }
 
-    @Transactional
     @DistributedLock(name = "device:status:handle:#{#p0}", waitForLock = "5s", throwOnLockFailure = false)
     public void handleStatus(Long deviceId,
                              AvailableDeviceData availableDeviceData,

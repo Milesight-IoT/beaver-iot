@@ -161,7 +161,7 @@ public abstract class BaseDeviceStatusManager {
         }
 
         ExchangePayload payload = ExchangePayload.create(statusEntityKey, deviceStatus);
-        entityValueServiceProvider.saveValuesAndPublishAsync(payload);
+        entityValueServiceProvider.saveValuesAndPublishSync(payload);
 
         if (deviceStatus.equals(DeviceStatus.ONLINE.name())) {
             deviceOnlineCallback(device, statusChangedListener);
