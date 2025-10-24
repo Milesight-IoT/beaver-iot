@@ -37,13 +37,13 @@ public class CustomizedPythonExpression extends ExpressionSupport {
             b.putMember("message", exchange.getMessage());
             b.putMember("headers", exchange.getMessage().getHeaders());
             b.putMember("properties", exchange.getAllProperties());
-            b.putMember("body", exchange.getMessage().getBody());
+            b.putMember("body", LanguageHelper.convertToProxy(exchange.getMessage().getBody()));
 
             // Add input variables to the context
             Object inputVariables = exchange.getIn().getHeader(ExpressionEvaluator.HEADER_INPUT_VARIABLES);
             if (!ObjectUtils.isEmpty(inputVariables) && inputVariables instanceof Map) {
                 Map<String, Object> inputVariablesMap = (Map<String, Object>) inputVariables;
-                inputVariablesMap.forEach(b::putMember);
+                inputVariablesMap.forEach((k, v) -> b.putMember(k, LanguageHelper.convertToProxy(v)));
                 exchange.getIn().removeHeader(ExpressionEvaluator.HEADER_INPUT_VARIABLES);
             }
 
