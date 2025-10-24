@@ -4,7 +4,13 @@ import com.milesight.beaveriot.rule.support.JsonHelper;
 import org.apache.camel.Exchange;
 import org.graalvm.polyglot.*;
 import org.graalvm.polyglot.io.IOAccess;
+import org.graalvm.polyglot.proxy.*;
 
+import java.lang.reflect.Array;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,13 +45,7 @@ public class LanguageHelper {
         Engine engine = getEngine(lang);
         Context.Builder contextBuilder = Context.newBuilder(lang)
                 .engine(engine)
-                .allowHostAccess(HostAccess.newBuilder()
-                        .allowListAccess(true)
-                        .allowArrayAccess(true)
-                        .allowMapAccess(true)
-                        .allowPublicAccess(true)
-                        .allowAccessInheritance(true)
-                        .build())
+                .allowHostAccess(HostAccess.NONE)
                 .allowIO(IOAccess.NONE)
                 .allowPolyglotAccess(PolyglotAccess.NONE)
                 .allowNativeAccess(false)
@@ -75,5 +75,50 @@ public class LanguageHelper {
                 return exchange.getContext().getTypeConverter().convertTo(type, exchange, out);
             }
         }
+    }
+
+    public static Object convertToProxy(Object javaObj) {
+        if (javaObj == null) {
+            return null;
+        }
+
+        if (javaObj instanceof Map<?, ?> mapObj) {
+            Map<Object, Object> result = new HashMap<>();
+            for (Map.Entry<?, ?> entry : mapObj.entrySet()) {
+                String key = String.valueOf(entry.getKey());
+                result.put(key, convertToProxy(entry.getValue()));
+            }
+
+            return ProxyHashMap.from(result);
+        }
+
+        if (javaObj.getClass().isArray()) {
+            int length = Array.getLength(javaObj);
+            Object[] arr = new Object[length];
+            for (int i = 0; i < length; i++) {
+                arr[i] = convertToProxy(Array.get(javaObj, i));
+            }
+
+            return ProxyArray.fromArray(arr);
+        }
+
+        if (javaObj instanceof Iterable<?> listObj) {
+            List<Object> result = new ArrayList<>();
+            for (Object item : listObj) {
+                result.add(convertToProxy(item));
+            }
+
+            return ProxyArray.fromList(result);
+        }
+
+        if (javaObj instanceof LocalTime time) {
+            return ProxyTime.from(time);
+        }
+
+        if (javaObj instanceof LocalDate date) {
+            return ProxyDate.from(date);
+        }
+
+        return javaObj;
     }
 }
