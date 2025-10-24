@@ -43,6 +43,7 @@
         <deploy.skip>false</deploy.skip>
 
         <spring-boot.version>3.3.4</spring-boot.version>
+        <spring.version>6.1.13</spring.version>
         <camel.version>4.4.3</camel.version>
         <postgresql.version>42.7.3</postgresql.version>
         <disruptor.version>3.4.4</disruptor.version>
@@ -210,6 +211,11 @@
                 <groupId>com.alibaba</groupId>
                 <artifactId>transmittable-thread-local</artifactId>
                 <version>${transmittable-thread-local.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-tx</artifactId>
+                <version>${spring.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.redisson</groupId>

@@ -1,8 +1,9 @@
 package org.springframework.cache.interceptor;
 
 import com.milesight.beaveriot.cache.BatchableCache;
-import lombok.*;
-import lombok.extern.slf4j.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.Signature;
 import org.aspectj.lang.annotation.Around;
@@ -207,7 +208,7 @@ public class BatchCacheAspect extends AbstractCacheInvoker implements BeanFactor
             } else {
                 for (Object key : evictKeyArray) {
                     if (!ObjectUtils.isEmpty(key)) {
-                        doEvict(cache, key, true);
+                        doEvict(cache, key, false);
                     }
                 }
             }

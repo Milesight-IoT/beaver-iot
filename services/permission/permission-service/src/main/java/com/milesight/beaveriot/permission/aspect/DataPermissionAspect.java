@@ -2,6 +2,7 @@ package com.milesight.beaveriot.permission.aspect;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.utils.TransactionUtils;
 import com.milesight.beaveriot.permission.context.DataAspectContext;
 import com.milesight.beaveriot.permission.dto.PermissionDTO;
 import com.milesight.beaveriot.permission.enums.DataPermissionType;
@@ -79,9 +80,9 @@ public class DataPermissionAspect extends JpaRepositoryAspect {
                 .build());
 
         try {
-            return joinPoint.proceed();
+            return proceed(joinPoint);
         } finally {
-            RepositoryAspectUtils.doAfterTransactionCompletion(DataAspectContext::clearDataPermissionContext);
+            TransactionUtils.executeAfterCompletion(DataAspectContext::clearDataPermissionContext);
         }
     }
 

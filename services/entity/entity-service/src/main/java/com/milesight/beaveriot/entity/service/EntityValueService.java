@@ -36,6 +36,7 @@ import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
@@ -98,6 +99,7 @@ public class EntityValueService implements EntityValueServiceProvider {
     }
 
     @Override
+    @Transactional
     public void saveValues(ExchangePayload exchange, long timestamp) {
         // Save event entities， only save history
         Map<String, Object> eventEntities = exchange.getPayloadsByEntityType(EntityType.EVENT);
