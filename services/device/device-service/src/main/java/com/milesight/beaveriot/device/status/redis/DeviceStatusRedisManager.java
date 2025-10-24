@@ -16,7 +16,6 @@ import org.redisson.api.RDelayedQueue;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.springframework.aop.framework.AopContext;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
@@ -121,7 +120,6 @@ public class DeviceStatusRedisManager extends BaseDeviceStatusManager implements
         return (DeviceStatusRedisManager) AopContext.currentProxy();
     }
 
-    @Transactional
     @DistributedLock(name = "device:status:handle:#{#p0}", waitForLock = "5s", throwOnLockFailure = false)
     public void handleStatus(Long deviceId,
                              AvailableDeviceData availableDeviceData,

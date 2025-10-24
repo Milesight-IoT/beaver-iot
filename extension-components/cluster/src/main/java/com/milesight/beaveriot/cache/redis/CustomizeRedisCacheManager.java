@@ -55,7 +55,7 @@ public class CustomizeRedisCacheManager extends RedisCacheManager {
         }
 
         private boolean allowRuntimeCacheCreation = true;
-        private boolean enableTransactions;
+        private boolean enableTransactions = true;
 
         private CacheStatisticsCollector statisticsCollector = CacheStatisticsCollector.none();
 
@@ -111,8 +111,8 @@ public class CustomizeRedisCacheManager extends RedisCacheManager {
 
             return this;
         }
-        public CustomizeRedisCacheManagerBuilder transactionAware() {
-            this.enableTransactions = true;
+        public CustomizeRedisCacheManagerBuilder transactionAware(boolean enabled) {
+            this.enableTransactions = enabled;
             return this;
         }
 

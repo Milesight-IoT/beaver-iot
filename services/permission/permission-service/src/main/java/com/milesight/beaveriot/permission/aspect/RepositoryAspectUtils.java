@@ -2,11 +2,11 @@ package com.milesight.beaveriot.permission.aspect;
 
 import com.milesight.beaveriot.base.utils.TypeUtil;
 import jakarta.persistence.Table;
+import lombok.experimental.UtilityClass;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.data.repository.Repository;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+@UtilityClass
 public class RepositoryAspectUtils {
 
     public static String getTableName(Class<?> repositoryInterface) {
@@ -20,25 +20,6 @@ public class RepositoryAspectUtils {
             }
         }
         return null;
-    }
-
-    public static void doAfterTransactionCompletion(Runnable action) {
-        if (TransactionSynchronizationManager.isActualTransactionActive() &&
-                TransactionSynchronizationManager.isSynchronizationActive()) {
-            // Register a synchronization to run after the transaction completes
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCompletion(int status) {
-                    action.run();
-                }
-            });
-        } else {
-            // If no transaction is active, run immediately
-            action.run();
-        }
-    }
-
-    private RepositoryAspectUtils() {
     }
 
 }

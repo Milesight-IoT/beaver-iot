@@ -2,6 +2,7 @@ package com.milesight.beaveriot.permission.aspect;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.utils.TransactionUtils;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.permission.context.DataAspectContext;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -65,7 +66,7 @@ public class TenantAspect extends JpaRepositoryAspect {
         try {
             return proceed(joinPoint);
         } finally {
-            RepositoryAspectUtils.doAfterTransactionCompletion(DataAspectContext::clearTenantContext);
+            TransactionUtils.executeAfterCompletion(DataAspectContext::clearTenantContext);
         }
     }
 
