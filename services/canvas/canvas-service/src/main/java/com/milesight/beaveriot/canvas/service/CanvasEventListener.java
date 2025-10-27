@@ -45,7 +45,7 @@ public class CanvasEventListener {
     }
 
     @EventSubscribe(payloadKeyExpression = "*", eventType = DashboardEvent.EventType.UPDATED)
-    public void onUpdateDevice(DashboardEvent event) {
+    public void onUpdateDashboard(DashboardEvent event) {
         canvasRepository.findOne(f -> f
                 .eq(CanvasPO.Fields.attachType, CanvasAttachType.DASHBOARD)
                 .eq(CanvasPO.Fields.attachId, event.getPayload().getDashboardId())
