@@ -17,8 +17,8 @@ public class TimeSeriesPeriodQuery extends TimeSeriesBaseQuery {
     private Long endTimestamp;
 
     private TimeSeriesQueryOrder order;
-
-    private Long pageNumber = 0L;
+    // Not recommended, as it may severely impact query performance.
+    private Long pageNumber = null;
 
     private Long pageSize = 10L;
 

@@ -13,6 +13,7 @@ import com.milesight.beaveriot.data.model.TimeSeriesTimePointQuery;
 import com.milesight.beaveriot.data.support.TimeSeriesDataConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -121,13 +122,17 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
             }
         }
 
-        List<FluxTable> tables = this.client.getQueryApi().query(new FluxQueryBuilder(bucket, tableName)
+        FluxQueryBuilder queryBuilder = new FluxQueryBuilder(bucket, tableName)
                 .start(start)
                 .end(end)
                 .filter(query.getFilterable())
                 .limit(Math.toIntExact(pageSize + 1))
-                .order(order)
-                .build());
+                .order(order);
+        if (query.getPageNumber() != null) {
+            queryBuilder.offset(Math.toIntExact(PageRequest.of(Math.toIntExact(query.getPageNumber()), Math.toIntExact(query.getPageSize())).getOffset()));
+        }
+
+        List<FluxTable> tables = this.client.getQueryApi().query(queryBuilder.build());
 
         List<T> result = convertToPOList(tables);
 
