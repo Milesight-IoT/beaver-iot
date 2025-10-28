@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.blueprint.support;
 
-import javax.annotation.Nullable;
+import org.springframework.lang.Nullable;
+
 import java.io.InputStream;
 
 @FunctionalInterface

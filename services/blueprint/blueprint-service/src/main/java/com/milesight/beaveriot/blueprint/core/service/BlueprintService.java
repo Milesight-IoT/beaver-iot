@@ -129,7 +129,7 @@ public class BlueprintService implements IBlueprintFacade {
 
     private static void validateVariables(Map<String, Object> variables, JsonNode variablesJsonSchema) {
         try {
-            JsonSchemaUtils.validate(variablesJsonSchema, JsonUtils.toJsonNode(variables));
+            JsonSchemaUtils.validate(variablesJsonSchema, JsonUtils.toJsonNode(variables), LocaleContext.getLocale());
         } catch (JsonSchemaValidationException e) {
             log.debug("Json schema validation error: {}", e.getDetails());
             throw new ServiceException(BlueprintErrorCode.BLUEPRINT_PARAMETERS_VALIDATION_ERROR, e.getMessage(), e.getDetails());
