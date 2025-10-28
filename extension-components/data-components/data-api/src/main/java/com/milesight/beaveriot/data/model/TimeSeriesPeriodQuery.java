@@ -1,8 +1,7 @@
 package com.milesight.beaveriot.data.model;
 
 import lombok.Data;
-
-import java.util.List;
+import lombok.EqualsAndHashCode;
 
 /**
  * TimeSeriesPeriodQuery class.
@@ -10,6 +9,7 @@ import java.util.List;
  * @author simon
  * @date 2025/10/13
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class TimeSeriesPeriodQuery extends TimeSeriesBaseQuery {
     private Long startTimestamp;
@@ -21,6 +21,8 @@ public class TimeSeriesPeriodQuery extends TimeSeriesBaseQuery {
     private Long pageNumber = 0L;
 
     private Long pageSize = 10L;
+
+    private Long cursor;
 
     // NEXT: Aggregation
 }

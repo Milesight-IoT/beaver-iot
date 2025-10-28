@@ -4,15 +4,15 @@ import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
 import com.influxdb.query.FluxRecord;
 import com.influxdb.query.FluxTable;
-import com.milesight.beaveriot.data.filterable.Filterable;
-import com.milesight.beaveriot.data.support.TimeSeriesDataConverter;
 import com.milesight.beaveriot.data.api.TimeSeriesRepository;
+import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.data.model.TimeSeriesPeriodQuery;
+import com.milesight.beaveriot.data.model.TimeSeriesQueryOrder;
 import com.milesight.beaveriot.data.model.TimeSeriesResult;
 import com.milesight.beaveriot.data.model.TimeSeriesTimePointQuery;
+import com.milesight.beaveriot.data.support.TimeSeriesDataConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -51,6 +51,10 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
     }
 
     private TimeSeriesResult<T> convertToPOResult(List<FluxTable> tables) {
+        return TimeSeriesResult.of(convertToPOList(tables));
+    }
+
+    private List<T> convertToPOList(List<FluxTable> tables) {
         Map<String, Map<String, Object>> groupMap = new LinkedHashMap<>();
 
         for (FluxTable table : tables) {
@@ -80,8 +84,7 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
                 map.put((String) rec.getValueByKey("_field"), rec.getValueByKey("_value"));
             }
         }
-
-        return TimeSeriesResult.of(groupMap.values().stream().map(m -> converter.fromMap(m, poClass)).toList());
+        return groupMap.values().stream().map(m -> converter.fromMap(m, poClass)).toList();
     }
 
     @Override
@@ -104,15 +107,41 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
 
     @Override
     public TimeSeriesResult<T> findByPeriod(TimeSeriesPeriodQuery query) {
-        List<FluxTable> queryRes = this.client.getQueryApi().query(new FluxQueryBuilder(bucket, tableName)
-                .start(query.getStartTimestamp())
-                .end(query.getEndTimestamp())
+        Long start = query.getStartTimestamp();
+        Long end = query.getEndTimestamp();
+        Long cursor = query.getCursor();
+        Long pageSize = query.getPageSize();
+        TimeSeriesQueryOrder order = query.getOrder();
+
+        if (cursor != null) {
+            if (order == TimeSeriesQueryOrder.ASC) {
+                start = cursor + 1;
+            } else {
+                end = cursor - 1;
+            }
+        }
+
+        List<FluxTable> tables = this.client.getQueryApi().query(new FluxQueryBuilder(bucket, tableName)
+                .start(start)
+                .end(end)
                 .filter(query.getFilterable())
-                .limit(Math.toIntExact(query.getPageSize()))
-                .offset(Math.toIntExact(PageRequest.of(Math.toIntExact(query.getPageNumber()), Math.toIntExact(query.getPageSize())).getOffset()))
-                .order(query.getOrder())
+                .limit(Math.toIntExact(pageSize + 1))
+                .order(order)
                 .build());
-        return convertToPOResult(queryRes);
+
+        List<T> result = convertToPOList(tables);
+
+        Long nextCursor = null;
+
+        if (result.size() > pageSize) {
+            T lastItem = result.get(result.size() - 1);
+            Map<String, Object> map = converter.toMap(lastItem);
+            Long lastTime = (Long) map.get(timeColumn);
+
+            result = result.subList(0, Math.toIntExact(pageSize));
+            nextCursor = lastTime;
+        }
+        return TimeSeriesResult.of(result, nextCursor);
     }
 
     @Override
