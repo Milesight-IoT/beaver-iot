@@ -22,7 +22,7 @@ public class TimeSeriesPeriodQuery extends TimeSeriesBaseQuery {
 
     private Long pageSize = 10L;
 
-    private Long cursor;
+    private TimeSeriesCursor cursor;
 
     // NEXT: Aggregation
 }

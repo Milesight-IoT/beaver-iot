@@ -6,10 +6,7 @@ import com.influxdb.query.FluxRecord;
 import com.influxdb.query.FluxTable;
 import com.milesight.beaveriot.data.api.TimeSeriesRepository;
 import com.milesight.beaveriot.data.filterable.Filterable;
-import com.milesight.beaveriot.data.model.TimeSeriesPeriodQuery;
-import com.milesight.beaveriot.data.model.TimeSeriesQueryOrder;
-import com.milesight.beaveriot.data.model.TimeSeriesResult;
-import com.milesight.beaveriot.data.model.TimeSeriesTimePointQuery;
+import com.milesight.beaveriot.data.model.*;
 import com.milesight.beaveriot.data.support.TimeSeriesDataConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,15 +107,15 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
     public TimeSeriesResult<T> findByPeriod(TimeSeriesPeriodQuery query) {
         Long start = query.getStartTimestamp();
         Long end = query.getEndTimestamp();
-        Long cursor = query.getCursor();
+        TimeSeriesCursor cursor = query.getCursor();
         Long pageSize = query.getPageSize();
         TimeSeriesQueryOrder order = query.getOrder();
 
         if (cursor != null) {
             if (order == TimeSeriesQueryOrder.ASC) {
-                start = cursor + 1;
+                start = cursor.getTimestamp();
             } else {
-                end = cursor - 1;
+                end = cursor.getTimestamp();
             }
         }
 
@@ -126,6 +123,7 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
                 .start(start)
                 .end(end)
                 .filter(query.getFilterable())
+                .cursor(cursor)
                 .limit(Math.toIntExact(pageSize + 1))
                 .order(order);
         if (query.getPageNumber() != null) {
@@ -136,15 +134,20 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
 
         List<T> result = convertToPOList(tables);
 
-        Long nextCursor = null;
+        TimeSeriesCursor nextCursor = null;
 
         if (result.size() > pageSize) {
             T lastItem = result.get(result.size() - 1);
             Map<String, Object> map = converter.toMap(lastItem);
             Long lastTime = (Long) map.get(timeColumn);
 
+            TimeSeriesCursor.Builder cursorBuilder = new TimeSeriesCursor.Builder(lastTime);
+            for (String column : indexedColumns) {
+                cursorBuilder.putSortKeyValue(column, map.get(column));
+            }
+            nextCursor = cursorBuilder.build();
+
             result = result.subList(0, Math.toIntExact(pageSize));
-            nextCursor = lastTime;
         }
         return TimeSeriesResult.of(result, nextCursor);
     }

@@ -8,6 +8,7 @@ import com.milesight.beaveriot.data.filterable.condition.CompositeCondition;
 import com.milesight.beaveriot.data.filterable.condition.Condition;
 import com.milesight.beaveriot.data.filterable.enums.BooleanOperator;
 import com.milesight.beaveriot.data.filterable.enums.SearchOperator;
+import com.milesight.beaveriot.data.model.TimeSeriesCursor;
 import com.milesight.beaveriot.data.model.TimeSeriesQueryOrder;
 import org.springframework.data.util.Pair;
 
@@ -16,8 +17,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * FluxQueryBuilder class.
@@ -47,6 +50,8 @@ public class FluxQueryBuilder {
 
     private TimeSeriesQueryOrder order = TimeSeriesQueryOrder.DESC;
 
+    private TimeSeriesCursor cursor;
+
     public FluxQueryBuilder filter(Consumer<Filterable> queryFilter) {
         SearchFilter filterable = new SearchFilter(BooleanOperator.AND, new ArrayList<>());
         queryFilter.accept(filterable);
@@ -69,6 +74,11 @@ public class FluxQueryBuilder {
         }
 
         this.offset = queryOffset;
+        return this;
+    }
+
+    public FluxQueryBuilder cursor(TimeSeriesCursor cursor) {
+        this.cursor = cursor;
         return this;
     }
 
@@ -120,11 +130,35 @@ public class FluxQueryBuilder {
         if (org.springframework.util.StringUtils.hasText(filter)) {
             sb.append(" and ").append(filter);
         }
-
         sb.append(")\n");
+
+        if (cursor != null && !cursor.getSortKeyValues().isEmpty()) {
+            sb.append("  |> filter(fn: (r) => ").append(getSortKeyFilter()).append(")\n");
+        }
+
         sb.append(String.format("  |> sort(columns: [\"%s\"], desc: %s)\n", InfluxDbConstants.TIME_COLUMN, Objects.equals(this.order, TimeSeriesQueryOrder.ASC) ? "false" : "true"));
+
+        if (cursor != null && !cursor.getSortKeyValues().isEmpty()) {
+            sb.append(String.format("  |> sort(columns: [%s], desc: false)\n", getSortKeyColumns()));
+        }
+
         sb.append(String.format("  |> limit(n: %d, offset: %d)\n", limit, offset));
         return sb.toString();
+    }
+
+    public String getSortKeyFilter() {
+        Map<String, Object> sortKeyValues = cursor.getSortKeyValues();
+        SearchFilter filterable = new SearchFilter(BooleanOperator.AND, new ArrayList<>());
+        Consumer<Filterable> queryFilter = f1 -> f1.and(f2 -> sortKeyValues.forEach((key, value) -> f2.ge(key, value.toString())));
+        queryFilter.accept(filterable);
+        return buildFilterExpression(filterable);
+    }
+
+    public String getSortKeyColumns() {
+        return cursor.getSortKeyValues().keySet()
+                .stream()
+                .map(key -> "\"" + key + "\"")
+                .collect(Collectors.joining(", "));
     }
 
     private static String buildFilterExpression(CompositeCondition condition) {

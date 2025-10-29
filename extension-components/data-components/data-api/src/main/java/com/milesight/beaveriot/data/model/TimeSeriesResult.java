@@ -14,7 +14,7 @@ import java.util.List;
 @Data
 public class TimeSeriesResult<T> {
     private List<T> content;
-    private Long cursor;
+    private TimeSeriesCursor cursor;
 
     public static <T> TimeSeriesResult<T> of() {
         return of(new ArrayList<>());
@@ -24,7 +24,7 @@ public class TimeSeriesResult<T> {
         return of(content, null);
     }
 
-    public static <T> TimeSeriesResult<T> of(List<T> content, Long cursor) {
+    public static <T> TimeSeriesResult<T> of(List<T> content, TimeSeriesCursor cursor) {
         TimeSeriesResult<T> result = new TimeSeriesResult<>();
         result.setContent(content);
         result.setCursor(cursor);
