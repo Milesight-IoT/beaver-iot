@@ -11,14 +11,12 @@ import com.milesight.beaveriot.data.filterable.enums.SearchOperator;
 import com.milesight.beaveriot.data.model.TimeSeriesCursor;
 import com.milesight.beaveriot.data.model.TimeSeriesQueryOrder;
 import org.springframework.data.util.Pair;
+import org.springframework.util.CollectionUtils;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -50,6 +48,8 @@ public class FluxQueryBuilder {
 
     private TimeSeriesQueryOrder order = TimeSeriesQueryOrder.DESC;
 
+    private Set<String> indexedColumns;
+
     private TimeSeriesCursor cursor;
 
     public FluxQueryBuilder filter(Consumer<Filterable> queryFilter) {
@@ -74,6 +74,11 @@ public class FluxQueryBuilder {
         }
 
         this.offset = queryOffset;
+        return this;
+    }
+
+    public FluxQueryBuilder indexedColumns(Set<String> indexedColumns) {
+        this.indexedColumns = indexedColumns;
         return this;
     }
 
@@ -138,7 +143,7 @@ public class FluxQueryBuilder {
 
         sb.append(String.format("  |> sort(columns: [\"%s\"], desc: %s)\n", InfluxDbConstants.TIME_COLUMN, Objects.equals(this.order, TimeSeriesQueryOrder.ASC) ? "false" : "true"));
 
-        if (cursor != null && !cursor.getSortKeyValues().isEmpty()) {
+        if (!CollectionUtils.isEmpty(indexedColumns)) {
             sb.append(String.format("  |> sort(columns: [%s], desc: false)\n", getSortKeyColumns()));
         }
 
@@ -155,7 +160,7 @@ public class FluxQueryBuilder {
     }
 
     public String getSortKeyColumns() {
-        return cursor.getSortKeyValues().keySet()
+        return indexedColumns
                 .stream()
                 .map(key -> "\"" + key + "\"")
                 .collect(Collectors.joining(", "));

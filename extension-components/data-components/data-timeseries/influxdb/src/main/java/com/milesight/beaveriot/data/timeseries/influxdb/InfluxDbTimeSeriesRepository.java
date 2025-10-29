@@ -43,7 +43,7 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
         this.bucket = bucket;
         this.tableName = tableName;
         this.timeColumn = timeColumn;
-        this.indexedColumns = new HashSet<>(indexedColumns);
+        this.indexedColumns = new TreeSet<>(indexedColumns);
         this.converter = converter;
         this.poClass = poClass;
     }
@@ -123,6 +123,7 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
                 .start(start)
                 .end(end)
                 .filter(query.getFilterable())
+                .indexedColumns(indexedColumns)
                 .cursor(cursor)
                 .limit(Math.toIntExact(pageSize + 1))
                 .order(order);
