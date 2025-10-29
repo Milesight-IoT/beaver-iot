@@ -226,7 +226,7 @@ blueprint:
   library:
     default_address:
       type: GITHUB
-      url: https://github.com/zakersimonjack/beaver-iot-blueprint.git
+      url: https://github.com/Milesight-IoT/beaver-iot-blueprint.git
       branch: main
       local_zip_file: ${BLUEPRINT_LIBRARY_DEFAULT_ADDRESS_LOCAL_ZIP_FILE:}
     sync_frequency: 3h
