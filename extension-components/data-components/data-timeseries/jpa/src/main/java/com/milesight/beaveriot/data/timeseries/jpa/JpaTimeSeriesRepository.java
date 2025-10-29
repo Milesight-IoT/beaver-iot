@@ -85,7 +85,7 @@ public class JpaTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
             }
         }
 
-        Consumer<Filterable> timeFilterable = fe -> fe.ge(timeColumn, start).lt(timeColumn, end);
+        Consumer<Filterable> timeFilterable = fe -> fe.ge(timeColumn, start).le(timeColumn, end);
         Consumer<Filterable> filterable = query.getFilterable() == null ? timeFilterable : query.getFilterable().andThen(timeFilterable);
         if (cursor != null && !cursor.getSortKeyValues().isEmpty()) {
             filterable = filterable.andThen(getSortKeyFilterable(cursor));
