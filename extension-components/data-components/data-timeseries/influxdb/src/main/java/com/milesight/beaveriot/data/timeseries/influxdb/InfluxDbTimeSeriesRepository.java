@@ -10,7 +10,6 @@ import com.milesight.beaveriot.data.model.*;
 import com.milesight.beaveriot.data.support.TimeSeriesDataConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -25,13 +24,13 @@ import java.util.function.Consumer;
 public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
     @Autowired
     private InfluxDbClient client;
-
     private final String bucket;
     private final String tableName;
     private final String timeColumn;
     private final Set<String> indexedColumns;
     private final TimeSeriesDataConverter converter;
     private final Class<T> poClass;
+
     public InfluxDbTimeSeriesRepository(
             String bucket,
             String tableName,
@@ -105,16 +104,21 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
 
     @Override
     public TimeSeriesResult<T> findByPeriod(TimeSeriesPeriodQuery query) {
-        Long start = query.getStartTimestamp();
-        Long end = query.getEndTimestamp();
         TimeSeriesCursor cursor = query.getCursor();
         Long pageSize = query.getPageSize();
         TimeSeriesQueryOrder order = query.getOrder();
 
-        if (cursor != null) {
+        Long start;
+        Long end;
+        if (cursor == null) {
+            start = query.getStartTimestamp();
+            end = query.getEndTimestamp();
+        } else {
             if (order == TimeSeriesQueryOrder.ASC) {
                 start = cursor.getTimestamp();
+                end = query.getEndTimestamp();
             } else {
+                start = query.getStartTimestamp();
                 end = cursor.getTimestamp();
             }
         }
@@ -127,9 +131,6 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
                 .cursor(cursor)
                 .limit(Math.toIntExact(pageSize + 1))
                 .order(order);
-        if (query.getPageNumber() != null) {
-            queryBuilder.offset(Math.toIntExact(PageRequest.of(Math.toIntExact(query.getPageNumber()), Math.toIntExact(query.getPageSize())).getOffset()));
-        }
 
         List<FluxTable> tables = this.client.getQueryApi().query(queryBuilder.build());
 

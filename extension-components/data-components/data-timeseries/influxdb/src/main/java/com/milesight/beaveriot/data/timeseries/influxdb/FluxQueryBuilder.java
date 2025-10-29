@@ -38,8 +38,6 @@ public class FluxQueryBuilder {
 
     private Integer limit = 100;
 
-    private Integer offset = 0;
-
     private String filter;
 
     private Long start;
@@ -65,15 +63,6 @@ public class FluxQueryBuilder {
         }
 
         this.limit = queryLimit;
-        return this;
-    }
-
-    public FluxQueryBuilder offset(int queryOffset) {
-        if (queryOffset < 0) {
-            throw new IllegalArgumentException("Query limit must be larger than zero");
-        }
-
-        this.offset = queryOffset;
         return this;
     }
 
@@ -147,7 +136,7 @@ public class FluxQueryBuilder {
             sb.append(String.format("  |> sort(columns: [%s], desc: false)\n", getSortKeyColumns()));
         }
 
-        sb.append(String.format("  |> limit(n: %d, offset: %d)\n", limit, offset));
+        sb.append(String.format("  |> limit(n: %d)\n", limit));
         return sb.toString();
     }
 
