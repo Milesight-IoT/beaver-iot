@@ -13,6 +13,10 @@ import java.text.MessageFormat;
  * create: 2025/10/13 10:49
  **/
 public class DeviceLocationSupport {
+    public static String getLocationEntityKey(String deviceKey) {
+        return MessageFormat.format(DeviceLocationConstants.KEY_FORMAT_DEVICE_LOCATION, deviceKey);
+    }
+
     public static String getAddressEntityKey(String deviceKey) {
         return MessageFormat.format(DeviceLocationConstants.KEY_FORMAT_DEVICE_ADDRESS, deviceKey);
     }
