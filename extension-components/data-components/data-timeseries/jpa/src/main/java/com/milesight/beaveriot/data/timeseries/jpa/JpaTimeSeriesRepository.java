@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.data.timeseries.jpa;
 
+import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.data.api.TimeSeriesRepository;
 import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.data.jpa.repository.BaseJpaRepository;
@@ -15,6 +16,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -81,11 +83,11 @@ public class JpaTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
                 end = query.getEndTimestamp();
             } else {
                 start = query.getStartTimestamp();
-                end = cursor.getTimestamp();
+                end = cursor.getTimestamp() + 1;
             }
         }
 
-        Consumer<Filterable> timeFilterable = fe -> fe.ge(timeColumn, start).le(timeColumn, end);
+        Consumer<Filterable> timeFilterable = fe -> fe.ge(timeColumn, start).lt(timeColumn, end);
         Consumer<Filterable> filterable = query.getFilterable() == null ? timeFilterable : query.getFilterable().andThen(timeFilterable);
         if (cursor != null && !cursor.getSortKeyValues().isEmpty()) {
             filterable = filterable.andThen(getSortKeyFilterable(cursor));
@@ -108,13 +110,13 @@ public class JpaTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
         TimeSeriesCursor nextCursor = null;
 
         if (result.size() > query.getPageSize()) {
-            T lastItem = result.get(result.size() - 1);
-            Map<String, Object> map = converter.toMap(lastItem);
+            T lastItem = result.get(Math.toIntExact(pageSize));
+            Map<String, Object> map = toLowerCamelCaseKeys(converter.toMap(lastItem));
             Long lastTime = (Long) map.get(timeColumn);
 
             TimeSeriesCursor.Builder cursorBuilder = new TimeSeriesCursor.Builder(lastTime);
             for (String column : indexedColumns) {
-                cursorBuilder.putSortKeyValue(column, map.get(column));
+                cursorBuilder.putSortKeyValue(StringUtils.toSnakeCase(column), map.get(column));
             }
             nextCursor = cursorBuilder.build();
 
@@ -124,9 +126,18 @@ public class JpaTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
         return TimeSeriesResult.of(result, nextCursor);
     }
 
+    public static Map<String, Object> toLowerCamelCaseKeys(Map<String, Object> map) {
+        Map<String, Object> result = new HashMap<>();
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            String camelKey = StringUtils.toCamelCase(entry.getKey());
+            result.put(camelKey, entry.getValue());
+        }
+        return result;
+    }
+
     private Consumer<Filterable> getSortKeyFilterable(TimeSeriesCursor cursor) {
         Map<String, Object> sortKeyValues = cursor.getSortKeyValues();
-        return f1 -> f1.and(f2 -> sortKeyValues.forEach((key, value) -> f2.ge(key, value.toString())));
+        return f1 -> f1.and(f2 -> sortKeyValues.forEach((key, value) -> f2.ge(StringUtils.toCamelCase(key), value.toString())));
     }
 
     @Override

@@ -119,7 +119,7 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
                 end = query.getEndTimestamp();
             } else {
                 start = query.getStartTimestamp();
-                end = cursor.getTimestamp();
+                end = cursor.getTimestamp() + 1;
             }
         }
 
@@ -139,7 +139,7 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
         TimeSeriesCursor nextCursor = null;
 
         if (result.size() > pageSize) {
-            T lastItem = result.get(result.size() - 1);
+            T lastItem = result.get(Math.toIntExact(pageSize));
             Map<String, Object> map = converter.toMap(lastItem);
             Long lastTime = (Long) map.get(timeColumn);
 

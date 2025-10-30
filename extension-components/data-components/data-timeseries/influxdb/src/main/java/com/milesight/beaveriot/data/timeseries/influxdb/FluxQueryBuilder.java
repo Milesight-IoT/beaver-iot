@@ -51,9 +51,11 @@ public class FluxQueryBuilder {
     private TimeSeriesCursor cursor;
 
     public FluxQueryBuilder filter(Consumer<Filterable> queryFilter) {
-        SearchFilter filterable = new SearchFilter(BooleanOperator.AND, new ArrayList<>());
-        queryFilter.accept(filterable);
-        this.filter = buildFilterExpression(filterable);
+        if (queryFilter != null) {
+            SearchFilter filterable = new SearchFilter(BooleanOperator.AND, new ArrayList<>());
+            queryFilter.accept(filterable);
+            this.filter = buildFilterExpression(filterable);
+        }
         return this;
     }
 

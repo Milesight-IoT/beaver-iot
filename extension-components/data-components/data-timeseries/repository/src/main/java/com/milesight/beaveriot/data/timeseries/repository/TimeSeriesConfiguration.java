@@ -127,8 +127,8 @@ public class TimeSeriesConfiguration implements BeanDefinitionRegistryPostProces
                 ConstructorArgumentValues cav = rootBeanDefinition.getConstructorArgumentValues();
                 cav.addIndexedArgumentValue(0, entityClass);
                 cav.addIndexedArgumentValue(1, supportTimeSeries.timeColumn());
-                cav.addIndexedArgumentValue(3, getJpaIndexedColumnNameList(supportTimeSeries));
-                cav.addIndexedArgumentValue(4, createConverterInstance(supportTimeSeries));
+                cav.addIndexedArgumentValue(2, getJpaIndexedColumnNameList(supportTimeSeries));
+                cav.addIndexedArgumentValue(3, createConverterInstance(supportTimeSeries));
             }
 
             String beanName = entityClass.getSimpleName() + "TimeSeriesRepository";
