@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.device.dto;
 
+import com.milesight.beaveriot.context.integration.model.DeviceLocation;
 import lombok.*;
 
 import java.util.List;
@@ -17,6 +18,7 @@ public class DeviceResponseData {
     private Long createdAt;
     private Long updatedAt;
     private String status;
+    private DeviceLocation location;
     private String integrationName;
     private String groupName;
     private String groupId;

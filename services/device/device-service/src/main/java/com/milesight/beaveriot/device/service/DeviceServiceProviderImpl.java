@@ -7,14 +7,17 @@ import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.DeviceStatusServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
+import com.milesight.beaveriot.context.integration.model.DeviceLocation;
 import com.milesight.beaveriot.context.integration.model.event.DeviceEvent;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.device.constants.DeviceDataFieldConstants;
+import com.milesight.beaveriot.device.location.model.DeviceLocationSetting;
+import com.milesight.beaveriot.device.location.service.DeviceLocationService;
 import com.milesight.beaveriot.device.po.DevicePO;
 import com.milesight.beaveriot.device.repository.DeviceRepository;
-import com.milesight.beaveriot.device.support.DeviceConverter;
 import com.milesight.beaveriot.device.support.CommonDeviceAssembler;
+import com.milesight.beaveriot.device.support.DeviceConverter;
 import com.milesight.beaveriot.eventbus.EventBus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -56,6 +59,9 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
     @Lazy
     @Autowired
     DeviceStatusServiceProvider deviceStatusServiceProvider;
+
+    @Autowired
+    private DeviceLocationService deviceLocationService;
 
     @Override
     public void save(Device device) {
@@ -139,6 +145,12 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
         Long deviceGroupId = (Long) TenantContext.tryGetTenantParam(DeviceService.TENANT_PARAM_DEVICE_GROUP_ID).orElse(null);
         if (deviceGroupId != null) {
             deviceGroupService.moveDevicesToGroupId(deviceGroupId, List.of(devicePO.getId()));
+        }
+
+        DeviceLocationSetting locationSetting = (DeviceLocationSetting) TenantContext.tryGetTenantParam(DeviceService.TENANT_PARAM_DEVICE_LOCATION).orElse(null);
+        if (locationSetting != null) {
+            DeviceLocation location = locationSetting.buildLocation();
+            deviceLocationService.setLocation(device, location);
         }
     }
 

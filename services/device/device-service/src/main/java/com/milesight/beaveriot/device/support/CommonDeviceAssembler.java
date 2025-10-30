@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.device.support;
 
 import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
+import com.milesight.beaveriot.device.location.constants.DeviceLocationConstants;
 import com.milesight.beaveriot.device.status.constants.DeviceStatusConstants;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +19,6 @@ public class CommonDeviceAssembler extends DeviceAssembler {
 
     @Override
     List<String> getCommonEntityKeys() {
-        return List.of(DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS);
+        return List.of(DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS, DeviceLocationConstants.IDENTIFIER_DEVICE_LOCATION);
     }
 }

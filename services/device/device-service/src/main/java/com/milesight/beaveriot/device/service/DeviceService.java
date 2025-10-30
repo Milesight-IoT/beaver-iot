@@ -22,6 +22,8 @@ import com.milesight.beaveriot.device.dto.DeviceResponseData;
 import com.milesight.beaveriot.device.dto.DeviceResponseEntityData;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.device.facade.IDeviceResponseFacade;
+import com.milesight.beaveriot.device.location.model.DeviceLocationSetting;
+import com.milesight.beaveriot.device.location.service.DeviceLocationService;
 import com.milesight.beaveriot.device.model.request.*;
 import com.milesight.beaveriot.device.model.response.DeviceDetailResponse;
 import com.milesight.beaveriot.device.po.DeviceGroupMappingPO;
@@ -97,6 +99,9 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
     private DeviceStatusService deviceStatusService;
 
     @Autowired
+    private DeviceLocationService deviceLocationService;
+
+    @Autowired
     private DeviceBlueprintMappingService deviceBlueprintMappingService;
 
     @Autowired
@@ -110,6 +115,7 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
     private DeviceService self;
 
     public static final String TENANT_PARAM_DEVICE_GROUP_ID = "DEVICE_GROUP_ID";
+    public static final String TENANT_PARAM_DEVICE_LOCATION = "DEVICE_LOCATION";
     private static final Set<String> entityTemplateKeys = ConcurrentHashMap.newKeySet();
 
     @IntegrationPermission
@@ -159,12 +165,22 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
 
         TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_ID, deviceGroupId);
 
+        DeviceLocationSetting location = createDeviceRequest.getLocation();
+        boolean hasLocation = location != null;
+        if (hasLocation) {
+            TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LOCATION, location);
+        }
+
         try {
             // call service for adding
             entityValueServiceProvider.saveValuesAndPublishSync(payload);
         } finally {
             if (hasGroup) {
                 TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_GROUP_ID, null);
+            }
+
+            if (hasLocation) {
+                TenantContext.tryPutTenantParam(TENANT_PARAM_DEVICE_LOCATION, null);
             }
         }
     }
@@ -216,6 +232,7 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
 
         List<String> deviceKeys = dataList.stream().map(DeviceResponseData::getKey).toList();
         Map<String, DeviceStatus> statuses = deviceStatusService.getStatusesByDeviceKeys(deviceKeys);
+        Map<String, DeviceLocation> locations = deviceLocationService.getLocationsByDeviceKeys(deviceKeys);
 
         dataList.forEach(d -> {
             Integration integration = integrationMap.get(d.getIntegration());
@@ -235,6 +252,11 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
             DeviceStatus status = statuses.get(d.getKey());
             if (status != null) {
                 d.setStatus(status.name());
+            }
+
+            DeviceLocation location = locations.get(d.getKey());
+            if (location != null) {
+                d.setLocation(location);
             }
 
             List<Entity> deviceEntities = deviceKeyToEntity.get(d.getKey());
