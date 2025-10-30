@@ -1,10 +1,12 @@
 package com.milesight.beaveriot.device.location.service;
 
+import com.milesight.beaveriot.context.api.EntityServiceProvider;
+import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
-import com.milesight.beaveriot.context.integration.model.Device;
-import com.milesight.beaveriot.context.integration.model.ExchangePayload;
-import com.milesight.beaveriot.context.integration.model.DeviceLocation;
+import com.milesight.beaveriot.context.integration.model.*;
+import com.milesight.beaveriot.device.location.constants.DeviceLocationConstants;
 import com.milesight.beaveriot.device.location.support.DeviceLocationSupport;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -16,9 +18,13 @@ import java.util.*;
  **/
 @Service
 public class DeviceLocationService {
+    private final EntityTemplateServiceProvider entityTemplateServiceProvider;
+    private final EntityServiceProvider entityServiceProvider;
     private final EntityValueServiceProvider entityValueServiceProvider;
 
-    public DeviceLocationService(EntityValueServiceProvider entityValueServiceProvider) {
+    public DeviceLocationService(EntityTemplateServiceProvider entityTemplateServiceProvider, @Lazy EntityServiceProvider entityServiceProvider, EntityValueServiceProvider entityValueServiceProvider) {
+        this.entityTemplateServiceProvider = entityTemplateServiceProvider;
+        this.entityServiceProvider = entityServiceProvider;
         this.entityValueServiceProvider = entityValueServiceProvider;
     }
 
@@ -45,6 +51,8 @@ public class DeviceLocationService {
 
     public void setLocation(Device device, DeviceLocation location) {
         DeviceLocationSupport.validate(location);
+
+        createLocationEntityIfNotExist(device);
 
         String deviceKey = device.getKey();
         String addressKey = DeviceLocationSupport.getAddressEntityKey(deviceKey);
@@ -137,5 +145,17 @@ public class DeviceLocationService {
         });
 
         return locations;
+    }
+
+    private void createLocationEntityIfNotExist(Device device) {
+        String locationEntityKey = DeviceLocationSupport.getLocationEntityKey(device.getKey());
+        if (entityServiceProvider.findByKey(locationEntityKey) == null) {
+            EntityTemplate entityTemplate = entityTemplateServiceProvider.findByKey(DeviceLocationConstants.IDENTIFIER_DEVICE_LOCATION);
+            if (entityTemplate == null) {
+                throw new RuntimeException("Device location entity template not found");
+            }
+            Entity locationEntity = entityTemplate.toEntity(device.getIntegrationId(), device.getKey());
+            entityServiceProvider.save(locationEntity);
+        }
     }
 }
