@@ -8,8 +8,8 @@ import com.milesight.beaveriot.data.api.TimeSeriesRepository;
 import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.data.model.*;
 import com.milesight.beaveriot.data.support.TimeSeriesDataConverter;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -22,7 +22,7 @@ import java.util.function.Consumer;
  */
 @Slf4j
 public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
-    @Autowired
+    @Resource
     private InfluxDbClient client;
     private final String bucket;
     private final String tableName;

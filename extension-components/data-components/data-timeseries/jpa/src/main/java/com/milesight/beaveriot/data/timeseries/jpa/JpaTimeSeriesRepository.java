@@ -7,7 +7,7 @@ import com.milesight.beaveriot.data.jpa.repository.BaseJpaRepository;
 import com.milesight.beaveriot.data.model.*;
 import com.milesight.beaveriot.data.support.TimeSeriesDataConverter;
 import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.Resource;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.ResolvableType;
 import org.springframework.data.domain.PageRequest;
@@ -28,7 +28,7 @@ import java.util.function.Consumer;
  * @date 2025/10/11
  */
 public class JpaTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
-    @Autowired
+    @Resource
     ApplicationContext applicationContext;
     private BaseJpaRepository<T, ?> jpaRepository;
     private final Class<T> entityClass;
@@ -49,6 +49,7 @@ public class JpaTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
     }
 
     @PostConstruct
+    @SuppressWarnings("unchecked")
     private void initJpaRepo() {
         String beanName = applicationContext.getBeanNamesForType(ResolvableType.forClassWithGenerics(BaseJpaRepository.class, entityClass, Long.class))[0];
         jpaRepository = (BaseJpaRepository<T, ?>) applicationContext.getBean(beanName);
