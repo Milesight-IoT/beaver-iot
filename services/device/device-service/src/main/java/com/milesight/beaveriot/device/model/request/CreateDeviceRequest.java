@@ -25,7 +25,7 @@ public class CreateDeviceRequest {
 
     private ExchangePayload paramEntities;
 
-    public DeviceLocationSetting fetchLocation() {
+    public DeviceLocationSetting getOrCreateLocation() {
         if (location == null) {
             location = new DeviceLocationSetting();
         }

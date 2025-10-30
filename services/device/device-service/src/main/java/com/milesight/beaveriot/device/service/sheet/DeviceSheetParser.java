@@ -195,7 +195,7 @@ public class DeviceSheetParser {
                     case DeviceSheetConstants.DEVICE_LOCATION_LONGITUDE_COL_KEY -> {
                         String longitude = getCellValue(cell);
                         if (StringUtils.hasText(longitude)) {
-                            createDeviceRequest.fetchLocation().setLongitude(longitude);
+                            createDeviceRequest.getOrCreateLocation().setLongitude(longitude);
                             rowHasValue = true;
                         }
                         continue;
@@ -203,7 +203,7 @@ public class DeviceSheetParser {
                     case DeviceSheetConstants.DEVICE_LOCATION_LATITUDE_COL_KEY -> {
                         String latitude = getCellValue(cell);
                         if (StringUtils.hasText(latitude)) {
-                            createDeviceRequest.fetchLocation().setLatitude(latitude);
+                            createDeviceRequest.getOrCreateLocation().setLatitude(latitude);
                             rowHasValue = true;
                         }
                         continue;
@@ -211,7 +211,7 @@ public class DeviceSheetParser {
                     case DeviceSheetConstants.DEVICE_LOCATION_ADDRESS_COL_KEY -> {
                         String address = getCellValue(cell).trim();
                         if (StringUtils.hasText(address)) {
-                            createDeviceRequest.fetchLocation().setAddress(address);
+                            createDeviceRequest.getOrCreateLocation().setAddress(address);
                             rowHasValue = true;
                         }
                         continue;
