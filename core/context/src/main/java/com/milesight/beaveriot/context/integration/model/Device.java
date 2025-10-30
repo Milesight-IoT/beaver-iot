@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.context.integration.model;
 
+import com.milesight.beaveriot.context.api.DeviceLocationServiceProvider;
 import com.milesight.beaveriot.context.api.DeviceStatusServiceProvider;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.support.SpringContext;
@@ -97,5 +98,10 @@ public class Device implements IdentityKey {
     public DeviceStatus status() {
         DeviceStatusServiceProvider deviceStatusServiceProvider = SpringContext.getBean(DeviceStatusServiceProvider.class);
         return deviceStatusServiceProvider.status(this);
+    }
+
+    public DeviceLocation location() {
+        DeviceLocationServiceProvider deviceLocationServiceProvider = SpringContext.getBean(DeviceLocationServiceProvider.class);
+        return deviceLocationServiceProvider.getLocation(this);
     }
 }

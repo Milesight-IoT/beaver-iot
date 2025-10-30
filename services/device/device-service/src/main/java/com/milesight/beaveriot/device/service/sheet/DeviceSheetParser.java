@@ -11,7 +11,6 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
@@ -176,20 +175,47 @@ public class DeviceSheetParser {
             boolean rowHasValue = false;
             for (ColumnMetaData columnMetaData : this.getColumnMetaList()) {
                 Cell cell = row.getCell(columnMetaData.getColIndex());
-                if (columnMetaData.getKey().equals(DeviceSheetConstants.DEVICE_NAME_COL_KEY)) {
-                    String deviceName = getCellValue(cell);
-                    if (StringUtils.hasText(deviceName)) {
-                        createDeviceRequest.setName(deviceName);
-                        rowHasValue = true;
+                switch (columnMetaData.getKey()) {
+                    case DeviceSheetConstants.DEVICE_NAME_COL_KEY -> {
+                        String deviceName = getCellValue(cell);
+                        if (StringUtils.hasText(deviceName)) {
+                            createDeviceRequest.setName(deviceName);
+                            rowHasValue = true;
+                        }
+                        continue;
                     }
-                    continue;
-                } else if (columnMetaData.getKey().equals(DeviceSheetConstants.DEVICE_GROUP_COL_KEY)) {
-                    String groupName = getCellValue(cell).trim();
-                    if (StringUtils.hasText(groupName)) {
-                        createDeviceRequest.setGroupName(groupName);
-                        rowHasValue = true;
+                    case DeviceSheetConstants.DEVICE_GROUP_COL_KEY -> {
+                        String groupName = getCellValue(cell).trim();
+                        if (StringUtils.hasText(groupName)) {
+                            createDeviceRequest.setGroupName(groupName);
+                            rowHasValue = true;
+                        }
+                        continue;
                     }
-                    continue;
+                    case DeviceSheetConstants.DEVICE_LOCATION_LONGITUDE_COL_KEY -> {
+                        String longitude = getCellValue(cell);
+                        if (StringUtils.hasText(longitude)) {
+                            createDeviceRequest.getOrCreateLocation().setLongitude(longitude);
+                            rowHasValue = true;
+                        }
+                        continue;
+                    }
+                    case DeviceSheetConstants.DEVICE_LOCATION_LATITUDE_COL_KEY -> {
+                        String latitude = getCellValue(cell);
+                        if (StringUtils.hasText(latitude)) {
+                            createDeviceRequest.getOrCreateLocation().setLatitude(latitude);
+                            rowHasValue = true;
+                        }
+                        continue;
+                    }
+                    case DeviceSheetConstants.DEVICE_LOCATION_ADDRESS_COL_KEY -> {
+                        String address = getCellValue(cell).trim();
+                        if (StringUtils.hasText(address)) {
+                            createDeviceRequest.getOrCreateLocation().setAddress(address);
+                            rowHasValue = true;
+                        }
+                        continue;
+                    }
                 }
 
                 if (createDeviceRequest.getParamEntities() == null) {

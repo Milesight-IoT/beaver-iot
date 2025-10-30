@@ -16,6 +16,8 @@ public enum DeviceErrorCode implements ErrorCodeSpec {
     DEVICE_LIST_SHEET_NO_DEVICE(HttpStatus.BAD_REQUEST.value()),
     DEVICE_LIST_SHEET_PARSING_ERROR(HttpStatus.BAD_REQUEST.value()),
     DEVICE_LIST_SHEET_PARSING_VALUE_ERROR(HttpStatus.BAD_REQUEST.value()),
+    DEVICE_LOCATION_LONGITUDE_TYPE_ERROR(HttpStatus.BAD_REQUEST.value()),
+    DEVICE_LOCATION_LATITUDE_TYPE_ERROR(HttpStatus.BAD_REQUEST.value()),
     ;
 
     private final int status;

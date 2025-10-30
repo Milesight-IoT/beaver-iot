@@ -171,6 +171,33 @@ public class DeviceBatchService {
         groupColumn.setRequired(false);
         columns.add(groupColumn);
 
+        // add location related column
+        DeviceSheetColumn longitudeColumn = new DeviceSheetColumn();
+        longitudeColumn.setName(DeviceSheetConstants.DEVICE_LOCATION_LONGITUDE_COL_NAME);
+        longitudeColumn.setType(DeviceSheetColumn.COLUMN_TYPE_DOUBLE);
+        longitudeColumn.setKey(DeviceSheetConstants.DEVICE_LOCATION_LONGITUDE_COL_KEY);
+        longitudeColumn.setMin(-180.0);
+        longitudeColumn.setMax(180.0);
+        longitudeColumn.setRequired(false);
+        columns.add(longitudeColumn);
+
+        DeviceSheetColumn latitudeColumn = new DeviceSheetColumn();
+        latitudeColumn.setName(DeviceSheetConstants.DEVICE_LOCATION_LATITUDE_COL_NAME);
+        latitudeColumn.setType(DeviceSheetColumn.COLUMN_TYPE_DOUBLE);
+        latitudeColumn.setKey(DeviceSheetConstants.DEVICE_LOCATION_LATITUDE_COL_KEY);
+        latitudeColumn.setMin(-90.0);
+        latitudeColumn.setMax(90.0);
+        latitudeColumn.setRequired(false);
+        columns.add(latitudeColumn);
+
+        DeviceSheetColumn addressColumn = new DeviceSheetColumn();
+        addressColumn.setName(DeviceSheetConstants.DEVICE_LOCATION_ADDRESS_COL_NAME);
+        addressColumn.setType(DeviceSheetColumn.COLUMN_TYPE_TEXT);
+        addressColumn.setKey(DeviceSheetConstants.DEVICE_LOCATION_ADDRESS_COL_KEY);
+        addressColumn.setMaxLength(DeviceDataFieldConstants.DEVICE_ADDRESS_MAX_LENGTH);
+        addressColumn.setRequired(false);
+        columns.add(addressColumn);
+
         return columns;
     }
 }

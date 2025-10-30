@@ -3,8 +3,8 @@ package com.milesight.beaveriot.blueprint.support;
 import com.milesight.beaveriot.blueprint.facade.IBlueprintLibraryResourceResolverFacade;
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.support.SpringContext;
+import org.springframework.lang.Nullable;
 
-import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
