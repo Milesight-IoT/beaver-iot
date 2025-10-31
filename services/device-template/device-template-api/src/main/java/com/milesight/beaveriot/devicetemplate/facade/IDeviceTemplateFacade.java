@@ -24,7 +24,6 @@ public interface IDeviceTemplateFacade {
     List<DeviceTemplate> findAllCustom(String integrationId);
     void batchDelete(List<Long> ids);
     Page<DeviceTemplateResponseData> search(SearchDeviceTemplateRequest searchDeviceTemplateRequest);
-    Page<DeviceTemplateResponseData> searchCustom(SearchDeviceTemplateRequest searchDeviceTemplateRequest);
     List<DeviceTemplateDTO> getDeviceTemplateByKeys(List<String> deviceTemplateKeys);
     void deleteDeviceTemplateByIdInIgnoreTenant(List<Long> ids);
 }
