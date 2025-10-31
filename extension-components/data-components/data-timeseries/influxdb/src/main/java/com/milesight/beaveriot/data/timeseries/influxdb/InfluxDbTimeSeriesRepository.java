@@ -4,15 +4,12 @@ import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
 import com.influxdb.query.FluxRecord;
 import com.influxdb.query.FluxTable;
-import com.milesight.beaveriot.data.filterable.Filterable;
-import com.milesight.beaveriot.data.support.TimeSeriesDataConverter;
 import com.milesight.beaveriot.data.api.TimeSeriesRepository;
-import com.milesight.beaveriot.data.model.TimeSeriesPeriodQuery;
-import com.milesight.beaveriot.data.model.TimeSeriesResult;
-import com.milesight.beaveriot.data.model.TimeSeriesTimePointQuery;
+import com.milesight.beaveriot.data.filterable.Filterable;
+import com.milesight.beaveriot.data.model.*;
+import com.milesight.beaveriot.data.support.TimeSeriesDataConverter;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -25,15 +22,15 @@ import java.util.function.Consumer;
  */
 @Slf4j
 public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
-    @Autowired
+    @Resource
     private InfluxDbClient client;
-
     private final String bucket;
     private final String tableName;
     private final String timeColumn;
     private final Set<String> indexedColumns;
     private final TimeSeriesDataConverter converter;
     private final Class<T> poClass;
+
     public InfluxDbTimeSeriesRepository(
             String bucket,
             String tableName,
@@ -45,12 +42,16 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
         this.bucket = bucket;
         this.tableName = tableName;
         this.timeColumn = timeColumn;
-        this.indexedColumns = new HashSet<>(indexedColumns);
+        this.indexedColumns = new TreeSet<>(indexedColumns);
         this.converter = converter;
         this.poClass = poClass;
     }
 
     private TimeSeriesResult<T> convertToPOResult(List<FluxTable> tables) {
+        return TimeSeriesResult.of(convertToPOList(tables));
+    }
+
+    private List<T> convertToPOList(List<FluxTable> tables) {
         Map<String, Map<String, Object>> groupMap = new LinkedHashMap<>();
 
         for (FluxTable table : tables) {
@@ -80,8 +81,7 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
                 map.put((String) rec.getValueByKey("_field"), rec.getValueByKey("_value"));
             }
         }
-
-        return TimeSeriesResult.of(groupMap.values().stream().map(m -> converter.fromMap(m, poClass)).toList());
+        return groupMap.values().stream().map(m -> converter.fromMap(m, poClass)).toList();
     }
 
     @Override
@@ -104,15 +104,54 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
 
     @Override
     public TimeSeriesResult<T> findByPeriod(TimeSeriesPeriodQuery query) {
-        List<FluxTable> queryRes = this.client.getQueryApi().query(new FluxQueryBuilder(bucket, tableName)
-                .start(query.getStartTimestamp())
-                .end(query.getEndTimestamp())
+        TimeSeriesCursor cursor = query.getCursor();
+        Long pageSize = query.getPageSize();
+        TimeSeriesQueryOrder order = query.getOrder();
+
+        Long start;
+        Long end;
+        if (cursor == null) {
+            start = query.getStartTimestamp();
+            end = query.getEndTimestamp();
+        } else {
+            if (order == TimeSeriesQueryOrder.ASC) {
+                start = cursor.getTimestamp();
+                end = query.getEndTimestamp();
+            } else {
+                start = query.getStartTimestamp();
+                end = cursor.getTimestamp() + 1;
+            }
+        }
+
+        FluxQueryBuilder queryBuilder = new FluxQueryBuilder(bucket, tableName)
+                .start(start)
+                .end(end)
                 .filter(query.getFilterable())
-                .limit(Math.toIntExact(query.getPageSize()))
-                .offset(Math.toIntExact(PageRequest.of(Math.toIntExact(query.getPageNumber()), Math.toIntExact(query.getPageSize())).getOffset()))
-                .order(query.getOrder())
-                .build());
-        return convertToPOResult(queryRes);
+                .indexedColumns(indexedColumns)
+                .cursor(cursor)
+                .limit(Math.toIntExact(pageSize + 1))
+                .order(order);
+
+        List<FluxTable> tables = this.client.getQueryApi().query(queryBuilder.build());
+
+        List<T> result = convertToPOList(tables);
+
+        TimeSeriesCursor nextCursor = null;
+
+        if (result.size() > pageSize) {
+            T lastItem = result.get(Math.toIntExact(pageSize));
+            Map<String, Object> map = converter.toMap(lastItem);
+            Long lastTime = (Long) map.get(timeColumn);
+
+            TimeSeriesCursor.Builder cursorBuilder = new TimeSeriesCursor.Builder(lastTime);
+            for (String column : indexedColumns) {
+                cursorBuilder.putSortKeyValue(column, map.get(column));
+            }
+            nextCursor = cursorBuilder.build();
+
+            result = result.subList(0, Math.toIntExact(pageSize));
+        }
+        return TimeSeriesResult.of(result, nextCursor);
     }
 
     @Override

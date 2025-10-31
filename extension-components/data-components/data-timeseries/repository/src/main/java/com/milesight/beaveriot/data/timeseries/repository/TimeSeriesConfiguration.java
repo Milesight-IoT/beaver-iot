@@ -82,11 +82,11 @@ public class TimeSeriesConfiguration implements BeanDefinitionRegistryPostProces
     }
 
     private List<String> getIndexedColumnNameList(SupportTimeSeries supportTimeSeries) {
-        return Arrays.stream(supportTimeSeries.indexedColumns()).map(StringUtils::toSnakeCase).toList();
+        return Arrays.stream(supportTimeSeries.indexedColumns()).toList();
     }
 
     @Override
-    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+    public void postProcessBeanFactory(@NotNull ConfigurableListableBeanFactory beanFactory) throws BeansException {
     }
 
     @Override
@@ -114,7 +114,7 @@ public class TimeSeriesConfiguration implements BeanDefinitionRegistryPostProces
                 cav.addIndexedArgumentValue(0, supportTimeSeries.category());
                 cav.addIndexedArgumentValue(1, tableName);
                 cav.addIndexedArgumentValue(2, getTimeColumnName(supportTimeSeries));
-                cav.addIndexedArgumentValue(3, getIndexedColumnNameList(supportTimeSeries));
+                cav.addIndexedArgumentValue(3, getIndexedColumnNameList(supportTimeSeries).stream().map(StringUtils::toSnakeCase));
                 cav.addIndexedArgumentValue(4, createConverterInstance(supportTimeSeries));
                 cav.addIndexedArgumentValue(5, entityClass);
             } else {
@@ -123,6 +123,8 @@ public class TimeSeriesConfiguration implements BeanDefinitionRegistryPostProces
                 ConstructorArgumentValues cav = rootBeanDefinition.getConstructorArgumentValues();
                 cav.addIndexedArgumentValue(0, entityClass);
                 cav.addIndexedArgumentValue(1, supportTimeSeries.timeColumn());
+                cav.addIndexedArgumentValue(2, getIndexedColumnNameList(supportTimeSeries));
+                cav.addIndexedArgumentValue(3, createConverterInstance(supportTimeSeries));
             }
 
             String beanName = entityClass.getSimpleName() + "TimeSeriesRepository";

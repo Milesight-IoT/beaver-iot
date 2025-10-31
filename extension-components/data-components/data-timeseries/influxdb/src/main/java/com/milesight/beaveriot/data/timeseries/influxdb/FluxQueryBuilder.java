@@ -8,16 +8,17 @@ import com.milesight.beaveriot.data.filterable.condition.CompositeCondition;
 import com.milesight.beaveriot.data.filterable.condition.Condition;
 import com.milesight.beaveriot.data.filterable.enums.BooleanOperator;
 import com.milesight.beaveriot.data.filterable.enums.SearchOperator;
+import com.milesight.beaveriot.data.model.TimeSeriesCursor;
 import com.milesight.beaveriot.data.model.TimeSeriesQueryOrder;
 import org.springframework.data.util.Pair;
+import org.springframework.util.CollectionUtils;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * FluxQueryBuilder class.
@@ -37,8 +38,6 @@ public class FluxQueryBuilder {
 
     private Integer limit = 100;
 
-    private Integer offset = 0;
-
     private String filter;
 
     private Long start;
@@ -47,10 +46,16 @@ public class FluxQueryBuilder {
 
     private TimeSeriesQueryOrder order = TimeSeriesQueryOrder.DESC;
 
+    private Set<String> indexedColumns;
+
+    private TimeSeriesCursor cursor;
+
     public FluxQueryBuilder filter(Consumer<Filterable> queryFilter) {
-        SearchFilter filterable = new SearchFilter(BooleanOperator.AND, new ArrayList<>());
-        queryFilter.accept(filterable);
-        this.filter = buildFilterExpression(filterable);
+        if (queryFilter != null) {
+            SearchFilter filterable = new SearchFilter(BooleanOperator.AND, new ArrayList<>());
+            queryFilter.accept(filterable);
+            this.filter = buildFilterExpression(filterable);
+        }
         return this;
     }
 
@@ -63,12 +68,13 @@ public class FluxQueryBuilder {
         return this;
     }
 
-    public FluxQueryBuilder offset(int queryOffset) {
-        if (queryOffset < 0) {
-            throw new IllegalArgumentException("Query limit must be larger than zero");
-        }
+    public FluxQueryBuilder indexedColumns(Set<String> indexedColumns) {
+        this.indexedColumns = indexedColumns;
+        return this;
+    }
 
-        this.offset = queryOffset;
+    public FluxQueryBuilder cursor(TimeSeriesCursor cursor) {
+        this.cursor = cursor;
         return this;
     }
 
@@ -120,11 +126,35 @@ public class FluxQueryBuilder {
         if (org.springframework.util.StringUtils.hasText(filter)) {
             sb.append(" and ").append(filter);
         }
-
         sb.append(")\n");
+
+        if (cursor != null && !cursor.getSortKeyValues().isEmpty()) {
+            sb.append("  |> filter(fn: (r) => ").append(getSortKeyFilter()).append(")\n");
+        }
+
         sb.append(String.format("  |> sort(columns: [\"%s\"], desc: %s)\n", InfluxDbConstants.TIME_COLUMN, Objects.equals(this.order, TimeSeriesQueryOrder.ASC) ? "false" : "true"));
-        sb.append(String.format("  |> limit(n: %d, offset: %d)\n", limit, offset));
+
+        if (!CollectionUtils.isEmpty(indexedColumns)) {
+            sb.append(String.format("  |> sort(columns: [%s], desc: false)\n", getSortKeyColumns()));
+        }
+
+        sb.append(String.format("  |> limit(n: %d)\n", limit));
         return sb.toString();
+    }
+
+    public String getSortKeyFilter() {
+        Map<String, Object> sortKeyValues = cursor.getSortKeyValues();
+        SearchFilter filterable = new SearchFilter(BooleanOperator.AND, new ArrayList<>());
+        Consumer<Filterable> queryFilter = f1 -> f1.and(f2 -> sortKeyValues.forEach((key, value) -> f2.ge(key, value.toString())));
+        queryFilter.accept(filterable);
+        return buildFilterExpression(filterable);
+    }
+
+    public String getSortKeyColumns() {
+        return indexedColumns
+                .stream()
+                .map(key -> "\"" + key + "\"")
+                .collect(Collectors.joining(", "));
     }
 
     private static String buildFilterExpression(CompositeCondition condition) {
