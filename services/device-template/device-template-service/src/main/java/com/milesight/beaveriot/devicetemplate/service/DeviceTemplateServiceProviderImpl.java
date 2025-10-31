@@ -81,9 +81,4 @@ public class DeviceTemplateServiceProviderImpl implements DeviceTemplateServiceP
     public Page<DeviceTemplateResponseData> search(SearchDeviceTemplateRequest searchDeviceTemplateRequest) {
         return deviceTemplateService.search(searchDeviceTemplateRequest);
     }
-
-    @Override
-    public Page<DeviceTemplateResponseData> searchCustom(SearchDeviceTemplateRequest searchDeviceTemplateRequest) {
-        return deviceTemplateService.searchCustom(searchDeviceTemplateRequest);
-    }
 }

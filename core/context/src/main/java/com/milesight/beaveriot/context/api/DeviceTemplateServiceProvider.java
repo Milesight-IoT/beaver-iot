@@ -35,5 +35,4 @@ public interface DeviceTemplateServiceProvider {
     void batchDelete(List<Long> ids);
 
     Page<DeviceTemplateResponseData> search(SearchDeviceTemplateRequest searchDeviceTemplateRequest);
-    Page<DeviceTemplateResponseData> searchCustom(SearchDeviceTemplateRequest searchDeviceTemplateRequest);
 }

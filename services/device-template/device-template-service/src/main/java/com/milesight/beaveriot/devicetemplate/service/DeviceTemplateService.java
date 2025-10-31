@@ -12,6 +12,7 @@ import com.milesight.beaveriot.context.integration.model.Integration;
 import com.milesight.beaveriot.context.model.request.SearchDeviceTemplateRequest;
 import com.milesight.beaveriot.context.model.response.DeviceTemplateResponseData;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.devicetemplate.dto.DeviceTemplateDTO;
 import com.milesight.beaveriot.devicetemplate.facade.IDeviceTemplateFacade;
 import com.milesight.beaveriot.devicetemplate.po.DeviceTemplatePO;
@@ -29,6 +30,7 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Service
@@ -276,11 +278,6 @@ public class DeviceTemplateService implements IDeviceTemplateFacade {
         return searchDeviceTemplate(searchDeviceTemplateRequest);
     }
 
-    @Override
-    public Page<DeviceTemplateResponseData> searchCustom(SearchDeviceTemplateRequest searchDeviceTemplateRequest) {
-        return searchCustomDeviceTemplate(searchDeviceTemplateRequest);
-    }
-
     private boolean deviceTemplateAdditionalDataEqual(Map<String, Object> arg1, Map<String, Object> arg2) {
         if (arg1 == null && arg2 == null) {
             return true;
@@ -332,22 +329,34 @@ public class DeviceTemplateService implements IDeviceTemplateFacade {
         });
     }
 
-    public Page<DeviceTemplateResponseData> searchCustomDeviceTemplate(SearchDeviceTemplateRequest searchDeviceTemplateRequest) {
+    public Page<DeviceTemplateResponseData> searchDeviceTemplate(SearchDeviceTemplateRequest searchDeviceTemplateRequest) {
         if (searchDeviceTemplateRequest.getSort().getOrders().isEmpty()) {
             searchDeviceTemplateRequest.sort(new Sorts().desc(DeviceTemplatePO.Fields.id));
         }
 
         Page<DeviceTemplateResponseData> responseDataList;
         try {
+            Consumer<Filterable> filterable = f -> {
+                f.likeIgnoreCase(
+                                StringUtils.hasText(searchDeviceTemplateRequest.getName()),
+                                DeviceTemplatePO.Fields.name,
+                                searchDeviceTemplateRequest.getName()
+                        );
+
+                if (searchDeviceTemplateRequest.getDeviceTemplateSource() == SearchDeviceTemplateRequest.DeviceTemplateSource.CUSTOM) {
+                    f.and(f2 -> f2.isNull(DeviceTemplatePO.Fields.blueprintLibraryId));
+                } else if (searchDeviceTemplateRequest.getDeviceTemplateSource() == SearchDeviceTemplateRequest.DeviceTemplateSource.BLUEPRINT_LIBRARY) {
+                    f.and(f2 -> f2.isNotNull(DeviceTemplatePO.Fields.blueprintLibraryId));
+                }
+
+                if (searchDeviceTemplateRequest.getDeviceTemplateIds() != null) {
+                    f.and(f3 -> f3.in(DeviceTemplatePO.Fields.id, searchDeviceTemplateRequest.getDeviceTemplateIds().toArray()));
+                }
+            };
+
             responseDataList = deviceTemplateRepository
                     .findAllWithDataPermission(
-                            f -> f.likeIgnoreCase(
-                                            StringUtils.hasText(searchDeviceTemplateRequest.getName()),
-                                            DeviceTemplatePO.Fields.name,
-                                            searchDeviceTemplateRequest.getName()
-                            )
-                            .and(f2 -> f2.isNull(DeviceTemplatePO.Fields.blueprintLibraryId)
-                            .and(f3 -> f3.in(DeviceTemplatePO.Fields.id, searchDeviceTemplateRequest.getDeviceTemplateIds().toArray()))),
+                            filterable,
                             searchDeviceTemplateRequest.toPageable()
                     )
                     .map(this::convertPOToResponseData);
@@ -358,26 +367,6 @@ public class DeviceTemplateService implements IDeviceTemplateFacade {
             throw e;
         }
 
-        fillIntegrationInfo(responseDataList.stream().toList());
-        return responseDataList;
-    }
-
-    public Page<DeviceTemplateResponseData> searchDeviceTemplate(SearchDeviceTemplateRequest searchDeviceTemplateRequest) {
-        if (searchDeviceTemplateRequest.getSort().getOrders().isEmpty()) {
-            searchDeviceTemplateRequest.sort(new Sorts().desc(DeviceTemplatePO.Fields.id));
-        }
-
-        Page<DeviceTemplateResponseData> responseDataList;
-        try {
-            responseDataList = deviceTemplateRepository
-                    .findAllWithDataPermission(f -> f.likeIgnoreCase(StringUtils.hasText(searchDeviceTemplateRequest.getName()), DeviceTemplatePO.Fields.name, searchDeviceTemplateRequest.getName()), searchDeviceTemplateRequest.toPageable())
-                    .map(this::convertPOToResponseData);
-        }catch (Exception e) {
-            if (e instanceof ServiceException && Objects.equals(((ServiceException) e).getErrorCode(), ErrorCode.FORBIDDEN_PERMISSION.getErrorCode())) {
-                return Page.empty();
-            }
-            throw e;
-        }
         fillIntegrationInfo(responseDataList.stream().toList());
         return responseDataList;
     }
