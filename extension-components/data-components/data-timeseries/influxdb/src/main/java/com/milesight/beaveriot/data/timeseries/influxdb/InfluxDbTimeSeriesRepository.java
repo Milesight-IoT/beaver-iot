@@ -97,7 +97,6 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
                 .start(query.getTimestampList().stream().min(Long::compare).orElseGet(() -> currMillis - (365L * 24 * 60 * 60 * 1000)))
                 .end(query.getTimestampList().stream().max(Long::compare).orElse(currMillis) + 1)
                 .filter(filterable)
-                .limit(query.getTimestampList().size())
                 .build());
         return convertToPOResult(queryRes);
     }
