@@ -346,7 +346,8 @@ public class DeviceTemplateService implements IDeviceTemplateFacade {
                                             DeviceTemplatePO.Fields.name,
                                             searchDeviceTemplateRequest.getName()
                             )
-                            .and(f2 -> f2.isNull(DeviceTemplatePO.Fields.blueprintLibraryId)),
+                            .and(f2 -> f2.isNull(DeviceTemplatePO.Fields.blueprintLibraryId)
+                            .and(f3 -> f3.in(DeviceTemplatePO.Fields.id, searchDeviceTemplateRequest.getDeviceTemplateIds().toArray()))),
                             searchDeviceTemplateRequest.toPageable()
                     )
                     .map(this::convertPOToResponseData);
