@@ -13,18 +13,22 @@ public enum DataTypeEnums {
     BOOLEAN,
     OTHER;
 
-    public void validate(String key, Object value) {
+    public Object validate(String key, Object value) {
         if (ObjectUtils.isEmpty(value)) {
-            return;
+            return null;
         }
 
         switch (this) {
             case LONG:
-            case DOUBLE:
-                if (!(value instanceof Number)) {
-                    throw new IllegalArgumentException("The payload " + key + " value type is invalid, value is " + value);
+                if (value instanceof Number v) {
+                    return v.longValue();
                 }
-                break;
+                throw new IllegalArgumentException("The payload " + key + " value type is invalid, value is " + value);
+            case DOUBLE:
+                if (value instanceof Number v) {
+                    return v.doubleValue();
+                }
+                throw new IllegalArgumentException("The payload " + key + " value type is invalid, value is " + value);
             case STRING:
                 if (!(value instanceof String)) {
                     throw new IllegalArgumentException("The payload " + key + " value type is invalid, value is " + value);
@@ -38,5 +42,6 @@ public enum DataTypeEnums {
             default:
                 break;
         }
+        return value;
     }
 }
