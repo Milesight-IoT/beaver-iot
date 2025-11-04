@@ -29,7 +29,7 @@ public class OutputVariablesSettings implements VariableNamed {
             String paramName = config.getName();
             DataTypeEnums paramType = config.getType();
             if (resultMap.containsKey(paramName) ) {
-                resultMap.put(paramName,paramType.validate(paramName, resultMap.get(paramName)));
+                resultMap.put(paramName, paramType.validate(paramName, resultMap.get(paramName)));
             }
         }
     }

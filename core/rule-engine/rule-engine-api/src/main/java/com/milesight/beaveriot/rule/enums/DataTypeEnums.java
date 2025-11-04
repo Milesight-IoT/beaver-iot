@@ -20,21 +20,15 @@ public enum DataTypeEnums {
 
         switch (this) {
             case LONG:
-                if (!(value instanceof Number)) {
-                    throw new IllegalArgumentException("The payload " + key + " value type is invalid, value is " + value);
+                if (value instanceof Number v) {
+                    return v.longValue();
                 }
-                if (value instanceof Double) {
-                    return Double.valueOf(value.toString()).longValue();
-                }
-                break;
+                throw new IllegalArgumentException("The payload " + key + " value type is invalid, value is " + value);
             case DOUBLE:
-                if (!(value instanceof Number)) {
-                    throw new IllegalArgumentException("The payload " + key + " value type is invalid, value is " + value);
+                if (value instanceof Number v) {
+                    return v.doubleValue();
                 }
-                if (value instanceof Long) {
-                    return Long.valueOf(value.toString()).doubleValue();
-                }
-                break;
+                throw new IllegalArgumentException("The payload " + key + " value type is invalid, value is " + value);
             case STRING:
                 if (!(value instanceof String)) {
                     throw new IllegalArgumentException("The payload " + key + " value type is invalid, value is " + value);
