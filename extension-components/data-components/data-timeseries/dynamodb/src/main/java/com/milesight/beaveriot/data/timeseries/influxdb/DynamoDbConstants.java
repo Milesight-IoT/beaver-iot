@@ -12,4 +12,5 @@ public class DynamoDbConstants {
     public static final int SAVE_BATCH_SIZE = 25;
     public static final String PLACEHOLDER_NAME = "#";
     public static final String PLACEHOLDER_VALUE = ":";
+    public static final String PARTITION_VALUE_SEPARATOR = "-";
 }

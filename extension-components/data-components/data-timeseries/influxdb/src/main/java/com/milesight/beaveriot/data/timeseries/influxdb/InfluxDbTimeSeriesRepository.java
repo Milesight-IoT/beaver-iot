@@ -123,6 +123,35 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
         return TimeSeriesResult.of(result, nextCursor);
     }
 
+    @Override
+    public void save(List<T> itemList) {
+        this.client.getWriteApi().writePoints(bucket, client.getOrgName(), itemList.stream().map(po -> {
+            Point dataPoint = Point.measurement(tableName);
+            this.converter.toMap(po).forEach((k, v) -> {
+                if (timeColumn.equals(k)) {
+                    dataPoint.time((Long) v, WritePrecision.MS);
+                } else if (indexedColumns.contains(k)) {
+                    dataPoint.addTag(k, v.toString());
+                } else {
+                    if (v instanceof String vStr) {
+                        dataPoint.addField(k, vStr);
+                    } else if (v instanceof Long vLong) {
+                        dataPoint.addField(k, vLong);
+                    } else if (v instanceof Double vDouble) {
+                        dataPoint.addField(k, vDouble);
+                    } else if (v instanceof Boolean vBoolean) {
+                        dataPoint.addField(k, vBoolean);
+                    } else if (v != null) {
+                        // TODO: not supported bytes, considering remove this entity value type?
+                        throw new IllegalArgumentException("Invalid influxdb data type: " + v.getClass().getName());
+                    }
+                }
+            });
+
+            return dataPoint;
+        }).toList());
+    }
+
     private TimeSeriesResult<T> convertToPOResult(List<FluxTable> tables) {
         return TimeSeriesResult.of(convertToPOList(tables));
     }
@@ -158,34 +187,5 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
             }
         }
         return groupMap.values().stream().map(m -> converter.fromMap(m, poClass)).toList();
-    }
-
-    @Override
-    public void save(List<T> itemList) {
-        this.client.getWriteApi().writePoints(bucket, client.getOrgName(), itemList.stream().map(po -> {
-            Point dataPoint = Point.measurement(tableName);
-            this.converter.toMap(po).forEach((k, v) -> {
-                if (timeColumn.equals(k)) {
-                    dataPoint.time((Long) v, WritePrecision.MS);
-                } else if (indexedColumns.contains(k)) {
-                    dataPoint.addTag(k, v.toString());
-                } else {
-                    if (v instanceof String vStr) {
-                        dataPoint.addField(k, vStr);
-                    } else if (v instanceof Long vLong) {
-                        dataPoint.addField(k, vLong);
-                    } else if (v instanceof Double vDouble) {
-                        dataPoint.addField(k, vDouble);
-                    } else if (v instanceof Boolean vBoolean) {
-                        dataPoint.addField(k, vBoolean);
-                    } else if (v != null) {
-                        // TODO: not supported bytes, considering remove this entity value type?
-                        throw new IllegalArgumentException("Invalid influxdb data type: " + v.getClass().getName());
-                    }
-                }
-            });
-
-            return dataPoint;
-        }).toList());
     }
 }

@@ -156,6 +156,7 @@ public class DynamoDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
         List<T> poList = new ArrayList<>();
         query.getTimestampList().forEach(timestamp -> {
             QueryResponse queryResponse = client.query(new DynamoDbQueryBuilder(tableName)
+                    .indexedColumns(indexedColumns)
                     .indexedKeyValues(query.getIndexedKeyValues())
                     .timeColumn(timeColumn)
                     .time(timestamp)
@@ -174,6 +175,7 @@ public class DynamoDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
         query.validate(indexedColumns);
 
         QueryResponse queryResponse = client.query(new DynamoDbQueryBuilder(tableName)
+                .indexedColumns(indexedColumns)
                 .indexedKeyValues(query.getIndexedKeyValues())
                 .timeColumn(timeColumn)
                 .start(query.getStartTimestamp())
@@ -276,7 +278,10 @@ public class DynamoDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
     }
 
     private String getPartitionValue(Map<String, Object> poMap) {
-        return indexedColumns.stream().map(key -> poMap.get(key).toString()).collect(Collectors.joining("-"));
+        return indexedColumns.stream()
+                .sorted()
+                .map(key -> poMap.get(key).toString())
+                .collect(Collectors.joining(DynamoDbConstants.PARTITION_VALUE_SEPARATOR));
     }
 
     private AttributeValue getPartitionKeyAttributeValue(String partitionValue) {

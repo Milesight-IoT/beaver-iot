@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 public class DynamoDbQueryBuilder {
     private final String tableName;
     private String timeColumn;
+    private Set<String> indexedColumns;
     private Map<String, Object> indexedKeyValues;
     private Long start;
     private Long end;
@@ -41,6 +42,11 @@ public class DynamoDbQueryBuilder {
 
     public DynamoDbQueryBuilder timeColumn(String timeColumn) {
         this.timeColumn = timeColumn;
+        return this;
+    }
+
+    public DynamoDbQueryBuilder indexedColumns(Set<String> indexedColumns) {
+        this.indexedColumns = indexedColumns;
         return this;
     }
 
@@ -220,7 +226,7 @@ public class DynamoDbQueryBuilder {
                 Pair<?, ?> pair = (Pair<?, ?>) value;
                 Object firstValue = pair.getFirst();
                 Object secondValue = pair.getSecond();
-                yield placeholderName + " BETWEEN " + placeholderValue(name, opSuffix + "_lower", firstValue, expressionAttributeValues, placeholderValueCounter) + " AND " + placeholderValue(name, opSuffix + "_upper", secondValue, expressionAttributeValues, placeholderValueCounter);
+                yield placeholderName + " BETWEEN " + placeholderValue(name, opSuffix + "_start", firstValue, expressionAttributeValues, placeholderValueCounter) + " AND " + placeholderValue(name, opSuffix + "_end", secondValue, expressionAttributeValues, placeholderValueCounter);
             }
             // Not supported: CASE_IGNORE_LIKE, CASE_IGNORE_NOT_LIKE, CASE_IGNORE_STARTS_WITH, ENDS_WITH, CASE_IGNORE_ENDS_WITH
             default -> throw new UnsupportedOperationException("Unsupported operator: " + op);
@@ -263,6 +269,14 @@ public class DynamoDbQueryBuilder {
     }
 
     private Consumer<Filterable> toIndexFilterable(Map<String, Object> indexedKeyValues) {
-        return f1 -> f1.and(f2 -> indexedKeyValues.forEach((key, value) -> f2.eq(StringUtils.toSnakeCase(key), value)));
+        if (indexedColumns.size() == 1) {
+            String indexedColumn = indexedColumns.stream().findFirst().get();
+            return f -> f.eq(indexedColumn, indexedKeyValues.get(indexedColumn));
+        } else {
+            return f -> f.eq(DynamoDbConstants.PARTITION_KEY, indexedColumns.stream()
+                    .sorted()
+                    .map(key -> indexedKeyValues.get(key).toString())
+                    .collect(Collectors.joining(DynamoDbConstants.PARTITION_VALUE_SEPARATOR)));
+        }
     }
 }
