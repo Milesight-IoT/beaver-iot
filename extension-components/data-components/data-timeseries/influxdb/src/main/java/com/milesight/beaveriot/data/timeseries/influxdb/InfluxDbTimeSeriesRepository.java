@@ -144,7 +144,7 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
 
             TimeSeriesCursor.Builder cursorBuilder = new TimeSeriesCursor.Builder(lastTime);
             for (String column : indexedColumns) {
-                cursorBuilder.putSortKeyValue(column, map.get(column));
+                cursorBuilder.putIndexedKeyValues(column, map.get(column));
             }
             nextCursor = cursorBuilder.build();
 

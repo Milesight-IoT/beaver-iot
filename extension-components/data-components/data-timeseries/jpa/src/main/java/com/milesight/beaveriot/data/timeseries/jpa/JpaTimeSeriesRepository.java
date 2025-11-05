@@ -90,7 +90,7 @@ public class JpaTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
 
         Consumer<Filterable> timeFilterable = fe -> fe.ge(timeColumn, start).lt(timeColumn, end);
         Consumer<Filterable> filterable = query.getFilterable() == null ? timeFilterable : query.getFilterable().andThen(timeFilterable);
-        if (cursor != null && !cursor.getSortKeyValues().isEmpty()) {
+        if (cursor != null && !cursor.getIndexedKeyValues().isEmpty()) {
             filterable = filterable.andThen(getSortKeyFilterable(cursor));
         }
 
@@ -117,7 +117,7 @@ public class JpaTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
 
             TimeSeriesCursor.Builder cursorBuilder = new TimeSeriesCursor.Builder(lastTime);
             for (String column : indexedColumns) {
-                cursorBuilder.putSortKeyValue(StringUtils.toSnakeCase(column), map.get(column));
+                cursorBuilder.putIndexedKeyValues(StringUtils.toSnakeCase(column), map.get(column));
             }
             nextCursor = cursorBuilder.build();
 
@@ -137,7 +137,7 @@ public class JpaTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
     }
 
     private Consumer<Filterable> getSortKeyFilterable(TimeSeriesCursor cursor) {
-        Map<String, Object> sortKeyValues = cursor.getSortKeyValues();
+        Map<String, Object> sortKeyValues = cursor.getIndexedKeyValues();
         return f1 -> f1.and(f2 -> sortKeyValues.forEach((key, value) -> f2.ge(StringUtils.toCamelCase(key), value.toString())));
     }
 

@@ -36,7 +36,7 @@ public class FluxQueryBuilder {
 
     private final String measurement;
 
-    private Integer limit = 100;
+    private Integer limit;
 
     private String filter;
 
@@ -128,7 +128,7 @@ public class FluxQueryBuilder {
         }
         sb.append(")\n");
 
-        if (cursor != null && !cursor.getSortKeyValues().isEmpty()) {
+        if (cursor != null && !cursor.getIndexedKeyValues().isEmpty()) {
             sb.append("  |> filter(fn: (r) => ").append(getSortKeyFilter()).append(")\n");
         }
 
@@ -138,12 +138,14 @@ public class FluxQueryBuilder {
             sb.append(String.format("  |> sort(columns: [%s], desc: false)\n", getSortKeyColumns()));
         }
 
-        sb.append(String.format("  |> limit(n: %d)\n", limit));
+        if (limit != null) {
+            sb.append(String.format("  |> limit(n: %d)\n", limit));
+        }
         return sb.toString();
     }
 
     public String getSortKeyFilter() {
-        Map<String, Object> sortKeyValues = cursor.getSortKeyValues();
+        Map<String, Object> sortKeyValues = cursor.getIndexedKeyValues();
         SearchFilter filterable = new SearchFilter(BooleanOperator.AND, new ArrayList<>());
         Consumer<Filterable> queryFilter = f1 -> f1.and(f2 -> sortKeyValues.forEach((key, value) -> f2.ge(key, value.toString())));
         queryFilter.accept(filterable);

@@ -24,6 +24,7 @@
 
     <modules>
         <module>influxdb</module>
+        <module>dynamodb</module>
         <module>repository</module>
         <module>jpa</module>
         <module>common</module>
