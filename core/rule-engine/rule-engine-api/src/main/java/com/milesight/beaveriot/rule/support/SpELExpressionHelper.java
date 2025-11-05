@@ -34,7 +34,7 @@ public class SpELExpressionHelper {
             return Map.of();
         }
         Map<String,Object> result = new HashMap<>();
-        expressionMap.entrySet().stream().forEach(entry -> result.put(entry.getKey(), resolveStringExpression(exchange, entry.getValue())));
+        expressionMap.entrySet().stream().forEach(entry -> result.put((String) resolveStringExpression(exchange, entry.getKey()), resolveStringExpression(exchange, entry.getValue())));
         return result;
     }
 
