@@ -12,14 +12,21 @@ import java.util.TreeMap;
 @Data
 public class TimeSeriesCursor {
     private Long timestamp;
-    private Map<String, Object> sortKeyValues;
+    private Map<String, Object> indexedKeyValues;
 
-    public void putSortKeyValue(String sortKey, Object sortKeyValue) {
-        sortKeyValues.put(sortKey, sortKeyValue);
+    public static TimeSeriesCursor of(Long timestamp, Map<String, Object> indexedKeyValues) {
+        TimeSeriesCursor cursor = new TimeSeriesCursor();
+        cursor.setTimestamp(timestamp);
+        cursor.setIndexedKeyValues(indexedKeyValues);
+        return cursor;
+    }
+
+    public void putIndexedKeyValue(String indexedKey, Object value) {
+        indexedKeyValues.put(indexedKey, value);
     }
 
     private TimeSeriesCursor() {
-        sortKeyValues = new TreeMap<>();
+        indexedKeyValues = new TreeMap<>();
     }
 
     public static class Builder {
@@ -34,8 +41,9 @@ public class TimeSeriesCursor {
             return this;
         }
 
-        public Builder putSortKeyValue(String sortKey, Object sortKeyValue) {
-            cursor.putSortKeyValue(sortKey, sortKeyValue);
+        @SuppressWarnings("UnusedReturnValue")
+        public Builder putIndexedKeyValues(String indexedKey, Object value) {
+            cursor.putIndexedKeyValue(indexedKey, value);
             return this;
         }
 

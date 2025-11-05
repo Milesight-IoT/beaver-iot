@@ -22,7 +22,7 @@ spring:
     #    url: "${SPRING_DATASOURCE_URL:jdbc:postgresql://192.168.45.115:5432/postgres}"
     #    username: "${SPRING_DATASOURCE_USERNAME:postgres}"
     #    password: "${SPRING_DATASOURCE_PASSWORD:postgres}"
-    #    driverClassName: "${SPRING_DRIVER_CLASS_NAME:org.postgresql.Driver}"
+    #    driverClassName: "${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.postgresql.Driver}"
     url: "${SPRING_DATASOURCE_URL:jdbc:h2:file:~/beaver-iot/h2/beaver;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}"
     username: "${SPRING_DATASOURCE_USERNAME:sa}"
     password: "${SPRING_DATASOURCE_PASSWORD:}"
@@ -233,10 +233,21 @@ blueprint:
     clean_frequency: 1d
 
 timeseries:
+  # supports jpa, influxdb, dynamodb
   database: jpa
   retention:
     "beaver_iot_telemetry": 365d
     "beaver_iot_running_log": 30d
+  #influxdb:
+  #  url: ${TIMESERIES_INFLUXDB_URL:http://localhost:8086}
+  #  token: ${TIMESERIES_INFLUXDB_TOKEN:token}
+  #  org: ${TIMESERIES_INFLUXDB_ORG:milesight}
+  #dynamodb:
+  #  endpoint: ${TIMESERIES_DYNAMODB_ENDPOINT:http://localhost:8000}
+  #  region: ${TIMESERIES_DYNAMODB_REGION:us-east-1}
+  #  access_id: ${TIMESERIES_DYNAMODB_ACCESS_ID:defaultAccessId}
+  #  access_KEY: ${TIMESERIES_DYNAMODB_ACCESS_KEY:defaultAccessKey}
+
 
 logging:
   level:

@@ -6,6 +6,7 @@ import com.milesight.beaveriot.data.api.SupportTimeSeries;
 import com.milesight.beaveriot.data.api.TimeSeriesRepository;
 import com.milesight.beaveriot.data.support.TimeSeriesDataConverter;
 import com.milesight.beaveriot.data.timeseries.common.TimeSeriesProperty;
+import com.milesight.beaveriot.data.timeseries.influxdb.DynamoDbTimeSeriesRepository;
 import com.milesight.beaveriot.data.timeseries.influxdb.InfluxDbTimeSeriesRepository;
 import com.milesight.beaveriot.data.timeseries.jpa.JpaTimeSeriesRepository;
 import jakarta.persistence.Table;
@@ -110,6 +111,16 @@ public class TimeSeriesConfiguration implements BeanDefinitionRegistryPostProces
             if ("influxdb".equals(databaseType)) {
                 rootBeanDefinition.setTargetType(ResolvableType.forClassWithGenerics(TimeSeriesRepository.class, entityClass));
                 rootBeanDefinition.setBeanClass(InfluxDbTimeSeriesRepository.class);
+                ConstructorArgumentValues cav = rootBeanDefinition.getConstructorArgumentValues();
+                cav.addIndexedArgumentValue(0, supportTimeSeries.category());
+                cav.addIndexedArgumentValue(1, tableName);
+                cav.addIndexedArgumentValue(2, getTimeColumnName(supportTimeSeries));
+                cav.addIndexedArgumentValue(3, getIndexedColumnNameList(supportTimeSeries).stream().map(StringUtils::toSnakeCase));
+                cav.addIndexedArgumentValue(4, createConverterInstance(supportTimeSeries));
+                cav.addIndexedArgumentValue(5, entityClass);
+            } else if ("dynamodb".equals(databaseType)) {
+                rootBeanDefinition.setTargetType(ResolvableType.forClassWithGenerics(TimeSeriesRepository.class, entityClass));
+                rootBeanDefinition.setBeanClass(DynamoDbTimeSeriesRepository.class);
                 ConstructorArgumentValues cav = rootBeanDefinition.getConstructorArgumentValues();
                 cav.addIndexedArgumentValue(0, supportTimeSeries.category());
                 cav.addIndexedArgumentValue(1, tableName);

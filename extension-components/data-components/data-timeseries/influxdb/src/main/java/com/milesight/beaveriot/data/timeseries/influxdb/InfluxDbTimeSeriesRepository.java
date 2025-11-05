@@ -47,53 +47,20 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
         this.poClass = poClass;
     }
 
-    private TimeSeriesResult<T> convertToPOResult(List<FluxTable> tables) {
-        return TimeSeriesResult.of(convertToPOList(tables));
-    }
-
-    private List<T> convertToPOList(List<FluxTable> tables) {
-        Map<String, Map<String, Object>> groupMap = new LinkedHashMap<>();
-
-        for (FluxTable table : tables) {
-            for (FluxRecord rec : table.getRecords()) {
-                if (rec.getTime() == null) {
-                    continue;
-                }
-
-                Long time = rec.getTime().toEpochMilli();
-
-                StringBuilder key = new StringBuilder(time.toString());
-                for (String column : indexedColumns) {
-                    Object columnValue = rec.getValueByKey(column);
-                    key.append("|").append((String) columnValue);
-                }
-
-                Map<String, Object> map = groupMap.computeIfAbsent(key.toString(), k -> {
-                    Map<String, Object> nMap = new HashMap<>();
-                    nMap.put(timeColumn, time);
-                    for (String column : indexedColumns) {
-                        nMap.put(column, rec.getValueByKey(column));
-                    }
-
-                    return nMap;
-                });
-
-                map.put((String) rec.getValueByKey("_field"), rec.getValueByKey("_value"));
-            }
-        }
-        return groupMap.values().stream().map(m -> converter.fromMap(m, poClass)).toList();
-    }
-
     @Override
     public TimeSeriesResult<T> findByTimePoints(TimeSeriesTimePointQuery query) {
         if (query.getTimestampList() == null || query.getTimestampList().isEmpty()) {
             return TimeSeriesResult.of();
         }
 
+        query.validate(indexedColumns);
+
         Consumer<Filterable> timePointFilterable = f -> f.in(InfluxDbConstants.TIME_COLUMN, query.getTimestampList().toArray(new Long[0]));
         Consumer<Filterable> filterable = query.getFilterable() == null ? timePointFilterable : query.getFilterable().andThen(timePointFilterable);
         long currMillis = System.currentTimeMillis();
         List<FluxTable> queryRes = this.client.getQueryApi().query(new FluxQueryBuilder(bucket, tableName)
+                .indexedColumns(indexedColumns)
+                .indexedKeyValues(query.getIndexedKeyValues())
                 .start(query.getTimestampList().stream().min(Long::compare).orElseGet(() -> currMillis - (365L * 24 * 60 * 60 * 1000)))
                 .end(query.getTimestampList().stream().max(Long::compare).orElse(currMillis) + 1)
                 .filter(filterable)
@@ -122,11 +89,14 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
             }
         }
 
+        query.validate(indexedColumns);
+
         FluxQueryBuilder queryBuilder = new FluxQueryBuilder(bucket, tableName)
+                .indexedColumns(indexedColumns)
+                .indexedKeyValues(query.getIndexedKeyValues())
                 .start(start)
                 .end(end)
                 .filter(query.getFilterable())
-                .indexedColumns(indexedColumns)
                 .cursor(cursor)
                 .limit(Math.toIntExact(pageSize + 1))
                 .order(order);
@@ -144,7 +114,7 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
 
             TimeSeriesCursor.Builder cursorBuilder = new TimeSeriesCursor.Builder(lastTime);
             for (String column : indexedColumns) {
-                cursorBuilder.putSortKeyValue(column, map.get(column));
+                cursorBuilder.putIndexedKeyValues(column, map.get(column));
             }
             nextCursor = cursorBuilder.build();
 
@@ -180,5 +150,42 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
 
             return dataPoint;
         }).toList());
+    }
+
+    private TimeSeriesResult<T> convertToPOResult(List<FluxTable> tables) {
+        return TimeSeriesResult.of(convertToPOList(tables));
+    }
+
+    private List<T> convertToPOList(List<FluxTable> tables) {
+        Map<String, Map<String, Object>> groupMap = new LinkedHashMap<>();
+
+        for (FluxTable table : tables) {
+            for (FluxRecord rec : table.getRecords()) {
+                if (rec.getTime() == null) {
+                    continue;
+                }
+
+                Long time = rec.getTime().toEpochMilli();
+
+                StringBuilder key = new StringBuilder(time.toString());
+                for (String column : indexedColumns) {
+                    Object columnValue = rec.getValueByKey(column);
+                    key.append("|").append((String) columnValue);
+                }
+
+                Map<String, Object> map = groupMap.computeIfAbsent(key.toString(), k -> {
+                    Map<String, Object> nMap = new HashMap<>();
+                    nMap.put(timeColumn, time);
+                    for (String column : indexedColumns) {
+                        nMap.put(column, rec.getValueByKey(column));
+                    }
+
+                    return nMap;
+                });
+
+                map.put((String) rec.getValueByKey("_field"), rec.getValueByKey("_value"));
+            }
+        }
+        return groupMap.values().stream().map(m -> converter.fromMap(m, poClass)).toList();
     }
 }

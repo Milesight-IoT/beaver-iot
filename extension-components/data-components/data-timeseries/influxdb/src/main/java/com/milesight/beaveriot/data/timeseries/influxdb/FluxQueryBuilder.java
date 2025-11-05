@@ -36,9 +36,11 @@ public class FluxQueryBuilder {
 
     private final String measurement;
 
-    private Integer limit = 100;
+    private Integer limit;
 
-    private String filter;
+    private Consumer<Filterable> filter;
+
+    private Map<String, Object> indexedKeyValues;
 
     private Long start;
 
@@ -50,12 +52,8 @@ public class FluxQueryBuilder {
 
     private TimeSeriesCursor cursor;
 
-    public FluxQueryBuilder filter(Consumer<Filterable> queryFilter) {
-        if (queryFilter != null) {
-            SearchFilter filterable = new SearchFilter(BooleanOperator.AND, new ArrayList<>());
-            queryFilter.accept(filterable);
-            this.filter = buildFilterExpression(filterable);
-        }
+    public FluxQueryBuilder filter(Consumer<Filterable> filter) {
+        this.filter = filter;
         return this;
     }
 
@@ -75,6 +73,11 @@ public class FluxQueryBuilder {
 
     public FluxQueryBuilder cursor(TimeSeriesCursor cursor) {
         this.cursor = cursor;
+        return this;
+    }
+
+    public FluxQueryBuilder indexedKeyValues(Map<String, Object> indexedKeyValues) {
+        this.indexedKeyValues = indexedKeyValues;
         return this;
     }
 
@@ -123,12 +126,17 @@ public class FluxQueryBuilder {
         sb.append(String.format("  |> range(start: %s, stop: %s)\n", Instant.ofEpochMilli(this.start).toString(), Instant.ofEpochMilli(this.end).toString()));
         sb.append(String.format("  |> filter(fn: (r) => r[\"_measurement\"] == \"%s\"", measurement));
 
-        if (org.springframework.util.StringUtils.hasText(filter)) {
-            sb.append(" and ").append(filter);
+        Consumer<Filterable> filterable = toIndexFilterable(indexedKeyValues);
+        if (filter != null) {
+            filterable = filterable.andThen(filter);
         }
-        sb.append(")\n");
 
-        if (cursor != null && !cursor.getSortKeyValues().isEmpty()) {
+        SearchFilter queryFilter = new SearchFilter(BooleanOperator.AND, new ArrayList<>());
+        filterable.accept(queryFilter);
+        String filterExpression = buildFilterExpression(queryFilter);
+        sb.append(" and ").append(filterExpression).append(")\n");
+
+        if (cursor != null && !cursor.getIndexedKeyValues().isEmpty()) {
             sb.append("  |> filter(fn: (r) => ").append(getSortKeyFilter()).append(")\n");
         }
 
@@ -138,16 +146,18 @@ public class FluxQueryBuilder {
             sb.append(String.format("  |> sort(columns: [%s], desc: false)\n", getSortKeyColumns()));
         }
 
-        sb.append(String.format("  |> limit(n: %d)\n", limit));
+        if (limit != null) {
+            sb.append(String.format("  |> limit(n: %d)\n", limit));
+        }
         return sb.toString();
     }
 
     public String getSortKeyFilter() {
-        Map<String, Object> sortKeyValues = cursor.getSortKeyValues();
-        SearchFilter filterable = new SearchFilter(BooleanOperator.AND, new ArrayList<>());
-        Consumer<Filterable> queryFilter = f1 -> f1.and(f2 -> sortKeyValues.forEach((key, value) -> f2.ge(key, value.toString())));
-        queryFilter.accept(filterable);
-        return buildFilterExpression(filterable);
+        Map<String, Object> sortKeyValues = cursor.getIndexedKeyValues();
+        SearchFilter queryFilter = new SearchFilter(BooleanOperator.AND, new ArrayList<>());
+        Consumer<Filterable> filterable = f1 -> f1.and(f2 -> sortKeyValues.forEach((key, value) -> f2.ge(key, value.toString())));
+        filterable.accept(queryFilter);
+        return buildFilterExpression(queryFilter);
     }
 
     public String getSortKeyColumns() {
@@ -226,5 +236,9 @@ public class FluxQueryBuilder {
 
     private static String formatTime(Long timestamp) {
         return String.format("time(v: %s)", Duration.of(timestamp, ChronoUnit.MILLIS).toNanos());
+    }
+
+    private Consumer<Filterable> toIndexFilterable(Map<String, Object> indexedKeyValues) {
+        return f1 -> f1.and(f2 -> indexedKeyValues.forEach((key, value) -> f2.eq(StringUtils.toSnakeCase(key), value)));
     }
 }
