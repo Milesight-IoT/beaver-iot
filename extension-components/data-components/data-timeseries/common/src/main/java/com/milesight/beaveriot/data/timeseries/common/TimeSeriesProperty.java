@@ -22,4 +22,33 @@ public class TimeSeriesProperty {
     private String database;
 
     private Map<String, Duration> retention;
+
+    private CleanupConfig cleanup = new CleanupConfig();
+
+    @Data
+    public static class CleanupConfig {
+        /**
+         * Whether to enable automatic cleanup of expired time-series data.
+         * Default: true
+         */
+        private boolean enabled = true;
+
+        /**
+         * Cron expression for scheduling cleanup task.
+         * Default: "0 0 2 * * ?" (run at 2:00 AM every day)
+         */
+        private String cron = "0 0 2 * * ?";
+
+        /**
+         * Batch size for deletion to avoid long transactions.
+         * Default: 1000
+         */
+        private int batchSize = 1000;
+
+        /**
+         * Whether to log cleanup statistics.
+         * Default: true
+         */
+        private boolean logStatistics = true;
+    }
 }

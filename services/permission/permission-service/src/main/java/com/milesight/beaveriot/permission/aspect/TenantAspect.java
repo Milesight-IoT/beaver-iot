@@ -5,6 +5,7 @@ import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.TransactionUtils;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.permission.context.DataAspectContext;
+import com.milesight.beaveriot.permission.helper.TenantValidationBypass;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -35,6 +36,10 @@ public class TenantAspect extends JpaRepositoryAspect {
     @Around("pointCut()")
     @Transactional(rollbackFor = Exception.class)
     public Object around(ProceedingJoinPoint joinPoint) throws Throwable {
+        if (TenantValidationBypass.isBypassed()) {
+            return proceed(joinPoint);
+        }
+
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Class<?> repositoryInterface = joinPoint.getTarget().getClass().getInterfaces()[0];
 

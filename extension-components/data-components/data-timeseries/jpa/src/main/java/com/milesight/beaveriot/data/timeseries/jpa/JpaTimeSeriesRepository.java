@@ -4,14 +4,21 @@ import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.data.api.TimeSeriesRepository;
 import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.data.jpa.repository.BaseJpaRepository;
-import com.milesight.beaveriot.data.model.*;
+import com.milesight.beaveriot.data.model.TimeSeriesCursor;
+import com.milesight.beaveriot.data.model.TimeSeriesPeriodQuery;
+import com.milesight.beaveriot.data.model.TimeSeriesQueryOrder;
+import com.milesight.beaveriot.data.model.TimeSeriesResult;
+import com.milesight.beaveriot.data.model.TimeSeriesTimePointQuery;
 import com.milesight.beaveriot.data.support.TimeSeriesDataConverter;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
+import lombok.Getter;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.ResolvableType;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
@@ -31,6 +38,7 @@ public class JpaTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
     @Resource
     ApplicationContext applicationContext;
     private BaseJpaRepository<T, ?> jpaRepository;
+    @Getter
     private final Class<T> entityClass;
     private final String timeColumn;
     private final List<String> indexedColumns;
@@ -160,4 +168,25 @@ public class JpaTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
     private Consumer<Filterable> toIndexFilterable(Map<String, Object> indexedKeyValues) {
         return f1 -> f1.and(f2 -> indexedKeyValues.forEach((key, value) -> f2.eq(StringUtils.toCamelCase(key), value)));
     }
+
+    /**
+     * Delete a single batch of records before the specified timestamp in a new transaction.
+     * Using REQUIRES_NEW to ensure each batch is in its own independent transaction.
+     *
+     * @param timestamp the timestamp before which data should be deleted
+     * @param limit the limit size for this deletion operation
+     * @return the number of deleted records in this batch
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public int deleteByTimeBefore(long timestamp, int limit) {
+        Consumer<Filterable> filterable = fe -> fe.lt(timeColumn, timestamp);
+        List<T> toDelete = jpaRepository.findAll(filterable, PageRequest.of(0, limit)).stream().toList();
+
+        if (!toDelete.isEmpty()) {
+            jpaRepository.deleteAll(toDelete);
+        }
+
+        return toDelete.size();
+    }
+
 }
