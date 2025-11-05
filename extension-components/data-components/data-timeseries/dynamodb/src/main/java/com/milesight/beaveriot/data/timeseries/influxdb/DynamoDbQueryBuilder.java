@@ -269,13 +269,15 @@ public class DynamoDbQueryBuilder {
     }
 
     private Consumer<Filterable> toIndexFilterable(Map<String, Object> indexedKeyValues) {
+        Map<String, Object> snakeCaseIndexedKeyValues = indexedKeyValues.entrySet().stream()
+                .collect(Collectors.toMap(entry -> StringUtils.toSnakeCase(entry.getKey()), Map.Entry::getValue));
         if (indexedColumns.size() == 1) {
             String indexedColumn = indexedColumns.stream().findFirst().get();
-            return f -> f.eq(indexedColumn, indexedKeyValues.get(indexedColumn));
+            return f -> f.eq(indexedColumn, snakeCaseIndexedKeyValues.get(indexedColumn));
         } else {
             return f -> f.eq(DynamoDbConstants.PARTITION_KEY, indexedColumns.stream()
                     .sorted()
-                    .map(key -> indexedKeyValues.get(key).toString())
+                    .map(key -> snakeCaseIndexedKeyValues.get(key).toString())
                     .collect(Collectors.joining(DynamoDbConstants.PARTITION_VALUE_SEPARATOR)));
         }
     }
