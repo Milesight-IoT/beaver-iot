@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 public class DynamoDbQueryBuilder {
     private final String tableName;
     private String timeColumn;
+    private Map<String, Object> indexedKeyValues;
     private Long start;
     private Long end;
     private Long time;
@@ -40,6 +41,11 @@ public class DynamoDbQueryBuilder {
 
     public DynamoDbQueryBuilder timeColumn(String timeColumn) {
         this.timeColumn = timeColumn;
+        return this;
+    }
+
+    public DynamoDbQueryBuilder indexedKeyValues(Map<String, Object> indexedKeyValues) {
+        this.indexedKeyValues = indexedKeyValues;
         return this;
     }
 
@@ -109,8 +115,7 @@ public class DynamoDbQueryBuilder {
         this.validateTime();
 
         QueryRequest.Builder builder = QueryRequest.builder()
-                .tableName(tableName)
-                .indexName(getTimeIndexName());
+                .tableName(tableName);
 
         Map<String, String> expressionAttributeNames = new HashMap<>();
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
@@ -146,34 +151,25 @@ public class DynamoDbQueryBuilder {
                 ));
     }
     private String buildKeyConditionExpression(Map<String, String> expressionAttributeNames, Map<String, AttributeValue> expressionAttributeValues) {
-        String gsiPartitionKey = getGsiPartitionKey();
-        Consumer<Filterable> queryFilter = f -> f.eq(gsiPartitionKey, timeColumn);
+        Consumer<Filterable> filterable = toIndexFilterable(indexedKeyValues);
 
         if (time != null) {
-            queryFilter = queryFilter.andThen(f -> f.eq(timeColumn, time));
+            filterable = filterable.andThen(f -> f.eq(timeColumn, time));
         } else if (start != null && end != null) {
-            queryFilter = queryFilter.andThen(f -> f.between(timeColumn, start, end));
+            filterable = filterable.andThen(f -> f.between(timeColumn, start, end));
         }
 
-        SearchFilter filterable = new SearchFilter(BooleanOperator.AND, new ArrayList<>());
-        queryFilter.accept(filterable);
-        return buildFilterExpression(filterable, expressionAttributeNames, expressionAttributeValues);
+        SearchFilter queryFilter = new SearchFilter(BooleanOperator.AND, new ArrayList<>());
+        filterable.accept(queryFilter);
+        return buildFilterExpression(queryFilter, expressionAttributeNames, expressionAttributeValues);
     }
 
-    private String buildFilterExpression(Consumer<Filterable> queryFilter,
+    private String buildFilterExpression(Consumer<Filterable> filterable,
                                                 Map<String, String> expressionAttributeNames,
                                                 Map<String, AttributeValue> expressionAttributeValues) {
-        SearchFilter filterable = new SearchFilter(BooleanOperator.AND, new ArrayList<>());
-        queryFilter.accept(filterable);
-        return buildFilterExpression(filterable, expressionAttributeNames, expressionAttributeValues);
-    }
-
-    private String getGsiPartitionKey() {
-        return DynamoDbConstants.GSI_PARTITION_KEY;
-    }
-
-    private String getTimeIndexName() {
-        return DynamoDbConstants.INDEX_PREFIX + timeColumn;
+        SearchFilter queryFilter = new SearchFilter(BooleanOperator.AND, new ArrayList<>());
+        filterable.accept(queryFilter);
+        return buildFilterExpression(queryFilter, expressionAttributeNames, expressionAttributeValues);
     }
 
     private static String buildFilterExpression(CompositeCondition condition,
@@ -264,5 +260,9 @@ public class DynamoDbQueryBuilder {
 
     private static String placeholderName(String name) {
         return DynamoDbConstants.PLACEHOLDER_NAME + name;
+    }
+
+    private Consumer<Filterable> toIndexFilterable(Map<String, Object> indexedKeyValues) {
+        return f1 -> f1.and(f2 -> indexedKeyValues.forEach((key, value) -> f2.eq(StringUtils.toSnakeCase(key), value)));
     }
 }

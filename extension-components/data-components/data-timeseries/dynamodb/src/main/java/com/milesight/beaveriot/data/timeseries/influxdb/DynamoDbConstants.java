@@ -8,10 +8,8 @@ public class DynamoDbConstants {
     public static final String CONFIG_PREFIX = "timeseries.dynamodb";
     public static final String ENDPOINT_CONFIG = CONFIG_PREFIX + ".endpoint";
     public static final String PARTITION_KEY = "_partition_key";
-    public static final String GSI_PARTITION_KEY = "_gsi_partition_key";
     public static final String EXPIRE_TIME_KEY = "_expire_time";
     public static final int SAVE_BATCH_SIZE = 25;
-    public static final String INDEX_PREFIX = "idx_";
     public static final String PLACEHOLDER_NAME = "#";
     public static final String PLACEHOLDER_VALUE = ":";
 }

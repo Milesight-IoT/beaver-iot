@@ -39,9 +39,7 @@ public class DynamoDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
     private final Map<String, Field> poFields;
     private String partitionKey;
     private String sortKey;
-    private String gsiPartitionKey;
     private ScalarAttributeType partitionKeyScalarAttributeType;
-    private String timeIndexName;
     private String expireTimeKey;
     private Duration expireDuration;
 
@@ -59,8 +57,6 @@ public class DynamoDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
     public void init() {
         this.partitionKey = getPartitionKey();
         this.sortKey = getSortKey();
-        this.gsiPartitionKey = getGsiPartitionKey();
-        this.timeIndexName = getTimeIndexName();
         this.partitionKeyScalarAttributeType = getPartitionKeyScalarAttributeType(partitionKey);
         this.expireTimeKey = getExpireTimeKey();
         this.expireDuration = property.getRetention().get(category);
@@ -81,17 +77,15 @@ public class DynamoDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
                 .tableName(tableName)
                 .billingMode(BillingMode.PAY_PER_REQUEST);
 
-        KeySchemaElement sortKeySchemaElement = KeySchemaElement.builder()
-                .attributeName(sortKey)
-                .keyType(KeyType.RANGE)
-                .build();
-
         requestBuilder.keySchema(
                 KeySchemaElement.builder()
                         .attributeName(partitionKey)
                         .keyType(KeyType.HASH)
                         .build(),
-                sortKeySchemaElement
+                KeySchemaElement.builder()
+                        .attributeName(sortKey)
+                        .keyType(KeyType.RANGE)
+                        .build()
         );
 
         requestBuilder.attributeDefinitions(
@@ -102,26 +96,6 @@ public class DynamoDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
                 AttributeDefinition.builder()
                         .attributeName(sortKey)
                         .attributeType(ScalarAttributeType.N)
-                        .build(),
-                AttributeDefinition.builder()
-                        .attributeName(gsiPartitionKey)
-                        .attributeType(ScalarAttributeType.S)
-                        .build()
-        );
-
-        requestBuilder.globalSecondaryIndexes(
-                GlobalSecondaryIndex.builder()
-                        .indexName(timeIndexName)
-                        .keySchema(
-                                KeySchemaElement.builder()
-                                        .attributeName(gsiPartitionKey)
-                                        .keyType(KeyType.HASH)
-                                        .build(),
-                                sortKeySchemaElement
-                        )
-                        .projection(Projection.builder()
-                                .projectionType(ProjectionType.ALL)
-                                .build())
                         .build()
         );
 
@@ -167,16 +141,8 @@ public class DynamoDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
         return timeColumn;
     }
 
-    private String getGsiPartitionKey() {
-        return DynamoDbConstants.GSI_PARTITION_KEY;
-    }
-
     private String getExpireTimeKey() {
         return DynamoDbConstants.EXPIRE_TIME_KEY;
-    }
-
-    private String getTimeIndexName() {
-        return DynamoDbConstants.INDEX_PREFIX + timeColumn;
     }
 
     @Override
@@ -185,9 +151,12 @@ public class DynamoDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
             return TimeSeriesResult.of();
         }
 
+        query.validate(indexedColumns);
+
         List<T> poList = new ArrayList<>();
         query.getTimestampList().forEach(timestamp -> {
             QueryResponse queryResponse = client.query(new DynamoDbQueryBuilder(tableName)
+                    .indexedKeyValues(query.getIndexedKeyValues())
                     .timeColumn(timeColumn)
                     .time(timestamp)
                     .filter(query.getFilterable())
@@ -202,7 +171,10 @@ public class DynamoDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
 
     @Override
     public TimeSeriesResult<T> findByPeriod(TimeSeriesPeriodQuery query) {
+        query.validate(indexedColumns);
+
         QueryResponse queryResponse = client.query(new DynamoDbQueryBuilder(tableName)
+                .indexedKeyValues(query.getIndexedKeyValues())
                 .timeColumn(timeColumn)
                 .start(query.getStartTimestamp())
                 .end(query.getEndTimestamp())
@@ -247,7 +219,6 @@ public class DynamoDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
                         itemMap.put(partitionKey, partitionKeyAttributeValue);
                         Long timestamp = (Long) poMap.get(timeColumn);
                         itemMap.put(sortKey, AttributeValue.builder().n(Long.toString(timestamp)).build());
-                        itemMap.put(gsiPartitionKey, AttributeValue.builder().s(timeColumn).build());
 
                         poMap.forEach((key, value) -> {
                             if (sortKey.equals(key)) {

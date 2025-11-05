@@ -62,7 +62,14 @@ public class JpaTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
             return result;
         }
 
-        Consumer<Filterable> filterable = query.getFilterable().andThen(fe -> fe.in(timeColumn, query.getTimestampList().toArray(new Long[0])));
+        query.validate(indexedColumns);
+
+        Consumer<Filterable> filterable = toIndexFilterable(query.getIndexedKeyValues());
+        filterable = filterable.andThen(f -> f.in(timeColumn, query.getTimestampList().toArray(new Long[0])));
+        if (query.getFilterable() != null) {
+            filterable = filterable.andThen(query.getFilterable());
+        }
+
         result.setContent(jpaRepository.findAll(filterable));
         return result;
     }
@@ -88,8 +95,12 @@ public class JpaTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
             }
         }
 
+        query.validate(indexedColumns);
+        Consumer<Filterable> filterable = toIndexFilterable(query.getIndexedKeyValues());
         Consumer<Filterable> timeFilterable = fe -> fe.ge(timeColumn, start).lt(timeColumn, end);
-        Consumer<Filterable> filterable = query.getFilterable() == null ? timeFilterable : query.getFilterable().andThen(timeFilterable);
+        filterable = filterable.andThen(timeFilterable);
+
+        filterable = query.getFilterable() == null ? filterable : filterable.andThen(query.getFilterable());
         if (cursor != null && !cursor.getIndexedKeyValues().isEmpty()) {
             filterable = filterable.andThen(getSortKeyFilterable(cursor));
         }
@@ -127,6 +138,11 @@ public class JpaTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
         return TimeSeriesResult.of(result, nextCursor);
     }
 
+    @Override
+    public void save(List<T> ditemList) {
+        jpaRepository.saveAll(ditemList);
+    }
+
     public static Map<String, Object> toLowerCamelCaseKeys(Map<String, Object> map) {
         Map<String, Object> result = new HashMap<>();
         for (Map.Entry<String, Object> entry : map.entrySet()) {
@@ -141,8 +157,7 @@ public class JpaTimeSeriesRepository<T> implements TimeSeriesRepository<T> {
         return f1 -> f1.and(f2 -> sortKeyValues.forEach((key, value) -> f2.ge(StringUtils.toCamelCase(key), value.toString())));
     }
 
-    @Override
-    public void save(List<T> ditemList) {
-        jpaRepository.saveAll(ditemList);
+    private Consumer<Filterable> toIndexFilterable(Map<String, Object> indexedKeyValues) {
+        return f1 -> f1.and(f2 -> indexedKeyValues.forEach((key, value) -> f2.eq(StringUtils.toCamelCase(key), value)));
     }
 }

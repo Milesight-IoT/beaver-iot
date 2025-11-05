@@ -47,6 +47,82 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
         this.poClass = poClass;
     }
 
+    @Override
+    public TimeSeriesResult<T> findByTimePoints(TimeSeriesTimePointQuery query) {
+        if (query.getTimestampList() == null || query.getTimestampList().isEmpty()) {
+            return TimeSeriesResult.of();
+        }
+
+        query.validate(indexedColumns);
+
+        Consumer<Filterable> timePointFilterable = f -> f.in(InfluxDbConstants.TIME_COLUMN, query.getTimestampList().toArray(new Long[0]));
+        Consumer<Filterable> filterable = query.getFilterable() == null ? timePointFilterable : query.getFilterable().andThen(timePointFilterable);
+        long currMillis = System.currentTimeMillis();
+        List<FluxTable> queryRes = this.client.getQueryApi().query(new FluxQueryBuilder(bucket, tableName)
+                .indexedColumns(indexedColumns)
+                .indexedKeyValues(query.getIndexedKeyValues())
+                .start(query.getTimestampList().stream().min(Long::compare).orElseGet(() -> currMillis - (365L * 24 * 60 * 60 * 1000)))
+                .end(query.getTimestampList().stream().max(Long::compare).orElse(currMillis) + 1)
+                .filter(filterable)
+                .build());
+        return convertToPOResult(queryRes);
+    }
+
+    @Override
+    public TimeSeriesResult<T> findByPeriod(TimeSeriesPeriodQuery query) {
+        TimeSeriesCursor cursor = query.getCursor();
+        Long pageSize = query.getPageSize();
+        TimeSeriesQueryOrder order = query.getOrder();
+
+        Long start;
+        Long end;
+        if (cursor == null) {
+            start = query.getStartTimestamp();
+            end = query.getEndTimestamp();
+        } else {
+            if (order == TimeSeriesQueryOrder.ASC) {
+                start = cursor.getTimestamp();
+                end = query.getEndTimestamp();
+            } else {
+                start = query.getStartTimestamp();
+                end = cursor.getTimestamp() + 1;
+            }
+        }
+
+        query.validate(indexedColumns);
+
+        FluxQueryBuilder queryBuilder = new FluxQueryBuilder(bucket, tableName)
+                .indexedColumns(indexedColumns)
+                .indexedKeyValues(query.getIndexedKeyValues())
+                .start(start)
+                .end(end)
+                .filter(query.getFilterable())
+                .cursor(cursor)
+                .limit(Math.toIntExact(pageSize + 1))
+                .order(order);
+
+        List<FluxTable> tables = this.client.getQueryApi().query(queryBuilder.build());
+
+        List<T> result = convertToPOList(tables);
+
+        TimeSeriesCursor nextCursor = null;
+
+        if (result.size() > pageSize) {
+            T lastItem = result.get(Math.toIntExact(pageSize));
+            Map<String, Object> map = converter.toMap(lastItem);
+            Long lastTime = (Long) map.get(timeColumn);
+
+            TimeSeriesCursor.Builder cursorBuilder = new TimeSeriesCursor.Builder(lastTime);
+            for (String column : indexedColumns) {
+                cursorBuilder.putIndexedKeyValues(column, map.get(column));
+            }
+            nextCursor = cursorBuilder.build();
+
+            result = result.subList(0, Math.toIntExact(pageSize));
+        }
+        return TimeSeriesResult.of(result, nextCursor);
+    }
+
     private TimeSeriesResult<T> convertToPOResult(List<FluxTable> tables) {
         return TimeSeriesResult.of(convertToPOList(tables));
     }
@@ -82,75 +158,6 @@ public class InfluxDbTimeSeriesRepository<T> implements TimeSeriesRepository<T> 
             }
         }
         return groupMap.values().stream().map(m -> converter.fromMap(m, poClass)).toList();
-    }
-
-    @Override
-    public TimeSeriesResult<T> findByTimePoints(TimeSeriesTimePointQuery query) {
-        if (query.getTimestampList() == null || query.getTimestampList().isEmpty()) {
-            return TimeSeriesResult.of();
-        }
-
-        Consumer<Filterable> timePointFilterable = f -> f.in(InfluxDbConstants.TIME_COLUMN, query.getTimestampList().toArray(new Long[0]));
-        Consumer<Filterable> filterable = query.getFilterable() == null ? timePointFilterable : query.getFilterable().andThen(timePointFilterable);
-        long currMillis = System.currentTimeMillis();
-        List<FluxTable> queryRes = this.client.getQueryApi().query(new FluxQueryBuilder(bucket, tableName)
-                .start(query.getTimestampList().stream().min(Long::compare).orElseGet(() -> currMillis - (365L * 24 * 60 * 60 * 1000)))
-                .end(query.getTimestampList().stream().max(Long::compare).orElse(currMillis) + 1)
-                .filter(filterable)
-                .build());
-        return convertToPOResult(queryRes);
-    }
-
-    @Override
-    public TimeSeriesResult<T> findByPeriod(TimeSeriesPeriodQuery query) {
-        TimeSeriesCursor cursor = query.getCursor();
-        Long pageSize = query.getPageSize();
-        TimeSeriesQueryOrder order = query.getOrder();
-
-        Long start;
-        Long end;
-        if (cursor == null) {
-            start = query.getStartTimestamp();
-            end = query.getEndTimestamp();
-        } else {
-            if (order == TimeSeriesQueryOrder.ASC) {
-                start = cursor.getTimestamp();
-                end = query.getEndTimestamp();
-            } else {
-                start = query.getStartTimestamp();
-                end = cursor.getTimestamp() + 1;
-            }
-        }
-
-        FluxQueryBuilder queryBuilder = new FluxQueryBuilder(bucket, tableName)
-                .start(start)
-                .end(end)
-                .filter(query.getFilterable())
-                .indexedColumns(indexedColumns)
-                .cursor(cursor)
-                .limit(Math.toIntExact(pageSize + 1))
-                .order(order);
-
-        List<FluxTable> tables = this.client.getQueryApi().query(queryBuilder.build());
-
-        List<T> result = convertToPOList(tables);
-
-        TimeSeriesCursor nextCursor = null;
-
-        if (result.size() > pageSize) {
-            T lastItem = result.get(Math.toIntExact(pageSize));
-            Map<String, Object> map = converter.toMap(lastItem);
-            Long lastTime = (Long) map.get(timeColumn);
-
-            TimeSeriesCursor.Builder cursorBuilder = new TimeSeriesCursor.Builder(lastTime);
-            for (String column : indexedColumns) {
-                cursorBuilder.putIndexedKeyValues(column, map.get(column));
-            }
-            nextCursor = cursorBuilder.build();
-
-            result = result.subList(0, Math.toIntExact(pageSize));
-        }
-        return TimeSeriesResult.of(result, nextCursor);
     }
 
     @Override
