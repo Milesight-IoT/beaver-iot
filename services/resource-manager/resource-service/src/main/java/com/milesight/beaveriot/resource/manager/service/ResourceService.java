@@ -5,7 +5,11 @@ import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
+import com.milesight.beaveriot.context.enums.ResourceRefType;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.context.security.TenantContext;
+import com.milesight.beaveriot.data.model.TimeSeriesCategory;
+import com.milesight.beaveriot.data.timeseries.common.TimeSeriesProperty;
 import com.milesight.beaveriot.resource.ResourceStorage;
 import com.milesight.beaveriot.resource.manager.constants.ResourceManagerConstants;
 import com.milesight.beaveriot.resource.manager.dto.ResourceRefDTO;
@@ -24,18 +28,23 @@ import com.milesight.beaveriot.scheduler.core.model.ScheduleRule;
 import com.milesight.beaveriot.scheduler.core.model.ScheduleSettings;
 import com.milesight.beaveriot.scheduler.core.model.ScheduleType;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.*;
 
 /**
  * ResourceService class.
@@ -46,6 +55,8 @@ import java.util.Set;
 @Service
 @Slf4j
 public class ResourceService implements ResourceManagerFacade {
+    ThreadPoolExecutor asyncUnlinkThreadPoolExecutor;
+
     @Autowired
     ResourceStorage resourceStorage;
 
@@ -60,6 +71,27 @@ public class ResourceService implements ResourceManagerFacade {
 
     @Autowired
     Scheduler scheduler;
+
+    @Autowired
+    TimeSeriesProperty timeSeriesProperty;
+
+    private ThreadPoolExecutor buildAsyncUnlinkThreadPoolExecutor() {
+        int corePoolSize = Runtime.getRuntime().availableProcessors() * 2;
+        int maxPoolSize = corePoolSize * 2;
+        long keepAliveTime = 60L;
+        TimeUnit unit = TimeUnit.SECONDS;
+        BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>(1000);
+        RejectedExecutionHandler handler = new ThreadPoolExecutor.CallerRunsPolicy();
+
+        return new ThreadPoolExecutor(
+                corePoolSize,
+                maxPoolSize,
+                keepAliveTime,
+                unit,
+                workQueue,
+                handler
+        );
+    }
 
     public PreSignResult createPreSign(RequestUploadConfig request) {
         PreSignResult preSignResult = resourceStorage.createUploadPreSign(request.getFileName());
@@ -162,6 +194,19 @@ public class ResourceService implements ResourceManagerFacade {
         cleanUpResources(refList.stream().map(ResourceRefPO::getResourceId).distinct().toList());
     }
 
+    public void unlinkRefAsync(ResourceRefDTO resourceRefDTO) {
+        ResourceService self = self();
+        String tenantId = TenantContext.getTenantId();
+        asyncUnlinkThreadPoolExecutor.execute(() -> {
+            TenantContext.setTenantId(tenantId);
+            self.unlinkRef(resourceRefDTO);
+        });
+    }
+
+    public ResourceService self() {
+        return (ResourceService) AopContext.currentProxy();
+    }
+
     @Override
     public InputStream getDataByUrl(String url) {
         ResourcePO resourcePO = resourceRepository.findOneByUrl(url);
@@ -201,12 +246,37 @@ public class ResourceService implements ResourceManagerFacade {
 
     @PostConstruct
     protected void init() {
+        asyncUnlinkThreadPoolExecutor = buildAsyncUnlinkThreadPoolExecutor();
+
         ScheduleRule rule = new ScheduleRule();
         rule.setPeriodSecond(ResourceManagerConstants.CLEAR_TEMP_RESOURCE_INTERVAL.toSeconds());
         ScheduleSettings settings = new ScheduleSettings();
         settings.setScheduleType(ScheduleType.FIXED_RATE);
         settings.setScheduleRule(rule);
         scheduler.schedule("clear-temp-resource", settings, task -> this.clearExpiredTempResource());
+
+        rule = new ScheduleRule();
+        rule.setPeriodSecond(ResourceManagerConstants.AUTO_UNLINK_RESOURCE_INTERVAL.toSeconds());
+        settings = new ScheduleSettings();
+        settings.setScheduleType(ScheduleType.FIXED_RATE);
+        settings.setScheduleRule(rule);
+        scheduler.schedule("auto-unlink-resource", settings, task -> this.autoUnlinkResource());
+    }
+
+    @PreDestroy
+    public void onDestroy() {
+        closeAsyncUnlinkThreadPoolExecutorGracefully();
+    }
+
+    private void closeAsyncUnlinkThreadPoolExecutorGracefully() {
+        asyncUnlinkThreadPoolExecutor.shutdown();
+        try {
+            if (!asyncUnlinkThreadPoolExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+                asyncUnlinkThreadPoolExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            asyncUnlinkThreadPoolExecutor.shutdownNow();
+        }
     }
 
     protected Page<ResourceTempPO> getBatchExpiredTempResource() {
@@ -229,5 +299,21 @@ public class ResourceService implements ResourceManagerFacade {
 
             expiredTempList = getBatchExpiredTempResource();
         }
+    }
+
+    protected void autoUnlinkResource() {
+        unlinkRefType(ResourceRefType.ENTITY_HISTORY.name(), timeSeriesProperty.getRetention().get(TimeSeriesCategory.TELEMETRY));
+    }
+
+    private void unlinkRefType(String refType, Duration expireDuration) {
+        Long expirationThreshold = System.currentTimeMillis() - expireDuration.toMillis();
+        List<ResourceRefPO> pos = resourceRefRepository.findAll(f -> f.eq(ResourceRefPO.Fields.refType, refType)
+                .and(f2 -> f2.lt(ResourceRefPO.Fields.createdAt, expirationThreshold)));
+        if (CollectionUtils.isEmpty(pos)) {
+            return;
+        }
+
+        log.debug("Unlinking {} resource references of type '{}' created before {}", pos.size(), refType, expirationThreshold);
+        pos.forEach(po -> unlinkRefAsync(ResourceRefDTO.of(po.getRefId(), po.getRefType())));
     }
 }

@@ -2,6 +2,7 @@ package com.milesight.beaveriot.entity.service;
 
 import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheEvict;
 import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheable;
+import com.milesight.beaveriot.base.annotations.cacheable.CacheKeys;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.Sorts;
@@ -35,6 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -100,46 +102,58 @@ public class EntityValueService implements EntityValueServiceProvider {
 
     @Override
     @Transactional
-    public void saveValues(ExchangePayload exchange, long timestamp) {
+    public Map<String, Pair<Long, Long>> saveValues(ExchangePayload exchange, long timestamp) {
+        Map<String, Pair<Long, Long>> entityKeyLatestIdAndHistoryIds = new HashMap<>();
+
         // Save event entities， only save history
         Map<String, Object> eventEntities = exchange.getPayloadsByEntityType(EntityType.EVENT);
         if (!ObjectUtils.isEmpty(eventEntities)) {
-            saveHistoryRecord(eventEntities, timestamp);
+            Map<String, Long> entityKeyHistoryIds = saveHistoryRecord(eventEntities, timestamp);
+            entityKeyLatestIdAndHistoryIds.putAll(entityKeyHistoryIds.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> Pair.of(-1L, entry.getValue()))));
         }
 
         // Save property entities
         Map<String, Object> propertyEntities = exchange.getPayloadsByEntityType(EntityType.PROPERTY);
         if (!ObjectUtils.isEmpty(propertyEntities)) {
-            saveLatestValues(ExchangePayload.create(propertyEntities));
-            saveHistoryRecord(propertyEntities, timestamp);
+            Map<String, Long> entityKeyLatestIds = saveLatestValues(ExchangePayload.create(propertyEntities));
+            Map<String, Long> entityKeyHistoryIds = saveHistoryRecord(propertyEntities, timestamp);
+            entityKeyLatestIdAndHistoryIds.putAll(entityKeyLatestIds.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> Pair.of(entry.getValue(), entityKeyHistoryIds.get(entry.getKey())))));
         }
 
         // Save service entities， only save history
         Map<String, Object> serviceEntities = exchange.getPayloadsByEntityType(EntityType.SERVICE);
         if (!ObjectUtils.isEmpty(serviceEntities)) {
-            saveHistoryRecord(serviceEntities, timestamp);
+            Map<String, Long> entityKeyHistoryIds = saveHistoryRecord(serviceEntities, timestamp);
+            entityKeyLatestIdAndHistoryIds.putAll(entityKeyHistoryIds.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> Pair.of(-1L, entry.getValue()))));
         }
+
+        return entityKeyLatestIdAndHistoryIds;
     }
 
     @Override
-    public void saveValues(ExchangePayload exchangePayload) {
-        saveValues(exchangePayload, exchangePayload.getTimestamp());
+    public Map<String, Pair<Long, Long>> saveValues(ExchangePayload exchangePayload) {
+        return self().saveValues(exchangePayload, exchangePayload.getTimestamp());
     }
 
     @Override
-    public void saveLatestValues(ExchangePayload values) {
-        self().saveLatestValues(values, System.currentTimeMillis());
+    public Map<String, Long> saveLatestValues(ExchangePayload values) {
+        return self().saveLatestValues(values, System.currentTimeMillis());
     }
 
-    @BatchCacheEvict(cacheNames = CacheKeyConstants.ENTITY_LATEST_VALUE_CACHE_NAME, key = "#result", keyPrefix = CacheKeyConstants.TENANT_PREFIX)
-    public List<String> saveLatestValues(Map<String, Object> values, long timestamp) {
+    @BatchCacheEvict(cacheNames = CacheKeyConstants.ENTITY_LATEST_VALUE_CACHE_NAME, keyPrefix = CacheKeyConstants.TENANT_PREFIX)
+    public void evictLatestValues(@CacheKeys Collection<String> keys) {
+    }
+
+    public Map<String, Long> saveLatestValues(Map<String, Object> values, long timestamp) {
         if (values == null || values.isEmpty()) {
-            return List.of();
+            return Collections.emptyMap();
         }
+
+        Map<String, Long> entityKeyLatestIds = new HashMap<>();
         List<String> entityKeys = values.keySet().stream().toList();
         List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, entityKeys.toArray()));
         if (entityPOList == null || entityPOList.isEmpty()) {
-            return List.of();
+            return Collections.emptyMap();
         }
         Map<String, EntityPO> entityKeyMap = entityPOList.stream().collect(Collectors.toMap(EntityPO::getKey, Function.identity()));
         List<Long> entityIds = entityPOList.stream().map(EntityPO::getId).toList();
@@ -157,7 +171,7 @@ public class EntityValueService implements EntityValueServiceProvider {
             Long entityId = entityPO.getId();
             EntityValueType entityValueType = entityPO.getValueType();
             EntityLatestPO dataEntityLatest = entityIdDataMap.get(entityId);
-            Long entityLatestId = null;
+            Long entityLatestId;
             if (dataEntityLatest == null) {
                 entityLatestId = SnowflakeUtil.nextId();
             } else {
@@ -173,34 +187,39 @@ public class EntityValueService implements EntityValueServiceProvider {
             entityLatestPO.setValue(entityValueType, payload);
             entityLatestPO.setTimestamp(timestamp);
             entityLatestPOList.add(entityLatestPO);
+            entityKeyLatestIds.put(entityKey, entityLatestId);
         });
+
         entityLatestRepository.saveAll(entityLatestPOList);
-        return entityKeys;
+        self().evictLatestValues(values.keySet());
+        return entityKeyLatestIds;
     }
 
     @Override
-    public void saveHistoryRecord(Map<String, Object> recordValues) {
-        saveHistoryRecord(recordValues, System.currentTimeMillis());
+    public Map<String, Long> saveHistoryRecord(Map<String, Object> recordValues) {
+        return saveHistoryRecord(recordValues, System.currentTimeMillis());
     }
 
     @Override
-    public void saveHistoryRecord(Map<String, Object> recordValues, long timestamp) {
-        doSaveHistoryRecord(recordValues, timestamp, false);
+    public Map<String, Long> saveHistoryRecord(Map<String, Object> recordValues, long timestamp) {
+        return doSaveHistoryRecord(recordValues, timestamp, false);
     }
 
     @Override
-    public void mergeHistoryRecord(Map<String, Object> recordValues, long timestamp) {
-        doSaveHistoryRecord(recordValues, timestamp, true);
+    public Map<String, Long> mergeHistoryRecord(Map<String, Object> recordValues, long timestamp) {
+        return doSaveHistoryRecord(recordValues, timestamp, true);
     }
 
-    private void doSaveHistoryRecord(Map<String, Object> recordValues, long timestamp, boolean isMerge) {
+    private Map<String, Long> doSaveHistoryRecord(Map<String, Object> recordValues, long timestamp, boolean isMerge) {
         if (recordValues == null || recordValues.isEmpty()) {
-            return;
+            return Collections.emptyMap();
         }
+
+        Map<String, Long> entityKeyHistoryIds = new HashMap<>();
         List<String> entityKeys = recordValues.keySet().stream().toList();
         List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, entityKeys.toArray()));
         if (entityPOList == null || entityPOList.isEmpty()) {
-            return;
+            return Collections.emptyMap();
         }
         Map<String, EntityPO> entityKeyMap = entityPOList.stream().collect(Collectors.toMap(EntityPO::getKey, Function.identity()));
         Map<String, EntityHistoryPO> keyToExistingHistoryRecord = new HashMap<>();
@@ -219,7 +238,7 @@ public class EntityValueService implements EntityValueServiceProvider {
             EntityValueType entityValueType = entityPO.getValueType();
             EntityHistoryPO entityHistoryPO = new EntityHistoryPO();
             EntityHistoryPO dataHistory = keyToExistingHistoryRecord.get(entityKey);
-            Long historyId = null;
+            Long historyId;
             String operatorId = SecurityUserContext.getUserId() == null ? null : SecurityUserContext.getUserId().toString();
             if (dataHistory == null) {
                 historyId = SnowflakeUtil.nextId();
@@ -235,8 +254,11 @@ public class EntityValueService implements EntityValueServiceProvider {
             entityHistoryPO.setTimestamp(timestamp);
             entityHistoryPO.setUpdatedBy(operatorId);
             entityHistoryPOList.add(entityHistoryPO);
+            entityKeyHistoryIds.put(entityKey, historyId);
         });
+
         entityHistoryRepository.saveAll(entityHistoryPOList);
+        return entityKeyHistoryIds;
     }
 
     private Map<String, EntityHistoryPO> getExistingEntityHistoryMap(Map<String, Long> entityKeyToId, long timestamp) {

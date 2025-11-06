@@ -18,5 +18,7 @@ public class ResourceManagerConstants {
 
     public static final Duration CLEAR_TEMP_RESOURCE_INTERVAL = Duration.of(1, ChronoUnit.MINUTES);
 
+    public static final Duration AUTO_UNLINK_RESOURCE_INTERVAL = Duration.of(1, ChronoUnit.MINUTES);
+
     public static final int CLEAR_TEMP_BATCH_SIZE = 1_000;
 }

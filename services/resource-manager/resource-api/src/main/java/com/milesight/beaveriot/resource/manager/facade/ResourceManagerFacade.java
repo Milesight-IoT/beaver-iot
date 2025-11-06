@@ -12,9 +12,8 @@ import java.io.InputStream;
  */
 public interface ResourceManagerFacade {
     void linkByUrl(String url, ResourceRefDTO resourceRefDTO);
-
     void unlinkRef(ResourceRefDTO resourceRefDTO);
-
+    void unlinkRefAsync(ResourceRefDTO resourceRefDTO);
     InputStream getDataByUrl(String url);
     String getResourceNameByUrl(String url);
 }

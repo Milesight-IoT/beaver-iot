@@ -51,6 +51,16 @@
             <artifactId>scheduler</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>data-components</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.milesight.beaveriot</groupId>
+            <artifactId>data-timeseries-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- unit test -->
         <dependency>

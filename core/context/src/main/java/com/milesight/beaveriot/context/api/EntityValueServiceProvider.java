@@ -3,6 +3,7 @@ package com.milesight.beaveriot.context.api;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
 import lombok.*;
+import org.springframework.data.util.Pair;
 
 import java.util.List;
 import java.util.Map;
@@ -21,17 +22,17 @@ public interface EntityValueServiceProvider {
 
     void saveValuesAndPublishAsync(ExchangePayload exchangePayload, String eventType);
 
-    void saveLatestValues(ExchangePayload exchangePayload);
+    Map<String, Long> saveLatestValues(ExchangePayload exchangePayload);
 
-    void saveValues(ExchangePayload exchangePayload, long timestamp);
+    Map<String, Pair<Long, Long>> saveValues(ExchangePayload exchangePayload, long timestamp);
 
-    void saveValues(ExchangePayload exchangePayload);
+    Map<String, Pair<Long, Long>> saveValues(ExchangePayload exchangePayload);
 
-    void saveHistoryRecord(Map<String, Object> recordValues, long timestamp);
+    Map<String, Long> saveHistoryRecord(Map<String, Object> recordValues, long timestamp);
 
-    void saveHistoryRecord(Map<String, Object> recordValues);
+    Map<String, Long> saveHistoryRecord(Map<String, Object> recordValues);
 
-    void mergeHistoryRecord(Map<String, Object> recordValues, long timestamp);
+    Map<String, Long> mergeHistoryRecord(Map<String, Object> recordValues, long timestamp);
 
     /**
      * Check if the entity history records exist

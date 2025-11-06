@@ -13,6 +13,7 @@ import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.IntegrationServiceProvider;
 import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
+import com.milesight.beaveriot.context.enums.ResourceRefType;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
@@ -39,6 +40,7 @@ import com.milesight.beaveriot.entity.model.request.EntityModifyRequest;
 import com.milesight.beaveriot.entity.model.request.ServiceCallRequest;
 import com.milesight.beaveriot.entity.model.request.UpdatePropertyEntityRequest;
 import com.milesight.beaveriot.entity.model.response.EntityMetaResponse;
+import com.milesight.beaveriot.entity.po.EntityLatestPO;
 import com.milesight.beaveriot.entity.po.EntityPO;
 import com.milesight.beaveriot.entity.repository.EntityLatestRepository;
 import com.milesight.beaveriot.entity.repository.EntityRepository;
@@ -46,6 +48,8 @@ import com.milesight.beaveriot.eventbus.EventBus;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.permission.facade.IPermissionFacade;
+import com.milesight.beaveriot.resource.manager.dto.ResourceRefDTO;
+import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
 import com.milesight.beaveriot.rule.dto.WorkflowNameDTO;
 import com.milesight.beaveriot.rule.facade.IWorkflowFacade;
 import com.milesight.beaveriot.user.enums.ResourceType;
@@ -118,6 +122,9 @@ public class EntityService implements EntityServiceProvider {
 
     @Autowired
     IPermissionFacade permissionFacade;
+
+    @Autowired
+    ResourceManagerFacade resourceManagerFacade;
 
     private static Entity convertPOToEntity(EntityPO entityPO, Map<String, DeviceNameDTO> deviceIdToDetails) {
         String integrationId = null;
@@ -458,7 +465,12 @@ public class EntityService implements EntityServiceProvider {
 
         entityRepository.deleteAllById(entityIdList);
         entityValueService.deleteEntityHistory(entityIdList);
-        entityLatestRepository.deleteByEntityIdIn(entityIdList);
+        List<EntityLatestPO> entityLatestPOS = entityLatestRepository.findByEntityIdIn(entityIdList);
+        if (!CollectionUtils.isEmpty(entityLatestPOS)) {
+            List<Long> entityLatestIds = entityLatestPOS.stream().map(EntityLatestPO::getId).toList();
+            entityLatestRepository.deleteAll(entityLatestPOS);
+            entityLatestIds.forEach(entityLatestId -> resourceManagerFacade.unlinkRefAsync(ResourceRefDTO.of(String.valueOf(entityLatestId), ResourceRefType.ENTITY_LATEST.name())));
+        }
         userFacade.deleteResource(ResourceType.ENTITY, entityIdList);
 
         List<Entity> entityList = convertPOListToEntities(entityPOList);
