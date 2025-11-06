@@ -28,6 +28,7 @@ import com.milesight.beaveriot.scheduler.core.model.ScheduleRule;
 import com.milesight.beaveriot.scheduler.core.model.ScheduleSettings;
 import com.milesight.beaveriot.scheduler.core.model.ScheduleType;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +55,7 @@ import java.util.concurrent.*;
 @Service
 @Slf4j
 public class ResourceService implements ResourceManagerFacade {
-    ThreadPoolExecutor asyncUnlinkThreadPoolExecutor = buildAsyncUnlinkThreadPoolExecutor();
+    ThreadPoolExecutor asyncUnlinkThreadPoolExecutor;
 
     @Autowired
     ResourceStorage resourceStorage;
@@ -245,6 +246,8 @@ public class ResourceService implements ResourceManagerFacade {
 
     @PostConstruct
     protected void init() {
+        asyncUnlinkThreadPoolExecutor = buildAsyncUnlinkThreadPoolExecutor();
+
         ScheduleRule rule = new ScheduleRule();
         rule.setPeriodSecond(ResourceManagerConstants.CLEAR_TEMP_RESOURCE_INTERVAL.toSeconds());
         ScheduleSettings settings = new ScheduleSettings();
@@ -258,6 +261,22 @@ public class ResourceService implements ResourceManagerFacade {
         settings.setScheduleType(ScheduleType.FIXED_RATE);
         settings.setScheduleRule(rule);
         scheduler.schedule("auto-unlink-resource", settings, task -> this.autoUnlinkResource());
+    }
+
+    @PreDestroy
+    public void onDestroy() {
+        closeAsyncUnlinkThreadPoolExecutorGracefully();
+    }
+
+    private void closeAsyncUnlinkThreadPoolExecutorGracefully() {
+        asyncUnlinkThreadPoolExecutor.shutdown();
+        try {
+            if (!asyncUnlinkThreadPoolExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+                asyncUnlinkThreadPoolExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            asyncUnlinkThreadPoolExecutor.shutdownNow();
+        }
     }
 
     protected Page<ResourceTempPO> getBatchExpiredTempResource() {
