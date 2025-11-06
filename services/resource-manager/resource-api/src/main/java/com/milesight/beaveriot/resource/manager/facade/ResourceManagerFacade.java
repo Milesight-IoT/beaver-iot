@@ -14,7 +14,7 @@ public interface ResourceManagerFacade {
     void linkByUrl(String url, ResourceRefDTO resourceRefDTO);
     void unlinkRef(ResourceRefDTO resourceRefDTO);
     void unlinkRefAsync(ResourceRefDTO resourceRefDTO);
-    String upload(String fileName, String contentType, byte[] data);
+    String putTempResource(String fileName, String contentType, byte[] data);
     InputStream getDataByUrl(String url);
     String getResourceNameByUrl(String url);
 }

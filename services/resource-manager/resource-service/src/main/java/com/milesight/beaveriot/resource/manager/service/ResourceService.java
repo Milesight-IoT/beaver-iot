@@ -95,7 +95,7 @@ public class ResourceService implements ResourceManagerFacade, ResourceServicePr
     }
 
     @Override
-    public String upload(String fileName, String contentType, byte[] data) {
+    public String putTempResource(String fileName, String contentType, byte[] data) {
         RequestUploadConfig request = new RequestUploadConfig();
         request.setFileName(fileName);
 
