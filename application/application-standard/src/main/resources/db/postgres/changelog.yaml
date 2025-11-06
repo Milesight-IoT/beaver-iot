@@ -17,3 +17,6 @@ databaseChangeLog:
   - includeAll:
       path: sql/v1.3.0
       relativeToChangelogFile: true
+  - includeAll:
+      path: sql/v1.3.1
+      relativeToChangelogFile: true
