@@ -15,4 +15,8 @@ public class ResourceRefDTO {
     private String refId;
 
     private String refType;
+
+    public static ResourceRefDTO of(String refId, String refType) {
+        return new ResourceRefDTO(refId, refType);
+    }
 }

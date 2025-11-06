@@ -5,6 +5,7 @@ import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
 import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryAddress;
 import com.milesight.beaveriot.blueprint.library.model.BlueprintLibraryVersion;
 import com.milesight.beaveriot.blueprint.library.service.*;
+import com.milesight.beaveriot.context.enums.ResourceRefType;
 import com.milesight.beaveriot.context.integration.model.DeviceTemplate;
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
@@ -110,7 +111,7 @@ public class BlueprintLibraryCleaner {
     private void tryUnlinkResource(BlueprintLibraryAddress blueprintLibraryAddress) {
         if (blueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.UPLOAD) {
             try {
-                ResourceRefDTO resourceRefDTO = new ResourceRefDTO(blueprintLibraryAddress.getKey(), BlueprintLibraryAddress.RESOURCE_TYPE);
+                ResourceRefDTO resourceRefDTO = new ResourceRefDTO(blueprintLibraryAddress.getKey(), ResourceRefType.BLUEPRINT_LIBRARY_ADDRESS.name());
                 resourceManagerFacade.unlinkRef(resourceRefDTO);
             } catch (Exception e) {
                 log.warn("Try unlink url {} to resource failed.", blueprintLibraryAddress.getUrl());

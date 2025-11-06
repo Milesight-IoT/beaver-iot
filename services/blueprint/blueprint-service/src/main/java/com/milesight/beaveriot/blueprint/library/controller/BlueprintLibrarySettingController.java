@@ -13,6 +13,7 @@ import com.milesight.beaveriot.blueprint.library.model.response.QueryBlueprintLi
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryAddressService;
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibraryService;
 import com.milesight.beaveriot.blueprint.library.service.BlueprintLibrarySubscriptionService;
+import com.milesight.beaveriot.context.enums.ResourceRefType;
 import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySyncStatus;
@@ -147,7 +148,7 @@ public class BlueprintLibrarySettingController {
     private void tryLinkResource(BlueprintLibraryAddress blueprintLibraryAddress) {
         if (blueprintLibraryAddress.getSourceType() == BlueprintLibrarySourceType.UPLOAD) {
             try {
-                ResourceRefDTO resourceRefDTO = new ResourceRefDTO(blueprintLibraryAddress.getKey(), BlueprintLibraryAddress.RESOURCE_TYPE);
+                ResourceRefDTO resourceRefDTO = new ResourceRefDTO(blueprintLibraryAddress.getKey(), ResourceRefType.BLUEPRINT_LIBRARY_ADDRESS.name());
                 resourceManagerFacade.linkByUrl(blueprintLibraryAddress.getUrl(), resourceRefDTO);
             } catch (Exception e) {
                 log.warn("Try link url {} to resource failed.", blueprintLibraryAddress.getUrl());

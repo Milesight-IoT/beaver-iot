@@ -29,7 +29,6 @@ import java.util.Objects;
 @Slf4j
 @Data
 public abstract class BlueprintLibraryAddress {
-    public static final String RESOURCE_TYPE = "blueprint-library-address";
     private static final ResourceManagerFacade resourceManagerFacade = SpringContext.getBean(ResourceManagerFacade.class);
     protected BlueprintLibraryType type;
     protected String url;
