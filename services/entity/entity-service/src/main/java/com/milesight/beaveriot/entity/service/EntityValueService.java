@@ -2,6 +2,7 @@ package com.milesight.beaveriot.entity.service;
 
 import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheEvict;
 import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheable;
+import com.milesight.beaveriot.base.annotations.cacheable.CacheKeys;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.Sorts;
@@ -139,7 +140,10 @@ public class EntityValueService implements EntityValueServiceProvider {
         return self().saveLatestValues(values, System.currentTimeMillis());
     }
 
-    @BatchCacheEvict(cacheNames = CacheKeyConstants.ENTITY_LATEST_VALUE_CACHE_NAME, key = "#result", keyPrefix = CacheKeyConstants.TENANT_PREFIX)
+    @BatchCacheEvict(cacheNames = CacheKeyConstants.ENTITY_LATEST_VALUE_CACHE_NAME, keyPrefix = CacheKeyConstants.TENANT_PREFIX)
+    public void evictLatestValues(@CacheKeys Collection<String> keys) {
+    }
+
     public Map<String, Long> saveLatestValues(Map<String, Object> values, long timestamp) {
         if (values == null || values.isEmpty()) {
             return Collections.emptyMap();
@@ -185,7 +189,9 @@ public class EntityValueService implements EntityValueServiceProvider {
             entityLatestPOList.add(entityLatestPO);
             entityKeyLatestIds.put(entityKey, entityLatestId);
         });
+
         entityLatestRepository.saveAll(entityLatestPOList);
+        self().evictLatestValues(values.keySet());
         return entityKeyLatestIds;
     }
 
