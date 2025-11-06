@@ -11,7 +11,7 @@ import com.milesight.beaveriot.context.model.BlueprintLibrary;
 import com.milesight.beaveriot.context.model.BlueprintLibrarySourceType;
 import com.milesight.beaveriot.context.support.SpringContext;
 import com.milesight.beaveriot.devicetemplate.facade.IDeviceTemplateFacade;
-import com.milesight.beaveriot.resource.manager.dto.ResourceRefDTO;
+import com.milesight.beaveriot.context.model.ResourceRefDTO;
 import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
 import com.milesight.beaveriot.user.facade.ITenantFacade;
 import lombok.extern.slf4j.Slf4j;
