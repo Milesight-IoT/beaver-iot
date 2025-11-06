@@ -5,6 +5,7 @@ import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
+import com.milesight.beaveriot.context.api.ResourceServiceProvider;
 import com.milesight.beaveriot.context.enums.ResourceRefType;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.context.security.TenantContext;
@@ -12,7 +13,7 @@ import com.milesight.beaveriot.data.model.TimeSeriesCategory;
 import com.milesight.beaveriot.data.timeseries.common.TimeSeriesProperty;
 import com.milesight.beaveriot.resource.ResourceStorage;
 import com.milesight.beaveriot.resource.manager.constants.ResourceManagerConstants;
-import com.milesight.beaveriot.resource.manager.dto.ResourceRefDTO;
+import com.milesight.beaveriot.context.model.ResourceRefDTO;
 import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
 import com.milesight.beaveriot.resource.manager.model.request.RequestUploadConfig;
 import com.milesight.beaveriot.resource.manager.po.ResourcePO;
@@ -54,7 +55,7 @@ import java.util.concurrent.*;
  */
 @Service
 @Slf4j
-public class ResourceService implements ResourceManagerFacade {
+public class ResourceService implements ResourceManagerFacade, ResourceServiceProvider {
     ThreadPoolExecutor asyncUnlinkThreadPoolExecutor;
 
     @Autowired
@@ -91,6 +92,16 @@ public class ResourceService implements ResourceManagerFacade {
                 workQueue,
                 handler
         );
+    }
+
+    @Override
+    public String upload(String fileName, String contentType, byte[] data) {
+        RequestUploadConfig request = new RequestUploadConfig();
+        request.setFileName(fileName);
+
+        PreSignResult preSignResult = createPreSign(request);
+        resourceStorage.upload(preSignResult.getKey(), contentType, data);
+        return preSignResult.getResourceUrl();
     }
 
     public PreSignResult createPreSign(RequestUploadConfig request) {

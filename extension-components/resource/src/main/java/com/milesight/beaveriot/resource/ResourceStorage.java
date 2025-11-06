@@ -3,9 +3,10 @@ package com.milesight.beaveriot.resource;
 import com.milesight.beaveriot.resource.adapter.BaseResourceAdapter;
 import com.milesight.beaveriot.resource.config.ResourceConstants;
 import com.milesight.beaveriot.resource.model.PreSignResult;
+import com.milesight.beaveriot.resource.model.PutResourceRequest;
 import com.milesight.beaveriot.resource.model.ResourceStat;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
@@ -21,7 +22,7 @@ import java.util.UUID;
 @Component
 @Slf4j
 public class ResourceStorage {
-    @Autowired
+    @Resource
     BaseResourceAdapter resourceAdapter;
 
     /**
@@ -51,8 +52,13 @@ public class ResourceStorage {
     /**
      * Upload resource
      */
-    public String upload() {
-        return null;
+    public void upload(String objKey, String contentType, byte[] data) {
+        PutResourceRequest request = new PutResourceRequest();
+        request.setObjectKey(objKey);
+        request.setContentType(contentType);
+        request.setContentInput(new ByteArrayInputStream(data));
+        request.setContentLength((long) data.length);
+        resourceAdapter.putResource(request);
     }
 
     /**

@@ -20,7 +20,7 @@ import com.milesight.beaveriot.context.model.BlueprintLibrarySyncStatus;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.permission.aspect.OperationPermission;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
-import com.milesight.beaveriot.resource.manager.dto.ResourceRefDTO;
+import com.milesight.beaveriot.context.model.ResourceRefDTO;
 import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;

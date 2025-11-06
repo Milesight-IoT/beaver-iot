@@ -48,7 +48,7 @@ import com.milesight.beaveriot.eventbus.EventBus;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.permission.facade.IPermissionFacade;
-import com.milesight.beaveriot.resource.manager.dto.ResourceRefDTO;
+import com.milesight.beaveriot.context.model.ResourceRefDTO;
 import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
 import com.milesight.beaveriot.rule.dto.WorkflowNameDTO;
 import com.milesight.beaveriot.rule.facade.IWorkflowFacade;
@@ -203,7 +203,7 @@ public class EntityService implements EntityServiceProvider {
                 attachTargetId = entity.getIntegrationId();
             }
             EntityPO entityPO = new EntityPO();
-            Long entityId = null;
+            Long entityId;
             EntityPO dataEntityPO = dataEntityKeyMap.get(entity.getKey());
             if (dataEntityPO == null) {
                 entityId = SnowflakeUtil.nextId();
@@ -328,8 +328,7 @@ public class EntityService implements EntityServiceProvider {
         if (entityList == null || entityList.isEmpty()) {
             return;
         }
-        List<Entity> allEntityList = new ArrayList<>();
-        allEntityList.addAll(entityList);
+        List<Entity> allEntityList = new ArrayList<>(entityList);
         entityList.forEach(entity -> {
             List<Entity> childrenEntityList = entity.getChildren();
             if (childrenEntityList != null && !childrenEntityList.isEmpty()) {
@@ -893,7 +892,6 @@ public class EntityService implements EntityServiceProvider {
      *
      * @param entityId            entity ID
      * @param entityModifyRequest entity modify request
-     * @return entity metadata
      */
     @Transactional(rollbackFor = Throwable.class)
     public void updateEntityBasicInfo(Long entityId, EntityModifyRequest entityModifyRequest) {

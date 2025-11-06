@@ -6,7 +6,7 @@ import com.milesight.beaveriot.dashboard.enums.DashboardErrorCode;
 import com.milesight.beaveriot.dashboard.po.DashboardPO;
 import com.milesight.beaveriot.dashboard.po.DashboardPresetCoverPO;
 import com.milesight.beaveriot.dashboard.repository.DashboardPresetCoverRepository;
-import com.milesight.beaveriot.resource.manager.dto.ResourceRefDTO;
+import com.milesight.beaveriot.context.model.ResourceRefDTO;
 import com.milesight.beaveriot.context.enums.ResourceRefType;
 import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -17,7 +17,7 @@ import com.milesight.beaveriot.device.dto.DeviceResponseData;
 import com.milesight.beaveriot.permission.enums.DataPermissionType;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import com.milesight.beaveriot.permission.facade.IPermissionFacade;
-import com.milesight.beaveriot.resource.manager.dto.ResourceRefDTO;
+import com.milesight.beaveriot.context.model.ResourceRefDTO;
 import com.milesight.beaveriot.context.enums.ResourceRefType;
 import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
 import org.springframework.beans.factory.annotation.Autowired;
