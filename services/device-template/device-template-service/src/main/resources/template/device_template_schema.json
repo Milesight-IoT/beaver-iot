@@ -187,6 +187,10 @@
           "type": "string",
           "enum": ["R", "W", "RW"]
         },
+        "value_store_mod": {
+          "type": "string",
+          "enum": ["LATEST", "HISTORY", "ALL", "NONE"]
+        },
         "attributes": {
           "type": "object",
           "properties": {

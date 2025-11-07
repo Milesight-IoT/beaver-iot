@@ -3,6 +3,8 @@ package com.milesight.beaveriot.context.integration.model;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
+import com.milesight.beaveriot.context.integration.enums.ValueStoreMod;
+import com.milesight.beaveriot.context.integration.support.ValueStoreModSupport;
 import com.milesight.beaveriot.context.support.IdentifierValidator;
 import org.springframework.util.StringUtils;
 
@@ -18,7 +20,7 @@ public class BaseEntityBuilder<T extends BaseEntityBuilder<T>> {
 
     protected String identifier;
     protected AccessMod accessMod;
-
+    protected ValueStoreMod valueStoreMod;
     protected EntityType type;
     protected EntityValueType valueType;
     protected Map<String, Object> attributes;
@@ -63,10 +65,16 @@ public class BaseEntityBuilder<T extends BaseEntityBuilder<T>> {
         return this.attributes(attributeSupplier.get());
     }
 
+    public T valueStoreMod(ValueStoreMod valueStoreMod) {
+        this.valueStoreMod = valueStoreMod;
+        return (T) this;
+    }
+
     public T property(String name, AccessMod accessMod) {
         this.name = name;
-        this.accessMod = accessMod;
         this.type = EntityType.PROPERTY;
+        this.accessMod = accessMod;
+        this.formatValueStoreMod();
         if (!StringUtils.hasLength(identifier)) {
             this.identifier = name;
         }
@@ -77,6 +85,7 @@ public class BaseEntityBuilder<T extends BaseEntityBuilder<T>> {
         this.name = name;
         this.type = EntityType.SERVICE;
         this.accessMod = AccessMod.W;
+        this.formatValueStoreMod();
         if (!StringUtils.hasLength(identifier)) {
             this.identifier = name;
         }
@@ -87,10 +96,15 @@ public class BaseEntityBuilder<T extends BaseEntityBuilder<T>> {
         this.name = name;
         this.type = EntityType.EVENT;
         this.accessMod = AccessMod.W;
+        this.formatValueStoreMod();
         if (!StringUtils.hasLength(identifier)) {
             this.identifier = name;
         }
         return (T) this;
+    }
+
+    private void formatValueStoreMod() {
+        valueStoreMod = ValueStoreModSupport.format(type, valueStoreMod);
     }
 
     public T description(String description) {
@@ -104,6 +118,7 @@ public class BaseEntityBuilder<T extends BaseEntityBuilder<T>> {
         entity.setName(name);
         entity.setIdentifier(identifier);
         entity.setAccessMod(accessMod);
+        entity.setValueStoreMod(valueStoreMod);
         entity.setValueType(valueType);
         entity.setType(type);
         entity.setAttributes(attributes);

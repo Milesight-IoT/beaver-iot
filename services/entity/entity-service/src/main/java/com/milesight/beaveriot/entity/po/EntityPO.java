@@ -6,10 +6,7 @@ import com.milesight.beaveriot.base.utils.NumberUtils;
 import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.base.utils.ValidationUtils;
 import com.milesight.beaveriot.context.constants.IntegrationConstants;
-import com.milesight.beaveriot.context.integration.enums.AccessMod;
-import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
-import com.milesight.beaveriot.context.integration.enums.EntityType;
-import com.milesight.beaveriot.context.integration.enums.EntityValueType;
+import com.milesight.beaveriot.context.integration.enums.*;
 import com.milesight.beaveriot.context.integration.model.AttributeBuilder;
 import com.milesight.beaveriot.context.support.EntityValidator;
 import com.milesight.beaveriot.data.support.MapJsonConverter;
@@ -59,6 +56,10 @@ public class EntityPO {
     @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "VARCHAR")
     private AccessMod accessMod;
+
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "VARCHAR")
+    private ValueStoreMod valueStoreMod;
 
     @Column(length = 512)
     private String parent;
@@ -116,6 +117,12 @@ public class EntityPO {
                             EntityErrorCode.ENTITY_ACCESS_MOD_NULL.formatMessage(entityKey),
                             entityData));
                 }
+            }
+
+            if (valueStoreMod == null) {
+                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_STORE_MOD_NULL.getErrorCode(),
+                        EntityErrorCode.ENTITY_VALUE_STORE_MOD_NULL.formatMessage(entityKey),
+                        entityData));
             }
 
             if (valueType == null) {

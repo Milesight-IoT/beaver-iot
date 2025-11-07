@@ -2,6 +2,7 @@ package com.milesight.beaveriot.context.integration.entity.annotation;
 
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
+import com.milesight.beaveriot.context.integration.enums.ValueStoreMod;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -20,6 +21,8 @@ public @interface Entity {
     String identifier() default "${fieldName}";
 
     AccessMod accessMod() default AccessMod.RW;
+
+    ValueStoreMod valueStoreMod() default ValueStoreMod.ALL;
 
     EntityType type() default EntityType.PROPERTY;
 
