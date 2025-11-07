@@ -42,6 +42,7 @@ public class GraphChoiceProcessor extends AsyncProcessorSupport implements Trace
     @Override
     public boolean process(Exchange exchange, AsyncCallback callback) {
         String matchedId = null;
+        boolean isMatched = false;
         exchange.getIn().removeHeader(GRAPH_CHOICE_MATCH_ID);
 
         try {
@@ -56,12 +57,13 @@ public class GraphChoiceProcessor extends AsyncProcessorSupport implements Trace
                 boolean matches = predicate.matches(exchange);
                 if (matches) {
                     log.debug("Choice node match whenClause branch: {}", choiceWhenClause.getLabel());
-                    matchedId = entry.getKey();
+                    matchedId = entry.getKey(); // May be null if there is no successor
+                    isMatched = true;
                     break;
                 }
             }
 
-            if (!StringUtils.hasText(matchedId)) {
+            if (!isMatched) {
                 log.debug("Choice node match otherwise branch : {}", otherwiseNodeId);
                 matchedId = otherwiseNodeId;
             }
