@@ -19,6 +19,8 @@ public enum EntityErrorCode implements ErrorCodeSpec {
             "Entity {0} name must not be empty"),
     ENTITY_ACCESS_MOD_NULL(HttpStatus.BAD_REQUEST.value(), "entity_access_mod_null",
             "Entity {0} access mod must not be null"),
+    ENTITY_VALUE_STORE_MOD_NULL(HttpStatus.BAD_REQUEST.value(), "entity_value_store_mod_null",
+            "Entity {0} value store mod must not be null"),
     ENTITY_ATTACH_TARGET_NULL(HttpStatus.BAD_REQUEST.value(), "entity_attach_target_null",
             "Entity {0} attach target must not be null"),
     ENTITY_ATTACH_TARGET_ID_NULL(HttpStatus.BAD_REQUEST.value(), "entity_attach_target_id_null",

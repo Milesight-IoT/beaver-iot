@@ -75,7 +75,8 @@ public class AnnotationEntityLoader implements EntityLoader {
                         .attributes(resolveAttributes(entityAnnotation.attributes()))
                         .valueType(valueType)
                         .visible(entityAnnotation.visible())
-                        .description(entityAnnotation.description());
+                        .description(entityAnnotation.description())
+                        .valueStoreMod(entityAnnotation.valueStoreMod());
                 switch (entityAnnotation.type()) {
                     case EVENT:
                         entityBuilder.event(name);

@@ -3,6 +3,7 @@ package com.milesight.beaveriot.entitytemplate.po;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
+import com.milesight.beaveriot.context.integration.enums.ValueStoreMod;
 import com.milesight.beaveriot.data.support.MapJsonConverter;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -39,6 +40,10 @@ public class EntityTemplatePO {
     @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "VARCHAR")
     private AccessMod accessMod;
+
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "VARCHAR")
+    private ValueStoreMod valueStoreMod;
 
     @Column(length = 512)
     private String parent;
@@ -78,6 +83,7 @@ public class EntityTemplatePO {
         return Objects.equals(name, that.getName()) &&
                 type == that.getType() &&
                 accessMod == that.getAccessMod() &&
+                Objects.equals(valueStoreMod, that.getValueStoreMod()) &&
                 Objects.equals(parent, that.getParent()) &&
                 valueType == that.getValueType() &&
                 Objects.equals(valueAttribute, that.getValueAttribute()) &&

@@ -12,6 +12,7 @@ import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.context.integration.GenericExchangeFlowExecutor;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
+import com.milesight.beaveriot.context.integration.enums.ValueStoreMod;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.proxy.MapExchangePayloadProxy;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
@@ -168,6 +169,11 @@ public class EntityValueService implements EntityValueServiceProvider {
             if (entityPO == null) {
                 return;
             }
+
+            if (entityPO.getValueStoreMod() == ValueStoreMod.NONE || entityPO.getValueStoreMod() == ValueStoreMod.HISTORY) {
+                return;
+            }
+
             Long entityId = entityPO.getId();
             EntityValueType entityValueType = entityPO.getValueType();
             EntityLatestPO dataEntityLatest = entityIdDataMap.get(entityId);
@@ -234,6 +240,11 @@ public class EntityValueService implements EntityValueServiceProvider {
             if (entityPO == null) {
                 return;
             }
+
+            if (entityPO.getValueStoreMod() == ValueStoreMod.NONE || entityPO.getValueStoreMod() == ValueStoreMod.LATEST) {
+                return;
+            }
+
             Long entityId = entityPO.getId();
             EntityValueType entityValueType = entityPO.getValueType();
             EntityHistoryPO entityHistoryPO = new EntityHistoryPO();

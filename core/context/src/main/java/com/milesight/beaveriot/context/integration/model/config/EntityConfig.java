@@ -5,6 +5,7 @@ import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
+import com.milesight.beaveriot.context.integration.enums.ValueStoreMod;
 import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.EntityBuilder;
 import com.milesight.beaveriot.context.integration.model.EntityTemplate;
@@ -25,6 +26,7 @@ public class EntityConfig {
     private String name;
     private String identifier;
     private AccessMod accessMod;
+    private ValueStoreMod valueStoreMod;
     private EntityValueType valueType;
     private EntityType type;
     private Map<String, Object> attributes;
@@ -37,6 +39,7 @@ public class EntityConfig {
         Entity entity;
         if (StringUtils.isEmpty(entityRef)) {
             EntityBuilder entityBuilder = new EntityBuilder();
+            entityBuilder.valueStoreMod(valueStoreMod);
             switch (type) {
                 case PROPERTY:
                     entityBuilder.property(name, accessMod);

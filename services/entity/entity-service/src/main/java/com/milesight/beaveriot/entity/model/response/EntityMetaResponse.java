@@ -3,6 +3,7 @@ package com.milesight.beaveriot.entity.model.response;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
+import com.milesight.beaveriot.context.integration.enums.ValueStoreMod;
 import lombok.Data;
 
 import java.util.Map;
@@ -23,6 +24,8 @@ public class EntityMetaResponse {
     private EntityType type;
 
     private AccessMod accessMod;
+
+    private ValueStoreMod valueStoreMod;
 
     private Map<String, Object> valueAttribute;
 

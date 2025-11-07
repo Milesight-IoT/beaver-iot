@@ -9,6 +9,8 @@ import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
+import com.milesight.beaveriot.context.integration.enums.ValueStoreMod;
+import com.milesight.beaveriot.context.integration.support.ValueStoreModSupport;
 import com.milesight.beaveriot.context.support.EntityValidator;
 import com.milesight.beaveriot.context.support.SpringContext;
 import com.milesight.beaveriot.eventbus.api.IdentityKey;
@@ -35,6 +37,7 @@ public class Entity implements IdentityKey, Cloneable {
     private String name;
     private String identifier;
     private AccessMod accessMod;
+    private ValueStoreMod valueStoreMod;
     private EntityValueType valueType;
     private EntityType type;
     private Map<String, Object> attributes;
@@ -95,6 +98,11 @@ public class Entity implements IdentityKey, Cloneable {
             entity.setAccessMod(this.getAccessMod());
         }
         entity.setVisible(this.getVisible());
+        entity.formatValueStoreMod();
+    }
+
+    public void formatValueStoreMod() {
+        valueStoreMod = ValueStoreModSupport.format(type, valueStoreMod);
     }
 
     protected void initializeProperties(String integrationId) {

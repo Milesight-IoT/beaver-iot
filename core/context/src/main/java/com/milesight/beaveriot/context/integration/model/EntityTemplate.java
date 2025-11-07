@@ -4,6 +4,8 @@ import com.milesight.beaveriot.base.utils.StringUtils;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
+import com.milesight.beaveriot.context.integration.enums.ValueStoreMod;
+import com.milesight.beaveriot.context.integration.support.ValueStoreModSupport;
 import com.milesight.beaveriot.context.support.function.SpELTemplateEvaluator;
 import lombok.Data;
 import org.springframework.util.CollectionUtils;
@@ -24,6 +26,7 @@ public class EntityTemplate {
     private String name;
     private EntityType type;
     private AccessMod accessMod;
+    private ValueStoreMod valueStoreMod;
     private String parentIdentifier;
     private EntityValueType valueType;
     private Map<String, Object> attributes;
@@ -67,7 +70,8 @@ public class EntityTemplate {
                 .valueType(valueType)
                 .visible(visible)
                 .attributes(attributes)
-                .parentIdentifier(parentIdentifier);
+                .parentIdentifier(parentIdentifier)
+                .valueStoreMod(valueStoreMod);
 
         switch (type) {
             case PROPERTY -> entityBuilder.property(entityName, accessMod);
@@ -116,6 +120,7 @@ public class EntityTemplate {
     }
 
     public void initializeChildren() {
+        formatValueStoreMod();
         if (!CollectionUtils.isEmpty(children)) {
             children.forEach(child -> child.applyParentConfig(this));
         }
@@ -130,5 +135,10 @@ public class EntityTemplate {
             accessMod = parent.getAccessMod();
         }
         visible = parent.getVisible();
+        this.formatValueStoreMod();
+    }
+
+    public void formatValueStoreMod() {
+        valueStoreMod = ValueStoreModSupport.format(type, valueStoreMod);
     }
 }

@@ -3,6 +3,7 @@ package com.milesight.beaveriot.context.integration.model;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
+import com.milesight.beaveriot.context.integration.enums.ValueStoreMod;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,6 +20,7 @@ public class EntityTemplateBuilder {
     private String name;
     private EntityType type;
     private AccessMod accessMod;
+    private ValueStoreMod valueStoreMod;
     private String parentIdentifier;
     private EntityValueType valueType;
     private Map<String, Object> attributes;
@@ -54,6 +56,11 @@ public class EntityTemplateBuilder {
 
     public EntityTemplateBuilder accessMod(AccessMod accessMod) {
         this.accessMod = accessMod;
+        return this;
+    }
+
+    public EntityTemplateBuilder valueStoreMod(ValueStoreMod valueStoreMod) {
+        this.valueStoreMod = valueStoreMod;
         return this;
     }
 
@@ -94,10 +101,12 @@ public class EntityTemplateBuilder {
         entityTemplate.setName(name);
         entityTemplate.setType(type);
         entityTemplate.setAccessMod(accessMod);
+        entityTemplate.setValueStoreMod(valueStoreMod);
         entityTemplate.setParentIdentifier(parentIdentifier);
         entityTemplate.setValueType(valueType);
         entityTemplate.setAttributes(attributes);
         entityTemplate.setDescription(description);
+        entityTemplate.formatValueStoreMod();
         if (visible != null) {
             entityTemplate.setVisible(visible);
         }

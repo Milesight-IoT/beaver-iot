@@ -237,6 +237,7 @@ public class EntityTemplateService implements IEntityTemplateFacade {
         entityTemplatePO.setName(entityTemplate.getName());
         entityTemplatePO.setType(entityTemplate.getType());
         entityTemplatePO.setAccessMod(entityTemplate.getAccessMod());
+        entityTemplatePO.setValueStoreMod(entityTemplate.getValueStoreMod());
         entityTemplatePO.setParent(entityTemplate.getParentKey());
         entityTemplatePO.setValueType(entityTemplate.getValueType());
         entityTemplatePO.setValueAttribute(entityTemplate.getAttributes());
@@ -289,6 +290,7 @@ public class EntityTemplateService implements IEntityTemplateFacade {
                 .name(entityTemplatePO.getName())
                 .type(entityTemplatePO.getType())
                 .accessMod(entityTemplatePO.getAccessMod())
+                .valueStoreMod(entityTemplatePO.getValueStoreMod())
                 .parentIdentifier(EntityTemplateSupporter.getIdentifierFromKey(entityTemplatePO.getParent()))
                 .valueType(entityTemplatePO.getValueType())
                 .attributes(entityTemplatePO.getValueAttribute())

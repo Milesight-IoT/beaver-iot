@@ -150,7 +150,8 @@ public class EntityService implements EntityServiceProvider {
                 .valueType(entityPO.getValueType())
                 .visible(entityPO.getVisible())
                 .description(entityPO.getDescription())
-                .attributes(entityPO.getValueAttribute());
+                .attributes(entityPO.getValueAttribute())
+                .valueStoreMod(entityPO.getValueStoreMod());
 
         String parentKey = entityPO.getParent();
         if (StringUtils.hasText(entityPO.getParent())) {
@@ -179,6 +180,7 @@ public class EntityService implements EntityServiceProvider {
         response.setName(entityPO.getName());
         response.setType(entityPO.getType());
         response.setAccessMod(entityPO.getAccessMod());
+        response.setValueStoreMod(entityPO.getValueStoreMod());
         response.setValueAttribute(entityPO.getValueAttribute());
         response.setValueType(entityPO.getValueType());
         response.setCustomized(entityPO.checkIsCustomizedEntity());
@@ -217,6 +219,7 @@ public class EntityService implements EntityServiceProvider {
             entityPO.setName(entity.getName());
             entityPO.setType(entity.getType());
             entityPO.setAccessMod(entity.getAccessMod());
+            entityPO.setValueStoreMod(entity.getValueStoreMod());
             entityPO.setParent(entity.getParentKey());
             entityPO.setAttachTarget(attachTarget);
             entityPO.setAttachTargetId(attachTargetId);
@@ -380,6 +383,7 @@ public class EntityService implements EntityServiceProvider {
             EntityPO dataEntityPO = dataEntityKeyMap.get(t.getKey());
             if (dataEntityPO == null
                     || dataEntityPO.getAccessMod() != entityPO.getAccessMod()
+                    || !Objects.equals(dataEntityPO.getValueStoreMod(), entityPO.getValueStoreMod())
                     || dataEntityPO.getValueType() != entityPO.getValueType()
                     || !Objects.equals(JsonUtils.toJSON(dataEntityPO.getValueAttribute()), JsonUtils.toJSON(entityPO.getValueAttribute()))
                     || dataEntityPO.getType() != entityPO.getType()
@@ -636,6 +640,7 @@ public class EntityService implements EntityServiceProvider {
         response.setIntegrationName(integrationName);
         response.setEntityId(entityPO.getId().toString());
         response.setEntityAccessMod(entityPO.getAccessMod());
+        response.setEntityValueStoreMod(entityPO.getValueStoreMod());
         response.setEntityKey(entityPO.getKey());
         response.setEntityType(entityPO.getType());
         response.setEntityName(entityPO.getName());
