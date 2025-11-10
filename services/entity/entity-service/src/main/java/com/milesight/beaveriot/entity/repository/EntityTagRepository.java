@@ -28,7 +28,7 @@ public interface EntityTagRepository extends BaseJpaRepository<EntityTagPO, Long
                     SELECT t.*, COUNT(m.id) AS taggedEntitiesCount
                     FROM t_entity_tag t
                     LEFT JOIN t_entity_tag_mapping m ON t.id = m.tag_id
-                    WHERE t.name LIKE %:keyword% OR t.description LIKE %:keyword%
+                    WHERE LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%'))
                     GROUP BY t.id
                     ORDER BY t.created_at DESC
             """, nativeQuery = true)
