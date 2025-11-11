@@ -1,9 +1,12 @@
 package com.milesight.beaveriot.rule.components.code.language;
 
 import com.milesight.beaveriot.rule.components.code.ExpressionEvaluator;
+import com.milesight.beaveriot.rule.components.code.language.module.LanguageModule;
 import org.apache.camel.Exchange;
 import org.apache.camel.support.ExpressionSupport;
-import org.graalvm.polyglot.*;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Source;
+import org.graalvm.polyglot.Value;
 import org.springframework.util.ObjectUtils;
 
 import java.util.Map;
@@ -12,15 +15,15 @@ import java.util.Map;
  * @author leon
  */
 public class CustomizedJavaScriptExpression extends ExpressionSupport {
-
     private final String expressionString;
+    public static final String LANG_ID = "js";
+    private static final LanguageModule jsonModule = LanguageModule.getJavaScriptJsonModule();
 
     public CustomizedJavaScriptExpression(String expressionString) {
         this.expressionString = expressionString;
     }
 
-    public static final String LANG_ID = "js";
-
+    @SuppressWarnings("unchecked")
     @Override
     public <T> T evaluate(Exchange exchange, Class<T> type) {
         try (Context cx = LanguageHelper.newContext(LANG_ID)) {
@@ -32,13 +35,16 @@ public class CustomizedJavaScriptExpression extends ExpressionSupport {
             b.putMember("message", exchange.getMessage());
             b.putMember("headers", exchange.getMessage().getHeaders());
             b.putMember("properties", exchange.getAllProperties());
-            b.putMember("body", LanguageHelper.convertToProxy(exchange.getMessage().getBody()));
+            b.putMember("body", jsonModule.input(exchange.getMessage().getBody()));
 
             // Add input variables to the context
             Object inputVariables = exchange.getIn().getHeader(ExpressionEvaluator.HEADER_INPUT_VARIABLES);
             if (!ObjectUtils.isEmpty(inputVariables) && inputVariables instanceof Map) {
                 Map<String, Object> inputVariablesMap = (Map<String, Object>) inputVariables;
-                inputVariablesMap.forEach((k, v) -> b.putMember(k, LanguageHelper.convertToProxy(v)));
+                inputVariablesMap.forEach((k, v) -> {
+                    Object value = jsonModule.input(v);
+                    b.putMember(k, value);
+                });
                 exchange.getIn().removeHeader(ExpressionEvaluator.HEADER_INPUT_VARIABLES);
             }
 

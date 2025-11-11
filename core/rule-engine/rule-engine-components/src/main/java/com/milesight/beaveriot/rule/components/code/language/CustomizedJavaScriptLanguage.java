@@ -1,15 +1,13 @@
 package com.milesight.beaveriot.rule.components.code.language;
 
+import com.milesight.beaveriot.rule.components.code.language.module.LanguageModule;
 import org.apache.camel.Predicate;
 import org.apache.camel.spi.ScriptingLanguage;
 import org.apache.camel.support.TypedLanguageSupport;
 import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 
 import java.util.Map;
-
-import static org.graalvm.polyglot.Source.newBuilder;
 
 /**
  * @author leon
@@ -39,6 +37,6 @@ public class CustomizedJavaScriptLanguage extends TypedLanguageSupport implement
 
     @Override
     public void warmUp() {
-        evaluate("", Map.of(), Object.class);
+        LanguageModule.getJavaScriptJsonModule().init();
     }
 }
