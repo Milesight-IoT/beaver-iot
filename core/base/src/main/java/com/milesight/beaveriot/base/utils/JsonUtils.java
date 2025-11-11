@@ -33,6 +33,9 @@ public class JsonUtils {
             .propertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE)
             .build());
 
+    private static final Instance WITH_DEFAULT_STRATEGY = new Instance(jsonMapperBuilder()
+            .build());
+
     private JsonUtils() {
 
     }
@@ -54,6 +57,10 @@ public class JsonUtils {
 
     public static Instance withSnakeCaseStrategy() {
         return WITH_SNAKE_CASE_STRATEGY;
+    }
+
+    public static Instance withDefaultStrategy() {
+        return WITH_DEFAULT_STRATEGY;
     }
 
     public static ObjectMapper getObjectMapper() {

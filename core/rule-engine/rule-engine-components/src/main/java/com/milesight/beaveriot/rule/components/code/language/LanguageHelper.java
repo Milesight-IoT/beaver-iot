@@ -52,7 +52,7 @@ public class LanguageHelper {
                 .allowHostClassLoading(false)
                 .allowCreateProcess(false)
                 .allowCreateThread(false)
-                .allowValueSharing(false)
+                .allowValueSharing(true)
                 .resourceLimits(limits);
         return contextBuilder.build();
     }
