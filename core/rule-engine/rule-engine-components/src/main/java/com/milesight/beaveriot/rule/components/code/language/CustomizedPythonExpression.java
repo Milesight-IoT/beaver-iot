@@ -5,7 +5,9 @@ import com.milesight.beaveriot.rule.components.code.language.module.LanguageModu
 import org.apache.camel.Exchange;
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.support.ExpressionSupport;
-import org.graalvm.polyglot.*;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Source;
+import org.graalvm.polyglot.Value;
 import org.springframework.util.ObjectUtils;
 
 import java.util.Map;
@@ -38,7 +40,7 @@ public class CustomizedPythonExpression extends ExpressionSupport {
             b.putMember("message", exchange.getMessage());
             b.putMember("headers", exchange.getMessage().getHeaders());
             b.putMember("properties", exchange.getAllProperties());
-            b.putMember("body", LanguageHelper.convertToProxy(exchange.getMessage().getBody()));
+            b.putMember("body", jsonModule.input(exchange.getMessage().getBody()));
 
             // Add input variables to the context
             Object inputVariables = exchange.getIn().getHeader(ExpressionEvaluator.HEADER_INPUT_VARIABLES);
