@@ -62,7 +62,7 @@ public abstract class LanguageModule implements Closeable {
     }
 
     private static boolean isSimpleValue(Object obj) {
-        return obj == null || obj instanceof String || obj instanceof Number || obj instanceof Boolean;
+        return obj instanceof String || obj instanceof Number || obj instanceof Boolean;
     }
 
     @Override
