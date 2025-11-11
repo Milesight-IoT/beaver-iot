@@ -58,7 +58,7 @@ public abstract class LanguageModule implements Closeable {
         init();
 
         obj = transformInput(obj);
-        return module.execute(obj).as(Object.class);
+        return module.execute(obj);
     }
 
     private static boolean isSimpleValue(Object obj) {
