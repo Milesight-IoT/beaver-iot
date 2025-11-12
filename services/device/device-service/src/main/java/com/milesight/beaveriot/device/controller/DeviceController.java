@@ -95,9 +95,9 @@ public class DeviceController {
         DeviceLocation location = deviceLocationService.getLocation(device);
         DeviceLocationResponse response = new DeviceLocationResponse();
         if (location != null) {
-            response.setAddress(location.getAddress());
-            response.setLongitude(location.getLongitude());
             response.setLatitude(location.getLatitude());
+            response.setLongitude(location.getLongitude());
+            response.setAddress(location.getAddress());
         }
         return ResponseBuilder.success(response);
     }
