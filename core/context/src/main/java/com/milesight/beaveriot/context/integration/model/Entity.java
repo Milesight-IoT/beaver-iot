@@ -303,9 +303,16 @@ public class Entity implements IdentityKey, Cloneable {
         Double min = getAttributeDoubleValue(AttributeBuilder.ATTRIBUTE_MIN);
         Double max = getAttributeDoubleValue(AttributeBuilder.ATTRIBUTE_MAX);
         double doubleValue = Double.parseDouble(value.toString());
-        double roundedDoubleValue = roundDoubleValue(doubleValue);
-        if (roundedDoubleValue != doubleValue) {
-            valueRef.set(roundedDoubleValue);
+
+        boolean isValueRounded = false;
+        double roundedDoubleValue = doubleValue;
+        Long fractionDigits = getAttributeLongValue(AttributeBuilder.ATTRIBUTE_FRACTION_DIGITS);
+        if (fractionDigits != null && fractionDigits > 0) {
+            roundedDoubleValue = roundDoubleValue(doubleValue, fractionDigits);
+            if (roundedDoubleValue != doubleValue) {
+                valueRef.set(roundedDoubleValue);
+            }
+            isValueRounded = true;
         }
 
         Double errorValue = null;
@@ -315,7 +322,7 @@ public class Entity implements IdentityKey, Cloneable {
         if (min != null && max != null) {
             if (doubleValue < min || doubleValue > max) {
                 errorValue = doubleValue;
-            } else if (roundedDoubleValue < min || roundedDoubleValue > max) {
+            } else if (isValueRounded && (roundedDoubleValue < min || roundedDoubleValue > max)) {
                 errorValue = roundedDoubleValue;
                 valuePrefix = ValueConstants.VALUE_PREFIX_ROUNDED;
                 valueSuffix = valueSuffixOriginal;
@@ -331,7 +338,7 @@ public class Entity implements IdentityKey, Cloneable {
         } else if (min != null) {
             if (doubleValue < min) {
                 errorValue = doubleValue;
-            } else if (roundedDoubleValue < min) {
+            } else if (isValueRounded && roundedDoubleValue < min) {
                 errorValue = roundedDoubleValue;
                 valuePrefix = ValueConstants.VALUE_PREFIX_ROUNDED;
                 valueSuffix = valueSuffixOriginal;
@@ -346,7 +353,7 @@ public class Entity implements IdentityKey, Cloneable {
         } else if (max != null){
             if (doubleValue > max) {
                 errorValue = doubleValue;
-            } else if (roundedDoubleValue > max) {
+            } else if (isValueRounded && roundedDoubleValue > max) {
                 errorValue = roundedDoubleValue;
                 valuePrefix = ValueConstants.VALUE_PREFIX_ROUNDED;
                 valueSuffix = valueSuffixOriginal;
@@ -361,12 +368,7 @@ public class Entity implements IdentityKey, Cloneable {
         }
     }
 
-    private double roundDoubleValue(double value) {
-        Long fractionDigits = getAttributeLongValue(AttributeBuilder.ATTRIBUTE_FRACTION_DIGITS);
-        if (fractionDigits == null || fractionDigits < 0) {
-            return value;
-        }
-
+    private double roundDoubleValue(double value, Long fractionDigits) {
         try {
             return new BigDecimal(Double.toString(value))
                     .setScale(fractionDigits.intValue(), RoundingMode.HALF_UP)
