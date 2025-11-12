@@ -17,30 +17,30 @@ import java.util.List;
  **/
 @Data
 public class DeviceLocationSetting {
-    private String longitude;
     private String latitude;
+    private String longitude;
     private String address;
 
     public DeviceLocation buildLocation() {
         validate();
 
-        Double longitude = this.longitude == null ? null : Double.parseDouble(this.longitude);
         Double latitude = this.latitude == null ? null : Double.parseDouble(this.latitude);
-        return DeviceLocation.of(address, longitude, latitude);
+        Double longitude = this.longitude == null ? null : Double.parseDouble(this.longitude);
+        return DeviceLocation.of(latitude, longitude, address);
     }
 
     private void validate() {
         List<ErrorHolder> errors = new ArrayList<>();
 
-        if (this.longitude != null) {
-            if (!ValidationUtils.isNumber(this.longitude)) {
-                errors.add(ErrorHolder.of(DeviceErrorCode.DEVICE_LOCATION_LONGITUDE_TYPE_ERROR));
-            }
-        }
-
         if (this.latitude != null) {
             if (!ValidationUtils.isNumber(this.latitude)) {
                 errors.add(ErrorHolder.of(DeviceErrorCode.DEVICE_LOCATION_LATITUDE_TYPE_ERROR));
+            }
+        }
+
+        if (this.longitude != null) {
+            if (!ValidationUtils.isNumber(this.longitude)) {
+                errors.add(ErrorHolder.of(DeviceErrorCode.DEVICE_LOCATION_LONGITUDE_TYPE_ERROR));
             }
         }
 
