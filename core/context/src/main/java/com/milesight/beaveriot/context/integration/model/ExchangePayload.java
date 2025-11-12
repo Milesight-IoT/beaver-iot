@@ -16,6 +16,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -105,9 +106,14 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
             Map<String, Entity> allEntities = getAllEntities();
             allEntities.forEach((key, entity) -> {
                 Object value = get(key);
-                List<ErrorHolder> entityErrors = entity.validateValue(value);
+                AtomicReference<Object> valueRef = new AtomicReference<>(value);
+                List<ErrorHolder> entityErrors = entity.validateValue(valueRef);
                 if (!entityErrors.isEmpty()) {
                     errors.addAll(entityErrors);
+                }
+
+                if (!Objects.equals(value, valueRef.get())) {
+                    put(key, valueRef.get());
                 }
             });
 
