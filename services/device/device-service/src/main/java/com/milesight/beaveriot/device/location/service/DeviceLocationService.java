@@ -71,7 +71,7 @@ public class DeviceLocationService {
         exchangePayload.put(addressKey, location.getAddress());
 
         exchangePayload.validate();
-        entityValueServiceProvider.saveValues(exchangePayload);
+        entityValueServiceProvider.saveValuesAndPublishSync(exchangePayload);
     }
 
     public void clearLocation(Device device) {
