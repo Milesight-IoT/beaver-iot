@@ -165,7 +165,7 @@ public class ScheduledTaskExecutor {
             } else {
                 // the callback may be registered on other nodes
                 log.debug("scheduled task callback was not found in local: '{}'", task.getTaskKey());
-                messagePubSub.publish(new ScheduledTaskRemoteTriggeredEvent(task.getTenantId(), task, taskExecutionDateTime));
+                messagePubSub.publish(new ScheduledTaskRemoteTriggeredEvent(task, taskExecutionDateTime));
             }
         } catch (Exception e) {
             log.error("execute task '{}' failed", task.getTaskKey(), e);
