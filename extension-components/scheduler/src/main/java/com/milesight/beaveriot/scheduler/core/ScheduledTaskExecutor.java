@@ -220,7 +220,11 @@ public class ScheduledTaskExecutor {
 
         val originalTenantId = TenantContext.tryGetTenantId().orElse(null);
         try {
-            TenantContext.setTenantId(scheduledTask.getTenantId());
+            var tenantId = scheduledTask.getTenantId();
+            if (tenantId != null) {
+                TenantContext.setTenantId(tenantId);
+            }
+
             callback.accept(scheduledTask);
 
             if (nextExecution == null) {
