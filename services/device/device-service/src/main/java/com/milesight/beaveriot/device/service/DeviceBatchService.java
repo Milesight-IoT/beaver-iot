@@ -178,6 +178,7 @@ public class DeviceBatchService {
         latitudeColumn.setKey(DeviceSheetConstants.DEVICE_LOCATION_LATITUDE_COL_KEY);
         latitudeColumn.setMin(-90.0);
         latitudeColumn.setMax(90.0);
+        latitudeColumn.setFractionDigits(6);
         latitudeColumn.setRequired(false);
         columns.add(latitudeColumn);
 
@@ -187,6 +188,7 @@ public class DeviceBatchService {
         longitudeColumn.setKey(DeviceSheetConstants.DEVICE_LOCATION_LONGITUDE_COL_KEY);
         longitudeColumn.setMin(-180.0);
         longitudeColumn.setMax(180.0);
+        longitudeColumn.setFractionDigits(6);
         longitudeColumn.setRequired(false);
         columns.add(longitudeColumn);
 

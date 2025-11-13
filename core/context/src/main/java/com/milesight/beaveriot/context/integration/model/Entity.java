@@ -21,7 +21,11 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.MessageFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -228,7 +232,8 @@ public class Entity implements IdentityKey, Cloneable {
         return attributes == null ? null : (attributes.containsKey(attributeKey) ? (Map<String, Object>) attributes.get(attributeKey) : null);
     }
 
-    public List<ErrorHolder> validateValue(Object value) {
+    public List<ErrorHolder> validateValue(AtomicReference<Object> valueRef) {
+        Object value = valueRef.get();
         List<ErrorHolder> errors = new ArrayList<>();
         String entityKey = getKey();
         String entityName = getName();
@@ -258,12 +263,12 @@ public class Entity implements IdentityKey, Cloneable {
             }
 
             if (EntityValueType.DOUBLE.equals(valueType) || EntityValueType.LONG.equals(valueType)) {
-                validateValueRange(entityName, entityData, value, errors);
-                validateValueFormat(entityName, entityData, value, errors);
+                validateValueRange(entityName, entityData, valueRef, errors);
+                validateValueFormat(entityName, entityData, valueRef, errors);
             } else if (EntityValueType.STRING.equals(valueType)) {
-                validateLengthRange(entityName, entityData, value, errors);
-                validateValueEnum(entityName, entityData, value, errors);
-                validateValueFormat(entityName, entityData, value, errors);
+                validateLengthRange(entityName, entityData, valueRef, errors);
+                validateValueEnum(entityName, entityData, valueRef, errors);
+                validateValueFormat(entityName, entityData, valueRef, errors);
             }
         } catch (Exception e) {
             errors.clear();
@@ -288,14 +293,43 @@ public class Entity implements IdentityKey, Cloneable {
         public static final String KEY_PROVIDED_TYPE = "provided_type";
     }
 
-    private void validateValueRange(String entityName, Map<String, Object> entityData, Object value, List<ErrorHolder> errors) {
+    private static class ValueConstants {
+        public static final String VALUE_PREFIX_ROUNDED = "rounded ";
+        public static final String VALUE_SUFFIX_ORIGINAL_FORMAT = " (original value {0})";
+    }
+
+    private void validateValueRange(String entityName, Map<String, Object> entityData, AtomicReference<Object> valueRef, List<ErrorHolder> errors) {
+        Object value = valueRef.get();
         Double min = getAttributeDoubleValue(AttributeBuilder.ATTRIBUTE_MIN);
         Double max = getAttributeDoubleValue(AttributeBuilder.ATTRIBUTE_MAX);
         double doubleValue = Double.parseDouble(value.toString());
+
+        boolean isValueRounded = false;
+        double roundedDoubleValue = doubleValue;
+        Long fractionDigits = getAttributeLongValue(AttributeBuilder.ATTRIBUTE_FRACTION_DIGITS);
+        if (fractionDigits != null && fractionDigits > 0) {
+            roundedDoubleValue = roundDoubleValue(doubleValue, fractionDigits);
+            if (roundedDoubleValue != doubleValue) {
+                valueRef.set(roundedDoubleValue);
+            }
+            isValueRounded = true;
+        }
+
+        Double errorValue = null;
+        String valuePrefix = "";
+        String valueSuffix = "";
+        String valueSuffixOriginal = MessageFormat.format(ValueConstants.VALUE_SUFFIX_ORIGINAL_FORMAT, doubleValue);
         if (min != null && max != null) {
             if (doubleValue < min || doubleValue > max) {
+                errorValue = doubleValue;
+            } else if (isValueRounded && (roundedDoubleValue < min || roundedDoubleValue > max)) {
+                errorValue = roundedDoubleValue;
+                valuePrefix = ValueConstants.VALUE_PREFIX_ROUNDED;
+                valueSuffix = valueSuffixOriginal;
+            }
+            if (errorValue != null) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_OUT_OF_RANGE.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_OUT_OF_RANGE.formatMessage(entityName, min, max),
+                        EntityErrorCode.ENTITY_VALUE_OUT_OF_RANGE.formatMessage(entityName, valuePrefix, errorValue, valueSuffix, min, max),
                         buildExtraData(entityData, Map.of(
                                 AttributeBuilder.ATTRIBUTE_MIN, min,
                                 AttributeBuilder.ATTRIBUTE_MAX, max
@@ -303,16 +337,30 @@ public class Entity implements IdentityKey, Cloneable {
             }
         } else if (min != null) {
             if (doubleValue < min) {
+                errorValue = doubleValue;
+            } else if (isValueRounded && roundedDoubleValue < min) {
+                errorValue = roundedDoubleValue;
+                valuePrefix = ValueConstants.VALUE_PREFIX_ROUNDED;
+                valueSuffix = valueSuffixOriginal;
+            }
+            if (errorValue != null) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_LESS_THAN_MIN.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_LESS_THAN_MIN.formatMessage(entityName, min),
+                        EntityErrorCode.ENTITY_VALUE_LESS_THAN_MIN.formatMessage(entityName, valuePrefix, errorValue, valueSuffix, min),
                         buildExtraData(entityData, Map.of(
                                 AttributeBuilder.ATTRIBUTE_MIN, min
                         ))));
             }
         } else if (max != null){
             if (doubleValue > max) {
+                errorValue = doubleValue;
+            } else if (isValueRounded && roundedDoubleValue > max) {
+                errorValue = roundedDoubleValue;
+                valuePrefix = ValueConstants.VALUE_PREFIX_ROUNDED;
+                valueSuffix = valueSuffixOriginal;
+            }
+            if (errorValue != null) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_GREATER_THAN_MAX.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_GREATER_THAN_MAX.formatMessage(entityName, max),
+                        EntityErrorCode.ENTITY_VALUE_GREATER_THAN_MAX.formatMessage(entityName, valuePrefix, errorValue, valueSuffix, max),
                         buildExtraData(entityData, Map.of(
                                 AttributeBuilder.ATTRIBUTE_MAX, max
                         ))));
@@ -320,7 +368,18 @@ public class Entity implements IdentityKey, Cloneable {
         }
     }
 
-    private void validateLengthRange(String entityName, Map<String, Object> entityData, Object value, List<ErrorHolder> errors) {
+    private double roundDoubleValue(double value, Long fractionDigits) {
+        try {
+            return new BigDecimal(Double.toString(value))
+                    .setScale(fractionDigits.intValue(), RoundingMode.HALF_UP)
+                    .doubleValue();
+        } catch (NumberFormatException e) {
+            return value;
+        }
+    }
+
+    private void validateLengthRange(String entityName, Map<String, Object> entityData, AtomicReference<Object> valueRef, List<ErrorHolder> errors) {
+        Object value = valueRef.get();
         Long minLength = getAttributeLongValue(AttributeBuilder.ATTRIBUTE_MIN_LENGTH);
         Long maxLength = getAttributeLongValue(AttributeBuilder.ATTRIBUTE_MAX_LENGTH);
         long length = (value.toString()).length();
@@ -372,7 +431,8 @@ public class Entity implements IdentityKey, Cloneable {
         }
     }
 
-    private void validateValueEnum(String entityName, Map<String, Object> entityData, Object value, List<ErrorHolder> errors) {
+    private void validateValueEnum(String entityName, Map<String, Object> entityData, AtomicReference<Object> valueRef, List<ErrorHolder> errors) {
+        Object value = valueRef.get();
         Map<String, Object> enumMap = getAttributeMapValue(AttributeBuilder.ATTRIBUTE_ENUM);
         if (CollectionUtils.isEmpty(enumMap)) {
             return;
@@ -387,7 +447,8 @@ public class Entity implements IdentityKey, Cloneable {
         }
     }
 
-    private void validateValueFormat(String entityName, Map<String, Object> entityData, Object value, List<ErrorHolder> errors) {
+    private void validateValueFormat(String entityName, Map<String, Object> entityData, AtomicReference<Object> valueRef, List<ErrorHolder> errors) {
+        Object value = valueRef.get();
         String format = getAttributeStringValue(AttributeBuilder.ATTRIBUTE_FORMAT);
         if (format == null) {
             return;
