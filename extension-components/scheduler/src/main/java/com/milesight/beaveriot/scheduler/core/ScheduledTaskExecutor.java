@@ -4,6 +4,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
 import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
+import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.pubsub.MessagePubSub;
 import com.milesight.beaveriot.pubsub.api.annotation.MessageListener;
 import com.milesight.beaveriot.scheduler.core.model.ScheduledTask;
@@ -13,8 +14,8 @@ import com.milesight.beaveriot.scheduler.core.model.ScheduledTaskRemoteTriggered
 import com.milesight.beaveriot.scheduler.core.model.ScheduledTaskUpdatedEvent;
 import io.netty.util.HashedWheelTimer;
 import jakarta.annotation.PreDestroy;
-import lombok.extern.slf4j.*;
-import lombok.*;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.spring.aop.ScopedLockConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -164,7 +165,7 @@ public class ScheduledTaskExecutor {
             } else {
                 // the callback may be registered on other nodes
                 log.debug("scheduled task callback was not found in local: '{}'", task.getTaskKey());
-                messagePubSub.publish(new ScheduledTaskRemoteTriggeredEvent(task.getTenantId(), task, taskExecutionDateTime));
+                messagePubSub.publish(new ScheduledTaskRemoteTriggeredEvent(task, taskExecutionDateTime));
             }
         } catch (Exception e) {
             log.error("execute task '{}' failed", task.getTaskKey(), e);
@@ -215,8 +216,11 @@ public class ScheduledTaskExecutor {
             return;
         }
 
+        log.debug("scheduled task callback triggered: '{}'", scheduledTask.getTaskKey());
+
+        val originalTenantId = TenantContext.tryGetTenantId().orElse(null);
         try {
-            log.debug("scheduled task callback triggered: '{}'", scheduledTask.getTaskKey());
+            TenantContext.setTenantId(scheduledTask.getTenantId());
             callback.accept(scheduledTask);
 
             if (nextExecution == null) {
@@ -225,6 +229,12 @@ public class ScheduledTaskExecutor {
             }
         } catch (Exception e) {
             log.error("scheduled task '{}' callback failed", scheduledTask.getTaskKey(), e);
+        } finally {
+            if (originalTenantId != null) {
+                TenantContext.setTenantId(originalTenantId);
+            } else {
+                TenantContext.clear();
+            }
         }
     }
 

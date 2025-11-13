@@ -13,8 +13,6 @@ public class BaseWorkflowEvent extends RemoteBroadcastMessage {
 
     public static String INSTANCE_UUID = UUID.randomUUID().toString();
 
-    protected String tenantId;
-
     protected String id;
 
     protected String instanceId;

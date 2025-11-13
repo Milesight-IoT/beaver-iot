@@ -1,7 +1,12 @@
 package com.milesight.beaveriot.scheduler.core.model;
 
 import com.milesight.beaveriot.pubsub.api.message.RemoteBroadcastMessage;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.ZonedDateTime;
 
@@ -12,8 +17,6 @@ import java.time.ZonedDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ScheduledTaskRemoteTriggeredEvent extends RemoteBroadcastMessage {
-
-    private String tenantId;
 
     private ScheduledTask scheduledTask;
 
