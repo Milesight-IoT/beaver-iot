@@ -36,6 +36,10 @@ public class LanguageHelper {
         ResourceLimits limits = ResourceLimits.newBuilder()
                 .statementLimit(1000, null)
                 .build();
+        return newContext(lang, limits);
+    }
+
+    public static Context newContext(String lang, ResourceLimits limits) {
         Engine engine = getEngine(lang);
         Context.Builder contextBuilder = Context.newBuilder(lang)
                 .engine(engine)
@@ -46,8 +50,11 @@ public class LanguageHelper {
                 .allowHostClassLoading(false)
                 .allowCreateProcess(false)
                 .allowCreateThread(false)
-                .allowValueSharing(true)
-                .resourceLimits(limits);
+                .allowValueSharing(true);
+
+        if (limits != null) {
+            contextBuilder.resourceLimits(limits);
+        }
         return contextBuilder.build();
     }
 
