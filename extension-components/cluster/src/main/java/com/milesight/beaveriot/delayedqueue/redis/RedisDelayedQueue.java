@@ -1,29 +1,27 @@
 package com.milesight.beaveriot.delayedqueue.redis;
 
+import com.milesight.beaveriot.delayedqueue.BaseDelayedQueue;
 import com.milesight.beaveriot.delayedqueue.DelayedQueue;
 import com.milesight.beaveriot.delayedqueue.model.DelayedTask;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
-
-import java.time.Duration;
 
 /**
  * author: Luxb
  * create: 2025/11/13 9:25
  **/
 @Slf4j
-public class RedisDelayedQueue<T> implements DelayedQueue<T> {
+public class RedisDelayedQueue<T> extends BaseDelayedQueue implements DelayedQueue<T> {
     private final RedissonClient redissonClient;
-    private final String queueName;
 
     public RedisDelayedQueue(RedissonClient redissonClient, String queueName) {
+        super(queueName);
         this.redissonClient = redissonClient;
-        this.queueName = queueName;
     }
 
     @Override
-    public void offer(DelayedTask<T> task, Duration delay) {
-        log.info("offer from redis: taskId:{}", task.getTaskId());
+    public void offer(DelayedTask<T> task) {
+        log.info("offer from redis: taskId:{}", task.getId());
     }
 
     @Override

@@ -39,6 +39,7 @@ public class DelayedQueueManager {
             factory.setInterfaces(DelayedQueue.class);
             factory.addAdvisors(advisors);
             factory.setProxyTargetClass(true);
+            factory.setExposeProxy(true);
             return factory.getProxy(getClass().getClassLoader());
         });
     }
