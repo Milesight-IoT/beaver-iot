@@ -325,6 +325,7 @@ public class Entity implements IdentityKey, Cloneable {
         putMapIfNonNull(extraData, AttributeBuilder.ATTRIBUTE_MIN, min);
         putMapIfNonNull(extraData, AttributeBuilder.ATTRIBUTE_MAX, max);
         putMapIfNonNull(extraData, ExtraDataConstants.KEY_VALUE, value);
+        putMapIfNonNull(extraData, ExtraDataConstants.KEY_ROUNDED_VALUE, roundedDoubleValue);
         if (min != null && max != null) {
             if (doubleValue < min || doubleValue > max) {
                 errorValue = doubleValue;
@@ -332,7 +333,6 @@ public class Entity implements IdentityKey, Cloneable {
                 errorValue = roundedDoubleValue;
                 valuePrefix = ValueConstants.VALUE_PREFIX_ROUNDED;
                 valueSuffix = valueSuffixOriginal;
-                putMapIfNonNull(extraData, ExtraDataConstants.KEY_ROUNDED_VALUE, roundedDoubleValue);
             }
             if (errorValue != null) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_OUT_OF_RANGE.getErrorCode(),
@@ -346,7 +346,6 @@ public class Entity implements IdentityKey, Cloneable {
                 errorValue = roundedDoubleValue;
                 valuePrefix = ValueConstants.VALUE_PREFIX_ROUNDED;
                 valueSuffix = valueSuffixOriginal;
-                putMapIfNonNull(extraData, ExtraDataConstants.KEY_ROUNDED_VALUE, roundedDoubleValue);
             }
             if (errorValue != null) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_LESS_THAN_MIN.getErrorCode(),
@@ -360,7 +359,6 @@ public class Entity implements IdentityKey, Cloneable {
                 errorValue = roundedDoubleValue;
                 valuePrefix = ValueConstants.VALUE_PREFIX_ROUNDED;
                 valueSuffix = valueSuffixOriginal;
-                putMapIfNonNull(extraData, ExtraDataConstants.KEY_ROUNDED_VALUE, roundedDoubleValue);
             }
             if (errorValue != null) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_GREATER_THAN_MAX.getErrorCode(),
