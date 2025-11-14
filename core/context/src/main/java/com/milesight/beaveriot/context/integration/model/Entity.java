@@ -326,6 +326,7 @@ public class Entity implements IdentityKey, Cloneable {
         putMapIfNonNull(extraData, AttributeBuilder.ATTRIBUTE_MAX, max);
         putMapIfNonNull(extraData, ExtraDataConstants.KEY_VALUE, value);
         putMapIfNonNull(extraData, ExtraDataConstants.KEY_ROUNDED_VALUE, roundedDoubleValue);
+        putMapIfNonNull(extraData, AttributeBuilder.ATTRIBUTE_FRACTION_DIGITS, fractionDigits);
         if (min != null && max != null) {
             if (doubleValue < min || doubleValue > max) {
                 errorValue = doubleValue;
