@@ -30,10 +30,6 @@ import java.util.List;
 @Service
 @Slf4j
 public class CanvasNotifyService {
-
-    @Autowired
-    private EntityServiceProvider entityServiceProvider;
-
     @Autowired
     private MqttPubSubServiceProvider mqttPubSubServiceProvider;
 
@@ -55,6 +51,10 @@ public class CanvasNotifyService {
                     .map(Entity::getId)
                     .map(String::valueOf)
                     .toList();
+
+            if (entityIds.isEmpty()) {
+                return;
+            }
 
             CanvasExchangePayload canvasExchangePayload = new CanvasExchangePayload(entityIds);
             String event = JsonUtils.toJSON(MqttEvent.of(MqttEvent.EventType.EXCHANGE, canvasExchangePayload));
