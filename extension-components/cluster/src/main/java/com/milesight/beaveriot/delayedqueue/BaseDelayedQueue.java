@@ -2,9 +2,9 @@ package com.milesight.beaveriot.delayedqueue;
 
 import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
 import com.milesight.beaveriot.context.model.delayedqueue.DelayedQueue;
+import com.milesight.beaveriot.context.model.delayedqueue.DelayedTask;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.context.support.SpringContext;
-import com.milesight.beaveriot.context.model.delayedqueue.DelayedTask;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.spring.aop.ScopedLockConfiguration;
@@ -12,7 +12,6 @@ import net.javacrumbs.shedlock.spring.aop.ScopedLockConfiguration;
 import java.text.MessageFormat;
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * author: Luxb
@@ -95,19 +94,7 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T> {
     }
 
     private boolean isReallyExpired(DelayedTask<T> task) {
-        AtomicBoolean isReallyExpired = new AtomicBoolean(false);
-        doWithLock(task.getId(), () -> {
-            Long expireTime = taskExpireTimeMap.get(task.getId());
-            if (expireTime == null) {
-                return;
-            }
-
-            if (expireTime <= System.currentTimeMillis()) {
-                isReallyExpired.set(true);
-                taskExpireTimeMap.remove(task.getId());
-            }
-        });
-        return isReallyExpired.get();
+        return taskExpireTimeMap.remove(task.getId(), task.getExpireTime());
     }
 
     public void validateTask(DelayedTask<T> task) {
