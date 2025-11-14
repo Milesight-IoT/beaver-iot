@@ -291,6 +291,8 @@ public class Entity implements IdentityKey, Cloneable {
         public static final String KEY_ENTITY_NAME = "entity_name";
         public static final String KEY_REQUIRED_TYPE = "required_type";
         public static final String KEY_PROVIDED_TYPE = "provided_type";
+        public static final String KEY_VALUE = "value";
+        public static final String KEY_ROUNDED_VALUE = "rounded_value";
     }
 
     private static class ValueConstants {
@@ -319,6 +321,12 @@ public class Entity implements IdentityKey, Cloneable {
         String valuePrefix = "";
         String valueSuffix = "";
         String valueSuffixOriginal = MessageFormat.format(ValueConstants.VALUE_SUFFIX_ORIGINAL_FORMAT, doubleValue);
+        Map<String, Object> extraData = new HashMap<>();
+        putMapIfNonNull(extraData, AttributeBuilder.ATTRIBUTE_MIN, min);
+        putMapIfNonNull(extraData, AttributeBuilder.ATTRIBUTE_MAX, max);
+        putMapIfNonNull(extraData, ExtraDataConstants.KEY_VALUE, value);
+        putMapIfNonNull(extraData, ExtraDataConstants.KEY_ROUNDED_VALUE, roundedDoubleValue);
+        putMapIfNonNull(extraData, AttributeBuilder.ATTRIBUTE_FRACTION_DIGITS, fractionDigits);
         if (min != null && max != null) {
             if (doubleValue < min || doubleValue > max) {
                 errorValue = doubleValue;
@@ -330,10 +338,7 @@ public class Entity implements IdentityKey, Cloneable {
             if (errorValue != null) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_OUT_OF_RANGE.getErrorCode(),
                         EntityErrorCode.ENTITY_VALUE_OUT_OF_RANGE.formatMessage(entityName, valuePrefix, errorValue, valueSuffix, min, max),
-                        buildExtraData(entityData, Map.of(
-                                AttributeBuilder.ATTRIBUTE_MIN, min,
-                                AttributeBuilder.ATTRIBUTE_MAX, max
-                        ))));
+                        buildExtraData(entityData, extraData)));
             }
         } else if (min != null) {
             if (doubleValue < min) {
@@ -346,9 +351,7 @@ public class Entity implements IdentityKey, Cloneable {
             if (errorValue != null) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_LESS_THAN_MIN.getErrorCode(),
                         EntityErrorCode.ENTITY_VALUE_LESS_THAN_MIN.formatMessage(entityName, valuePrefix, errorValue, valueSuffix, min),
-                        buildExtraData(entityData, Map.of(
-                                AttributeBuilder.ATTRIBUTE_MIN, min
-                        ))));
+                        buildExtraData(entityData, extraData)));
             }
         } else if (max != null){
             if (doubleValue > max) {
@@ -361,10 +364,14 @@ public class Entity implements IdentityKey, Cloneable {
             if (errorValue != null) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_GREATER_THAN_MAX.getErrorCode(),
                         EntityErrorCode.ENTITY_VALUE_GREATER_THAN_MAX.formatMessage(entityName, valuePrefix, errorValue, valueSuffix, max),
-                        buildExtraData(entityData, Map.of(
-                                AttributeBuilder.ATTRIBUTE_MAX, max
-                        ))));
+                        buildExtraData(entityData, extraData)));
             }
+        }
+    }
+
+    private void putMapIfNonNull(Map<String, Object> map, String key, Object value) {
+        if (value != null) {
+            map.put(key, value);
         }
     }
 
