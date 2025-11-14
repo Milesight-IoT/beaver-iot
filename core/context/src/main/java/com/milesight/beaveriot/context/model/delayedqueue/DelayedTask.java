@@ -33,22 +33,22 @@ public class DelayedTask<T> implements Delayed {
         this.setDelayDuration(delayDuration);
     }
 
+    public static <T> DelayedTask<T> of(String taskId, T payload, Duration delayDuration) {
+        return new DelayedTask<>(taskId, payload, delayDuration);
+    }
+
     public DelayedTask<T> renew() {
         expireTime = System.currentTimeMillis() + delayTime;
         return this;
-    }
-
-    protected void setDelayTime(long delayTime) {
-        this.delayTime = delayTime;
-        renew();
     }
 
     public void setDelayDuration(Duration delayDuration) {
         setDelayTime(delayDuration.toMillis());
     }
 
-    public static <T> DelayedTask<T> of(String taskId, T payload, Duration delayDuration) {
-        return new DelayedTask<>(taskId, payload, delayDuration);
+    protected void setDelayTime(long delayTime) {
+        this.delayTime = delayTime;
+        renew();
     }
 
     @Override
@@ -59,9 +59,9 @@ public class DelayedTask<T> implements Delayed {
 
     @Override
     public int compareTo(@NonNull Delayed other) {
-        if (other instanceof DelayedTask) {
-            return Long.compare(this.expireTime, ((DelayedTask<?>) other).getExpireTime());
+        if (!(other instanceof DelayedTask<?> that)) {
+            throw new ClassCastException("Cannot compare DelayedTask with " + other.getClass());
         }
-        return 0;
+        return Long.compare(this.expireTime, that.expireTime);
     }
 }
