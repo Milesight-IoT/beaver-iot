@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 public class DelayedTask<T> implements Delayed {
     private String id;
     private T payload;
-    private long delayTime;
+    private Long delayTime;
 
     @Setter(lombok.AccessLevel.NONE)
     private long expireTime;
@@ -30,17 +30,21 @@ public class DelayedTask<T> implements Delayed {
 
         this.id = id;
         this.payload = payload;
-        this.setDelayTimeFromDuration(delayDuration);
+        this.setDelayDuration(delayDuration);
     }
 
-    public void renew() {
+    public DelayedTask<T> renew() {
         expireTime = System.currentTimeMillis() + delayTime;
+        return this;
     }
 
-    @SuppressWarnings("unused")
-    public void setDelayTimeFromDuration(Duration delayDuration) {
-        delayTime = delayDuration.toMillis();
+    protected void setDelayTime(long delayTime) {
+        this.delayTime = delayTime;
         renew();
+    }
+
+    public void setDelayDuration(Duration delayDuration) {
+        setDelayTime(delayDuration.toMillis());
     }
 
     public static <T> DelayedTask<T> of(String taskId, T payload, Duration delayDuration) {
@@ -49,8 +53,8 @@ public class DelayedTask<T> implements Delayed {
 
     @Override
     public long getDelay(TimeUnit unit) {
-        long diff = expireTime - System.currentTimeMillis();
-        return unit.convert(diff, TimeUnit.MILLISECONDS);
+        long remainingTime = expireTime - System.currentTimeMillis();
+        return unit.convert(remainingTime, TimeUnit.MILLISECONDS);
     }
 
     @Override

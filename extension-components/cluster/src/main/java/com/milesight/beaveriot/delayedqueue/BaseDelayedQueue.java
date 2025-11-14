@@ -27,7 +27,7 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T> {
 
     public BaseDelayedQueue(String queueName) {
         String tenantId = TenantContext.tryGetTenantId().orElse("");
-        this.queueName = MessageFormat.format("{0}:{1}", tenantId, queueName);
+        this.queueName = MessageFormat.format(Constants.QUEUE_NAME_FORMAT, tenantId, queueName);
     }
 
     @Override
@@ -35,14 +35,12 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T> {
         validateTask(task);
 
         doWithLock(task.getId(), () -> {
-            task.renew();
-            boolean isTaskExist = taskExpireTimeMap.containsKey(task.getId());
-            taskExpireTimeMap.put(task.getId(), task.getExpireTime());
+            Long existingExpireTime = taskExpireTimeMap.put(task.getId(), task.renew().getExpireTime());
             delayQueue.offer(task);
-            if (isTaskExist) {
-                log.debug("Delayed queue {} renewed task: {}", queueName, task.getId());
-            } else {
+            if (existingExpireTime == null) {
                 log.debug("Delayed queue {} offered task: {}", queueName, task.getId());
+            } else {
+                log.debug("Delayed queue {} renewed task: {}", queueName, task.getId());
             }
         });
     }
@@ -113,8 +111,16 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T> {
     }
 
     public void validateTask(DelayedTask<T> task) {
-        if (task == null || task.getId() == null) {
-            throw new IllegalArgumentException("Task or taskId cannot be null");
+        if (task == null) {
+            throw new IllegalArgumentException("Task cannot be null");
+        }
+
+        if (task.getId() == null) {
+            throw new IllegalArgumentException("Task id cannot be null");
+        }
+
+        if (task.getDelayTime() == null) {
+            throw new IllegalArgumentException("Task delay time cannot be null");
         }
     }
 
@@ -138,6 +144,7 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T> {
     }
 
     private static class Constants {
+        public static final String QUEUE_NAME_FORMAT = "{0}:{1}";
         public static final String LOCK_NAME_DELAYED_QUEUE_HANDLE_TASK_FORMAT = "delayed-queue:{0}:handle-task:{1}";
     }
 }
