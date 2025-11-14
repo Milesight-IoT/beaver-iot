@@ -1,8 +1,8 @@
 package com.milesight.beaveriot.delayedqueue.autoconfigure;
 
-import com.milesight.beaveriot.delayedqueue.DelayedQueueProvider;
-import com.milesight.beaveriot.delayedqueue.local.LocalDelayedQueueProvider;
-import com.milesight.beaveriot.delayedqueue.redis.RedisDelayedQueueProvider;
+import com.milesight.beaveriot.delayedqueue.DelayedQueueFactory;
+import com.milesight.beaveriot.delayedqueue.local.LocalDelayedQueueFactory;
+import com.milesight.beaveriot.delayedqueue.redis.RedisDelayedQueueFactory;
 import org.redisson.api.RedissonClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -17,13 +17,13 @@ import org.springframework.context.annotation.Configuration;
 public class DelayedQueueAutoConfiguration {
     @Bean
     @ConditionalOnExpression("!'${spring.redis.host:}'.isEmpty()")
-    public DelayedQueueProvider redisDelayedQueueProvider(RedissonClient redissonClient) {
-        return new RedisDelayedQueueProvider(redissonClient);
+    public DelayedQueueFactory redisDelayedQueueFactory(RedissonClient redissonClient) {
+        return new RedisDelayedQueueFactory(redissonClient);
     }
 
     @Bean
-    @ConditionalOnMissingBean(DelayedQueueProvider.class)
-    public DelayedQueueProvider localDelayedQueueProvider() {
-        return new LocalDelayedQueueProvider();
+    @ConditionalOnMissingBean(DelayedQueueFactory.class)
+    public DelayedQueueFactory localDelayedQueueFactory() {
+        return new LocalDelayedQueueFactory();
     }
 }

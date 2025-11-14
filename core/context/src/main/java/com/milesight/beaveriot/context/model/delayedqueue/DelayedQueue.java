@@ -1,6 +1,4 @@
-package com.milesight.beaveriot.delayedqueue;
-
-import com.milesight.beaveriot.delayedqueue.model.DelayedTask;
+package com.milesight.beaveriot.context.model.delayedqueue;
 
 /**
  * author: Luxb
@@ -9,6 +7,6 @@ import com.milesight.beaveriot.delayedqueue.model.DelayedTask;
 public interface DelayedQueue<T> {
     void offer(DelayedTask<T> task);
     void cancel(String taskId);
-    DelayedTask<T> take();
+    DelayedTask<T> take() throws InterruptedException;
     DelayedTask<T> poll();
 }

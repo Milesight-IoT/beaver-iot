@@ -1,5 +1,7 @@
 package com.milesight.beaveriot.delayedqueue;
 
+import com.milesight.beaveriot.context.api.DelayedQueueServiceProvider;
+import com.milesight.beaveriot.context.model.delayedqueue.DelayedQueue;
 import org.springframework.aop.Advisor;
 import org.springframework.aop.IntroductionAdvisor;
 import org.springframework.aop.framework.ProxyFactory;
@@ -17,13 +19,13 @@ import java.util.stream.Collectors;
  * create: 2025/11/13 9:32
  **/
 @Component
-public class DelayedQueueManager {
-    private final DelayedQueueProvider provider;
+public class DelayedQueueManager implements DelayedQueueServiceProvider {
+    private final DelayedQueueFactory factory;
     private final List<Advisor> advisors;
     private final Map<String, Object> proxyCache = new ConcurrentHashMap<>();
 
-    public DelayedQueueManager(DelayedQueueProvider provider, ApplicationContext applicationContext) {
-        this.provider = provider;
+    public DelayedQueueManager(DelayedQueueFactory factory, ApplicationContext applicationContext) {
+        this.factory = factory;
         this.advisors = BeanFactoryUtils.beansOfTypeIncludingAncestors(
                         applicationContext, Advisor.class, true, false
                 ).values().stream()
@@ -32,15 +34,16 @@ public class DelayedQueueManager {
     }
 
     @SuppressWarnings("unchecked")
+    @Override
     public <T> DelayedQueue<T> getDelayedQueue(String queueName) {
         return (DelayedQueue<T>) proxyCache.computeIfAbsent(queueName, k -> {
-            DelayedQueue<T> rawQueue = provider.create(queueName);
-            ProxyFactory factory = new ProxyFactory(rawQueue);
-            factory.setInterfaces(DelayedQueue.class);
-            factory.addAdvisors(advisors);
-            factory.setProxyTargetClass(true);
-            factory.setExposeProxy(true);
-            return factory.getProxy(getClass().getClassLoader());
+            DelayedQueue<T> rawQueue = factory.create(queueName);
+            ProxyFactory proxyFactory = new ProxyFactory(rawQueue);
+            proxyFactory.setInterfaces(DelayedQueue.class);
+            proxyFactory.addAdvisors(advisors);
+            proxyFactory.setProxyTargetClass(true);
+            proxyFactory.setExposeProxy(true);
+            return proxyFactory.getProxy(getClass().getClassLoader());
         });
     }
 }
