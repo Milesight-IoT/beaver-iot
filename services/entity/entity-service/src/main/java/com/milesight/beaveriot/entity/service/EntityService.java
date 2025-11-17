@@ -70,6 +70,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -712,10 +713,20 @@ public class EntityService implements EntityServiceProvider {
         return res.map(entityResponse -> {
             entityResponse.setEntityTags(entityIdToTags.get(Long.valueOf(entityResponse.getEntityId())));
             entityResponse.setEntityLatestValue(Optional.ofNullable(entityKeyToLatestValue.get(entityResponse.getEntityKey()))
-                    .map(Object::toString)
+                    .map(value -> {
+                        if (value instanceof Double doubleValue) {
+                            return toDoubleString(doubleValue);
+                        } else {
+                            return value.toString();
+                        }
+                    })
                     .orElse(null));
             return entityResponse;
         });
+    }
+
+    public static String toDoubleString(double value) {
+        return new BigDecimal(String.valueOf(value)).stripTrailingZeros().toPlainString();
     }
 
     private Page<EntityResponse> convertEntityPOPageToEntityResponses(Page<EntityPO> entityPOPage) {

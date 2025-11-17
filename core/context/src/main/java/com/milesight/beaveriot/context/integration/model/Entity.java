@@ -314,7 +314,7 @@ public class Entity implements IdentityKey, Cloneable {
         Map<String, Object> extraData = new HashMap<>();
         putMapIfNonNull(extraData, AttributeBuilder.ATTRIBUTE_MIN, min);
         putMapIfNonNull(extraData, AttributeBuilder.ATTRIBUTE_MAX, max);
-        putMapIfNonNull(extraData, ExtraDataConstants.KEY_VALUE, value);
+        putMapIfNonNull(extraData, ExtraDataConstants.KEY_VALUE, doubleValue);
         if (isValueRounded) {
             putMapIfNonNull(extraData, ExtraDataConstants.KEY_ROUNDED_VALUE, roundedDoubleValue);
             putMapIfNonNull(extraData, AttributeBuilder.ATTRIBUTE_FRACTION_DIGITS, fractionDigits);
