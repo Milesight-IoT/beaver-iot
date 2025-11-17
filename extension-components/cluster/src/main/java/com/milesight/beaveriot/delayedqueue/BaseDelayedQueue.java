@@ -50,14 +50,10 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T> {
             return;
         }
 
-        doWithLock(taskId, () -> {
-            if (!taskExpireTimeMap.containsKey(taskId)) {
-                return;
-            }
-
-            taskExpireTimeMap.remove(taskId);
+        Long expireTime = taskExpireTimeMap.remove(taskId);
+        if (expireTime != null) {
             log.debug("Delayed queue {} cancelled task: {}", queueName, taskId);
-        });
+        }
     }
 
     @Override
