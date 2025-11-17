@@ -322,34 +322,38 @@ public class Entity implements IdentityKey, Cloneable {
         if (min != null && max != null) {
             if (doubleValue < min || doubleValue > max) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_OUT_OF_RANGE.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_OUT_OF_RANGE.formatMessage(entityName, doubleValue, min, max),
+                        EntityErrorCode.ENTITY_VALUE_OUT_OF_RANGE.formatMessage(entityName, toDoubleString(doubleValue), toDoubleString(min), toDoubleString(max)),
                         buildExtraData(entityData, extraData)));
             } else if (isValueRounded && (roundedDoubleValue < min || roundedDoubleValue > max)) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_ROUNDED_VALUE_OUT_OF_RANGE.getErrorCode(),
-                        EntityErrorCode.ENTITY_ROUNDED_VALUE_OUT_OF_RANGE.formatMessage(entityName, roundedDoubleValue, doubleValue, min, max),
+                        EntityErrorCode.ENTITY_ROUNDED_VALUE_OUT_OF_RANGE.formatMessage(entityName, toDoubleString(roundedDoubleValue), toDoubleString(doubleValue), toDoubleString(min), toDoubleString(max)),
                         buildExtraData(entityData, extraData)));
             }
         } else if (min != null) {
             if (doubleValue < min) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_LESS_THAN_MIN.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_LESS_THAN_MIN.formatMessage(entityName, doubleValue, min),
+                        EntityErrorCode.ENTITY_VALUE_LESS_THAN_MIN.formatMessage(entityName, toDoubleString(doubleValue), toDoubleString(min)),
                         buildExtraData(entityData, extraData)));
             } else if (isValueRounded && roundedDoubleValue < min) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_ROUNDED_VALUE_LESS_THAN_MIN.getErrorCode(),
-                        EntityErrorCode.ENTITY_ROUNDED_VALUE_LESS_THAN_MIN.formatMessage(entityName, roundedDoubleValue, doubleValue, min),
+                        EntityErrorCode.ENTITY_ROUNDED_VALUE_LESS_THAN_MIN.formatMessage(entityName, toDoubleString(roundedDoubleValue), toDoubleString(doubleValue), toDoubleString(min)),
                         buildExtraData(entityData, extraData)));
             }
         } else if (max != null){
             if (doubleValue > max) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_GREATER_THAN_MAX.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_GREATER_THAN_MAX.formatMessage(entityName, doubleValue, max),
+                        EntityErrorCode.ENTITY_VALUE_GREATER_THAN_MAX.formatMessage(entityName, toDoubleString(doubleValue), toDoubleString(max)),
                         buildExtraData(entityData, extraData)));
             } else if (isValueRounded && roundedDoubleValue > max) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_ROUNDED_VALUE_GREATER_THAN_MAX.getErrorCode(),
-                        EntityErrorCode.ENTITY_ROUNDED_VALUE_GREATER_THAN_MAX.formatMessage(entityName, roundedDoubleValue, doubleValue, max),
+                        EntityErrorCode.ENTITY_ROUNDED_VALUE_GREATER_THAN_MAX.formatMessage(entityName, toDoubleString(roundedDoubleValue), toDoubleString(doubleValue), toDoubleString(max)),
                         buildExtraData(entityData, extraData)));
             }
         }
+    }
+
+    public static String toDoubleString(double value) {
+        return new BigDecimal(String.valueOf(value)).stripTrailingZeros().toPlainString();
     }
 
     private void putMapIfNonNull(Map<String, Object> map, String key, Object value) {
