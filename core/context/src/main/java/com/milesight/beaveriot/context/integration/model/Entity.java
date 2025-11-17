@@ -23,7 +23,6 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -291,11 +290,8 @@ public class Entity implements IdentityKey, Cloneable {
         public static final String KEY_ENTITY_NAME = "entity_name";
         public static final String KEY_REQUIRED_TYPE = "required_type";
         public static final String KEY_PROVIDED_TYPE = "provided_type";
-    }
-
-    private static class ValueConstants {
-        public static final String VALUE_PREFIX_ROUNDED = "rounded ";
-        public static final String VALUE_SUFFIX_ORIGINAL_FORMAT = " (original value {0})";
+        public static final String KEY_VALUE = "value";
+        public static final String KEY_ROUNDED_VALUE = "rounded_value";
     }
 
     private void validateValueRange(String entityName, Map<String, Object> entityData, AtomicReference<Object> valueRef, List<ErrorHolder> errors) {
@@ -315,56 +311,50 @@ public class Entity implements IdentityKey, Cloneable {
             isValueRounded = true;
         }
 
-        Double errorValue = null;
-        String valuePrefix = "";
-        String valueSuffix = "";
-        String valueSuffixOriginal = MessageFormat.format(ValueConstants.VALUE_SUFFIX_ORIGINAL_FORMAT, doubleValue);
+        Map<String, Object> extraData = new HashMap<>();
+        putMapIfNonNull(extraData, AttributeBuilder.ATTRIBUTE_MIN, min);
+        putMapIfNonNull(extraData, AttributeBuilder.ATTRIBUTE_MAX, max);
+        putMapIfNonNull(extraData, ExtraDataConstants.KEY_VALUE, value);
+        if (isValueRounded) {
+            putMapIfNonNull(extraData, ExtraDataConstants.KEY_ROUNDED_VALUE, roundedDoubleValue);
+            putMapIfNonNull(extraData, AttributeBuilder.ATTRIBUTE_FRACTION_DIGITS, fractionDigits);
+        }
         if (min != null && max != null) {
             if (doubleValue < min || doubleValue > max) {
-                errorValue = doubleValue;
-            } else if (isValueRounded && (roundedDoubleValue < min || roundedDoubleValue > max)) {
-                errorValue = roundedDoubleValue;
-                valuePrefix = ValueConstants.VALUE_PREFIX_ROUNDED;
-                valueSuffix = valueSuffixOriginal;
-            }
-            if (errorValue != null) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_OUT_OF_RANGE.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_OUT_OF_RANGE.formatMessage(entityName, valuePrefix, errorValue, valueSuffix, min, max),
-                        buildExtraData(entityData, Map.of(
-                                AttributeBuilder.ATTRIBUTE_MIN, min,
-                                AttributeBuilder.ATTRIBUTE_MAX, max
-                        ))));
+                        EntityErrorCode.ENTITY_VALUE_OUT_OF_RANGE.formatMessage(entityName, doubleValue, min, max),
+                        buildExtraData(entityData, extraData)));
+            } else if (isValueRounded && (roundedDoubleValue < min || roundedDoubleValue > max)) {
+                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_ROUNDED_VALUE_OUT_OF_RANGE.getErrorCode(),
+                        EntityErrorCode.ENTITY_ROUNDED_VALUE_OUT_OF_RANGE.formatMessage(entityName, roundedDoubleValue, doubleValue, min, max),
+                        buildExtraData(entityData, extraData)));
             }
         } else if (min != null) {
             if (doubleValue < min) {
-                errorValue = doubleValue;
-            } else if (isValueRounded && roundedDoubleValue < min) {
-                errorValue = roundedDoubleValue;
-                valuePrefix = ValueConstants.VALUE_PREFIX_ROUNDED;
-                valueSuffix = valueSuffixOriginal;
-            }
-            if (errorValue != null) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_LESS_THAN_MIN.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_LESS_THAN_MIN.formatMessage(entityName, valuePrefix, errorValue, valueSuffix, min),
-                        buildExtraData(entityData, Map.of(
-                                AttributeBuilder.ATTRIBUTE_MIN, min
-                        ))));
+                        EntityErrorCode.ENTITY_VALUE_LESS_THAN_MIN.formatMessage(entityName, doubleValue, min),
+                        buildExtraData(entityData, extraData)));
+            } else if (isValueRounded && roundedDoubleValue < min) {
+                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_ROUNDED_VALUE_LESS_THAN_MIN.getErrorCode(),
+                        EntityErrorCode.ENTITY_ROUNDED_VALUE_LESS_THAN_MIN.formatMessage(entityName, roundedDoubleValue, doubleValue, min),
+                        buildExtraData(entityData, extraData)));
             }
         } else if (max != null){
             if (doubleValue > max) {
-                errorValue = doubleValue;
-            } else if (isValueRounded && roundedDoubleValue > max) {
-                errorValue = roundedDoubleValue;
-                valuePrefix = ValueConstants.VALUE_PREFIX_ROUNDED;
-                valueSuffix = valueSuffixOriginal;
-            }
-            if (errorValue != null) {
                 errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_VALUE_GREATER_THAN_MAX.getErrorCode(),
-                        EntityErrorCode.ENTITY_VALUE_GREATER_THAN_MAX.formatMessage(entityName, valuePrefix, errorValue, valueSuffix, max),
-                        buildExtraData(entityData, Map.of(
-                                AttributeBuilder.ATTRIBUTE_MAX, max
-                        ))));
+                        EntityErrorCode.ENTITY_VALUE_GREATER_THAN_MAX.formatMessage(entityName, doubleValue, max),
+                        buildExtraData(entityData, extraData)));
+            } else if (isValueRounded && roundedDoubleValue > max) {
+                errors.add(ErrorHolder.of(EntityErrorCode.ENTITY_ROUNDED_VALUE_GREATER_THAN_MAX.getErrorCode(),
+                        EntityErrorCode.ENTITY_ROUNDED_VALUE_GREATER_THAN_MAX.formatMessage(entityName, roundedDoubleValue, doubleValue, max),
+                        buildExtraData(entityData, extraData)));
             }
+        }
+    }
+
+    private void putMapIfNonNull(Map<String, Object> map, String key, Object value) {
+        if (value != null) {
+            map.put(key, value);
         }
     }
 
