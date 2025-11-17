@@ -74,7 +74,7 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
     @Override
     public DelayedTask<T> take() throws InterruptedException {
         if (isListening.get()) {
-            throw new IllegalStateException("Cannot take when there are listeners");
+            throw new IllegalStateException("Cannot invoke 'take()' while consumers are present");
         }
 
         return doTake();
@@ -94,7 +94,7 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
     @Override
     public DelayedTask<T> poll() {
         if (isListening.get()) {
-            throw new IllegalStateException("Cannot poll when there are listeners");
+            throw new IllegalStateException("Cannot invoke 'poll()' while consumers are present");
         }
 
         while (true) {
