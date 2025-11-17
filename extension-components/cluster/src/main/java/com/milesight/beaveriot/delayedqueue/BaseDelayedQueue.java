@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.delayedqueue;
 
+import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
 import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
 import com.milesight.beaveriot.context.model.delayedqueue.DelayedQueue;
 import com.milesight.beaveriot.context.model.delayedqueue.DelayedTask;
@@ -8,25 +9,38 @@ import com.milesight.beaveriot.context.support.SpringContext;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.spring.aop.ScopedLockConfiguration;
+import org.redisson.RedissonShutdownException;
+import org.springframework.beans.factory.DisposableBean;
 
 import java.text.MessageFormat;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 /**
  * author: Luxb
  * create: 2025/11/13 13:52
  **/
 @Slf4j
-public class BaseDelayedQueue<T> implements DelayedQueue<T> {
+public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
     private static final LockProvider lockProvider = SpringContext.getBean(LockProvider.class);
     protected final String queueName;
     protected DelayedQueueWrapper<T> delayQueue;
     protected Map<String, Long> taskExpireTimeMap;
+    protected List<Consumer<DelayedTask<T>>> consumers;
+    protected ExecutorService listenerExecutor;
+    protected final AtomicBoolean isListening;
 
     public BaseDelayedQueue(String queueName) {
-        String tenantId = TenantContext.tryGetTenantId().orElse("");
-        this.queueName = MessageFormat.format(Constants.QUEUE_NAME_FORMAT, tenantId, queueName);
+        this.queueName = queueName;
+        this.consumers = new CopyOnWriteArrayList<>();
+        this.isListening = new AtomicBoolean(false);
     }
 
     @Override
@@ -44,6 +58,7 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T> {
         });
     }
 
+    @DistributedLock(name="delayed-queue-cancel-task:#{#p0}", scope = LockScope.GLOBAL, throwOnLockFailure = false)
     @Override
     public void cancel(String taskId) {
         if (taskId == null) {
@@ -57,25 +72,31 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T> {
     }
 
     @Override
-    public DelayedTask<T> take() {
-        while (true) {
-            try {
-                DelayedTask<T> task = delayQueue.take();
+    public DelayedTask<T> take() throws InterruptedException {
+        if (isListening.get()) {
+            throw new IllegalStateException("Cannot take when there are listeners");
+        }
 
-                if (isReallyExpired(task)) {
-                    log.debug("Delayed queue {} consumed task: {}", queueName, task.getId());
-                    return task;
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.error("Interrupted while taking task", e);
-                throw new RuntimeException("Thread interrupted", e);
+        return doTake();
+    }
+
+    private DelayedTask<T> doTake() throws InterruptedException {
+        while (true) {
+            DelayedTask<T> task = delayQueue.take();
+
+            if (isReallyExpired(task)) {
+                log.debug("Delayed queue {} consumed task: {}", queueName, task.getId());
+                return task;
             }
         }
     }
 
     @Override
     public DelayedTask<T> poll() {
+        if (isListening.get()) {
+            throw new IllegalStateException("Cannot poll when there are listeners");
+        }
+
         while (true) {
             DelayedTask<T> task = delayQueue.poll();
             if (task == null) {
@@ -86,6 +107,47 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T> {
                 log.debug("Delayed queue {} consumed task: {}", queueName, task.getId());
                 return task;
             }
+        }
+    }
+
+    @Override
+    public void addConsumer(Consumer<DelayedTask<T>> consumer) {
+        this.consumers.add(consumer);
+        this.startListener();
+    }
+
+    private void startListener() {
+        if (isListening.compareAndSet(false, true)) {
+            listenerExecutor = Executors.newSingleThreadExecutor(runnable -> {
+                Thread t = new Thread(runnable, Constants.LISTENER_THREAD_NAME_PREFIX + queueName);
+                t.setDaemon(false);
+                return t;
+            });
+
+            String tenantId = TenantContext.tryGetTenantId().orElse(null);
+            listenerExecutor.execute(() -> {
+                if (tenantId != null) {
+                    TenantContext.setTenantId(tenantId);
+                }
+
+                while(isListening.get() && !Thread.currentThread().isInterrupted()) {
+                    try {
+                        DelayedTask<T> task = doTake();
+                        for (Consumer<DelayedTask<T>> consumer : consumers) {
+                            consumer.accept(task);
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        log.warn("Delayed queue listener interrupted, shutting down for queue: {}", queueName);
+                        break;
+                    } catch (RedissonShutdownException e) {
+                        log.warn("Redisson is shutdown, shutting down for queue: {}", queueName);
+                        break;
+                    } catch (Exception e) {
+                        log.error("Error occurred while consuming task", e);
+                    }
+                }
+            });
         }
     }
 
@@ -126,8 +188,26 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T> {
         });
     }
 
+    @Override
+    public void destroy() {
+        log.debug("Shutting down delayed queue listener executor for queue: {}", queueName);
+        if (listenerExecutor == null) {
+            return;
+        }
+
+        isListening.set(false);
+        listenerExecutor.shutdown();
+        try {
+            if (!listenerExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
+                listenerExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            listenerExecutor.shutdownNow();
+        }
+    }
+
     private static class Constants {
-        public static final String QUEUE_NAME_FORMAT = "{0}:{1}";
         public static final String LOCK_NAME_DELAYED_QUEUE_HANDLE_TASK_FORMAT = "delayed-queue:{0}:handle-task:{1}";
+        public static final String LISTENER_THREAD_NAME_PREFIX = "DelayedQueue-Listener-";
     }
 }
