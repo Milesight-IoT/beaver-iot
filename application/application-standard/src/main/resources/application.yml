@@ -236,8 +236,8 @@ timeseries:
   # supports jpa, influxdb, dynamodb
   database: jpa
   retention:
-    "beaver_iot_telemetry": 365d
-    "beaver_iot_running_log": 30d
+    "beaver_iot_telemetry": ${TIMESERIES_RETENTION_BEAVER_IOT_TELEMETRY:365d}
+    "beaver_iot_running_log": ${TIMESERIES_RETENTION_BEAVER_IOT_RUNNING_LOG:30d}
   #influxdb:
   #  url: ${TIMESERIES_INFLUXDB_URL:http://localhost:8086}
   #  token: ${TIMESERIES_INFLUXDB_TOKEN:token}
