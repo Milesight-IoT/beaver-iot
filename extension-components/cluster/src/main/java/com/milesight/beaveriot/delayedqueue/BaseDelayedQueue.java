@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.delayedqueue;
 
 import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
+import com.milesight.beaveriot.context.i18n.locale.LocaleContext;
 import com.milesight.beaveriot.context.model.delayedqueue.DelayedQueue;
 import com.milesight.beaveriot.context.model.delayedqueue.DelayedTask;
 import com.milesight.beaveriot.context.security.TenantContext;
@@ -15,7 +16,9 @@ import org.springframework.util.CollectionUtils;
 
 import java.text.MessageFormat;
 import java.time.Duration;
-import java.util.*;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -32,6 +35,7 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
     protected Map<String, Long> taskExpireTimeMap;
     protected Map<String, Map<String, Consumer<DelayedTask<T>>>> topicConsumersMap;
     protected ExecutorService listenerExecutor;
+    protected ExecutorService consumerExecutor;
     protected final AtomicBoolean isListening;
 
     public BaseDelayedQueue(@NonNull String queueName, @NonNull DelayedQueueWrapper<T> delayQueue, @NonNull Map<String, Long> taskExpireTimeMap) {
@@ -112,12 +116,15 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
                 return t;
             });
 
-            String tenantId = TenantContext.tryGetTenantId().orElse(null);
-            listenerExecutor.execute(() -> {
-                if (tenantId != null) {
-                    TenantContext.setTenantId(tenantId);
-                }
+            consumerExecutor = Executors.newCachedThreadPool(runnable -> {
+                Thread t = new Thread(runnable, Constants.CONSUMER_THREAD_NAME_PREFIX + queueName);
+                t.setDaemon(false);
+                return t;
+            });
 
+            String tenantId = TenantContext.tryGetTenantId().orElse(null);
+            Locale locale = LocaleContext.getLocale();
+            listenerExecutor.execute(() -> {
                 while(isListening.get() && !Thread.currentThread().isInterrupted()) {
                     try {
                         DelayedTask<T> task = doTake();
@@ -131,13 +138,17 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
                             continue;
                         }
 
-                        consumers.forEach((consumerId, consumer) -> {
+                        consumers.forEach((consumerId, consumer) -> CompletableFuture.runAsync(() -> {
                             try {
+                                if (tenantId != null) {
+                                    TenantContext.setTenantId(tenantId);
+                                }
+                                LocaleContext.setLocale(locale);
                                 consumer.accept(task);
                             } catch (Exception e) {
                                 log.error("Error occurred while consuming task: {}, consumerId: {}", task.getId(), consumerId, e);
                             }
-                        });
+                        }, consumerExecutor));
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         log.warn("Delayed queue listener interrupted, shutting down for queue: {}", queueName);
@@ -196,24 +207,34 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
 
     @Override
     public void destroy() {
-        log.debug("Shutting down delayed queue listener executor for queue: {}", queueName);
+        log.debug("Shutting down delayed queue listener and consumer executor for queue: {}", queueName);
         if (listenerExecutor == null) {
             return;
         }
 
         isListening.set(false);
         listenerExecutor.shutdown();
+        if (consumerExecutor != null) {
+            consumerExecutor.shutdown();
+        }
         try {
             if (!listenerExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
                 listenerExecutor.shutdownNow();
             }
+            if (consumerExecutor != null && !consumerExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
+                consumerExecutor.shutdownNow();
+            }
         } catch (InterruptedException e) {
             listenerExecutor.shutdownNow();
+            if (consumerExecutor != null) {
+                consumerExecutor.shutdownNow();
+            }
         }
     }
 
     private static class Constants {
         public static final String LOCK_NAME_DELAYED_QUEUE_HANDLE_TASK_FORMAT = "delayed-queue:{0}:handle-task:{1}";
         public static final String LISTENER_THREAD_NAME_PREFIX = "DelayedQueue-Listener-";
+        public static final String CONSUMER_THREAD_NAME_PREFIX = "DelayedQueue-Consumer-";
     }
 }
