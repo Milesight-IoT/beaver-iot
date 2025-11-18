@@ -1,6 +1,5 @@
 package com.milesight.beaveriot.delayedqueue;
 
-import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
 import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
 import com.milesight.beaveriot.context.model.delayedqueue.DelayedQueue;
 import com.milesight.beaveriot.context.model.delayedqueue.DelayedTask;
@@ -58,7 +57,6 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         });
     }
 
-    @DistributedLock(name="delayed-queue-cancel-task:#{#p0}", scope = LockScope.GLOBAL, throwOnLockFailure = false)
     @Override
     public void cancel(String taskId) {
         if (taskId == null) {
@@ -80,6 +78,15 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         return doTake();
     }
 
+    @Override
+    public DelayedTask<T> poll() {
+        if (isListening.get()) {
+            throw new IllegalStateException("Cannot invoke 'poll()' while consumers are present");
+        }
+
+        return doPull();
+    }
+
     private DelayedTask<T> doTake() throws InterruptedException {
         while (true) {
             DelayedTask<T> task = delayQueue.take();
@@ -91,12 +98,7 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         }
     }
 
-    @Override
-    public DelayedTask<T> poll() {
-        if (isListening.get()) {
-            throw new IllegalStateException("Cannot invoke 'poll()' while consumers are present");
-        }
-
+    private DelayedTask<T> doPull() {
         while (true) {
             DelayedTask<T> task = delayQueue.poll();
             if (task == null) {
