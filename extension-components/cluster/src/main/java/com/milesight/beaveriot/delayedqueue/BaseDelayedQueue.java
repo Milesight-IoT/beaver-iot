@@ -122,8 +122,6 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
                 return t;
             });
 
-            String tenantId = TenantContext.tryGetTenantId().orElse(null);
-            Locale locale = LocaleContext.getLocale();
             listenerExecutor.execute(() -> {
                 while(isListening.get() && !Thread.currentThread().isInterrupted()) {
                     try {
@@ -140,10 +138,7 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
 
                         consumers.forEach((consumerId, consumer) -> CompletableFuture.runAsync(() -> {
                             try {
-                                if (tenantId != null) {
-                                    TenantContext.setTenantId(tenantId);
-                                }
-                                LocaleContext.setLocale(locale);
+                                initConsumerContext(task);
                                 consumer.accept(task);
                             } catch (Exception e) {
                                 log.error("Error occurred while consuming task: {}, consumerId: {}", task.getId(), consumerId, e);
@@ -161,6 +156,17 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
                     }
                 }
             });
+        }
+    }
+
+    private void initConsumerContext(DelayedTask<T> task) {
+        String tenantId = (String) task.getContext().get(DelayedTask.ContextKey.TENANT);
+        if (tenantId != null) {
+            TenantContext.setTenantId(tenantId);
+        }
+        Locale locale = (Locale) task.getContext().get(DelayedTask.ContextKey.LOCALE);
+        if (locale != null) {
+            LocaleContext.setLocale(locale);
         }
     }
 
