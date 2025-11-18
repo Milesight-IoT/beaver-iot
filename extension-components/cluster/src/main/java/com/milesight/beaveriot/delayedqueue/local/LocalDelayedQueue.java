@@ -12,8 +12,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class LocalDelayedQueue<T> extends BaseDelayedQueue<T> {
     public LocalDelayedQueue(String queueName) {
-        super(queueName);
-        delayQueue = new LocalDelayedQueueWrapper<>();
-        taskExpireTimeMap = new ConcurrentHashMap<>();
+        super(queueName, new LocalDelayedQueueWrapper<>(), new ConcurrentHashMap<>());
     }
 }

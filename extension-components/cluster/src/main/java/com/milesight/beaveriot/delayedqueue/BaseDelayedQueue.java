@@ -5,6 +5,7 @@ import com.milesight.beaveriot.context.model.delayedqueue.DelayedQueue;
 import com.milesight.beaveriot.context.model.delayedqueue.DelayedTask;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.context.support.SpringContext;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.spring.aop.ScopedLockConfiguration;
@@ -33,8 +34,10 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
     protected ExecutorService listenerExecutor;
     protected final AtomicBoolean isListening;
 
-    public BaseDelayedQueue(String queueName) {
+    public BaseDelayedQueue(@NonNull String queueName, @NonNull DelayedQueueWrapper<T> delayQueue, @NonNull Map<String, Long> taskExpireTimeMap) {
         this.queueName = queueName;
+        this.delayQueue = delayQueue;
+        this.taskExpireTimeMap = taskExpireTimeMap;
         this.topicConsumersMap = new ConcurrentHashMap<>();
         this.isListening = new AtomicBoolean(false);
     }

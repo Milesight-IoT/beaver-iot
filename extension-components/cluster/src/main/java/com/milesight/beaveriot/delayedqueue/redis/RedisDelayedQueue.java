@@ -11,9 +11,7 @@ import org.redisson.api.RedissonClient;
 @Slf4j
 public class RedisDelayedQueue<T> extends BaseDelayedQueue<T> {
     public RedisDelayedQueue(RedissonClient redissonClient, String queueName) {
-        super(queueName);
-        this.delayQueue = new RedisDelayedQueueWrapper<>(redissonClient, queueName);
-        this.taskExpireTimeMap = redissonClient.getMap(queueName + Constants.SUFFIX_EXPIRE_TIME);
+        super(queueName, new RedisDelayedQueueWrapper<>(redissonClient, queueName), redissonClient.getMap(queueName + Constants.SUFFIX_EXPIRE_TIME));
     }
 
     private static class Constants {
