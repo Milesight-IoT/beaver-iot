@@ -10,15 +10,12 @@ import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.spring.aop.ScopedLockConfiguration;
 import org.redisson.RedissonShutdownException;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.util.CollectionUtils;
 
 import java.text.MessageFormat;
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -32,13 +29,13 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
     protected final String queueName;
     protected DelayedQueueWrapper<T> delayQueue;
     protected Map<String, Long> taskExpireTimeMap;
-    protected List<Consumer<DelayedTask<T>>> consumers;
+    protected Map<String, Map<String, Consumer<DelayedTask<T>>>> topicConsumersMap;
     protected ExecutorService listenerExecutor;
     protected final AtomicBoolean isListening;
 
     public BaseDelayedQueue(String queueName) {
         this.queueName = queueName;
-        this.consumers = new CopyOnWriteArrayList<>();
+        this.topicConsumersMap = new ConcurrentHashMap<>();
         this.isListening = new AtomicBoolean(false);
     }
 
@@ -69,24 +66,6 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         }
     }
 
-    @Override
-    public DelayedTask<T> take() throws InterruptedException {
-        if (isListening.get()) {
-            throw new IllegalStateException("Cannot invoke 'take()' while consumers are present");
-        }
-
-        return doTake();
-    }
-
-    @Override
-    public DelayedTask<T> poll() {
-        if (isListening.get()) {
-            throw new IllegalStateException("Cannot invoke 'poll()' while consumers are present");
-        }
-
-        return doPull();
-    }
-
     private DelayedTask<T> doTake() throws InterruptedException {
         while (true) {
             DelayedTask<T> task = delayQueue.take();
@@ -98,24 +77,28 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         }
     }
 
-    private DelayedTask<T> doPull() {
-        while (true) {
-            DelayedTask<T> task = delayQueue.poll();
-            if (task == null) {
-                return null;
-            }
-
-            if (isReallyExpired(task)) {
-                log.debug("Delayed queue {} consumed task: {}", queueName, task.getId());
-                return task;
-            }
-        }
+    @Override
+    public String registerConsumer(String topic, Consumer<DelayedTask<T>> consumer) {
+        Map<String, Consumer<DelayedTask<T>>> consumers = topicConsumersMap.computeIfAbsent(topic, k -> new ConcurrentHashMap<>());
+        String consumerId = UUID.randomUUID().toString();
+        consumers.put(consumerId, consumer);
+        this.startListener();
+        return consumerId;
     }
 
     @Override
-    public void addConsumer(Consumer<DelayedTask<T>> consumer) {
-        this.consumers.add(consumer);
-        this.startListener();
+    public void unregisterConsumer(String topic) {
+        topicConsumersMap.remove(topic);
+    }
+
+    @Override
+    public void unregisterConsumer(String topic, String consumerId) {
+        Map<String, Consumer<DelayedTask<T>>> consumers = topicConsumersMap.get(topic);
+        if (CollectionUtils.isEmpty(consumers)) {
+            return;
+        }
+
+        consumers.remove(consumerId);
     }
 
     private void startListener() {
@@ -135,9 +118,23 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
                 while(isListening.get() && !Thread.currentThread().isInterrupted()) {
                     try {
                         DelayedTask<T> task = doTake();
-                        for (Consumer<DelayedTask<T>> consumer : consumers) {
-                            consumer.accept(task);
+
+                        if (task.getTopic() == null) {
+                            continue;
                         }
+
+                        Map<String, Consumer<DelayedTask<T>>> consumers = topicConsumersMap.get(task.getTopic());
+                        if (CollectionUtils.isEmpty(consumers)) {
+                            continue;
+                        }
+
+                        consumers.forEach((consumerId, consumer) -> {
+                            try {
+                                consumer.accept(task);
+                            } catch (Exception e) {
+                                log.error("Error occurred while consuming task: {}, consumerId: {}", task.getId(), consumerId, e);
+                            }
+                        });
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         log.warn("Delayed queue listener interrupted, shutting down for queue: {}", queueName);
@@ -168,6 +165,10 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
 
         if (task.getDelayTime() == null) {
             throw new IllegalArgumentException("Task delay time cannot be null");
+        }
+
+        if (task.getTopic() == null) {
+            throw new IllegalArgumentException("Task topic cannot be null");
         }
     }
 

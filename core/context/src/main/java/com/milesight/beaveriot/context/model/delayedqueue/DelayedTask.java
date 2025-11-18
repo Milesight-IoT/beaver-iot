@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.springframework.util.Assert;
 
 import java.time.Duration;
+import java.util.UUID;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
@@ -17,24 +18,31 @@ import java.util.concurrent.TimeUnit;
 @NoArgsConstructor
 @Data
 public class DelayedTask<T> implements Delayed {
-    private String id;
+    private String topic;
     private T payload;
     private Long delayTime;
 
     @Setter(lombok.AccessLevel.NONE)
+    private String id;
+    @Setter(lombok.AccessLevel.NONE)
     private long expireTime;
 
-    private DelayedTask(String id, T payload, Duration delayDuration) {
-        Assert.notNull(id, "id cannot be null");
+    private DelayedTask(String id, String topic, T payload, Duration delayDuration) {
+        Assert.notNull(topic, "topic cannot be null");
         Assert.notNull(delayDuration, "delayDuration cannot be null");
 
-        this.id = id;
+        this.id = id == null ? UUID.randomUUID().toString() : id;
+        this.topic = topic;
         this.payload = payload;
         this.setDelayDuration(delayDuration);
     }
 
-    public static <T> DelayedTask<T> of(String taskId, T payload, Duration delayDuration) {
-        return new DelayedTask<>(taskId, payload, delayDuration);
+    public static <T> DelayedTask<T> of(String topic, T payload, Duration delayDuration) {
+        return of(null, topic, payload, delayDuration);
+    }
+
+    public static <T> DelayedTask<T> of(String id, String topic, T payload, Duration delayDuration) {
+        return new DelayedTask<>(id, topic, payload, delayDuration);
     }
 
     public DelayedTask<T> renew() {
