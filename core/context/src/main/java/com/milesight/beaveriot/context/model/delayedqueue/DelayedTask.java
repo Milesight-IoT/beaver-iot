@@ -3,7 +3,6 @@ package com.milesight.beaveriot.context.model.delayedqueue;
 import com.milesight.beaveriot.context.i18n.locale.LocaleContext;
 import com.milesight.beaveriot.context.security.TenantContext;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Setter;
 import org.springframework.util.Assert;
@@ -19,7 +18,6 @@ import java.util.concurrent.TimeUnit;
  * author: Luxb
  * create: 2025/11/13 9:19
  **/
-@NoArgsConstructor
 @Data
 public class DelayedTask<T> implements Delayed {
     private String topic;
@@ -33,7 +31,13 @@ public class DelayedTask<T> implements Delayed {
     @Setter(lombok.AccessLevel.NONE)
     private Map<ContextKey, Object> context = new HashMap<>();
 
+    private DelayedTask() {
+        this.initContext();
+    }
+
     private DelayedTask(String id, String topic, T payload, Duration delayDuration) {
+        this();
+
         Assert.notNull(topic, "topic cannot be null");
         Assert.notNull(delayDuration, "delayDuration cannot be null");
 
@@ -41,7 +45,6 @@ public class DelayedTask<T> implements Delayed {
         this.topic = topic;
         this.payload = payload;
         this.setDelayDuration(delayDuration);
-        this.initContext();
     }
 
     public static <T> DelayedTask<T> of(String topic, T payload, Duration delayDuration) {
