@@ -43,7 +43,7 @@ public class RetryableLockProvider implements LockProvider {
                 remainingTime = waitForLock.toMillis() - elapsed;
 
                 if (remainingTime > 0) {
-                    log.info(">>Retrying to acquire lock");
+                    log.info(">>Retrying to acquire lock: " + lockConfiguration.getName());
                     Thread.sleep(Math.min(retryInterval, remainingTime));
                 }
             }
