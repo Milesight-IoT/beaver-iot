@@ -174,7 +174,7 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         return taskExpireTimeMap.remove(task.getId(), task.getExpireTime());
     }
 
-    public void validateTask(DelayedTask<T> task) {
+    private void validateTask(DelayedTask<T> task) {
         if (task == null) {
             throw new IllegalArgumentException("Task cannot be null");
         }
@@ -192,7 +192,7 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         }
     }
 
-    protected void doWithLock(String taskId, Runnable runnable) {
+    private void doWithLock(String taskId, Runnable runnable) {
         ScopedLockConfiguration lockConfiguration = ScopedLockConfiguration.builder(LockScope.GLOBAL)
                 .name(MessageFormat.format(Constants.LOCK_NAME_DELAYED_QUEUE_HANDLE_TASK_FORMAT, queueName, taskId))
                 .lockAtLeastFor(Duration.ofMinutes(0))
