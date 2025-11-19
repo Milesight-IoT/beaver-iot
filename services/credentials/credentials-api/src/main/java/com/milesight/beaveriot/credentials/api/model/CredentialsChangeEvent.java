@@ -2,16 +2,20 @@ package com.milesight.beaveriot.credentials.api.model;
 
 import com.milesight.beaveriot.context.integration.model.Credentials;
 import com.milesight.beaveriot.pubsub.api.message.LocalUnicastMessage;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.ToString;
 
 
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class CredentialsChangeEvent extends LocalUnicastMessage {
-
-    private String tenantId;
 
     @NonNull
     private Operation operation;
@@ -21,12 +25,6 @@ public class CredentialsChangeEvent extends LocalUnicastMessage {
 
     @NonNull
     private Long timestamp;
-
-    public CredentialsChangeEvent(@NonNull Operation operation, @NonNull Credentials credentials, @NonNull Long timestamp) {
-        this.credentials = credentials;
-        this.operation = operation;
-        this.timestamp = timestamp;
-    }
 
     public enum Operation {
         ADD,

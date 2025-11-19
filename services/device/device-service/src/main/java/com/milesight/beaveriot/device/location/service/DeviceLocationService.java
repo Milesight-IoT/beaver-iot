@@ -31,53 +31,59 @@ public class DeviceLocationService {
     public DeviceLocation getLocation(Device device) {
         String deviceKey = device.getKey();
         List<String> locationKeys = new ArrayList<>();
-        String addressKey = DeviceLocationSupport.getAddressEntityKey(deviceKey);
-        String longitudeKey = DeviceLocationSupport.getLongitudeEntityKey(deviceKey);
+
         String latitudeKey = DeviceLocationSupport.getLatitudeEntityKey(deviceKey);
-        locationKeys.add(addressKey);
-        locationKeys.add(longitudeKey);
+        String longitudeKey = DeviceLocationSupport.getLongitudeEntityKey(deviceKey);
+        String addressKey = DeviceLocationSupport.getAddressEntityKey(deviceKey);
         locationKeys.add(latitudeKey);
+        locationKeys.add(longitudeKey);
+        locationKeys.add(addressKey);
 
         Map<String, Object> values = entityValueServiceProvider.findValuesByKeys(locationKeys);
         if (CollectionUtils.isEmpty(values)) {
             return null;
         }
 
-        String address = (String) values.get(addressKey);
-        Double longitude = (Double) values.get(longitudeKey);
         Double latitude = (Double) values.get(latitudeKey);
-        return DeviceLocation.of(address, longitude, latitude);
+        Double longitude = (Double) values.get(longitudeKey);
+        String address = (String) values.get(addressKey);
+        return DeviceLocation.of(latitude, longitude, address);
     }
 
     public void setLocation(Device device, DeviceLocation location) {
+        if (location == null) {
+            return;
+        }
+
+        location.formatAddress();
         DeviceLocationSupport.validate(location);
 
         createLocationEntityIfNotExist(device);
 
         String deviceKey = device.getKey();
-        String addressKey = DeviceLocationSupport.getAddressEntityKey(deviceKey);
-        String longitudeKey = DeviceLocationSupport.getLongitudeEntityKey(deviceKey);
         String latitudeKey = DeviceLocationSupport.getLatitudeEntityKey(deviceKey);
+        String longitudeKey = DeviceLocationSupport.getLongitudeEntityKey(deviceKey);
+        String addressKey = DeviceLocationSupport.getAddressEntityKey(deviceKey);
 
         ExchangePayload exchangePayload = new ExchangePayload();
-        exchangePayload.put(addressKey, location.getAddress());
-        exchangePayload.put(longitudeKey, location.getLongitude());
         exchangePayload.put(latitudeKey, location.getLatitude());
+        exchangePayload.put(longitudeKey, location.getLongitude());
+        exchangePayload.put(addressKey, location.getAddress());
 
         exchangePayload.validate();
-        entityValueServiceProvider.saveValues(exchangePayload);
+        entityValueServiceProvider.saveValuesAndPublishSync(exchangePayload);
     }
 
     public void clearLocation(Device device) {
         String deviceKey = device.getKey();
-        String addressKey = DeviceLocationSupport.getAddressEntityKey(deviceKey);
-        String longitudeKey = DeviceLocationSupport.getLongitudeEntityKey(deviceKey);
         String latitudeKey = DeviceLocationSupport.getLatitudeEntityKey(deviceKey);
+        String longitudeKey = DeviceLocationSupport.getLongitudeEntityKey(deviceKey);
+        String addressKey = DeviceLocationSupport.getAddressEntityKey(deviceKey);
 
         ExchangePayload exchangePayload = new ExchangePayload();
-        exchangePayload.put(addressKey, null);
-        exchangePayload.put(longitudeKey, null);
         exchangePayload.put(latitudeKey, null);
+        exchangePayload.put(longitudeKey, null);
+        exchangePayload.put(addressKey, null);
 
         entityValueServiceProvider.saveValues(exchangePayload);
     }
@@ -87,20 +93,20 @@ public class DeviceLocationService {
             return Collections.emptyMap();
         }
 
-        Map<String, String> longitudeEntityKeyDeviceKeyMap = new HashMap<>();
         Map<String, String> latitudeEntityKeyDeviceKeyMap = new HashMap<>();
+        Map<String, String> longitudeEntityKeyDeviceKeyMap = new HashMap<>();
         Map<String, String> addressEntityKeyDeviceKeyMap = new HashMap<>();
-        List<String> longitudeEntityKeys = new ArrayList<>();
         List<String> latitudeEntityKeys = new ArrayList<>();
+        List<String> longitudeEntityKeys = new ArrayList<>();
         List<String> addressEntityKeys = new ArrayList<>();
         deviceKeys.forEach(deviceKey -> {
-            String longitudeEntityKey = DeviceLocationSupport.getLongitudeEntityKey(deviceKey);
-            longitudeEntityKeys.add(longitudeEntityKey);
-            longitudeEntityKeyDeviceKeyMap.put(longitudeEntityKey, deviceKey);
-
             String latitudeEntityKey = DeviceLocationSupport.getLatitudeEntityKey(deviceKey);
             latitudeEntityKeys.add(latitudeEntityKey);
             latitudeEntityKeyDeviceKeyMap.put(latitudeEntityKey, deviceKey);
+
+            String longitudeEntityKey = DeviceLocationSupport.getLongitudeEntityKey(deviceKey);
+            longitudeEntityKeys.add(longitudeEntityKey);
+            longitudeEntityKeyDeviceKeyMap.put(longitudeEntityKey, deviceKey);
 
             String addressEntityKey = DeviceLocationSupport.getAddressEntityKey(deviceKey);
             addressEntityKeys.add(addressEntityKey);
@@ -108,18 +114,6 @@ public class DeviceLocationService {
         });
 
         Map<String, DeviceLocation> locations = new HashMap<>();
-        Map<String, Object> longitudeEntityValues = entityValueServiceProvider.findValuesByKeys(longitudeEntityKeys);
-        longitudeEntityValues.forEach((longitudeEntityKey, value) -> {
-            if (value == null) {
-                return;
-            }
-
-            String deviceKey = longitudeEntityKeyDeviceKeyMap.get(longitudeEntityKey);
-            Double longitude = (Double) value;
-            DeviceLocation location = locations.computeIfAbsent(deviceKey, key -> new DeviceLocation());
-            location.setLongitude(longitude);
-        });
-
         Map<String, Object> latitudeEntityValues = entityValueServiceProvider.findValuesByKeys(latitudeEntityKeys);
         latitudeEntityValues.forEach((latitudeEntityKey, value) -> {
             if (value == null) {
@@ -130,6 +124,18 @@ public class DeviceLocationService {
             Double latitude = (Double) value;
             DeviceLocation location = locations.computeIfAbsent(deviceKey, key -> new DeviceLocation());
             location.setLatitude(latitude);
+        });
+
+        Map<String, Object> longitudeEntityValues = entityValueServiceProvider.findValuesByKeys(longitudeEntityKeys);
+        longitudeEntityValues.forEach((longitudeEntityKey, value) -> {
+            if (value == null) {
+                return;
+            }
+
+            String deviceKey = longitudeEntityKeyDeviceKeyMap.get(longitudeEntityKey);
+            Double longitude = (Double) value;
+            DeviceLocation location = locations.computeIfAbsent(deviceKey, key -> new DeviceLocation());
+            location.setLongitude(longitude);
         });
 
         Map<String, Object> addressEntityValues = entityValueServiceProvider.findValuesByKeys(addressEntityKeys);

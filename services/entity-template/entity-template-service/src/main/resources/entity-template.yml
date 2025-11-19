@@ -15,14 +15,6 @@ entity-template:
       type: property
       access_mod: R
       children:
-        - identifier: '@longitude'
-          name: ${ fn.i18n('entity-template-service.entity.location.children.longitude.name') }
-          value_type: double
-          attributes:
-            optional: true
-            min: -180
-            max: 180
-            unit: '°'
         - identifier: '@latitude'
           name: ${ fn.i18n('entity-template-service.entity.location.children.latitude.name') }
           value_type: double
@@ -31,6 +23,16 @@ entity-template:
             min: -90
             max: 90
             unit: '°'
+            fraction_digits: 6
+        - identifier: '@longitude'
+          name: ${ fn.i18n('entity-template-service.entity.location.children.longitude.name') }
+          value_type: double
+          attributes:
+            optional: true
+            min: -180
+            max: 180
+            unit: '°'
+            fraction_digits: 6
         - identifier: '@address'
           name: ${ fn.i18n('entity-template-service.entity.location.children.address.name') }
           value_type: string

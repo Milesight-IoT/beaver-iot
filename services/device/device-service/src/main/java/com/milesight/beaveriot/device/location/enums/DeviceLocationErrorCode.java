@@ -10,12 +10,12 @@ import java.text.MessageFormat;
  * create: 2025/6/16 10:00
  **/
 public enum DeviceLocationErrorCode implements ErrorCodeSpec {
-    DEVICE_LOCATION_SETTING_ADDRESS_WITHOUT_LONGITUDE_AND_LATITUDE(HttpStatus.BAD_REQUEST.value(),
-            "device_location_setting_address_without_longitude_and_latitude",
-            "Device location setting must include longitude and latitude when address is provided"),
-    DEVICE_LOCATION_LONGITUDE_AND_LATITUDE_NOT_BOTH_PROVIDED(HttpStatus.BAD_REQUEST.value(),
-            "device_location_longitude_and_latitude_not_both_provided",
-            "Device location setting must provide longitude and latitude both"),
+    DEVICE_LOCATION_SETTING_ADDRESS_WITHOUT_LATITUDE_AND_LONGITUDE(HttpStatus.BAD_REQUEST.value(),
+            "device_location_setting_address_without_latitude_and_longitude",
+            "Device location setting must include latitude and longitude when address is provided"),
+    DEVICE_LOCATION_LATITUDE_AND_LONGITUDE_NOT_BOTH_PROVIDED(HttpStatus.BAD_REQUEST.value(),
+            "device_location_latitude_and_longitude_not_both_provided",
+            "Device location setting must provide latitude and longitude both"),
     ;
 
     private final String errorCode;

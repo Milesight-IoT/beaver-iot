@@ -23,8 +23,9 @@ import com.milesight.beaveriot.scheduler.core.model.ScheduledTaskCallbackTermina
 import com.milesight.beaveriot.scheduler.core.model.ScheduledTaskCancelledEvent;
 import com.milesight.beaveriot.scheduler.core.model.ScheduledTaskPO;
 import com.milesight.beaveriot.scheduler.core.model.ScheduledTaskUpdatedEvent;
-import lombok.*;
-import lombok.extern.slf4j.*;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -176,6 +177,7 @@ public class Scheduler {
         scheduleTaskPO = scheduledTaskRepository.save(scheduleTaskPO);
 
         val scheduledTask = convertToScheduledTask(scheduleTaskPO);
+        scheduledTask.setTenantId(tenantId);
         scheduledTask.setScheduleSettings(scheduleSettings);
         messagePubSub.publishAfterCommit(new ScheduledTaskUpdatedEvent(tenantId, scheduledTask, removedExistingTaskIds));
 

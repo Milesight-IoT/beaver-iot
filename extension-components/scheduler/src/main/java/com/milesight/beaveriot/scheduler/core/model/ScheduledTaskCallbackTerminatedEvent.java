@@ -1,7 +1,12 @@
 package com.milesight.beaveriot.scheduler.core.model;
 
 import com.milesight.beaveriot.pubsub.api.message.RemoteBroadcastMessage;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.util.List;
 
@@ -13,12 +18,6 @@ import java.util.List;
 @AllArgsConstructor
 public class ScheduledTaskCallbackTerminatedEvent extends RemoteBroadcastMessage {
 
-    private String tenantId;
-
     private List<String> taskKeys;
-
-    public ScheduledTaskCallbackTerminatedEvent(List<String> taskKeys) {
-        this.taskKeys = taskKeys;
-    }
 
 }

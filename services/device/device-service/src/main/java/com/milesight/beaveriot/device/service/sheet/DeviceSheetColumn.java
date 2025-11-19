@@ -2,7 +2,6 @@ package com.milesight.beaveriot.device.service.sheet;
 
 import lombok.Data;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -44,4 +43,6 @@ public class DeviceSheetColumn {
     private Boolean isHexString;
 
     private Boolean required = true;
+
+    private Integer fractionDigits;
 }

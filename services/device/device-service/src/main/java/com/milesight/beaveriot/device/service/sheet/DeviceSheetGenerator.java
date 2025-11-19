@@ -127,6 +127,16 @@ public class DeviceSheetGenerator {
         return style;
     }
 
+    private String getFormatStringFromFractionDigits(int fractionDigits) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("0");
+        if (fractionDigits > 0) {
+            sb.append(".");
+            sb.append("0".repeat(fractionDigits));
+        }
+        return sb.toString();
+    }
+
     private void addColumnMeta(int colIndex, DeviceSheetColumn column) {
         int rowNum = getHiddenColMetaSheet().getLastRowNum() + 1;
         Row row = getHiddenColMetaSheet().createRow(rowNum);
@@ -271,7 +281,15 @@ public class DeviceSheetGenerator {
         return null;
     }
 
-    private DataValidationConstraint createDoubleColumnConstraint(DeviceSheetColumn column) {
+    private DataValidationConstraint createDoubleColumnConstraint(int columnIndex, DeviceSheetColumn column) {
+        Integer fractionDigits = column.getFractionDigits();
+        if (fractionDigits != null && fractionDigits >= 0) {
+            CellStyle cellStyle = getWorkbook().createCellStyle();
+            DataFormat format = getWorkbook().createDataFormat();
+            cellStyle.setDataFormat(format.getFormat(getFormatStringFromFractionDigits(fractionDigits)));
+            getDeviceSheet().setDefaultColumnStyle(columnIndex, cellStyle);
+        }
+
         if (column.getMax() != null && column.getMin() != null) {
             return getDeviceDataValidationHelper().createDecimalConstraint(
                     DataValidationConstraint.OperatorType.BETWEEN,
@@ -302,7 +320,7 @@ public class DeviceSheetGenerator {
             case DeviceSheetColumn.COLUMN_TYPE_BOOLEAN -> constraint = createBooleanColumnConstraint();
             case DeviceSheetColumn.COLUMN_TYPE_ENUM -> constraint = createEnumColumnConstraint(column);
             case DeviceSheetColumn.COLUMN_TYPE_LONG -> constraint = createLongColumnConstraint(column);
-            case DeviceSheetColumn.COLUMN_TYPE_DOUBLE -> constraint = createDoubleColumnConstraint(column);
+            case DeviceSheetColumn.COLUMN_TYPE_DOUBLE -> constraint = createDoubleColumnConstraint(columnIndex, column);
             default -> throw ServiceException.with(ErrorCode.SERVER_ERROR.getErrorCode(), "Unknown column type: " + column.getType()).build();
         }
 

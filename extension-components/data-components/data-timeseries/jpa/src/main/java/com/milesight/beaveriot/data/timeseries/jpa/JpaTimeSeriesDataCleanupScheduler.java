@@ -17,7 +17,9 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -34,18 +36,18 @@ public class JpaTimeSeriesDataCleanupScheduler {
 
     private final TimeSeriesProperty timeSeriesProperty;
     private final List<TimeSeriesRepository<?>> repositories;
-    private final Map<String, String> categoryToTableNameMap = new HashMap<>();
+    private final Map<String, Collection<String>> categoryToTableNamesMap = new HashMap<>();
 
     @PostConstruct
     public void init() {
-        // Build category to table name mapping from all repositories
-        buildCategoryToTableNameMap();
+        // Build category to table names mapping from all repositories
+        buildCategoryToTableNamesMap();
 
         if (timeSeriesProperty.getCleanup().isEnabled()) {
             log.info("JPA time-series data cleanup scheduler initialized with cron: {}",
                     timeSeriesProperty.getCleanup().getCron());
             log.info("Retention policies: {}", timeSeriesProperty.getRetention());
-            log.info("Category to table mapping: {}", categoryToTableNameMap);
+            log.info("Category to table mapping: {}", categoryToTableNamesMap);
         } else {
             log.info("JPA time-series data cleanup scheduler is disabled");
         }
@@ -55,8 +57,9 @@ public class JpaTimeSeriesDataCleanupScheduler {
      * Build mapping from TimeSeriesCategory to actual table names.
      * This allows configuration to use category names (e.g., "beaver_iot_telemetry")
      * instead of database-specific table names (e.g., "t_entity_history").
+     * A category can map to multiple tables.
      */
-    private void buildCategoryToTableNameMap() {
+    private void buildCategoryToTableNamesMap() {
         for (TimeSeriesRepository<?> timeSeriesRepository : repositories) {
             if (!(timeSeriesRepository instanceof JpaTimeSeriesRepository<?> repository)) {
                 return;
@@ -69,7 +72,9 @@ public class JpaTimeSeriesDataCleanupScheduler {
             if (annotation != null) {
                 String category = annotation.category();
                 String tableName = getTableNameFromRepository(repository);
-                categoryToTableNameMap.put(category, tableName);
+
+                // Add table name to the list for this category
+                categoryToTableNamesMap.computeIfAbsent(category, k -> new HashSet<>()).add(tableName);
                 log.debug("Mapped category '{}' to table '{}'", category, tableName);
             }
         }
@@ -132,43 +137,49 @@ public class JpaTimeSeriesDataCleanupScheduler {
      * @return the number of deleted records
      */
     private int cleanupByCategory(String category, Duration retention) {
-        // Resolve category to actual table name
-        String tableName = categoryToTableNameMap.get(category);
+        // Resolve category to actual table names (can be multiple tables)
+        Collection<String> tableNames = categoryToTableNamesMap.get(category);
 
-        if (tableName == null) {
+        if (tableNames == null || tableNames.isEmpty()) {
             log.warn("No table mapping found for category '{}', skipping cleanup", category);
-            return 0;
-        }
-
-        JpaTimeSeriesRepository<?> repository = findRepositoryByTableName(tableName);
-
-        if (repository == null) {
-            log.warn("No repository found for table '{}' (category: '{}'), skipping cleanup",
-                    tableName, category);
             return 0;
         }
 
         long expirationTimestamp = Instant.now().minus(retention).toEpochMilli();
         int batchSize = timeSeriesProperty.getCleanup().getBatchSize();
+        int totalDeleted = 0;
 
-        try {
-            int deleted = 0;
-            int deletedInBatch;
+        // Clean up all tables associated with this category
+        for (String tableName : tableNames) {
+            JpaTimeSeriesRepository<?> repository = findRepositoryByTableName(tableName);
 
-            do {
-                // Each batch deletion runs in its own transaction
-                deletedInBatch = repository.deleteByTimeBefore(expirationTimestamp, batchSize);
-                deleted += deletedInBatch;
-            } while (deletedInBatch == batchSize);
+            if (repository == null) {
+                log.warn("No repository found for table '{}' (category: '{}'), skipping cleanup",
+                        tableName, category);
+                continue;
+            }
 
-            log.debug("Deleted {} records from category '{}' (table: '{}') using batch size {}",
-                    deleted, category, tableName, batchSize);
-            return deleted;
-        } catch (Exception e) {
-            log.error("Error deleting expired data from category '{}' (table: '{}'): {}",
-                    category, tableName, e.getMessage(), e);
-            throw e;
+            try {
+                int deleted = 0;
+                int deletedInBatch;
+
+                do {
+                    // Each batch deletion runs in its own transaction
+                    deletedInBatch = repository.deleteByTimeBefore(expirationTimestamp, batchSize);
+                    deleted += deletedInBatch;
+                } while (deletedInBatch == batchSize);
+
+                totalDeleted += deleted;
+                log.debug("Deleted {} records from category '{}' (table: '{}') using batch size {}",
+                        deleted, category, tableName, batchSize);
+            } catch (Exception e) {
+                log.error("Error deleting expired data from category '{}' (table: '{}'): {}",
+                        category, tableName, e.getMessage(), e);
+                throw e;
+            }
         }
+
+        return totalDeleted;
     }
 
     /**

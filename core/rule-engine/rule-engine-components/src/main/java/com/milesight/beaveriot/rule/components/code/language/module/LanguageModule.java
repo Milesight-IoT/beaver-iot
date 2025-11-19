@@ -18,7 +18,7 @@ public abstract class LanguageModule implements Closeable {
     private volatile Value module;
 
     protected LanguageModule() {
-        cx = LanguageHelper.newContext(getLanguageId());
+        cx = LanguageHelper.newContext(getLanguageId(), null);
         try {
             scriptSource = Source.newBuilder(getLanguageId(),
                     getScriptContent(),
