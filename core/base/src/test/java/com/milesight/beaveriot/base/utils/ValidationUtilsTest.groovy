@@ -7,6 +7,7 @@ import spock.lang.Unroll
  * @author Luxb
  * @date 2025/11/11 16:10
  **/
+@SuppressWarnings("HttpUrlsUsage")
 class ValidationUtilsTest extends Specification {
 
     // ==================== isHex tests ====================
