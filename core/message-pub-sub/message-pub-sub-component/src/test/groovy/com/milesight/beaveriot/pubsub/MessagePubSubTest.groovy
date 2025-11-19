@@ -1,13 +1,17 @@
 package com.milesight.beaveriot.pubsub
 
 import com.milesight.beaveriot.TestApplication
+import com.milesight.beaveriot.authentication.facade.IAuthenticationFacade
 import com.milesight.beaveriot.pubsub.api.annotation.MessageListener
 import com.milesight.beaveriot.pubsub.api.message.LocalUnicastMessage
 import com.milesight.beaveriot.pubsub.api.message.RemoteBroadcastMessage
+import com.milesight.beaveriot.rule.RuleEngineExecutor
+import org.spockframework.spring.SpringBean
 import org.spockframework.spring.SpringSpy
 import org.spockframework.spring.UnwrapAopProxy
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.core.task.TaskExecutor
 import org.springframework.stereotype.Component
 import spock.lang.Specification
 
@@ -20,6 +24,18 @@ class MessagePubSubTest extends Specification {
     @SpringSpy
     @UnwrapAopProxy
     TestListener testListener
+
+    @SpringBean(name = "mqtt")
+    TaskExecutor mqtt = { task -> task.run() }
+
+    @SpringBean(name = "mqtt-subscriber")
+    TaskExecutor mqttSubscriber = { task -> task.run() }
+
+    @SpringBean
+    IAuthenticationFacade authenticationFacade = Mock()
+
+    @SpringBean
+    RuleEngineExecutor ruleEngineExecutor = Mock()
 
     def "test publish"() {
         given:
