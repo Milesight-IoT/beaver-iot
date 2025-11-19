@@ -12,6 +12,7 @@ import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.spring.aop.ScopedLockConfiguration;
 import org.redisson.RedissonShutdownException;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 import java.text.MessageFormat;
@@ -218,23 +219,20 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
             return;
         }
 
+        Assert.notNull(consumerExecutor, "consumerExecutor cannot be null");
+
         isListening.set(false);
-        listenerExecutor.shutdown();
-        if (consumerExecutor != null) {
-            consumerExecutor.shutdown();
-        }
+        consumerExecutor.shutdown();
+        listenerExecutor.shutdownNow();
         try {
-            if (!listenerExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
+            if (!consumerExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
+                consumerExecutor.shutdownNow();
                 listenerExecutor.shutdownNow();
             }
-            if (consumerExecutor != null && !consumerExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
-                consumerExecutor.shutdownNow();
-            }
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            consumerExecutor.shutdownNow();
             listenerExecutor.shutdownNow();
-            if (consumerExecutor != null) {
-                consumerExecutor.shutdownNow();
-            }
         }
     }
 
