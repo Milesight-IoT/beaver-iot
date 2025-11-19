@@ -3,6 +3,9 @@
     <include resource="org/springframework/boot/logging/logback/defaults.xml" />
 
     <property name="LOG_HOME" value="${HOME}/beaver-iot/logs"/>
+    <property name="APP_LOG_MAX_FILE_COUNT" value="${APP_LOG_MAX_FILE_COUNT:-14}"/>
+    <property name="APP_LOG_TOTAL_CAP_SIZE" value="${APP_LOG_TOTAL_CAP_SIZE:-10GB}"/>
+    <property name="APP_LOG_MAX_FILE_SIZE" value="${APP_LOG_MAX_FILE_SIZE:-100MB}"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -13,10 +16,12 @@
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_HOME}/beaver-iot.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_HOME}/beaver-iot.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <maxHistory>14</maxHistory>
-            <maxFileSize>100MB</maxFileSize>  <!-- Maximum 50MB per file-->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/beaver-iot.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxHistory>${APP_LOG_MAX_FILE_COUNT}</maxHistory>
+            <totalSizeCap>${APP_LOG_TOTAL_CAP_SIZE}</totalSizeCap>
+            <maxFileSize>${APP_LOG_MAX_FILE_SIZE}</maxFileSize>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
         </rollingPolicy>
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss} -%5p ${PID:-} [%mdc{traceId}][%thread] %logger{36} - %msg%n
