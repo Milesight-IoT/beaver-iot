@@ -424,8 +424,11 @@ public class BlueprintLibrarySyncer {
 
         try {
             for (int i = 0; i < 3; i++) {
-                int currentVersionPart = Integer.parseInt(currentVersions[i]);
-                int minimumVersionPart = Integer.parseInt(minimumVersions[i]);
+                int currentVersionPart = Integer.parseInt(getVersionPart(currentVersions[i]));
+                int minimumVersionPart = Integer.parseInt(getVersionPart(minimumVersions[i]));
+                if (currentVersionPart > minimumVersionPart) {
+                    return true;
+                }
                 if (currentVersionPart < minimumVersionPart) {
                     return false;
                 }
@@ -435,5 +438,9 @@ public class BlueprintLibrarySyncer {
         }
 
         return true;
+    }
+
+    private String getVersionPart(String fullVersionPart) {
+        return fullVersionPart.split("-")[0];
     }
 }
