@@ -209,12 +209,12 @@ class DeviceStatusServiceTest extends Specification {
         deviceStatusService.status(device) == expected
 
         where:
-        deviceKey   | statusValue | expected
-        "device-1"  | "ONLINE"    | DeviceStatus.ONLINE
-        "device-2"  | "OFFLINE"   | DeviceStatus.OFFLINE
-        "device-3"  | "online"    | DeviceStatus.ONLINE
-        "device-4"  | "offline"   | DeviceStatus.OFFLINE
-        "device-5"  | null        | null
+        deviceKey  | statusValue | expected
+        "device-1" | "ONLINE"    | DeviceStatus.ONLINE
+        "device-2" | "OFFLINE"   | DeviceStatus.OFFLINE
+        "device-3" | "online"    | DeviceStatus.ONLINE
+        "device-4" | "offline"   | DeviceStatus.OFFLINE
+        "device-5" | null        | null
     }
 
     // ==================== getStatusesByDeviceKeys tests ====================
