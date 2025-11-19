@@ -47,12 +47,14 @@ public class DeviceStatusService {
     }
 
     public void register(String integrationId, DeviceStatusConfig config) {
-        integrationDeviceStatusConfigs.put(integrationId, config);
-        List<Device> devices = deviceServiceProvider.findAll(integrationId);
-        if (config != null && !CollectionUtils.isEmpty(devices)) {
-            initDevices(devices, config);
+        if (config != null) {
+            integrationDeviceStatusConfigs.put(integrationId, config);
+            List<Device> devices = deviceServiceProvider.findAll(integrationId);
+            if (!CollectionUtils.isEmpty(devices)) {
+                initDevices(devices, config);
+            }
+            delayedQueue.registerConsumer(integrationId, this::consumeDelayedTask);
         }
-        delayedQueue.registerConsumer(integrationId, this::consumeDelayedTask);
     }
 
     public void deregister(Device device) {
