@@ -12,7 +12,6 @@ import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.spring.aop.ScopedLockConfiguration;
 import org.redisson.RedissonShutdownException;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 import java.text.MessageFormat;
@@ -219,21 +218,27 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
             return;
         }
 
-        Assert.notNull(consumerExecutor, "consumerExecutor cannot be null");
-
-        isListening.set(false);
-        consumerExecutor.shutdown();
-        listenerExecutor.shutdownNow();
         try {
-            if (!consumerExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
+            isListening.set(false);
+            listenerExecutor.shutdownNow();
+            if (consumerExecutor != null) {
+                consumerExecutor.shutdown();
+            }
+
+            if (!listenerExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                log.warn("Delayed queue listener did not terminate within 5 seconds for queue: {}", queueName);
+            }
+            if (consumerExecutor != null && !consumerExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
                 consumerExecutor.shutdownNow();
-                listenerExecutor.shutdownNow();
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            consumerExecutor.shutdownNow();
             listenerExecutor.shutdownNow();
+            if (consumerExecutor != null) {
+                consumerExecutor.shutdownNow();
+            }
         }
+        log.debug("Delayed queue listener and consumer executor shut down for queue: {}", queueName);
     }
 
     private static class Constants {
