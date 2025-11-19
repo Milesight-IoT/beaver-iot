@@ -49,6 +49,7 @@
         <disruptor.version>3.4.4</disruptor.version>
         <liquibase.version>4.29.2</liquibase.version>
         <spock.version>2.4-M4-groovy-3.0</spock.version>
+        <junit.version>4.13.2</junit.version>
         <junit-platform.version>1.10.2</junit-platform.version>
         <junit-jupiter.version>5.10.2</junit-jupiter.version>
         <groovy.version>3.0.8</groovy.version>
@@ -297,6 +298,12 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
                 <groupId>org.spockframework</groupId>
                 <artifactId>spock-core</artifactId>
                 <version>${spock.version}</version>
@@ -404,6 +411,11 @@
         <dependency>
             <groupId>org.opentest4j</groupId>
             <artifactId>opentest4j</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
