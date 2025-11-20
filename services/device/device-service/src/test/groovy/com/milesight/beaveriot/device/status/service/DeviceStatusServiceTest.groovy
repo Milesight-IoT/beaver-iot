@@ -127,13 +127,13 @@ class DeviceStatusServiceTest extends Specification {
     def "online should update device status when no config registered"() {
         given:
         def device = createDevice(1L, "test-integration", "device-1")
-        def statusEntityKey = "device-1.@status"
+        def statusEntityKey = getDeviceStatusEntityKey(device)
         def entityTemplate = Mock(EntityTemplate)
         def entity = Mock(Entity)
 
         entityServiceProvider.findByKey(statusEntityKey) >> null
         entityTemplateServiceProvider.findByKey(DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS) >> entityTemplate
-        entityTemplate.toEntity("test-integration", "device-1") >> entity
+        entityTemplate.toEntity("test-integration", device.getKey()) >> entity
         entityValueServiceProvider.findValueByKey(statusEntityKey) >> null
 
         when:
@@ -150,7 +150,7 @@ class DeviceStatusServiceTest extends Specification {
         given:
         def integrationId = "test-integration"
         def device = createDevice(1L, integrationId, "device-1")
-        def statusEntityKey = "device-1.@status"
+        def statusEntityKey = getDeviceStatusEntityKey(device)
         def entityTemplate = Mock(EntityTemplate)
         def entity = Mock(Entity)
         def offlineListenerCalled = false
@@ -164,7 +164,7 @@ class DeviceStatusServiceTest extends Specification {
 
         entityServiceProvider.findByKey(statusEntityKey) >> null
         entityTemplateServiceProvider.findByKey(DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS) >> entityTemplate
-        entityTemplate.toEntity(integrationId, "device-1") >> entity
+        entityTemplate.toEntity(integrationId, device.getKey()) >> entity
         entityValueServiceProvider.findValueByKey(statusEntityKey) >> "ONLINE"
 
         when:
@@ -179,13 +179,13 @@ class DeviceStatusServiceTest extends Specification {
     def "offline should update status even without registered config"() {
         given:
         def device = createDevice(1L, "test-integration", "device-1")
-        def statusEntityKey = "device-1.@status"
+        def statusEntityKey = getDeviceStatusEntityKey(device)
         def entityTemplate = Mock(EntityTemplate)
         def entity = Mock(Entity)
 
         entityServiceProvider.findByKey(statusEntityKey) >> null
         entityTemplateServiceProvider.findByKey(DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS) >> entityTemplate
-        entityTemplate.toEntity("test-integration", "device-1") >> entity
+        entityTemplate.toEntity("test-integration", device.getKey()) >> entity
         entityValueServiceProvider.findValueByKey(statusEntityKey) >> "ONLINE"
 
         when:
@@ -201,15 +201,15 @@ class DeviceStatusServiceTest extends Specification {
     @Unroll
     def "status returns #expected for device with status value '#statusValue'"() {
         given:
-        def device = createDevice(1L, "test-integration", deviceKey)
-        def statusEntityKey = deviceKey + ".@status"
+        def device = createDevice(1L, "test-integration", deviceIdentifier)
+        def statusEntityKey = getDeviceStatusEntityKey(device)
         entityValueServiceProvider.findValueByKey(statusEntityKey) >> statusValue
 
         expect:
         deviceStatusService.status(device) == expected
 
         where:
-        deviceKey  | statusValue | expected
+        deviceIdentifier  | statusValue | expected
         "device-1" | "ONLINE"    | DeviceStatus.ONLINE
         "device-2" | "OFFLINE"   | DeviceStatus.OFFLINE
         "device-3" | "online"    | DeviceStatus.ONLINE
@@ -231,12 +231,14 @@ class DeviceStatusServiceTest extends Specification {
 
     def "getStatusesByDeviceKeys returns statuses for multiple devices"() {
         given:
-        def deviceKeys = ["device-1", "device-2", "device-3"]
+        def integrationId = "test-integration"
+        def deviceIdentifiers = ["device-1", "device-2", "device-3"]
+        def deviceKeys = deviceIdentifiers.collect { integrationId + ".device." + it }
         def statusEntityKeys = deviceKeys.collect { it + ".@status" }
         entityValueServiceProvider.findValuesByKeys(statusEntityKeys) >> [
-                "device-1.@status": "ONLINE",
-                "device-2.@status": "OFFLINE",
-                "device-3.@status": null
+                "test-integration.device.device-1.@status": "ONLINE",
+                "test-integration.device.device-2.@status": "OFFLINE",
+                "test-integration.device.device-3.@status": null
         ]
 
         when:
@@ -244,9 +246,9 @@ class DeviceStatusServiceTest extends Specification {
 
         then:
         result.size() == 2
-        result["device-1"] == DeviceStatus.ONLINE
-        result["device-2"] == DeviceStatus.OFFLINE
-        !result.containsKey("device-3")
+        result["test-integration.device.device-1"] == DeviceStatus.ONLINE
+        result["test-integration.device.device-2"] == DeviceStatus.OFFLINE
+        !result.containsKey("test-integration.device.device-3")
     }
 
     // ==================== handleStatus tests ====================
@@ -266,7 +268,7 @@ class DeviceStatusServiceTest extends Specification {
         given:
         def integrationId = "test-integration"
         def device = createDevice(1L, integrationId, "device-1")
-        def statusEntityKey = "device-1.@status"
+        def statusEntityKey = getDeviceStatusEntityKey(device)
         def config = DeviceStatusConfig.builder()
                 .offlineTimeoutFetcher({ d -> Duration.ofMinutes(5) })
                 .build()
@@ -287,7 +289,7 @@ class DeviceStatusServiceTest extends Specification {
         given:
         def integrationId = "test-integration"
         def device = createDevice(1L, integrationId, "device-1")
-        def statusEntityKey = "device-1.@status"
+        def statusEntityKey = getDeviceStatusEntityKey(device)
         def config = DeviceStatusConfig.builder().build()
         def availableDeviceData = DeviceStatusService.AvailableDeviceData.of(device, config)
 
@@ -370,7 +372,7 @@ class DeviceStatusServiceTest extends Specification {
     def "should not update status when existing value is same as new status"() {
         given:
         def device = createDevice(1L, "test-integration", "device-1")
-        def statusEntityKey = "device-1.@status"
+        def statusEntityKey = getDeviceStatusEntityKey(device)
 
         entityServiceProvider.findByKey(statusEntityKey) >> Mock(Entity)
         entityValueServiceProvider.findValueByKey(statusEntityKey) >> "ONLINE"
@@ -385,7 +387,7 @@ class DeviceStatusServiceTest extends Specification {
     def "should not update to offline when existing value is null"() {
         given:
         def device = createDevice(1L, "test-integration", "device-1")
-        def statusEntityKey = "device-1.@status"
+        def statusEntityKey = getDeviceStatusEntityKey(device)
 
         entityServiceProvider.findByKey(statusEntityKey) >> Mock(Entity)
         entityValueServiceProvider.findValueByKey(statusEntityKey) >> null
@@ -400,7 +402,7 @@ class DeviceStatusServiceTest extends Specification {
     def "should throw exception when entity template not found"() {
         given:
         def device = createDevice(1L, "test-integration", "device-1")
-        def statusEntityKey = "device-1.@status"
+        def statusEntityKey = getDeviceStatusEntityKey(device)
 
         entityServiceProvider.findByKey(statusEntityKey) >> null
         entityTemplateServiceProvider.findByKey(DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS) >> null
@@ -416,7 +418,7 @@ class DeviceStatusServiceTest extends Specification {
         given:
         def integrationId = "test-integration"
         def device = createDevice(1L, integrationId, "device-1")
-        def statusEntityKey = "device-1.@status"
+        def statusEntityKey = getDeviceStatusEntityKey(device)
         def onlineListenerCalled = false
         def config = DeviceStatusConfig.builder()
                 .onlineListener({ d -> onlineListenerCalled = true })
@@ -439,7 +441,7 @@ class DeviceStatusServiceTest extends Specification {
         given:
         def integrationId = "test-integration"
         def device = createDevice(1L, integrationId, "device-1")
-        def statusEntityKey = "device-1.@status"
+        def statusEntityKey = getDeviceStatusEntityKey(device)
         def config = DeviceStatusConfig.builder()
                 .offlineTimeoutFetcher({ d -> null })
                 .build()
@@ -460,7 +462,7 @@ class DeviceStatusServiceTest extends Specification {
         given:
         def integrationId = "test-integration"
         def device = createDevice(1L, integrationId, "device-1")
-        def statusEntityKey = "device-1.@status"
+        def statusEntityKey = getDeviceStatusEntityKey(device)
         def config = DeviceStatusConfig.builder()
                 .offlineTimeoutFetcher({ d -> Duration.ZERO })
                 .build()
@@ -479,12 +481,16 @@ class DeviceStatusServiceTest extends Specification {
 
     // ==================== helper methods ====================
 
-    private Device createDevice(Long id, String integrationId, String key) {
+    private Device createDevice(Long id, String integrationId, String identifier) {
         def device = Mock(Device)
         device.getId() >> id
         device.getIntegrationId() >> integrationId
-        device.getKey() >> key
-        device.getName() >> "Device " + key
+        device.getKey() >> integrationId + ".device." +  identifier
+        device.getName() >> "Device " + identifier
         return device
+    }
+
+    private static String getDeviceStatusEntityKey(Device device) {
+        return device.getKey() + ".@status"
     }
 }

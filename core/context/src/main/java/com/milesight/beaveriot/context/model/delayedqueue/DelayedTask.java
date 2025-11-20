@@ -2,15 +2,15 @@ package com.milesight.beaveriot.context.model.delayedqueue;
 
 import com.milesight.beaveriot.context.i18n.locale.LocaleContext;
 import com.milesight.beaveriot.context.security.TenantContext;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.springframework.util.Assert;
 
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
@@ -18,20 +18,18 @@ import java.util.concurrent.TimeUnit;
  * author: Luxb
  * create: 2025/11/13 9:19
  **/
-@Data
+@Getter
 public class DelayedTask<T> implements Delayed {
+    private String id;
     private String topic;
+    @Setter
     private T payload;
     private Long delayTime;
-
-    @Setter(lombok.AccessLevel.NONE)
-    private String id;
-    @Setter(lombok.AccessLevel.NONE)
     private long expireTime;
-    @Setter(lombok.AccessLevel.NONE)
-    private Map<ContextKey, Object> context = new HashMap<>();
+    private final Map<String, Object> context;
 
     private DelayedTask() {
+        this.context = new ConcurrentHashMap<>();
         this.initContext();
     }
 
@@ -60,11 +58,19 @@ public class DelayedTask<T> implements Delayed {
         return this;
     }
 
+    public void setTopic(String topic) {
+        Assert.notNull(topic, "topic cannot be null");
+
+        this.topic = topic;
+    }
+
     public void setDelayDuration(Duration delayDuration) {
+        Assert.notNull(delayDuration, "delayDuration cannot be null");
+
         setDelayTime(delayDuration.toMillis());
     }
 
-    protected void setDelayTime(long delayTime) {
+    private void setDelayTime(long delayTime) {
         this.delayTime = delayTime;
         renew();
     }
@@ -84,12 +90,31 @@ public class DelayedTask<T> implements Delayed {
     }
 
     private void initContext() {
-        this.context.put(ContextKey.TENANT, TenantContext.tryGetTenantId().orElse(null));
-        this.context.put(ContextKey.LOCALE, LocaleContext.getLocale());
+        putContextValue(ContextKey.TENANT, TenantContext.tryGetTenantId().orElse(null));
+        putContextValue(ContextKey.LOCALE, LocaleContext.getLocale());
     }
 
     public enum ContextKey {
         TENANT,
         LOCALE
+    }
+
+    public void putContextValue(ContextKey key, Object value) {
+        if (value == null) {
+            return;
+        }
+        context.put(getInnerContextKey(key), value);
+    }
+
+    public Object getContextValue(ContextKey key) {
+        return context.get(getInnerContextKey(key));
+    }
+
+    private String getInnerContextKey(ContextKey key) {
+        return Constants.INNER_CONTEXT_KEY_PREFIX + key.name();
+    }
+
+    private static class Constants {
+        public static final String INNER_CONTEXT_KEY_PREFIX = "_INNER_";
     }
 }
