@@ -77,6 +77,10 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         while (true) {
             DelayedTask<T> task = delayQueue.take();
 
+            if (task == null) {
+                continue;
+            }
+
             if (isReallyExpired(task)) {
                 log.debug("Delayed queue {} consumed task: {}", queueName, task.getId());
                 return task;
@@ -160,11 +164,11 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
     }
 
     private void initConsumerContext(DelayedTask<T> task) {
-        String tenantId = (String) task.getContext().get(DelayedTask.ContextKey.TENANT);
+        String tenantId = (String) task.getContextValue(DelayedTask.ContextKey.TENANT);
         if (tenantId != null) {
             TenantContext.setTenantId(tenantId);
         }
-        Locale locale = (Locale) task.getContext().get(DelayedTask.ContextKey.LOCALE);
+        Locale locale = (Locale) task.getContextValue(DelayedTask.ContextKey.LOCALE);
         if (locale != null) {
             LocaleContext.setLocale(locale);
         }
