@@ -349,7 +349,7 @@ public class DeviceTemplateService implements IDeviceTemplateFacade {
                     f.and(f2 -> f2.isNotNull(DeviceTemplatePO.Fields.blueprintLibraryId));
                 }
 
-                if (searchDeviceTemplateRequest.getDeviceTemplateIds() != null) {
+                if (!CollectionUtils.isEmpty(searchDeviceTemplateRequest.getDeviceTemplateIds())) {
                     f.and(f3 -> f3.in(DeviceTemplatePO.Fields.id, searchDeviceTemplateRequest.getDeviceTemplateIds().toArray()));
                 }
             };
