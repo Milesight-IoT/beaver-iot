@@ -72,6 +72,7 @@
         <opentest4j.version>1.3.0</opentest4j.version>
         <slf4j.version>2.0.16</slf4j.version>
         <jsr305.version>3.0.2</jsr305.version>
+        <lombok.version>1.18.34</lombok.version>
     </properties>
 
     <dependencyManagement>
@@ -510,6 +511,13 @@
                         </goals>
                     </execution>
                 </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.projectlombok</groupId>
+                        <artifactId>lombok</artifactId>
+                        <version>${lombok.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
