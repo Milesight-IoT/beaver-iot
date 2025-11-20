@@ -19,8 +19,6 @@ package com.milesight.beaveriot.base.utils.lambada;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.AccessibleObject;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 
 /**
  *  This class is copied from the mybatis-plus project (https://github.com/baomidou/mybatis-plus)
@@ -41,20 +39,7 @@ public final class ReflectionKit {
      * @return returns the set object
      */
     public static <T extends AccessibleObject> T setAccessible(T object) {
-        return AccessController.doPrivileged(new SetAccessibleAction<>(object));
-    }
-
-    public static class SetAccessibleAction<T extends AccessibleObject> implements PrivilegedAction<T> {
-        private final T obj;
-
-        public SetAccessibleAction(T obj) {
-            this.obj = obj;
-        }
-
-        @Override
-        public T run() {
-            obj.setAccessible(true);
-            return obj;
-        }
+        object.setAccessible(true);
+        return object;
     }
 }
