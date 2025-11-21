@@ -23,7 +23,7 @@ public class RedisDelayedQueueWrapper<T> implements DelayedQueueWrapper<T> {
 
     @Override
     public void offer(DelayedTask<T> task) {
-        innerDelayedQueue.offer(task, task.getDelayTime(), TimeUnit.MILLISECONDS);
+        innerDelayedQueue.offer(task, task.getDelay(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS);
     }
 
     @Override

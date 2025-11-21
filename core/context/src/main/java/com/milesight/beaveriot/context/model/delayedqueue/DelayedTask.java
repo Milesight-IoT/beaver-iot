@@ -79,9 +79,9 @@ public class DelayedTask<T> implements Delayed {
     }
 
     @Override
-    public long getDelay(TimeUnit unit) {
+    public long getDelay(@NonNull TimeUnit unit) {
         long remainingTime = expireTime - System.currentTimeMillis();
-        return unit.convert(remainingTime, TimeUnit.MILLISECONDS);
+        return remainingTime < 0 ? 0 : unit.convert(remainingTime, TimeUnit.MILLISECONDS);
     }
 
     @Override
