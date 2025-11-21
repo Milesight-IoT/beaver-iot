@@ -70,19 +70,6 @@ class BaseDelayedQueueTest extends Specification {
         queue.topicConsumersMap.isEmpty()
     }
 
-    def "constructor should start listener when the delayed queue is not empty"() {
-        given:
-        mockDelayQueue.isEmpty() >> false
-
-        when:
-        def queue = new BaseDelayedQueue<>("test", mockDelayQueue, taskExpireTimeMap)
-
-        then:
-        queue.isListening.get()
-        queue.listenerExecutor != null
-        queue.consumerExecutor != null
-    }
-
     def "constructor should not start listener when the delayed queue is empty"() {
         given:
         mockDelayQueue.isEmpty() >> true
@@ -377,6 +364,50 @@ class BaseDelayedQueueTest extends Specification {
 
         then:
         consumed
+    }
+
+    def "task should be consumed when consumer registers within requeue period"() {
+        given:
+        def topic1 = "topic1"
+        def topic2 = "topic2"
+        def task1 = DelayedTask.of("task-1", topic1, "payload1", Duration.ofMillis(100))
+        def task2 = DelayedTask.of("task-2", topic2, "payload2", Duration.ofMillis(100))
+
+        def latch = new CountDownLatch(1)
+        def task2Consumed = false
+
+        Consumer<DelayedTask<String>> consumer1 = Mock(Consumer)
+        Consumer<DelayedTask<String>> consumer2 = { t ->
+            if (t.id == task2.id) {
+                task2Consumed = true
+                latch.countDown()
+            }
+        }
+
+        // Mock take to return tasks from queue
+        mockDelayQueue.take() >> {Thread.sleep(100); task1} >> {Thread.sleep(100); task2}
+
+        when:
+        delayedQueue.offer(task1)
+        delayedQueue.offer(task2)
+
+        // Register consumer for topic1 first (topic2 has no consumer yet)
+        delayedQueue.registerConsumer(topic1, consumer1)
+
+        // Wait for task2 to expire (no consumer at this time)
+        Thread.sleep(300)
+
+        // Register consumer for topic2 within requeue period (before it's discarded)
+        delayedQueue.registerConsumer(topic2, consumer2)
+
+        // Wait for task2 to be consumed
+        def consumed = latch.await(3, TimeUnit.SECONDS)
+
+        then:
+        consumed
+        task2Consumed
+        // Verify consumer1 was invoked for task1
+        1 * consumer1.accept({ it.id == task1.id })
     }
 
     def "consumer should not be invoked for cancelled task"() {

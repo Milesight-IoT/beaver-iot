@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * author: Luxb
@@ -26,9 +27,11 @@ public class DelayedTask<T> implements Delayed {
     private T payload;
     private Long delayTime;
     private long expireTime;
+    private final AtomicLong requeueCount;
     private final Map<String, Object> context;
 
     private DelayedTask() {
+        this.requeueCount = new AtomicLong(0);
         this.context = new ConcurrentHashMap<>();
         this.initContext();
     }
@@ -110,6 +113,14 @@ public class DelayedTask<T> implements Delayed {
 
     public Object getContextValue(ContextKey key) {
         return context.get(getInnerContextKey(key));
+    }
+
+    public void incrementRequeueCount() {
+        requeueCount.incrementAndGet();
+    }
+
+    public long getRequeueCount() {
+        return requeueCount.get();
     }
 
     private String getInnerContextKey(ContextKey key) {

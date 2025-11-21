@@ -45,7 +45,7 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         this.topicConsumersMap = new ConcurrentHashMap<>();
         this.isListening = new AtomicBoolean(false);
         if (!this.delayQueue.isEmpty()) {
-            this.startListener();
+            CompletableFuture.delayedExecutor(Constants.LISTENER_START_DELAY_SECONDS, TimeUnit.SECONDS).execute(this::startListener);
         }
     }
 
@@ -58,9 +58,9 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
             Long existingExpireTime = taskExpireTimeMap.put(task.getId(), task.renew().getExpireTime());
             delayQueue.offer(task);
             if (existingExpireTime == null) {
-                log.debug("Delayed queue {} offered task: {}", queueName, task.getId());
+                log.debug("Delayed queue '{}' offered task '{}'", queueName, task.getId());
             } else {
-                log.debug("Delayed queue {} renewed task: {}", queueName, task.getId());
+                log.debug("Delayed queue '{}' renewed task '{}'", queueName, task.getId());
             }
         });
     }
@@ -73,8 +73,15 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
 
         Long expireTime = taskExpireTimeMap.remove(taskId);
         if (expireTime != null) {
-            log.debug("Delayed queue {} cancelled task: {}", queueName, taskId);
+            log.debug("Delayed queue '{}' cancelled task '{}'", queueName, taskId);
         }
+    }
+
+    private void requeue(DelayedTask<T> task) {
+        doWithLock(task.getId(), () -> {
+            taskExpireTimeMap.putIfAbsent(task.getId(), task.getExpireTime());
+            delayQueue.offer(task);
+        });
     }
 
     private DelayedTask<T> doTake() throws InterruptedException {
@@ -86,7 +93,6 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
             }
 
             if (isReallyExpired(task)) {
-                log.debug("Delayed queue {} consumed task: {}", queueName, task.getId());
                 return task;
             }
         }
@@ -97,6 +103,7 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         Map<String, Consumer<DelayedTask<T>>> consumers = topicConsumersMap.computeIfAbsent(topic, k -> new ConcurrentHashMap<>());
         String consumerId = UUID.randomUUID().toString();
         consumers.put(consumerId, consumer);
+        startListener();
         return consumerId;
     }
 
@@ -140,23 +147,31 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
 
                         Map<String, Consumer<DelayedTask<T>>> consumers = topicConsumersMap.get(task.getTopic());
                         if (CollectionUtils.isEmpty(consumers)) {
+                            if (task.getRequeueCount() >= Constants.MAX_REQUEUE_COUNT) {
+                                log.warn("Task '{}' has reached max requeue count and will be discarded because there is still no consumer registered for topic '{}' in queue '{}'",
+                                        task.getId(), task.getTopic(), queueName);
+                                continue;
+                            }
+                            task.incrementRequeueCount();
+                            CompletableFuture.delayedExecutor(Constants.REQUEUE_DELAY_SECONDS, TimeUnit.SECONDS).execute(() -> requeue(task));
                             continue;
                         }
 
+                        log.debug("Delayed queue '{}' consumed task '{}'", queueName, task.getId());
                         consumers.forEach((consumerId, consumer) -> CompletableFuture.runAsync(() -> {
                             try {
                                 initConsumerContext(task);
                                 consumer.accept(task);
                             } catch (Exception e) {
-                                log.error("Error occurred while consuming task: {}, consumerId: {}", task.getId(), consumerId, e);
+                                log.error("Error occurred while consuming task '{}' by consumer '{}' for queue '{}'", task.getId(), consumerId, queueName, e);
                             }
                         }, consumerExecutor));
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
-                        log.warn("Delayed queue listener interrupted, shutting down for queue: {}", queueName);
+                        log.warn("Delayed queue listener interrupted, shutting down for queue '{}'", queueName);
                         break;
                     } catch (RedissonShutdownException e) {
-                        log.warn("Redisson is shutdown, shutting down for queue: {}", queueName);
+                        log.warn("Redisson is shutdown, shutting down for queue '{}'", queueName);
                         break;
                     } catch (Exception e) {
                         log.error("Error occurred while consuming task", e);
@@ -221,14 +236,14 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
     @Override
     public void destroy() {
         if (listenerExecutor != null || consumerExecutor != null) {
-            log.debug("Shutting down delayed queue listener and consumer executor for queue: {}", queueName);
+            log.debug("Shutting down delayed queue listener and consumer executor for queue '{}'", queueName);
         }
         try {
             shutdownExecutor(listenerExecutor, true);
             shutdownExecutor(consumerExecutor, false);
 
             if (listenerExecutor != null && !listenerExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
-                log.warn("Delayed queue listener did not terminate within 5 seconds for queue: {}", queueName);
+                log.warn("Delayed queue listener did not terminate within 5 seconds for queue '{}'", queueName);
             }
             if (consumerExecutor != null && !consumerExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
                 shutdownExecutor(consumerExecutor, true);
@@ -239,7 +254,7 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
             shutdownExecutor(consumerExecutor, true);
         }
         if (listenerExecutor != null || consumerExecutor != null) {
-            log.debug("Delayed queue listener and consumer executor shut down for queue: {}", queueName);
+            log.debug("Delayed queue listener and consumer executor shut down for queue '{}'", queueName);
         }
     }
 
@@ -257,5 +272,8 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         public static final String LOCK_NAME_DELAYED_QUEUE_HANDLE_TASK_FORMAT = "delayed-queue:{0}:handle-task:{1}";
         public static final String LISTENER_THREAD_NAME_PREFIX = "DelayedQueue-Listener-";
         public static final String CONSUMER_THREAD_NAME_PREFIX = "DelayedQueue-Consumer-";
+        public static final long LISTENER_START_DELAY_SECONDS = 60;
+        public static final long MAX_REQUEUE_COUNT = 10;
+        public static final long REQUEUE_DELAY_SECONDS = 1;
     }
 }
