@@ -86,6 +86,7 @@ public class DelayedTask<T> implements Delayed {
         if (!(other instanceof DelayedTask<?> that)) {
             throw new ClassCastException("Cannot compare DelayedTask with " + other.getClass());
         }
+
         return Long.compare(this.expireTime, that.expireTime);
     }
 
@@ -103,6 +104,7 @@ public class DelayedTask<T> implements Delayed {
         if (value == null) {
             return;
         }
+
         context.put(getInnerContextKey(key), value);
     }
 

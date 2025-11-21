@@ -44,12 +44,16 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         this.taskExpireTimeMap = taskExpireTimeMap;
         this.topicConsumersMap = new ConcurrentHashMap<>();
         this.isListening = new AtomicBoolean(false);
+        if (!delayQueue.isEmpty()) {
+            startListener();
+        }
     }
 
     @Override
     public void offer(DelayedTask<T> task) {
         validateTask(task);
 
+        startListener();
         doWithLock(task.getId(), () -> {
             Long existingExpireTime = taskExpireTimeMap.put(task.getId(), task.renew().getExpireTime());
             delayQueue.offer(task);
@@ -93,7 +97,6 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         Map<String, Consumer<DelayedTask<T>>> consumers = topicConsumersMap.computeIfAbsent(topic, k -> new ConcurrentHashMap<>());
         String consumerId = UUID.randomUUID().toString();
         consumers.put(consumerId, consumer);
-        this.startListener();
         return consumerId;
     }
 
@@ -127,7 +130,7 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
             });
 
             listenerExecutor.execute(() -> {
-                while(isListening.get() && !Thread.currentThread().isInterrupted()) {
+                while(!Thread.currentThread().isInterrupted()) {
                     try {
                         DelayedTask<T> task = doTake();
 
@@ -217,32 +220,37 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
 
     @Override
     public void destroy() {
-        log.debug("Shutting down delayed queue listener and consumer executor for queue: {}", queueName);
-        if (listenerExecutor == null) {
-            return;
+        if (listenerExecutor != null || consumerExecutor != null) {
+            log.debug("Shutting down delayed queue listener and consumer executor for queue: {}", queueName);
         }
-
         try {
-            isListening.set(false);
-            listenerExecutor.shutdownNow();
-            if (consumerExecutor != null) {
-                consumerExecutor.shutdown();
-            }
+            shutdownExecutor(listenerExecutor, true);
+            shutdownExecutor(consumerExecutor, false);
 
-            if (!listenerExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+            if (listenerExecutor != null && !listenerExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
                 log.warn("Delayed queue listener did not terminate within 5 seconds for queue: {}", queueName);
             }
             if (consumerExecutor != null && !consumerExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
-                consumerExecutor.shutdownNow();
+                shutdownExecutor(consumerExecutor, true);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            listenerExecutor.shutdownNow();
-            if (consumerExecutor != null) {
-                consumerExecutor.shutdownNow();
+            shutdownExecutor(listenerExecutor, true);
+            shutdownExecutor(consumerExecutor, true);
+        }
+        if (listenerExecutor != null || consumerExecutor != null) {
+            log.debug("Delayed queue listener and consumer executor shut down for queue: {}", queueName);
+        }
+    }
+
+    private void shutdownExecutor(ExecutorService executor, boolean force) {
+        if (executor != null) {
+            if (force) {
+                executor.shutdownNow();
+            } else {
+                executor.shutdown();
             }
         }
-        log.debug("Delayed queue listener and consumer executor shut down for queue: {}", queueName);
     }
 
     private static class Constants {

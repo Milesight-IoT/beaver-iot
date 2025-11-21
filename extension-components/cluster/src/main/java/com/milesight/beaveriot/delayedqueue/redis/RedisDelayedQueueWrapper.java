@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.delayedqueue.redis;
 
-import com.milesight.beaveriot.delayedqueue.DelayedQueueWrapper;
 import com.milesight.beaveriot.context.model.delayedqueue.DelayedTask;
+import com.milesight.beaveriot.delayedqueue.DelayedQueueWrapper;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RDelayedQueue;
 import org.redisson.api.RedissonClient;
@@ -32,7 +32,7 @@ public class RedisDelayedQueueWrapper<T> implements DelayedQueueWrapper<T> {
     }
 
     @Override
-    public DelayedTask<T> poll() {
-        return innerBlockingQueue.poll();
+    public boolean isEmpty() {
+        return innerDelayedQueue.isEmpty() && innerBlockingQueue.isEmpty();
     }
 }

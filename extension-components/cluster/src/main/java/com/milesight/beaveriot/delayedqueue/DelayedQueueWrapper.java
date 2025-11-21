@@ -9,5 +9,5 @@ import com.milesight.beaveriot.context.model.delayedqueue.DelayedTask;
 public interface DelayedQueueWrapper<T> {
     void offer(DelayedTask<T> task);
     DelayedTask<T> take() throws InterruptedException;
-    DelayedTask<T> poll();
+    boolean isEmpty();
 }

@@ -11,10 +11,14 @@ import org.redisson.api.RedissonClient;
 @Slf4j
 public class RedisDelayedQueue<T> extends BaseDelayedQueue<T> {
     public RedisDelayedQueue(RedissonClient redissonClient, String queueName) {
-        super(queueName, new RedisDelayedQueueWrapper<>(redissonClient, queueName), redissonClient.getMap(queueName + Constants.SUFFIX_EXPIRE_TIME));
+        super(queueName, new RedisDelayedQueueWrapper<>(redissonClient, queueName), redissonClient.getMap(getExpireTimeMapName(queueName)));
+    }
+
+    private static String getExpireTimeMapName(String queueName) {
+        return String.format(Constants.EXPIRE_TIME_MAP_NAME_FORMAT, queueName);
     }
 
     private static class Constants {
-        private static final String SUFFIX_EXPIRE_TIME = ":expire-time";
+        private static final String EXPIRE_TIME_MAP_NAME_FORMAT = "delayed-queue-expire-time:{%s}";
     }
 }
