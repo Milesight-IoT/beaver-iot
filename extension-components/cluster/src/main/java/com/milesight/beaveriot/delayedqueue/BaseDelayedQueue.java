@@ -44,8 +44,8 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         this.taskExpireTimeMap = taskExpireTimeMap;
         this.topicConsumersMap = new ConcurrentHashMap<>();
         this.isListening = new AtomicBoolean(false);
-        if (!delayQueue.isEmpty()) {
-            startListener();
+        if (!this.delayQueue.isEmpty()) {
+            this.startListener();
         }
     }
 
