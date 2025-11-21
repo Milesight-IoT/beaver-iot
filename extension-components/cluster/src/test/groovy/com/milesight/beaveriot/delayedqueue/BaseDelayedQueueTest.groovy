@@ -68,7 +68,19 @@ class BaseDelayedQueueTest extends Specification {
         queue.taskExpireTimeMap == taskExpireTimeMap
         queue.topicConsumersMap != null
         queue.topicConsumersMap.isEmpty()
+    }
+
+    def "constructor should not start listener when the delayed queue is empty"() {
+        given:
+        mockDelayQueue.isEmpty() >> true
+
+        when:
+        def queue = new BaseDelayedQueue<>("test", mockDelayQueue, taskExpireTimeMap)
+
+        then:
         !queue.isListening.get()
+        queue.listenerExecutor == null
+        queue.consumerExecutor == null
     }
 
     def "constructor should throw exception when queueName is null"() {
@@ -99,7 +111,7 @@ class BaseDelayedQueueTest extends Specification {
 
     def "offer should add new task successfully"() {
         given:
-        def task = DelayedTask.of("topic1", "payload1", Duration.ofSeconds(10))
+        def task = DelayedTask.of("topic1", "payload1", Duration.ofMillis(100))
 
         when:
         delayedQueue.offer(task)
@@ -112,7 +124,7 @@ class BaseDelayedQueueTest extends Specification {
 
     def "offer should renew existing task"() {
         given:
-        def task = DelayedTask.of("task-1", "topic1", "payload1", Duration.ofSeconds(10))
+        def task = DelayedTask.of("task-1", "topic1", "payload1", Duration.ofMillis(100))
         def oldExpireTime = task.expireTime
         taskExpireTimeMap.put(task.id, oldExpireTime)
 
@@ -143,7 +155,7 @@ class BaseDelayedQueueTest extends Specification {
         scenario     | createTask
         "null task"  | { -> null }
         "null topic" | { ->
-            def task = DelayedTask.of("id1", "topic", "data", Duration.ofSeconds(10))
+            def task = DelayedTask.of("id1", "topic", "data", Duration.ofMillis(100))
             def field = DelayedTask.getDeclaredField("topic")
             field.setAccessible(true)
             field.set(task, null)
@@ -153,7 +165,7 @@ class BaseDelayedQueueTest extends Specification {
 
     def "offer should succeed when acquiring lock"() {
         given:
-        def task = DelayedTask.of("topic1", "payload1", Duration.ofSeconds(10))
+        def task = DelayedTask.of("topic1", "payload1", Duration.ofMillis(100))
 
         when:
         delayedQueue.offer(task)
@@ -161,6 +173,20 @@ class BaseDelayedQueueTest extends Specification {
         then:
         1 * mockDelayQueue.offer(task)
         taskExpireTimeMap.containsKey(task.id)
+    }
+
+    def "offer should start listener"() {
+        given:
+        def task = DelayedTask.of("topic1", "payload1", Duration.ofMillis(100))
+        mockDelayQueue.isEmpty() >> true
+
+        when:
+        delayedQueue.offer(task)
+
+        then:
+        delayedQueue.isListening.get()
+        delayedQueue.listenerExecutor != null
+        delayedQueue.consumerExecutor != null
     }
 
     // ==================== cancel() tests ====================
@@ -209,7 +235,6 @@ class BaseDelayedQueueTest extends Specification {
         delayedQueue.topicConsumersMap.containsKey(topic)
         delayedQueue.topicConsumersMap.get(topic).containsKey(consumerId)
         delayedQueue.topicConsumersMap.get(topic).get(consumerId) == consumer
-        delayedQueue.isListening.get()
     }
 
     def "registerConsumer should register multiple consumers for same topic"() {
@@ -246,23 +271,6 @@ class BaseDelayedQueueTest extends Specification {
         delayedQueue.topicConsumersMap.size() == 2
         delayedQueue.topicConsumersMap.containsKey(topic1)
         delayedQueue.topicConsumersMap.containsKey(topic2)
-    }
-
-    def "registerConsumer should start listener only once"() {
-        given:
-        mockDelayQueueDefaultTake()
-        Consumer<DelayedTask<String>> consumer1 = Mock(Consumer)
-        Consumer<DelayedTask<String>> consumer2 = Mock(Consumer)
-
-        when:
-        delayedQueue.registerConsumer("topic1", consumer1)
-        def wasListening = delayedQueue.isListening.get()
-        delayedQueue.registerConsumer("topic2", consumer2)
-
-        then:
-        wasListening
-        delayedQueue.listenerExecutor != null
-        delayedQueue.consumerExecutor != null
     }
 
     // ==================== unregisterConsumer() tests ====================
@@ -350,11 +358,56 @@ class BaseDelayedQueueTest extends Specification {
         mockDelayQueue.take() >> { Thread.sleep(100); task }
 
         when:
+        delayedQueue.offer(task)
         delayedQueue.registerConsumer(topic, consumer)
         latch.await(5, TimeUnit.SECONDS)
 
         then:
         consumed
+    }
+
+    def "task should be consumed when consumer registers within requeue period"() {
+        given:
+        def topic1 = "topic1"
+        def topic2 = "topic2"
+        def task1 = DelayedTask.of("task-1", topic1, "payload1", Duration.ofMillis(100))
+        def task2 = DelayedTask.of("task-2", topic2, "payload2", Duration.ofMillis(100))
+
+        def latch = new CountDownLatch(1)
+        def task2Consumed = false
+
+        Consumer<DelayedTask<String>> consumer1 = Mock(Consumer)
+        Consumer<DelayedTask<String>> consumer2 = { t ->
+            if (t.id == task2.id) {
+                task2Consumed = true
+                latch.countDown()
+            }
+        }
+
+        // Mock take to return tasks from queue
+        mockDelayQueue.take() >> {Thread.sleep(100); task1} >> {Thread.sleep(100); task2}
+
+        when:
+        delayedQueue.offer(task1)
+        delayedQueue.offer(task2)
+
+        // Register consumer for topic1 first (topic2 has no consumer yet)
+        delayedQueue.registerConsumer(topic1, consumer1)
+
+        // Wait for task2 to expire (no consumer at this time)
+        Thread.sleep(300)
+
+        // Register consumer for topic2 within requeue period (before it's discarded)
+        delayedQueue.registerConsumer(topic2, consumer2)
+
+        // Wait for task2 to be consumed
+        def consumed = latch.await(3, TimeUnit.SECONDS)
+
+        then:
+        consumed
+        task2Consumed
+        // Verify consumer1 was invoked for task1
+        1 * consumer1.accept({ it.id == task1.id })
     }
 
     def "consumer should not be invoked for cancelled task"() {
@@ -425,9 +478,11 @@ class BaseDelayedQueueTest extends Specification {
         taskExpireTimeMap.put(task1.id, task1.expireTime)
         taskExpireTimeMap.put(task2.id, task2.expireTime)
 
-        mockDelayQueue.take() >> task1 >> task2 >> { Thread.sleep(10000); otherTask }
+        mockDelayQueue.take() >> { Thread.sleep(100); task1 } >> { Thread.sleep(100); task2 } >> { Thread.sleep(10000); otherTask }
 
         when:
+        delayedQueue.offer(task1)
+        delayedQueue.offer(task2)
         delayedQueue.registerConsumer(topic, consumer)
         def consumed = latch.await(5, TimeUnit.SECONDS)
 
@@ -456,10 +511,10 @@ class BaseDelayedQueueTest extends Specification {
             latch.countDown()
         }
 
-        taskExpireTimeMap.put(task.id, task.expireTime)
-        mockDelayQueue.take() >> task >> { Thread.sleep(10000); otherTask }
+        mockDelayQueue.take() >> { Thread.sleep(1000); task } >> { Thread.sleep(10000); otherTask }
 
         when:
+        delayedQueue.offer(task)
         delayedQueue.registerConsumer(topic, consumer1)
         delayedQueue.registerConsumer(topic, consumer2)
         latch.await(5, TimeUnit.SECONDS)
@@ -472,18 +527,18 @@ class BaseDelayedQueueTest extends Specification {
 
     def "destroy should shutdown executors gracefully"() {
         given:
-        def otherTask = DelayedTask.of("other-task", "other-topic", "payload", Duration.ofMillis(100))
+        def task = DelayedTask.of("task-1", "test-topic", "payload", Duration.ofMillis(100))
 
         Consumer<DelayedTask<String>> consumer = Mock(Consumer)
-        mockDelayQueue.take() >> { Thread.sleep(10000); otherTask }
-        delayedQueue.registerConsumer("topic", consumer)
+        mockDelayQueue.take() >> { Thread.sleep(10000); task }
+        delayedQueue.registerConsumer("test-topic", consumer)
         Thread.sleep(100) // Let listener start
 
         when:
+        delayedQueue.offer(task)
         delayedQueue.destroy()
 
         then:
-        !delayedQueue.isListening.get()
         delayedQueue.listenerExecutor.isShutdown()
         delayedQueue.consumerExecutor.isShutdown()
     }
@@ -594,6 +649,7 @@ class BaseDelayedQueueTest extends Specification {
         }
 
         when:
+        delayedQueue.offer(task)
         delayedQueue.registerConsumer("topic", consumer)
         Thread.sleep(200)
 
@@ -606,7 +662,7 @@ class BaseDelayedQueueTest extends Specification {
     def "concurrent offer operations should be thread-safe"() {
         given:
         def tasks = (1..10).collect {
-            DelayedTask.of("task-$it", "topic", "payload-$it", Duration.ofSeconds(10))
+            DelayedTask.of("task-$it", "topic", "payload-$it", Duration.ofMillis(100))
         }
 
         when:

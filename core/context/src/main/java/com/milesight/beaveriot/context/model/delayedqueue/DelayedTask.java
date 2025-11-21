@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * author: Luxb
@@ -26,9 +27,11 @@ public class DelayedTask<T> implements Delayed {
     private T payload;
     private Long delayTime;
     private long expireTime;
+    private final AtomicLong requeueCount;
     private final Map<String, Object> context;
 
     private DelayedTask() {
+        this.requeueCount = new AtomicLong(0);
         this.context = new ConcurrentHashMap<>();
         this.initContext();
     }
@@ -76,9 +79,9 @@ public class DelayedTask<T> implements Delayed {
     }
 
     @Override
-    public long getDelay(TimeUnit unit) {
+    public long getDelay(@NonNull TimeUnit unit) {
         long remainingTime = expireTime - System.currentTimeMillis();
-        return unit.convert(remainingTime, TimeUnit.MILLISECONDS);
+        return remainingTime < 0 ? 0 : unit.convert(remainingTime, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -86,6 +89,7 @@ public class DelayedTask<T> implements Delayed {
         if (!(other instanceof DelayedTask<?> that)) {
             throw new ClassCastException("Cannot compare DelayedTask with " + other.getClass());
         }
+
         return Long.compare(this.expireTime, that.expireTime);
     }
 
@@ -103,11 +107,20 @@ public class DelayedTask<T> implements Delayed {
         if (value == null) {
             return;
         }
+
         context.put(getInnerContextKey(key), value);
     }
 
     public Object getContextValue(ContextKey key) {
         return context.get(getInnerContextKey(key));
+    }
+
+    public void incrementRequeueCount() {
+        requeueCount.incrementAndGet();
+    }
+
+    public long getRequeueCount() {
+        return requeueCount.get();
     }
 
     private String getInnerContextKey(ContextKey key) {

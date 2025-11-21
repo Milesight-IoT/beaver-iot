@@ -1,7 +1,7 @@
 package com.milesight.beaveriot.delayedqueue.local;
 
-import com.milesight.beaveriot.delayedqueue.DelayedQueueWrapper;
 import com.milesight.beaveriot.context.model.delayedqueue.DelayedTask;
+import com.milesight.beaveriot.delayedqueue.DelayedQueueWrapper;
 
 import java.util.concurrent.DelayQueue;
 
@@ -27,7 +27,7 @@ public class LocalDelayedQueueWrapper<T> implements DelayedQueueWrapper<T> {
     }
 
     @Override
-    public DelayedTask<T> poll() {
-        return innerDelayedQueue.poll();
+    public boolean isEmpty() {
+        return innerDelayedQueue.isEmpty();
     }
 }
