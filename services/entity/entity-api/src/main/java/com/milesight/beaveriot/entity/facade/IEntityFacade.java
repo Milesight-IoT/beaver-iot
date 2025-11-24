@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.entity.facade;
 
 import com.milesight.beaveriot.entity.dto.EntityDTO;
+import com.milesight.beaveriot.entity.dto.EntityIdKeyDTO;
 import com.milesight.beaveriot.entity.dto.EntityQuery;
 import com.milesight.beaveriot.entity.dto.EntityResponse;
 import org.springframework.data.domain.Page;
@@ -28,4 +29,6 @@ public interface IEntityFacade {
     long countAllEntitiesByIntegrationId(String integrationId);
 
     Map<String, Long> countAllEntitiesByIntegrationIds(List<String> integrationIds);
+
+    List<EntityIdKeyDTO> findIdAndKeyByIds(List<Long> entityIds);
 }

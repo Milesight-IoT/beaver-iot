@@ -16,4 +16,7 @@ import java.util.List;
 public interface CanvasDeviceRepository extends BaseJpaRepository<CanvasDevicePO, Long> {
     @Modifying
     void deleteAllByCanvasIdIn(List<Long> canvasId);
+
+    @Modifying
+    void deleteAllByCanvasIdAndDeviceIdIn(Long canvasId, List<Long> deviceIds);
 }

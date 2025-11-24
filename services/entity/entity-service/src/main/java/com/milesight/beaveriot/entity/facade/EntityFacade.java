@@ -2,20 +2,19 @@ package com.milesight.beaveriot.entity.facade;
 
 import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheable;
 import com.milesight.beaveriot.base.annotations.cacheable.CacheKeys;
-import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.constants.CacheKeyConstants;
 import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.entity.convert.EntityConverter;
 import com.milesight.beaveriot.entity.dto.EntityDTO;
+import com.milesight.beaveriot.entity.dto.EntityIdKeyDTO;
 import com.milesight.beaveriot.entity.dto.EntityQuery;
 import com.milesight.beaveriot.entity.dto.EntityResponse;
 import com.milesight.beaveriot.entity.po.EntityPO;
 import com.milesight.beaveriot.entity.repository.EntityRepository;
 import com.milesight.beaveriot.entity.service.EntityService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -46,17 +45,15 @@ public class EntityFacade implements IEntityFacade {
     }
 
     public List<EntityDTO> getUserOrTargetEntities(Long userId, List<String> targetIds) {
-        List<EntityPO> entityPOList = entityRepository.findAll(filter ->
-                filter.or(
-                        filter1 -> filter1.eq(EntityPO.Fields.userId, userId)
-                                .in(!targetIds.isEmpty(), EntityPO.Fields.attachTargetId, targetIds.toArray())
-                ));
+        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.or(
+                filter1 -> filter1.eq(EntityPO.Fields.userId, userId)
+                        .in(!targetIds.isEmpty(), EntityPO.Fields.attachTargetId, targetIds.toArray())));
         return EntityConverter.INSTANCE.convertDTOList(entityPOList);
     }
 
     public List<EntityDTO> getTargetEntities(List<String> targetIds) {
-        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(!targetIds.isEmpty(), EntityPO.Fields.attachTargetId, targetIds.toArray())
-        );
+        List<EntityPO> entityPOList = entityRepository.findAll(
+                filter -> filter.in(!targetIds.isEmpty(), EntityPO.Fields.attachTargetId, targetIds.toArray()));
         return EntityConverter.INSTANCE.convertDTOList(entityPOList);
     }
 
@@ -66,8 +63,10 @@ public class EntityFacade implements IEntityFacade {
         if (CollectionUtils.isEmpty(entityIds)) {
             return Collections.emptyMap();
         }
-        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.id, entityIds.toArray()));
-        return entityPOList.stream().collect(Collectors.toMap(EntityPO::getId, EntityPO::getAttachTargetId, (a, b) -> a));
+        List<EntityPO> entityPOList = entityRepository
+                .findAll(filter -> filter.in(EntityPO.Fields.id, entityIds.toArray()));
+        return entityPOList.stream()
+                .collect(Collectors.toMap(EntityPO::getId, EntityPO::getAttachTargetId, (a, b) -> a));
     }
 
     /**
@@ -88,7 +87,8 @@ public class EntityFacade implements IEntityFacade {
             return 0L;
         }
 
-        return Optional.ofNullable(countAllEntitiesByIntegrationIds(List.of(integrationId)).get(integrationId)).orElse(0L);
+        return Optional.ofNullable(countAllEntitiesByIntegrationIds(List.of(integrationId)).get(integrationId))
+                .orElse(0L);
     }
 
     @Override
@@ -97,7 +97,8 @@ public class EntityFacade implements IEntityFacade {
             return new HashMap<>();
         }
 
-        Map<String, Long> allEntityCountMap = entityService.countEntityByTarget(AttachTargetType.INTEGRATION, integrationIds);
+        Map<String, Long> allEntityCountMap = entityService.countEntityByTarget(AttachTargetType.INTEGRATION,
+                integrationIds);
         List<DeviceNameDTO> integrationDevices = deviceFacade.getDeviceNameByIntegrations(integrationIds);
         if (CollectionUtils.isEmpty(integrationDevices)) {
             return allEntityCountMap;
@@ -128,5 +129,13 @@ public class EntityFacade implements IEntityFacade {
         });
 
         return allEntityCountMap;
+    }
+
+    @Override
+    public List<EntityIdKeyDTO> findIdAndKeyByIds(List<Long> entityIds) {
+        if (CollectionUtils.isEmpty(entityIds)) {
+            return new ArrayList<>();
+        }
+        return entityRepository.findIdAndKeyByIdIn(entityIds);
     }
 }

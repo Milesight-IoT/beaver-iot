@@ -3,6 +3,7 @@ package com.milesight.beaveriot.entity.repository;
 import com.milesight.beaveriot.context.integration.enums.AttachTargetType;
 import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.data.jpa.repository.BaseJpaRepository;
+import com.milesight.beaveriot.entity.dto.EntityIdKeyDTO;
 import com.milesight.beaveriot.entity.po.EntityPO;
 import com.milesight.beaveriot.permission.aspect.DataPermission;
 import com.milesight.beaveriot.permission.aspect.Tenant;
@@ -32,7 +33,8 @@ public interface EntityRepository extends BaseJpaRepository<EntityPO, Long> {
     }
 
     @DataPermission(type = DataPermissionType.ENTITY, column = "attach_target_id", dataType = ColumnDataType.STRING)
-    default List<EntityPO> findAllWithDataPermission(Consumer<Filterable> filterable, Function<FluentQuery.FetchableFluentQuery<EntityPO>, List<EntityPO>> queryFunction) {
+    default List<EntityPO> findAllWithDataPermission(Consumer<Filterable> filterable,
+            Function<FluentQuery.FetchableFluentQuery<EntityPO>, List<EntityPO>> queryFunction) {
         return findBy(filterable, queryFunction);
     }
 
@@ -47,5 +49,9 @@ public interface EntityRepository extends BaseJpaRepository<EntityPO, Long> {
     }
 
     @Query("SELECT r.attachTargetId, COUNT(r) FROM EntityPO r WHERE r.attachTargetId IN :targetIds AND r.attachTarget = :targetType GROUP BY r.attachTargetId")
-    List<Object[]> countAndGroupByTargets(@Param("targetType") AttachTargetType targetType, @Param("targetIds") List<String> targetIds);
+    List<Object[]> countAndGroupByTargets(@Param("targetType") AttachTargetType targetType,
+            @Param("targetIds") List<String> targetIds);
+
+    @Query("SELECT new com.milesight.beaveriot.entity.dto.EntityIdKeyDTO(e.id, e.key) FROM EntityPO e WHERE e.id IN :ids")
+    List<EntityIdKeyDTO> findIdAndKeyByIdIn(@Param("ids") List<Long> ids);
 }
