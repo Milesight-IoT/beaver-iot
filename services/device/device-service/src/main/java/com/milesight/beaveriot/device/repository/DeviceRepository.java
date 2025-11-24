@@ -2,6 +2,7 @@ package com.milesight.beaveriot.device.repository;
 
 import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.data.jpa.repository.BaseJpaRepository;
+import com.milesight.beaveriot.device.dto.DeviceIdKeyDTO;
 import com.milesight.beaveriot.device.po.DevicePO;
 import com.milesight.beaveriot.permission.aspect.DataPermission;
 import com.milesight.beaveriot.permission.aspect.Tenant;
@@ -30,12 +31,12 @@ public interface DeviceRepository extends BaseJpaRepository<DevicePO, Long> {
     Long countByTemplateIn(List<String> templates);
 
     @DataPermission(type = DataPermissionType.DEVICE, column = "id")
-    default List<DevicePO> findAllWithDataPermission(Consumer<Filterable> filterable){
+    default List<DevicePO> findAllWithDataPermission(Consumer<Filterable> filterable) {
         return findAll(filterable);
     }
 
     @DataPermission(type = DataPermissionType.DEVICE, column = "id")
-    default Page<DevicePO> findAllWithDataPermission(Consumer<Filterable> filterable, Pageable pageable){
+    default Page<DevicePO> findAllWithDataPermission(Consumer<Filterable> filterable, Pageable pageable) {
         return findAll(filterable, pageable);
     }
 
@@ -51,4 +52,7 @@ public interface DeviceRepository extends BaseJpaRepository<DevicePO, Long> {
 
     @DataPermission(type = DataPermissionType.DEVICE, column = "id")
     List<DevicePO> findAllByTemplate(String template);
+
+    @Query("SELECT new com.milesight.beaveriot.device.dto.DeviceIdKeyDTO(d.id, d.key) FROM DevicePO d WHERE d.id IN :ids")
+    List<DeviceIdKeyDTO> findIdAndKeyByIdIn(@Param("ids") List<Long> ids);
 }

@@ -17,6 +17,7 @@ import com.milesight.beaveriot.context.integration.model.*;
 import com.milesight.beaveriot.context.integration.model.event.DeviceEvent;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.data.filterable.Filterable;
+import com.milesight.beaveriot.device.dto.DeviceIdKeyDTO;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.dto.DeviceResponseData;
 import com.milesight.beaveriot.device.dto.DeviceResponseEntityData;
@@ -130,7 +131,8 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
 
         if (integrationConfig == null) {
             throw ServiceException
-                    .with(ErrorCode.DATA_NO_FOUND.getErrorCode(), "integration " + integrationIdentifier + " not found!")
+                    .with(ErrorCode.DATA_NO_FOUND.getErrorCode(),
+                            "integration " + integrationIdentifier + " not found!")
                     .status(HttpStatus.BAD_REQUEST.value())
                     .build();
         }
@@ -139,7 +141,8 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
         String addDeviceEntityId = integrationConfig.getEntityIdentifierAddDevice();
         if (addDeviceEntityId == null) {
             throw ServiceException
-                    .with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(), "integration " + integrationIdentifier + " cannot add device!")
+                    .with(ErrorCode.PARAMETER_VALIDATION_FAILED.getErrorCode(),
+                            "integration " + integrationIdentifier + " cannot add device!")
                     .status(HttpStatus.BAD_REQUEST.value())
                     .build();
         }
@@ -221,12 +224,14 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
     }
 
     private void fillRelativeInfo(List<DeviceResponseData> dataList) {
-        Map<String, Integration> integrationMap = getIntegrationMap(dataList.stream().map(DeviceResponseData::getIntegration).toList());
-        Map<Long, DeviceGroupPO> deviceGroupMap = deviceGroupService.deviceMapToGroup(dataList.stream().map(d -> Long.valueOf(d.getId())).toList());
+        Map<String, Integration> integrationMap = getIntegrationMap(
+                dataList.stream().map(DeviceResponseData::getIntegration).toList());
+        Map<Long, DeviceGroupPO> deviceGroupMap = deviceGroupService
+                .deviceMapToGroup(dataList.stream().map(d -> Long.valueOf(d.getId())).toList());
         Map<String, List<Entity>> deviceKeyToEntity = entityServiceProvider
-            .findByTargetIds(AttachTargetType.DEVICE, dataList.stream().map(DeviceResponseData::getId).toList())
-            .stream()
-            .collect(Collectors.groupingBy(Entity::getDeviceKey));
+                .findByTargetIds(AttachTargetType.DEVICE, dataList.stream().map(DeviceResponseData::getId).toList())
+                .stream()
+                .collect(Collectors.groupingBy(Entity::getDeviceKey));
 
         initEntityTemplateKeys();
 
@@ -268,7 +273,8 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
                 });
 
                 d.setImportantEntities(flattenEntities.stream()
-                        .filter(entity -> entity.getAttributes() != null && entity.getAttributes().get(AttributeBuilder.ATTRIBUTE_IMPORTANT) != null)
+                        .filter(entity -> entity.getAttributes() != null
+                                && entity.getAttributes().get(AttributeBuilder.ATTRIBUTE_IMPORTANT) != null)
                         .map(entity -> DeviceResponseEntityData.builder()
                                 .id(entity.getId().toString())
                                 .key(entity.getKey())
@@ -279,10 +285,8 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
                                 .description(entity.getDescription())
                                 .accessMod(entity.getAccessMod())
                                 .parent(entity.getParentKey())
-                                .build()
-                        )
-                        .toList()
-                );
+                                .build())
+                        .toList());
 
                 d.setCommonEntities(flattenEntities.stream()
                         .filter(entity -> entityTemplateKeys.contains(entity.getFullIdentifier()))
@@ -296,10 +300,8 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
                                 .description(entity.getDescription())
                                 .accessMod(entity.getAccessMod())
                                 .parent(entity.getParentKey())
-                                .build()
-                        )
-                        .toList()
-                );
+                                .build())
+                        .toList());
             }
         });
     }
@@ -308,8 +310,7 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
     public Device findById(Long id) {
         return deviceRepository
                 .findOne(f -> f
-                        .eq(DevicePO.Fields.id, id)
-                )
+                        .eq(DevicePO.Fields.id, id))
                 .map(deviceConverter::convertPO)
                 .orElse(null);
     }
@@ -318,17 +319,18 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
     public List<Long> fuzzySearchDeviceIdsByName(ComparisonOperator operator, String keyword) {
         Assert.hasText(keyword, "keyword cannot be empty");
         return deviceRepository.findAllWithDataPermission(f -> {
-                    switch (operator) {
-                        case EQ -> f.eq(DevicePO.Fields.name, keyword);
-                        case NE -> f.ne(DevicePO.Fields.name, keyword);
-                        case CONTAINS -> f.likeIgnoreCase(DevicePO.Fields.name, keyword);
-                        case NOT_CONTAINS -> f.notLikeIgnoreCase(DevicePO.Fields.name, keyword);
-                        case START_WITH -> f.startsWithIgnoreCase(DevicePO.Fields.name, keyword);
-                        case END_WITH -> f.endsWithIgnoreCase(DevicePO.Fields.name, keyword);
-                        default ->
-                                throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED).detailMessage("Unsupported operator: " + operator).build();
-                    }
-                })
+            switch (operator) {
+                case EQ -> f.eq(DevicePO.Fields.name, keyword);
+                case NE -> f.ne(DevicePO.Fields.name, keyword);
+                case CONTAINS -> f.likeIgnoreCase(DevicePO.Fields.name, keyword);
+                case NOT_CONTAINS -> f.notLikeIgnoreCase(DevicePO.Fields.name, keyword);
+                case START_WITH -> f.startsWithIgnoreCase(DevicePO.Fields.name, keyword);
+                case END_WITH -> f.endsWithIgnoreCase(DevicePO.Fields.name, keyword);
+                default ->
+                    throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED)
+                            .detailMessage("Unsupported operator: " + operator).build();
+            }
+        })
                 .stream()
                 .map(DevicePO::getId)
                 .collect(Collectors.toList());
@@ -345,12 +347,16 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
         }
 
         Consumer<Filterable> filter = f -> f.or(
-                        fo -> fo.likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.name, searchDeviceRequest.getName())
-                                .eq(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.identifier, searchDeviceRequest.getName())
-                )
-                .eq(StringUtils.hasText(searchDeviceRequest.getTemplate()), DevicePO.Fields.template, searchDeviceRequest.getTemplate())
-                .likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getIdentifier()), DevicePO.Fields.identifier, searchDeviceRequest.getIdentifier())
-                .in(!searchDeviceRequest.getIdList().isEmpty(), DevicePO.Fields.id, searchDeviceRequest.getIdList().toArray());
+                fo -> fo.likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.name,
+                        searchDeviceRequest.getName())
+                        .eq(StringUtils.hasText(searchDeviceRequest.getName()), DevicePO.Fields.identifier,
+                                searchDeviceRequest.getName()))
+                .eq(StringUtils.hasText(searchDeviceRequest.getTemplate()), DevicePO.Fields.template,
+                        searchDeviceRequest.getTemplate())
+                .likeIgnoreCase(StringUtils.hasText(searchDeviceRequest.getIdentifier()), DevicePO.Fields.identifier,
+                        searchDeviceRequest.getIdentifier())
+                .in(!searchDeviceRequest.getIdList().isEmpty(), DevicePO.Fields.id,
+                        searchDeviceRequest.getIdList().toArray());
 
         Page<DeviceResponseData> responseDataList = Page.empty();
         String groupIdStr = searchDeviceRequest.getGroupId();
@@ -358,7 +364,8 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
         if (StringUtils.hasText(groupIdStr) && filterNotGrouped) {
             return responseDataList;
         } else if (StringUtils.hasText(groupIdStr)) {
-            List<DeviceGroupMappingPO> mappingPOList = deviceGroupService.findAllMappingByGroupId(Long.valueOf(searchDeviceRequest.getGroupId()));
+            List<DeviceGroupMappingPO> mappingPOList = deviceGroupService
+                    .findAllMappingByGroupId(Long.valueOf(searchDeviceRequest.getGroupId()));
             if (mappingPOList.isEmpty()) {
                 return responseDataList;
             }
@@ -425,9 +432,9 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
             return;
         }
 
-        List<DevicePO> devicePOList = deviceRepository.findByIdInWithDataPermission(deviceIdList.stream().map(Long::valueOf).toList());
+        List<DevicePO> devicePOList = deviceRepository
+                .findByIdInWithDataPermission(deviceIdList.stream().map(Long::valueOf).toList());
         Set<String> foundIds = devicePOList.stream().map(id -> id.getId().toString()).collect(Collectors.toSet());
-
 
         // check whether all devices exist
         if (!new HashSet<>(deviceIdList).containsAll(foundIds)) {
@@ -439,7 +446,8 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
 
         List<Device> devices = deviceConverter.convertPO(devicePOList);
 
-        Map<String, Integration> integrationMap = getIntegrationMap(devices.stream().map(Device::getIntegrationId).toList());
+        Map<String, Integration> integrationMap = getIntegrationMap(
+                devices.stream().map(Device::getIntegrationId).toList());
 
         devices.stream()
                 .map((Device device) -> {
@@ -493,7 +501,8 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
         }
 
         if (findResult.get().getTemplate() != null) {
-            List<DeviceTemplateDTO> deviceTemplateDTOList = deviceTemplateFacade.getDeviceTemplateByKeys(List.of(findResult.get().getTemplate()));
+            List<DeviceTemplateDTO> deviceTemplateDTOList = deviceTemplateFacade
+                    .getDeviceTemplateByKeys(List.of(findResult.get().getTemplate()));
             if (!CollectionUtils.isEmpty(deviceTemplateDTOList)) {
                 DeviceTemplateDTO deviceTemplate = deviceTemplateDTOList.get(0);
                 deviceDetailResponse.setTemplateName(deviceTemplate.getName());
@@ -507,7 +516,8 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
     private List<DeviceNameDTO> convertDevicePOList(List<DevicePO> devicePOList) {
         List<Long> deviceIds = devicePOList.stream().map(DevicePO::getId).toList();
         Map<Long, List<DeviceGroupPO>> deviceIdToGroups = deviceGroupService.deviceIdToGroups(deviceIds);
-        Map<String, Integration> integrationMap = getIntegrationMap(devicePOList.stream().map(DevicePO::getIntegration).toList());
+        Map<String, Integration> integrationMap = getIntegrationMap(
+                devicePOList.stream().map(DevicePO::getIntegration).toList());
         return devicePOList.stream()
                 .map(devicePO -> DeviceNameDTO.builder()
                         .id(devicePO.getId())
@@ -642,5 +652,13 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
             deviceGroupService.getDeviceGroup(groupId);
             deviceGroupService.moveDevicesToGroupId(groupId, deviceIdList);
         }
+    }
+
+    @Override
+    public List<DeviceIdKeyDTO> findIdAndKeyByIds(List<Long> deviceIds) {
+        if (CollectionUtils.isEmpty(deviceIds)) {
+            return new ArrayList<>();
+        }
+        return deviceRepository.findIdAndKeyByIdIn(deviceIds);
     }
 }

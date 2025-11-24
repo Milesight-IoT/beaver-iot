@@ -3,10 +3,8 @@ package com.milesight.beaveriot.canvas.repository;
 import com.milesight.beaveriot.canvas.po.CanvasEntityPO;
 import com.milesight.beaveriot.data.jpa.repository.BaseJpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-
 
 public interface CanvasEntityRepository extends BaseJpaRepository<CanvasEntityPO, Long> {
 
@@ -15,4 +13,7 @@ public interface CanvasEntityRepository extends BaseJpaRepository<CanvasEntityPO
 
     @Modifying
     void deleteAllByCanvasIdIn(List<Long> canvasId);
+
+    @Modifying
+    void deleteAllByCanvasIdAndEntityIdIn(Long canvasId, List<Long> entityIds);
 }

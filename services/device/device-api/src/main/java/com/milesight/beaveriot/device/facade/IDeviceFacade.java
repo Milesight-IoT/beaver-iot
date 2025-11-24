@@ -2,6 +2,7 @@ package com.milesight.beaveriot.device.facade;
 
 import com.milesight.beaveriot.base.enums.ComparisonOperator;
 import com.milesight.beaveriot.context.integration.model.Device;
+import com.milesight.beaveriot.device.dto.DeviceIdKeyDTO;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 
 import java.util.List;
@@ -29,4 +30,6 @@ public interface IDeviceFacade {
     Long countByTemplateInIgnoreTenant(List<String> templates);
 
     Device findById(Long id);
+
+    List<DeviceIdKeyDTO> findIdAndKeyByIds(List<Long> deviceIds);
 }
