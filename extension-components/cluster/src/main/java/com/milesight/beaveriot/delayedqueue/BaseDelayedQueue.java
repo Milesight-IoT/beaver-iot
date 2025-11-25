@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 /**
@@ -34,9 +35,10 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
     protected DelayedQueueWrapper<T> delayQueue;
     protected Map<String, Long> taskExpireTimeMap;
     protected Map<String, Map<String, Consumer<DelayedTask<T>>>> topicConsumersMap;
-    protected ExecutorService listenerExecutor;
-    protected ExecutorService consumerExecutor;
-    protected final AtomicBoolean isListening;
+    private ExecutorService listenerExecutor;
+    private ExecutorService consumerExecutor;
+    private final AtomicBoolean isListening;
+    private final AtomicLong listenerStartTime;
 
     public BaseDelayedQueue(@NonNull String queueName, @NonNull DelayedQueueWrapper<T> delayQueue, @NonNull Map<String, Long> taskExpireTimeMap) {
         this.queueName = queueName;
@@ -44,8 +46,9 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         this.taskExpireTimeMap = taskExpireTimeMap;
         this.topicConsumersMap = new ConcurrentHashMap<>();
         this.isListening = new AtomicBoolean(false);
+        this.listenerStartTime = new AtomicLong();
         if (!this.delayQueue.isEmpty()) {
-            CompletableFuture.delayedExecutor(Constants.LISTENER_START_DELAY_SECONDS, TimeUnit.SECONDS).execute(this::startListener);
+            CompletableFuture.delayedExecutor(Constants.LISTENER_START_DELAY_TIME.toSeconds(), TimeUnit.SECONDS).execute(this::startListener);
         }
     }
 
@@ -136,6 +139,7 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
                 return t;
             });
 
+            listenerStartTime.set(System.currentTimeMillis());
             listenerExecutor.execute(() -> {
                 while(!Thread.currentThread().isInterrupted()) {
                     try {
@@ -147,13 +151,16 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
 
                         Map<String, Consumer<DelayedTask<T>>> consumers = topicConsumersMap.get(task.getTopic());
                         if (CollectionUtils.isEmpty(consumers)) {
-                            if (task.getRequeueCount() >= Constants.MAX_REQUEUE_COUNT) {
-                                log.warn("Task '{}' has reached max requeue count and will be discarded because there is still no consumer registered for topic '{}' in queue '{}'",
-                                        task.getId(), task.getTopic(), queueName);
-                                continue;
+                            if (System.currentTimeMillis() - listenerStartTime.get() > Constants.TASK_RETENTION_PERIOD.toMillis()) {
+                                if (task.getRequeueCount() >= Constants.MAX_REQUEUE_COUNT) {
+                                    log.warn("Task '{}' has reached max requeue count and will be discarded because there is still no consumer registered for topic '{}' in queue '{}'",
+                                            task.getId(), task.getTopic(), queueName);
+                                    continue;
+                                }
                             }
+
                             task.incrementRequeueCount();
-                            CompletableFuture.delayedExecutor(Constants.REQUEUE_DELAY_SECONDS, TimeUnit.SECONDS).execute(() -> requeue(task));
+                            CompletableFuture.delayedExecutor(Constants.REQUEUE_DELAY_TIME.toSeconds(), TimeUnit.SECONDS).execute(() -> requeue(task));
                             continue;
                         }
 
@@ -272,8 +279,9 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         public static final String LOCK_NAME_DELAYED_QUEUE_HANDLE_TASK_FORMAT = "delayed-queue:{0}:handle-task:{1}";
         public static final String LISTENER_THREAD_NAME_PREFIX = "DelayedQueue-Listener-";
         public static final String CONSUMER_THREAD_NAME_PREFIX = "DelayedQueue-Consumer-";
-        public static final long LISTENER_START_DELAY_SECONDS = 60;
-        public static final long MAX_REQUEUE_COUNT = 10;
-        public static final long REQUEUE_DELAY_SECONDS = 1;
+        public static final Duration LISTENER_START_DELAY_TIME = Duration.ofMinutes(5);
+        public static final Duration TASK_RETENTION_PERIOD = Duration.ofMinutes(3);
+        public static final long MAX_REQUEUE_COUNT = 3;
+        public static final Duration REQUEUE_DELAY_TIME = Duration.ofSeconds(1);
     }
 }
