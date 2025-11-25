@@ -17,7 +17,7 @@ import org.springframework.data.redis.core.RedisOperations;
 @AutoConfiguration(before = {RedisAutoConfiguration.class})
 @ConditionalOnClass({Redisson.class, RedisOperations.class})
 @EnableConfigurationProperties({RedissonProperties.class, RedisProperties.class})
-@ConditionalOnExpression("!'${spring.redis.host:}'.isEmpty()")
+@ConditionalOnExpression("!'${spring.data.redis.host:}'.isEmpty()")
 public class CustomizeRedissonAutoConfiguration extends RedissonAutoConfiguration {
     public CustomizeRedissonAutoConfiguration() {
     }

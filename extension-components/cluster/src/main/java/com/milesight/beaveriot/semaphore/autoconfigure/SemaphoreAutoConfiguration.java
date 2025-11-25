@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SemaphoreAutoConfiguration {
     @Bean
-    @ConditionalOnExpression("!'${spring.redis.host:}'.isEmpty()")
+    @ConditionalOnExpression("!'${spring.data.redis.host:}'.isEmpty()")
     public DistributedSemaphore redisSemaphore(RedissonClient redissonClient) {
         return new RedisSemaphore(redissonClient);
     }
