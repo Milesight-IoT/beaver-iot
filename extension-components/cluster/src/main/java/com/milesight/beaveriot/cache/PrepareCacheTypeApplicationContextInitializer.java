@@ -10,7 +10,7 @@ import org.springframework.util.ObjectUtils;
 public class PrepareCacheTypeApplicationContextInitializer implements ApplicationContextInitializer {
 
     private static final String CACHE_TYPE_PROPERTY = "spring.cache.type";
-    private static final String SPRING_REDIS_HOST = "spring.redis.host";
+    private static final String SPRING_REDIS_HOST = "spring.data.redis.host";
 
     @Override
     public void initialize(ConfigurableApplicationContext applicationContext) {

@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class DelayedQueueAutoConfiguration {
     @Bean
-    @ConditionalOnExpression("!'${spring.redis.host:}'.isEmpty()")
+    @ConditionalOnExpression("!'${spring.data.redis.host:}'.isEmpty()")
     public DelayedQueueFactory redisDelayedQueueFactory(RedissonClient redissonClient) {
         return new RedisDelayedQueueFactory(redissonClient);
     }

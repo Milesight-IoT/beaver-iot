@@ -35,7 +35,7 @@ import java.util.List;
 @EnableConfigurationProperties({CustomizeCacheProperties.class, CacheProperties.class})
 public class CustomizeCacheAutoConfiguration {
     @Bean
-    @ConditionalOnExpression("!'${spring.redis.host:}'.isEmpty()")
+    @ConditionalOnExpression("!'${spring.data.redis.host:}'.isEmpty()")
     CustomizeRedisCacheManager cacheManger(CacheProperties cacheProperties,CustomizeCacheProperties customizeCacheProperties,
                                   ObjectProvider<org.springframework.data.redis.cache.RedisCacheConfiguration> redisCacheConfiguration,
                                   RedisConnectionFactory redisConnectionFactory, ResourceLoader resourceLoader) {
