@@ -269,7 +269,7 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
 
     @Override
     public void destroy() {
-        doWithLock(null, this::doDestroy);
+        doWithLock(this::doDestroy);
     }
 
     private void doDestroy() {
