@@ -6,12 +6,14 @@ import com.milesight.beaveriot.context.model.delayedqueue.DelayedQueue;
 import com.milesight.beaveriot.context.model.delayedqueue.DelayedTask;
 import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.context.support.SpringContext;
+import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.spring.aop.ScopedLockConfiguration;
 import org.redisson.RedissonShutdownException;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 import java.text.MessageFormat;
@@ -34,17 +36,17 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
     protected final String queueName;
     protected DelayedQueueWrapper<T> delayQueue;
     protected Map<String, Long> taskExpireTimeMap;
-    protected Map<String, Map<String, Consumer<DelayedTask<T>>>> topicConsumersMap;
-    private ExecutorService listenerExecutor;
-    private ExecutorService consumerExecutor;
-    private final AtomicBoolean isListening;
-    private final AtomicLong listenerStartTime;
+    protected volatile Map<String, Map<String, DelayedConsumer<T>>> topicDelayedConsumersMap;
+    protected ExecutorService listenerExecutor;
+    protected ExecutorService consumerExecutor;
+    protected final AtomicBoolean isListening;
+    protected final AtomicLong listenerStartTime;
 
     public BaseDelayedQueue(@NonNull String queueName, @NonNull DelayedQueueWrapper<T> delayQueue, @NonNull Map<String, Long> taskExpireTimeMap) {
         this.queueName = queueName;
         this.delayQueue = delayQueue;
         this.taskExpireTimeMap = taskExpireTimeMap;
-        this.topicConsumersMap = new ConcurrentHashMap<>();
+        this.topicDelayedConsumersMap = new ConcurrentHashMap<>();
         this.isListening = new AtomicBoolean(false);
         this.listenerStartTime = new AtomicLong();
         if (!this.delayQueue.isEmpty()) {
@@ -103,29 +105,45 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
 
     @Override
     public String registerConsumer(String topic, Consumer<DelayedTask<T>> consumer) {
-        Map<String, Consumer<DelayedTask<T>>> consumers = topicConsumersMap.computeIfAbsent(topic, k -> new ConcurrentHashMap<>());
+        return registerConsumer(topic, consumer, false);
+    }
+
+    @Override
+    public String registerConsumer(String topic, Consumer<DelayedTask<T>> consumer, boolean isConsumeOnce) {
+        Map<String, DelayedConsumer<T>> delayedConsumers = topicDelayedConsumersMap.computeIfAbsent(topic, k -> new ConcurrentHashMap<>());
         String consumerId = UUID.randomUUID().toString();
-        consumers.put(consumerId, consumer);
+        delayedConsumers.put(consumerId, DelayedConsumer.of(consumerId, consumer, isConsumeOnce));
         startListener();
         return consumerId;
     }
 
     @Override
     public void unregisterConsumer(String topic) {
-        topicConsumersMap.remove(topic);
+        topicDelayedConsumersMap.remove(topic);
     }
 
     @Override
     public void unregisterConsumer(String topic, String consumerId) {
-        Map<String, Consumer<DelayedTask<T>>> consumers = topicConsumersMap.get(topic);
+        Map<String, DelayedConsumer<T>> consumers = topicDelayedConsumersMap.get(topic);
         if (CollectionUtils.isEmpty(consumers)) {
             return;
         }
 
         consumers.remove(consumerId);
+        if (CollectionUtils.isEmpty(consumers)) {
+            topicDelayedConsumersMap.remove(topic);
+        }
     }
 
     private void startListener() {
+        if (isListening.get()) {
+            return;
+        }
+
+        doWithLock(this::doStartListener);
+    }
+
+    private void doStartListener() {
         if (isListening.compareAndSet(false, true)) {
             listenerExecutor = Executors.newSingleThreadExecutor(runnable -> {
                 Thread t = new Thread(runnable, Constants.LISTENER_THREAD_NAME_PREFIX + queueName);
@@ -149,8 +167,8 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
                             continue;
                         }
 
-                        Map<String, Consumer<DelayedTask<T>>> consumers = topicConsumersMap.get(task.getTopic());
-                        if (CollectionUtils.isEmpty(consumers)) {
+                        Map<String, DelayedConsumer<T>> delayedConsumers = topicDelayedConsumersMap.get(task.getTopic());
+                        if (CollectionUtils.isEmpty(delayedConsumers)) {
                             if (System.currentTimeMillis() - listenerStartTime.get() > Constants.TASK_RETENTION_PERIOD.toMillis()) {
                                 if (task.getRequeueCount() >= Constants.MAX_REQUEUE_COUNT) {
                                     log.warn("Task '{}' has reached max requeue count and will be discarded because there is still no consumer registered for topic '{}' in queue '{}'",
@@ -165,10 +183,13 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
                         }
 
                         log.debug("Delayed queue '{}' consumed task '{}'", queueName, task.getId());
-                        consumers.forEach((consumerId, consumer) -> CompletableFuture.runAsync(() -> {
+                        delayedConsumers.forEach((consumerId, delayedConsumer) -> CompletableFuture.runAsync(() -> {
                             try {
                                 initConsumerContext(task);
-                                consumer.accept(task);
+                                delayedConsumer.getConsumer().accept(task);
+                                if (delayedConsumer.isConsumeOnce()) {
+                                    unregisterConsumer(task.getTopic(), consumerId);
+                                }
                             } catch (Exception e) {
                                 log.error("Error occurred while consuming task '{}' by consumer '{}' for queue '{}'", task.getId(), consumerId, queueName, e);
                             }
@@ -221,11 +242,21 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         }
     }
 
+    private void doWithLock(Runnable runnable) {
+        doWithLock(null, runnable);
+    }
+
     private void doWithLock(String taskId, Runnable runnable) {
+        String lockName;
+        if (taskId == null) {
+            lockName = MessageFormat.format(Constants.LOCK_NAME_DELAYED_QUEUE_HANDLE_QUEUE_FORMAT, queueName);
+        } else {
+            lockName = MessageFormat.format(Constants.LOCK_NAME_DELAYED_QUEUE_HANDLE_TASK_FORMAT, queueName, taskId);
+        }
         ScopedLockConfiguration lockConfiguration = ScopedLockConfiguration.builder(LockScope.GLOBAL)
-                .name(MessageFormat.format(Constants.LOCK_NAME_DELAYED_QUEUE_HANDLE_TASK_FORMAT, queueName, taskId))
+                .name(lockName)
                 .lockAtLeastFor(Duration.ofMinutes(0))
-                .lockAtMostFor(Duration.ofMinutes(10))
+                .lockAtMostFor(Duration.ofMinutes(30))
                 .throwOnLockFailure(false)
                 .build();
 
@@ -242,6 +273,12 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
 
     @Override
     public void destroy() {
+        doWithLock(this::doDestroy);
+    }
+
+    private void doDestroy() {
+        isListening.set(false);
+
         if (listenerExecutor != null || consumerExecutor != null) {
             log.debug("Shutting down delayed queue listener and consumer executor for queue '{}'", queueName);
         }
@@ -263,6 +300,8 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         if (listenerExecutor != null || consumerExecutor != null) {
             log.debug("Delayed queue listener and consumer executor shut down for queue '{}'", queueName);
         }
+        listenerExecutor = null;
+        consumerExecutor = null;
     }
 
     private void shutdownExecutor(ExecutorService executor, boolean force) {
@@ -275,7 +314,28 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         }
     }
 
+    @Data
+    protected static class DelayedConsumer<T> {
+        private String consumerId;
+        private Consumer<DelayedTask<T>> consumer;
+        private boolean isConsumeOnce;
+
+        private DelayedConsumer(String consumerId, Consumer<DelayedTask<T>> consumer, boolean isConsumeOnce) {
+            Assert.notNull(consumerId, "Consumer id cannot be null");
+            Assert.notNull(consumer, "Consumer cannot be null");
+
+            this.consumerId = consumerId;
+            this.consumer = consumer;
+            this.isConsumeOnce = isConsumeOnce;
+        }
+
+        public static <T> DelayedConsumer<T> of(String consumerId, Consumer<DelayedTask<T>> consumer, boolean isConsumeOnce) {
+            return new DelayedConsumer<>(consumerId, consumer, isConsumeOnce);
+        }
+    }
+
     private static class Constants {
+        public static final String LOCK_NAME_DELAYED_QUEUE_HANDLE_QUEUE_FORMAT = "delayed-queue:{0}:handle-queue";
         public static final String LOCK_NAME_DELAYED_QUEUE_HANDLE_TASK_FORMAT = "delayed-queue:{0}:handle-task:{1}";
         public static final String LISTENER_THREAD_NAME_PREFIX = "DelayedQueue-Listener-";
         public static final String CONSUMER_THREAD_NAME_PREFIX = "DelayedQueue-Consumer-";

@@ -66,8 +66,8 @@ class BaseDelayedQueueTest extends Specification {
         queue.queueName == "test"
         queue.delayQueue == mockDelayQueue
         queue.taskExpireTimeMap == taskExpireTimeMap
-        queue.topicConsumersMap != null
-        queue.topicConsumersMap.isEmpty()
+        queue.topicDelayedConsumersMap != null
+        queue.topicDelayedConsumersMap.isEmpty()
     }
 
     def "constructor should not start listener when the delayed queue is empty"() {
@@ -232,9 +232,9 @@ class BaseDelayedQueueTest extends Specification {
 
         then:
         consumerId != null
-        delayedQueue.topicConsumersMap.containsKey(topic)
-        delayedQueue.topicConsumersMap.get(topic).containsKey(consumerId)
-        delayedQueue.topicConsumersMap.get(topic).get(consumerId) == consumer
+        delayedQueue.topicDelayedConsumersMap.containsKey(topic)
+        delayedQueue.topicDelayedConsumersMap.get(topic).containsKey(consumerId)
+        delayedQueue.topicDelayedConsumersMap.get(topic).get(consumerId).getConsumer() == consumer
     }
 
     def "registerConsumer should register multiple consumers for same topic"() {
@@ -250,9 +250,9 @@ class BaseDelayedQueueTest extends Specification {
 
         then:
         consumerId1 != consumerId2
-        delayedQueue.topicConsumersMap.get(topic).size() == 2
-        delayedQueue.topicConsumersMap.get(topic).containsKey(consumerId1)
-        delayedQueue.topicConsumersMap.get(topic).containsKey(consumerId2)
+        delayedQueue.topicDelayedConsumersMap.get(topic).size() == 2
+        delayedQueue.topicDelayedConsumersMap.get(topic).containsKey(consumerId1)
+        delayedQueue.topicDelayedConsumersMap.get(topic).containsKey(consumerId2)
     }
 
     def "registerConsumer should register consumers for different topics"() {
@@ -268,9 +268,9 @@ class BaseDelayedQueueTest extends Specification {
         delayedQueue.registerConsumer(topic2, consumer2)
 
         then:
-        delayedQueue.topicConsumersMap.size() == 2
-        delayedQueue.topicConsumersMap.containsKey(topic1)
-        delayedQueue.topicConsumersMap.containsKey(topic2)
+        delayedQueue.topicDelayedConsumersMap.size() == 2
+        delayedQueue.topicDelayedConsumersMap.containsKey(topic1)
+        delayedQueue.topicDelayedConsumersMap.containsKey(topic2)
     }
 
     // ==================== unregisterConsumer() tests ====================
@@ -288,7 +288,7 @@ class BaseDelayedQueueTest extends Specification {
         delayedQueue.unregisterConsumer(topic)
 
         then:
-        !delayedQueue.topicConsumersMap.containsKey(topic)
+        !delayedQueue.topicDelayedConsumersMap.containsKey(topic)
     }
 
     def "unregisterConsumer(topic) should handle non-existent topic gracefully"() {
@@ -312,9 +312,9 @@ class BaseDelayedQueueTest extends Specification {
         delayedQueue.unregisterConsumer(topic, consumerId1)
 
         then:
-        delayedQueue.topicConsumersMap.containsKey(topic)
-        !delayedQueue.topicConsumersMap.get(topic).containsKey(consumerId1)
-        delayedQueue.topicConsumersMap.get(topic).containsKey(consumerId2)
+        delayedQueue.topicDelayedConsumersMap.containsKey(topic)
+        !delayedQueue.topicDelayedConsumersMap.get(topic).containsKey(consumerId1)
+        delayedQueue.topicDelayedConsumersMap.get(topic).containsKey(consumerId2)
     }
 
     def "unregisterConsumer(topic, consumerId) should handle non-existent topic gracefully"() {
@@ -328,7 +328,7 @@ class BaseDelayedQueueTest extends Specification {
     def "unregisterConsumer(topic, consumerId) should handle empty consumers map gracefully"() {
         given:
         def topic = "test-topic"
-        delayedQueue.topicConsumersMap.put(topic, new ConcurrentHashMap<>())
+        delayedQueue.topicDelayedConsumersMap.put(topic, new ConcurrentHashMap<>())
 
         when:
         delayedQueue.unregisterConsumer(topic, "consumer-id")
@@ -539,8 +539,8 @@ class BaseDelayedQueueTest extends Specification {
         delayedQueue.destroy()
 
         then:
-        delayedQueue.listenerExecutor.isShutdown()
-        delayedQueue.consumerExecutor.isShutdown()
+        delayedQueue.listenerExecutor == null
+        delayedQueue.consumerExecutor == null
     }
 
     def "destroy should handle case when executors are not initialized"() {
@@ -575,7 +575,8 @@ class BaseDelayedQueueTest extends Specification {
         delayedQueue.destroy()
 
         then:
-        delayedQueue.consumerExecutor.isShutdown()
+        delayedQueue.listenerExecutor == null
+        delayedQueue.consumerExecutor == null
     }
 
     def "destroy should handle InterruptedException during shutdown"() {
