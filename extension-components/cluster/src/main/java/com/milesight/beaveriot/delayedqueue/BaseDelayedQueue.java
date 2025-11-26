@@ -136,6 +136,10 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
     }
 
     private void startListener() {
+        if (isListening.get()) {
+            return;
+        }
+
         doWithLock(this::doStartListener);
     }
 
