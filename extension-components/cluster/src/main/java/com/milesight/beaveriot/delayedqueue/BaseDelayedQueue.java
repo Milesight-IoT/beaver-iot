@@ -37,10 +37,10 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
     protected DelayedQueueWrapper<T> delayQueue;
     protected Map<String, Long> taskExpireTimeMap;
     protected volatile Map<String, Map<String, DelayedConsumer<T>>> topicDelayedConsumersMap;
-    private ExecutorService listenerExecutor;
-    private ExecutorService consumerExecutor;
-    private final AtomicBoolean isListening;
-    private final AtomicLong listenerStartTime;
+    protected ExecutorService listenerExecutor;
+    protected ExecutorService consumerExecutor;
+    protected final AtomicBoolean isListening;
+    protected final AtomicLong listenerStartTime;
 
     public BaseDelayedQueue(@NonNull String queueName, @NonNull DelayedQueueWrapper<T> delayQueue, @NonNull Map<String, Long> taskExpireTimeMap) {
         this.queueName = queueName;

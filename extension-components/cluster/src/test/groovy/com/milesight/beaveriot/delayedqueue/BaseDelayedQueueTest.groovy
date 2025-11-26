@@ -234,7 +234,7 @@ class BaseDelayedQueueTest extends Specification {
         consumerId != null
         delayedQueue.topicDelayedConsumersMap.containsKey(topic)
         delayedQueue.topicDelayedConsumersMap.get(topic).containsKey(consumerId)
-        delayedQueue.topicDelayedConsumersMap.get(topic).get(consumerId) == consumer
+        delayedQueue.topicDelayedConsumersMap.get(topic).get(consumerId).getConsumer() == consumer
     }
 
     def "registerConsumer should register multiple consumers for same topic"() {
@@ -539,8 +539,8 @@ class BaseDelayedQueueTest extends Specification {
         delayedQueue.destroy()
 
         then:
-        delayedQueue.listenerExecutor.isShutdown()
-        delayedQueue.consumerExecutor.isShutdown()
+        delayedQueue.listenerExecutor == null
+        delayedQueue.consumerExecutor == null
     }
 
     def "destroy should handle case when executors are not initialized"() {
@@ -575,7 +575,8 @@ class BaseDelayedQueueTest extends Specification {
         delayedQueue.destroy()
 
         then:
-        delayedQueue.consumerExecutor.isShutdown()
+        delayedQueue.listenerExecutor == null
+        delayedQueue.consumerExecutor == null
     }
 
     def "destroy should handle InterruptedException during shutdown"() {
