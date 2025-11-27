@@ -7,7 +7,7 @@ import com.milesight.beaveriot.base.utils.JsonUtils;
  * create: 2025/11/10 17:19
  **/
 public class PythonJsonModule extends LanguageModule {
-    protected PythonJsonModule() {
+    public PythonJsonModule() {
         super();
     }
 

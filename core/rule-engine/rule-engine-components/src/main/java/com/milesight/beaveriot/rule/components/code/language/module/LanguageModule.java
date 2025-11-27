@@ -17,7 +17,7 @@ public abstract class LanguageModule implements Closeable {
     private final Source scriptSource;
     private volatile Value module;
 
-    protected LanguageModule() {
+    public LanguageModule() {
         cx = LanguageHelper.newContext(getLanguageId(), null);
         try {
             scriptSource = Source.newBuilder(getLanguageId(),
@@ -69,18 +69,5 @@ public abstract class LanguageModule implements Closeable {
     public void close() {
         cx.close();
         module = null;
-    }
-
-    private static class Instance {
-        static final LanguageModule INSTANCE_JAVASCRIPT_JSON = new JavaScriptJsonModule();
-        static final LanguageModule INSTANCE_PYTHON_JSON = new PythonJsonModule();
-    }
-
-    public static LanguageModule getJavaScriptJsonModule() {
-        return Instance.INSTANCE_JAVASCRIPT_JSON;
-    }
-
-    public static LanguageModule getPythonJsonModule() {
-        return Instance.INSTANCE_PYTHON_JSON;
     }
 }

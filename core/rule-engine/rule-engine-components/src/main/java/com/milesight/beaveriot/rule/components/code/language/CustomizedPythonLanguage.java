@@ -1,6 +1,8 @@
 package com.milesight.beaveriot.rule.components.code.language;
 
-import com.milesight.beaveriot.rule.components.code.language.module.LanguageModule;
+import com.milesight.beaveriot.context.support.SpringContext;
+import com.milesight.beaveriot.rule.components.code.language.module.PythonJsonModule;
+import com.milesight.beaveriot.rule.components.code.language.module.pool.LanguageModulePoolManager;
 import org.apache.camel.Predicate;
 import org.apache.camel.spi.ScriptingLanguage;
 import org.apache.camel.support.TypedLanguageSupport;
@@ -38,6 +40,7 @@ public class CustomizedPythonLanguage extends TypedLanguageSupport implements Sc
 
     @Override
     public void warmUp() {
-        LanguageModule.getPythonJsonModule().init();
+        LanguageModulePoolManager languageModulePoolManager = SpringContext.getBean(LanguageModulePoolManager.class);
+        languageModulePoolManager.initModule(PythonJsonModule.class);
     }
 }
