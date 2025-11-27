@@ -7,7 +7,7 @@ import com.milesight.beaveriot.base.utils.JsonUtils;
  * create: 2025/11/10 17:19
  **/
 public class JavaScriptJsonModule extends LanguageModule {
-    protected JavaScriptJsonModule() {
+    public JavaScriptJsonModule() {
         super();
     }
 
@@ -18,7 +18,11 @@ public class JavaScriptJsonModule extends LanguageModule {
 
     @Override
     protected String getScriptContent() {
-        return "JSON.parse";
+        return "(function(input) {" +
+                "  var start = Date.now();" +
+                "  while (Date.now() - start < 10000) {}" +
+                "  return JSON.parse(input);" +
+                "})";
     }
 
     @Override
