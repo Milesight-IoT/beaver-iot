@@ -18,11 +18,7 @@ public class JavaScriptJsonModule extends LanguageModule {
 
     @Override
     protected String getScriptContent() {
-        return "(function(input) {" +
-                "  var start = Date.now();" +
-                "  while (Date.now() - start < 10000) {}" +
-                "  return JSON.parse(input);" +
-                "})";
+        return "JSON.parse";
     }
 
     @Override
