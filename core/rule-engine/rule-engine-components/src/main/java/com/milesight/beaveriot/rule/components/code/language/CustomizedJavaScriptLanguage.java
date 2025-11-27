@@ -1,8 +1,6 @@
 package com.milesight.beaveriot.rule.components.code.language;
 
-import com.milesight.beaveriot.context.support.SpringContext;
-import com.milesight.beaveriot.rule.components.code.language.module.JavaScriptJsonModule;
-import com.milesight.beaveriot.rule.components.code.language.module.pool.LanguageModulePoolManager;
+import com.milesight.beaveriot.rule.components.code.language.module.pool.LanguageModulePool;
 import org.apache.camel.Predicate;
 import org.apache.camel.spi.ScriptingLanguage;
 import org.apache.camel.support.TypedLanguageSupport;
@@ -39,7 +37,6 @@ public class CustomizedJavaScriptLanguage extends TypedLanguageSupport implement
 
     @Override
     public void warmUp() {
-        LanguageModulePoolManager languageModulePoolManager = SpringContext.getBean(LanguageModulePoolManager.class);
-        languageModulePoolManager.initModule(JavaScriptJsonModule.class);
+        LanguageModulePool.getJavaScriptJsonModulePool().execute(null);
     }
 }

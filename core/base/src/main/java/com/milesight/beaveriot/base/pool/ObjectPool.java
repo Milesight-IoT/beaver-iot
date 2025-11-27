@@ -335,19 +335,10 @@ public class ObjectPool<T> implements DisposableBean {
      * @return the operation result
      * @throws Exception if operation fails or timeout
      */
-    public <R> R execute(PooledObjectWithResultOperation<T, R> operation) throws Exception {
+    public <R> R execute(PooledObjectOperation<T, R> operation) throws Exception {
         T object = borrowObject();
         try {
             return operation.execute(object);
-        } finally {
-            returnObject(object);
-        }
-    }
-
-    public void execute(PooledObjectWithoutResultOperation<T> operation) throws Exception {
-        T object = borrowObject();
-        try {
-            operation.execute(object);
         } finally {
             returnObject(object);
         }
@@ -399,13 +390,8 @@ public class ObjectPool<T> implements DisposableBean {
      * Functional interface for operations on pooled objects
      */
     @FunctionalInterface
-    public interface PooledObjectWithResultOperation<T, R> {
+    public interface PooledObjectOperation<T, R> {
         R execute(T object) throws Exception;
-    }
-
-    @FunctionalInterface
-    public interface PooledObjectWithoutResultOperation<T> {
-        void execute(T object) throws Exception;
     }
 
     /**
