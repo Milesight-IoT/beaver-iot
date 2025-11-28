@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.device.support;
 
+import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
 import com.milesight.beaveriot.device.location.constants.DeviceLocationConstants;
 import com.milesight.beaveriot.device.status.constants.DeviceStatusConstants;
@@ -13,8 +14,8 @@ import java.util.List;
  **/
 @Component
 public class CommonDeviceAssembler extends DeviceAssembler {
-    protected CommonDeviceAssembler(EntityTemplateServiceProvider entityTemplateServiceProvider) {
-        super(entityTemplateServiceProvider);
+    protected CommonDeviceAssembler(EntityTemplateServiceProvider entityTemplateServiceProvider, EntityServiceProvider entityServiceProvider) {
+        super(entityTemplateServiceProvider, entityServiceProvider);
     }
 
     @Override

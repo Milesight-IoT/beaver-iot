@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.device.support;
 
+import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.api.EntityTemplateServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
 import com.milesight.beaveriot.context.integration.model.Entity;
@@ -16,9 +17,11 @@ import java.util.*;
 @Component
 public abstract class DeviceAssembler {
     private final EntityTemplateServiceProvider entityTemplateServiceProvider;
+    private final EntityServiceProvider entityServiceProvider;
 
-    protected DeviceAssembler(EntityTemplateServiceProvider entityTemplateServiceProvider) {
+    protected DeviceAssembler(EntityTemplateServiceProvider entityTemplateServiceProvider, EntityServiceProvider entityServiceProvider) {
         this.entityTemplateServiceProvider = entityTemplateServiceProvider;
+        this.entityServiceProvider = entityServiceProvider;
     }
 
     abstract List<String> getCommonEntityKeys();
@@ -27,8 +30,31 @@ public abstract class DeviceAssembler {
         List<EntityTemplate> entityTemplates = getCommonEntityTemplates();
         if (!CollectionUtils.isEmpty(entityTemplates)) {
             List<Entity> commonEntities = entityTemplates.stream().map(entityTemplate -> entityTemplate.toEntity(device.getIntegrationId(), device.getKey())).toList();
+            preserveCommonEntityNames(commonEntities);
             device.setEntities(merge(device.getEntities(), commonEntities));
         }
+    }
+
+    private void preserveCommonEntityNames(List<Entity> commonEntities) {
+        if (CollectionUtils.isEmpty(commonEntities)) {
+            return;
+        }
+
+        Map<String, Entity> commonEntityMap = new HashMap<>();
+        commonEntities.forEach(entity -> {
+            commonEntityMap.put(entity.getKey(), entity);
+            if (!CollectionUtils.isEmpty(entity.getChildren())) {
+                entity.getChildren().forEach(child -> commonEntityMap.put(child.getKey(), child));
+            }
+        });
+
+        Map<String, Entity> existingEntityMap = entityServiceProvider.findByKeys(commonEntityMap.keySet());
+        commonEntityMap.forEach((key, entity) -> {
+            Entity existingEntity = existingEntityMap.get(key);
+            if (existingEntity != null) {
+                entity.setName(existingEntity.getName());
+            }
+        });
     }
 
     protected List<EntityTemplate> getCommonEntityTemplates() {
