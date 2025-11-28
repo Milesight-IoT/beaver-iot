@@ -59,15 +59,31 @@ public class LanguageModulePool<T extends LanguageModule> {
     }
 
     private static class Instance {
-        static final LanguageModulePool<JavaScriptJsonModule> INSTANCE_JAVASCRIPT_JSON = new LanguageModulePool<>(JavaScriptJsonModule.class);
-        static final LanguageModulePool<PythonJsonModule> INSTANCE_PYTHON_JSON = new LanguageModulePool<>(PythonJsonModule.class);
+        static volatile LanguageModulePool<JavaScriptJsonModule> INSTANCE_JAVASCRIPT_JSON;
+        static volatile LanguageModulePool<PythonJsonModule> INSTANCE_PYTHON_JSON;
+        static final Object INSTANCE_LOCK_JAVASCRIPT = new Object();
+        static final Object INSTANCE_LOCK_PYTHON = new Object();
     }
 
     public static LanguageModulePool<JavaScriptJsonModule> getJavaScriptJsonModulePool() {
+        if (Instance.INSTANCE_JAVASCRIPT_JSON == null) {
+            synchronized (Instance.INSTANCE_LOCK_JAVASCRIPT) {
+                if (Instance.INSTANCE_JAVASCRIPT_JSON == null) {
+                    Instance.INSTANCE_JAVASCRIPT_JSON = new LanguageModulePool<>(JavaScriptJsonModule.class);
+                }
+            }
+        }
         return Instance.INSTANCE_JAVASCRIPT_JSON;
     }
 
     public static LanguageModulePool<PythonJsonModule> getPythonJsonModulePool() {
+        if (Instance.INSTANCE_PYTHON_JSON == null) {
+            synchronized (Instance.INSTANCE_LOCK_PYTHON) {
+                if (Instance.INSTANCE_PYTHON_JSON == null) {
+                    Instance.INSTANCE_PYTHON_JSON = new LanguageModulePool<>(PythonJsonModule.class);
+                }
+            }
+        }
         return Instance.INSTANCE_PYTHON_JSON;
     }
 }

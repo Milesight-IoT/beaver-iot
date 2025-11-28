@@ -22,8 +22,10 @@ import java.util.Map;
 @Component
 @Slf4j
 public class LanguageRouteConfigurer implements RuleEngineRouteConfigurer {
+    public static final String WARM_UP_THREAD_NAME_PREFIX = "Language-WarmUp-";
+
     @Override
-    public void customizeRoute(CamelContext context) throws Exception {
+    public void customizeRoute(CamelContext context) {
         bindRegistry(context, "groovyShellFactory", new CustomizedGroovyShellFactory());
         bindRegistry(context, "mvel-language", new CustomizedMvelLanguage());
         bindRegistry(context, "js-language", new CustomizedJavaScriptLanguage());
@@ -37,16 +39,17 @@ public class LanguageRouteConfigurer implements RuleEngineRouteConfigurer {
                 log.info("[Language-Warming] {} start", name);
                 ((LanguageWarmUp) lang).warmUp();
                 log.info("[Language-Warming] {} done", name);
-            }).start();
+            }, WARM_UP_THREAD_NAME_PREFIX + name).start();
         }
     }
 
-    public class CustomizedGroovyShellFactory implements GroovyShellFactory {
+    public static class CustomizedGroovyShellFactory implements GroovyShellFactory {
         @Override
         public GroovyShell createGroovyShell(Exchange exchange) {
             return new GroovyShell(exchange.getContext().getApplicationContextClassLoader());
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public Map<String, Object> getVariables(Exchange exchange) {
             Map<String, Object> variables = new HashMap<>();
