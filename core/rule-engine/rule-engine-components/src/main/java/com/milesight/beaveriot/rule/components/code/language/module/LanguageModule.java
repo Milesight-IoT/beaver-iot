@@ -1,24 +1,22 @@
 package com.milesight.beaveriot.rule.components.code.language.module;
 
-import com.milesight.beaveriot.rule.components.code.language.LanguageHelper;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 
-import java.io.Closeable;
 import java.io.IOException;
 
 /**
  * author: Luxb
  * create: 2025/11/11 9:29
  **/
-public abstract class LanguageModule implements Closeable {
+public abstract class LanguageModule {
     private final Context cx;
     private final Source scriptSource;
     private volatile Value module;
 
-    public LanguageModule() {
-        cx = LanguageHelper.newContext(getLanguageId(), null);
+    public LanguageModule(Context cx) {
+        this.cx = cx;
         try {
             scriptSource = Source.newBuilder(getLanguageId(),
                     getScriptContent(),
@@ -63,11 +61,5 @@ public abstract class LanguageModule implements Closeable {
 
     private static boolean isSimpleValue(Object obj) {
         return obj instanceof String || obj instanceof Number || obj instanceof Boolean;
-    }
-
-    @Override
-    public void close() {
-        cx.close();
-        module = null;
     }
 }
