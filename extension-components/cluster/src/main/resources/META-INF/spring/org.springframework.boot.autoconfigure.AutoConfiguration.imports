@@ -3,3 +3,4 @@ com.milesight.beaveriot.shedlock.autoconfigure.CustomizeShedlockAutoConfiguratio
 com.milesight.beaveriot.cache.autoconfigure.CustomizeCacheAutoConfiguration
 com.milesight.beaveriot.cluster.autoconfigure.ClusterAutoConfiguration
 com.milesight.beaveriot.cache.caffeine.CustomizeCaffeineCacheAutoConfiguration
+com.milesight.beaveriot.coalescer.autoconfigure.RequestCoalescerAutoConfiguration
