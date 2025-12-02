@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 /**
@@ -20,31 +21,19 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class TaskResult<V> implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
-    /**
-     * Execution status: success or error
-     */
+    private String key;
+
     private Status status;
 
-    /**
-     * Result value (when status is SUCCESS)
-     */
     private V value;
 
-    /**
-     * Error message (when status is ERROR)
-     */
     private String errorMessage;
 
-    /**
-     * Error class name (when status is ERROR)
-     */
     private String errorClass;
 
-    /**
-     * Task execution status
-     */
     public enum Status {
         /**
          * Task completed successfully
@@ -57,26 +46,13 @@ public class TaskResult<V> implements Serializable {
         ERROR
     }
 
-    /**
-     * Create a successful result.
-     *
-     * @param value Result value
-     * @param <V>   Value type
-     * @return TaskResult
-     */
-    public static <V> TaskResult<V> success(V value) {
-        return new TaskResult<>(Status.SUCCESS, value, null, null);
+    public static <V> TaskResult<V> success(String key, V value) {
+        return new TaskResult<>(key, Status.SUCCESS, value, null, null);
     }
 
-    /**
-     * Create an error result.
-     *
-     * @param throwable Exception
-     * @param <V>       Value type
-     * @return TaskResult
-     */
-    public static <V> TaskResult<V> error(Throwable throwable) {
+    public static <V> TaskResult<V> error(String key, Throwable throwable) {
         return new TaskResult<>(
+                key,
                 Status.ERROR,
                 null,
                 throwable.getMessage(),
@@ -84,20 +60,10 @@ public class TaskResult<V> implements Serializable {
         );
     }
 
-    /**
-     * Check if this is a successful result.
-     *
-     * @return true if successful
-     */
     public boolean isSuccess() {
         return status == Status.SUCCESS;
     }
 
-    /**
-     * Check if this is an error result.
-     *
-     * @return true if error
-     */
     public boolean isError() {
         return status == Status.ERROR;
     }
