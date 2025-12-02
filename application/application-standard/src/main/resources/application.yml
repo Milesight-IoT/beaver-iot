@@ -100,6 +100,9 @@ task:
         core-size: 32
         max-size: 64
         rejected-policy: block_policy
+      request-coalescer:
+        core-size: 8
+        max-size: 16
 
 management:
   endpoints:

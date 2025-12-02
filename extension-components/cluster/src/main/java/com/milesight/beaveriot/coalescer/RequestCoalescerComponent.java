@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.coalescer;
 
 import com.milesight.beaveriot.context.api.RequestCoalescerProvider;
+import com.milesight.beaveriot.context.security.TenantContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -20,11 +21,15 @@ public class RequestCoalescerComponent implements RequestCoalescerProvider {
 
     @Override
     public Object execute(String key, Supplier<Object> task) {
-        return requestCoalescer.execute(key, task);
+        return requestCoalescer.execute(generateTenantKey(key), task);
     }
 
     @Override
     public CompletableFuture<Object> executeAsync(String key, Supplier<Object> task) {
-        return requestCoalescer.executeAsync(key, task);
+        return requestCoalescer.executeAsync(generateTenantKey(key), task);
+    }
+
+    private String generateTenantKey(String key) {
+        return TenantContext.tryGetTenantId().orElse("_public") + ":" + key;
     }
 }
