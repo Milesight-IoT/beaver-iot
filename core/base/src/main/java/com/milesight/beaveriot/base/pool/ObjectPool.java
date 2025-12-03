@@ -91,7 +91,7 @@ public class ObjectPool<T> implements DisposableBean {
 
         scheduleEviction();
 
-        log.info("Pool({}) - Initialized: minIdle={}, maxTotal={}, maxIdleTime={}, evictionInterval={}", poolName,
+        log.debug("Pool({}) - Initialized: minIdle={}, maxTotal={}, maxIdleTime={}, evictionInterval={}", poolName,
                 config.getMinIdle(), config.getMaxTotal(), config.getMaxIdleTime(), config.getEvictionCheckInterval());
     }
 
@@ -107,7 +107,7 @@ public class ObjectPool<T> implements DisposableBean {
             }
         }
         if (totalObjects.get() == config.getMinIdle()) {
-            log.info("Pool({}) - Initialized {} idle objects", poolName, idleObjects.size());
+            log.debug("Pool({}) - Initialized {} idle objects", poolName, idleObjects.size());
         } else {
             log.warn("Pool({}) - Initialized {} idle objects, but minimum expected is {}", poolName, idleObjects.size(), config.getMinIdle());
         }
@@ -133,7 +133,7 @@ public class ObjectPool<T> implements DisposableBean {
             PooledObject<T> pooledObject = idleObjects.poll();
 
             if (pooledObject != null && pooledObject.markInUse()) {
-                log.info("Pool({}) - Borrowed existing object from pool. Idle: {}, Total: {}", poolName,
+                log.debug("Pool({}) - Borrowed existing object from pool. Idle: {}, Total: {}", poolName,
                         idleObjects.size(), totalObjects.get());
                 return pooledObject.getObject();
             }
@@ -146,7 +146,7 @@ public class ObjectPool<T> implements DisposableBean {
                     if (totalObjects.get() < config.getMaxTotal()) {
                         pooledObject = createObject();
                         if (pooledObject != null && pooledObject.markInUse()) {
-                            log.info("Pool({}) - Created new object. Idle: {}, Total: {}", poolName,
+                            log.debug("Pool({}) - Created new object. Idle: {}, Total: {}", poolName,
                                     idleObjects.size(), totalObjects.get());
                             return pooledObject.getObject();
                         }
@@ -164,7 +164,7 @@ public class ObjectPool<T> implements DisposableBean {
 
             lock.lock();
             try {
-                log.info("Pool({}) - Waiting for object to be returned. Idle: {}, Total: {}", poolName,
+                log.debug("Pool({}) - Waiting for object to be returned. Idle: {}, Total: {}", poolName,
                         idleObjects.size(), totalObjects.get());
                 if (!notEmpty.await(remainingTime, TimeUnit.MILLISECONDS)) {
                     throw new TimeoutException(MessageFormat.format("ObjectPool({0}) - Timeout waiting for object from pool", poolName));
@@ -194,7 +194,7 @@ public class ObjectPool<T> implements DisposableBean {
         if (pooledObject != null && pooledObject.isInUse()) {
             pooledObject.markAvailable();
             idleObjects.offer(pooledObject);
-            log.info("Pool({}) - Returned object to pool. Idle: {}, Total: {}", poolName,
+            log.debug("Pool({}) - Returned object to pool. Idle: {}, Total: {}", poolName,
                     idleObjects.size(), totalObjects.get());
             signalNotEmpty();
         }
@@ -215,7 +215,7 @@ public class ObjectPool<T> implements DisposableBean {
             PooledObject<T> pooledObject = objectMap.computeIfAbsent(object, k -> {
                 totalObjects.incrementAndGet();
                 isCreated.set(true);
-                log.info("Pool({}) - Created new object instance. Total: {}", poolName, totalObjects.get());
+                log.debug("Pool({}) - Created new object instance. Total: {}", poolName, totalObjects.get());
                 return new PooledObject<>(object);
             });
 
@@ -258,7 +258,7 @@ public class ObjectPool<T> implements DisposableBean {
             objectMap.remove(object);
 
             totalObjects.decrementAndGet();
-            log.info("Pool({}) - Destroyed object instance. Total: {}", poolName, totalObjects.get());
+            log.debug("Pool({}) - Destroyed object instance. Total: {}", poolName, totalObjects.get());
         } catch (Exception e) {
             log.error("Pool({}) - Failed to destroy object", poolName, e);
         }
@@ -291,7 +291,7 @@ public class ObjectPool<T> implements DisposableBean {
         int currentSize = idleObjects.size();
         int evicted = 0;
 
-        log.info("Pool({}) - Starting eviction check. Idle: {}, Total: {}",
+        log.debug("Pool({}) - Starting eviction check. Idle: {}, Total: {}",
                 poolName, currentSize, totalObjects.get());
 
         List<PooledObject<T>> toEvict = new ArrayList<>();
@@ -322,7 +322,7 @@ public class ObjectPool<T> implements DisposableBean {
             } finally {
                 lock.unlock();
             }
-            log.info("Pool({}) - Evicted {} idle objects. Idle: {}, Total: {}",
+            log.debug("Pool({}) - Evicted {} idle objects. Idle: {}, Total: {}",
                     poolName, evicted, idleObjects.size(), totalObjects.get());
         }
     }
@@ -392,7 +392,7 @@ public class ObjectPool<T> implements DisposableBean {
         }
 
         closed = true;
-        log.info("Pool({}) - Closing ObjectPool...", poolName);
+        log.debug("Pool({}) - Closing ObjectPool...", poolName);
 
         // Shutdown eviction scheduler
         evictionScheduler.shutdown();
@@ -416,7 +416,7 @@ public class ObjectPool<T> implements DisposableBean {
             lock.unlock();
         }
 
-        log.info("Pool({}) - ObjectPool closed. Final total objects: {}", poolName, totalObjects.get());
+        log.debug("Pool({}) - ObjectPool closed. Final total objects: {}", poolName, totalObjects.get());
     }
 
     /**
