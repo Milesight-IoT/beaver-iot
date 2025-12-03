@@ -208,6 +208,11 @@ public class ObjectPool<T> implements DisposableBean {
         return createObject(null);
     }
 
+    /**
+     * Create a new object
+     * MUST be called with lock held or during initialization
+     * @param createdConsumer consumer to accept the created object
+     */
     private PooledObject<T> createObject(Consumer<PooledObject<T>> createdConsumer) {
         try {
             T object = objectFactory.get();
