@@ -93,10 +93,6 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
         while (true) {
             DelayedTask<T> task = delayQueue.take();
 
-            if (task == null) {
-                continue;
-            }
-
             if (isReallyExpired(task)) {
                 return task;
             }
@@ -221,7 +217,7 @@ public class BaseDelayedQueue<T> implements DelayedQueue<T>, DisposableBean {
     }
 
     private boolean isReallyExpired(DelayedTask<T> task) {
-        return taskExpireTimeMap.remove(task.getId(), task.getExpireTime());
+        return task != null && taskExpireTimeMap.remove(task.getId(), task.getExpireTime());
     }
 
     private void validateTask(DelayedTask<T> task) {
