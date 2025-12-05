@@ -56,7 +56,8 @@ public class CanvasService {
     @Autowired
     CanvasRelationService canvasRelationService;
 
-    protected void checkCanvasPermission(CanvasPO canvasPO, CanvasOp userOp) {
+    public void checkCanvasPermission(Long canvasId, CanvasOp userOp) {
+        CanvasPO canvasPO = getCanvasById(canvasId);
         if (canvasPO.getAttachType().equals(CanvasAttachType.DASHBOARD)) {
             switch (userOp) {
                 case READ -> permissionFacade.checkMenuPermission(OperationPermissionCode.DASHBOARD_VIEW);
@@ -83,7 +84,7 @@ public class CanvasService {
 
     public CanvasResponse getCanvasData(Long canvasId) {
         CanvasPO canvasPO = getCanvasById(canvasId);
-        checkCanvasPermission(canvasPO, CanvasOp.READ);
+
         CanvasResponse canvasResponse = new CanvasResponse();
         canvasResponse.setId(canvasPO.getId().toString());
         canvasResponse.setName(canvasPO.getName());
@@ -121,7 +122,6 @@ public class CanvasService {
     @Transactional(rollbackFor = Exception.class)
     public void updateCanvas(Long canvasId, CanvasUpdateRequest updateRequest) {
         CanvasPO canvasPO = getCanvasById(canvasId);
-        checkCanvasPermission(canvasPO, CanvasOp.UPDATE);
 
         canvasPO.setName(updateRequest.getName());
         canvasRepository.save(canvasPO);
