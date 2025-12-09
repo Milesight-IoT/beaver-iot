@@ -1,0 +1,5 @@
+--liquibase formatted sql
+
+--changeset pandalxb:dashboard_v1.3.1_20251209_085700
+ALTER TABLE t_canvas
+    ADD COLUMN attributes TEXT;
