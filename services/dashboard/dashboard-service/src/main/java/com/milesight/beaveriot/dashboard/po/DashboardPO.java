@@ -1,13 +1,15 @@
 package com.milesight.beaveriot.dashboard.po;
 
 import com.milesight.beaveriot.dashboard.enums.DashboardCoverType;
+import com.milesight.beaveriot.data.support.MapJsonConverter;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
-import org.hibernate.annotations.DynamicInsert;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.util.Map;
 
 /**
  * @author loong
@@ -35,5 +37,7 @@ public class DashboardPO {
     private Long createdAt;
     @LastModifiedDate
     private Long updatedAt;
-
+    @Convert(converter = MapJsonConverter.class)
+    @Column(columnDefinition = "TEXT")
+    private Map<String, Object> attributes;
 }

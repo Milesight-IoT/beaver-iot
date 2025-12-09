@@ -1,12 +1,15 @@
 package com.milesight.beaveriot.canvas.po;
 
 import com.milesight.beaveriot.canvas.enums.CanvasAttachType;
+import com.milesight.beaveriot.data.support.MapJsonConverter;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.util.Map;
 
 /**
  * CanvasPO class.
@@ -38,4 +41,8 @@ public class CanvasPO {
 
     @LastModifiedDate
     private Long updatedAt;
+
+    @Convert(converter = MapJsonConverter.class)
+    @Column(columnDefinition = "TEXT")
+    private Map<String, Object> attributes;
 }
