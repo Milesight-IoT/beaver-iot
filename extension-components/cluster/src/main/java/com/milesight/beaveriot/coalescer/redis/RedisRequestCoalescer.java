@@ -3,16 +3,17 @@ package com.milesight.beaveriot.coalescer.redis;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.milesight.beaveriot.coalescer.RequestCoalescer;
+import com.milesight.beaveriot.coalescer.RequestCoalescerConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.*;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
@@ -40,14 +41,12 @@ public class RedisRequestCoalescer<V> implements RequestCoalescer<V>, Closeable 
 
     private final RTopic resultTopic;
 
-    private static final Duration CURRENT_LEASE_TIME = Duration.ofSeconds(30);
-
     public RedisRequestCoalescer(RedissonClient redissonClient, Executor executor) {
         this.redissonClient = redissonClient;
         this.executor = executor;
         this.inflightRequest = Caffeine
                 .newBuilder()
-                .expireAfterAccess(CURRENT_LEASE_TIME)
+                .expireAfterAccess(RequestCoalescerConstants.REQUEST_TIMEOUT)
                 .build();
         this.resultTopic = redissonClient.getTopic(getTopicName());
         this.resultTopic.addListener(TaskResult.class, (channel, msg) -> {
@@ -70,7 +69,8 @@ public class RedisRequestCoalescer<V> implements RequestCoalescer<V>, Closeable 
     public CompletableFuture<V> executeAsync(String key, Supplier<V> task) {
         String currentKey = getCurrentKey(key);
 
-        CompletableFuture<V> future = new CompletableFuture<>();
+        CompletableFuture<V> future = new CompletableFuture<V>()
+                .orTimeout(RequestCoalescerConstants.REQUEST_TIMEOUT.getSeconds(), TimeUnit.SECONDS);
 
         try {
             boolean acquired = redissonClient.getBucket(currentKey).setIfAbsent(1);
@@ -78,7 +78,7 @@ public class RedisRequestCoalescer<V> implements RequestCoalescer<V>, Closeable 
 
             if (acquired) {
                 log.debug("acquired for key: {}, executing task.", currentKey);
-                redissonClient.getBucket(currentKey).expire(CURRENT_LEASE_TIME);
+                redissonClient.getBucket(currentKey).expire(RequestCoalescerConstants.REQUEST_TIMEOUT);
                 executeTask(CompletableFuture.supplyAsync(task, this.executor), currentKey);
             } else {
                 log.debug("not acquired for key: {}, waiting for result", currentKey);
@@ -110,6 +110,10 @@ public class RedisRequestCoalescer<V> implements RequestCoalescer<V>, Closeable 
     }
 
     private void completeFromTaskResult(CompletableFuture<V> future, TaskResult<V> taskResult) {
+        if (future.isDone()) {
+            return;
+        }
+
         if (taskResult.isSuccess()) {
             future.complete(taskResult.getValue());
         } else {
