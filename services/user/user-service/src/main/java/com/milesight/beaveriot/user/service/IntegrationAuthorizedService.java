@@ -42,7 +42,9 @@ public class IntegrationAuthorizedService implements CommandLineRunner {
 
         integrations.forEach(integration -> {
             try {
-                SpringContext.getBean(integration.getIntegrationClass()).onEnabled(tenantId, integration);
+                if (integration.getIntegrationClass() != null) {
+                    SpringContext.getBean(integration.getIntegrationClass()).onEnabled(tenantId, integration);
+                }
             } catch (Exception e) {
                 log.error("loading integration {} error: {}", integration.getId(), e.getMessage());
             }
@@ -53,7 +55,7 @@ public class IntegrationAuthorizedService implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         //todo: remove
-        Collection<Integration> integrations = integrationServiceProvider.findVisibleIntegrations();
+        Collection<Integration> integrations = integrationServiceProvider.findActiveIntegrations();
         List<String> integrationIds = integrations.stream().map(Integration::getId).toList();
 
         tenantRepository.findAll().forEach(tenant -> {
