@@ -55,7 +55,7 @@ public class IntegrationAuthorizedService implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         //todo: remove
-        Collection<Integration> integrations = integrationServiceProvider.findVisibleIntegrations();
+        Collection<Integration> integrations = integrationServiceProvider.findActiveIntegrations();
         List<String> integrationIds = integrations.stream().map(Integration::getId).toList();
 
         tenantRepository.findAll().forEach(tenant -> {
