@@ -177,7 +177,7 @@ public class WorkflowService {
                     .enabled(workflowPO.getEnabled())
                     .updatedAt(workflowPO.getUpdatedAt())
                     .createdAt(workflowPO.getCreatedAt())
-                    .userNickname(userNicknameMap.get(workflowPO.getUserId().toString()))
+                    .userNickname(userNicknameMap.get(workflowPO.getUserId() != null ? workflowPO.getUserId().toString() : ""))
                     .build();
             WorkflowAdditionalData additionalData = workflowPO.getAdditionalData();
             if (additionalData != null && additionalData.getDeviceId() != null) {
