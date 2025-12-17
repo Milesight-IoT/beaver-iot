@@ -1,5 +1,7 @@
 server:
   port: 9200
+  undertow:
+    max-http-post-size: 10MB
 
 spring:
   config:
@@ -7,6 +9,10 @@ spring:
       - optional:classpath:entity-template.yml
   main:
     allow-bean-definition-overriding: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
   jackson:
     default-property-inclusion: non_null
     property-naming-strategy: SNAKE_CASE
