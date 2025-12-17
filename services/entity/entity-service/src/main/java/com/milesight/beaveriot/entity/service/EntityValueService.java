@@ -690,7 +690,7 @@ public class EntityValueService implements EntityValueServiceProvider {
             return Map.of();
         }
 
-        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.id, entityIds.toArray()));
+        List<EntityPO> entityPOList = entityRepository.findAllWithDataPermission(filter -> filter.in(EntityPO.Fields.id, entityIds.toArray()));
         if (entityPOList == null || entityPOList.isEmpty()) {
             return Map.of();
         }
