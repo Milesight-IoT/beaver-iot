@@ -1,5 +1,6 @@
 package com.milesight.beaveriot.context.configuration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.milesight.beaveriot.authentication.facade.IAuthenticationFacade;
 import com.milesight.beaveriot.context.filter.HttpRequestFilter;
 import com.milesight.beaveriot.context.filter.QueryParameterNameConversionFilter;
@@ -17,6 +18,9 @@ public class FilterConfig {
     @Autowired
     private IAuthenticationFacade authenticationFacade;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Bean
     public FilterRegistrationBean<HttpRequestFilter> authenticationFilter() {
         FilterRegistrationBean<HttpRequestFilter> registrationBean = new FilterRegistrationBean<>();
@@ -28,7 +32,7 @@ public class FilterConfig {
     @Bean
     public FilterRegistrationBean<QueryParameterNameConversionFilter> queryParameterNameConversionFilter() {
         FilterRegistrationBean<QueryParameterNameConversionFilter> registrationBean = new FilterRegistrationBean<>();
-        registrationBean.setFilter(new QueryParameterNameConversionFilter());
+        registrationBean.setFilter(new QueryParameterNameConversionFilter(objectMapper));
         registrationBean.addUrlPatterns("*");
         return registrationBean;
     }
