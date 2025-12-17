@@ -9,6 +9,7 @@ import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
 import com.milesight.beaveriot.context.constants.CacheKeyConstants;
+import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.context.integration.GenericExchangeFlowExecutor;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
@@ -16,6 +17,7 @@ import com.milesight.beaveriot.context.integration.enums.ValueStoreMod;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.proxy.MapExchangePayloadProxy;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
+import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.entity.enums.AggregateType;
 import com.milesight.beaveriot.entity.model.dto.EntityHistoryUnionQuery;
 import com.milesight.beaveriot.entity.model.request.EntityAggregateQuery;
@@ -30,6 +32,8 @@ import com.milesight.beaveriot.entity.repository.EntityHistoryRepository;
 import com.milesight.beaveriot.entity.repository.EntityLatestRepository;
 import com.milesight.beaveriot.entity.repository.EntityRepository;
 import com.milesight.beaveriot.eventbus.api.EventResponse;
+import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
+import com.milesight.beaveriot.permission.facade.IPermissionFacade;
 import jakarta.persistence.EntityManager;
 import lombok.Data;
 import lombok.NonNull;
@@ -47,6 +51,7 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -68,6 +73,8 @@ public class EntityValueService implements EntityValueServiceProvider {
     private EntityManager entityManager;
     @Autowired
     private GenericExchangeFlowExecutor genericExchangeFlowExecutor;
+    @Autowired
+    private IPermissionFacade permissionFacade;
 
     private final Comparator<byte[]> byteArrayComparator = (a, b) -> {
         if (a == b) return 0;
@@ -690,7 +697,12 @@ public class EntityValueService implements EntityValueServiceProvider {
             return Map.of();
         }
 
-        List<EntityPO> entityPOList = entityRepository.findAllWithDataPermission(filter -> filter.in(EntityPO.Fields.id, entityIds.toArray()));
+        boolean hasEntityCustomViewPermission = permissionFacade.hasMenuPermission(OperationPermissionCode.ENTITY_CUSTOM_VIEW);
+        Consumer<Filterable> filterable = f -> f.in(EntityPO.Fields.id, entityIds.toArray());
+        if (!hasEntityCustomViewPermission) {
+            filterable = filterable.andThen(f -> f.ne(EntityPO.Fields.attachTargetId, IntegrationConstants.SYSTEM_INTEGRATION_ID));
+        }
+        List<EntityPO> entityPOList = entityRepository.findAllWithDataPermission(filterable);
         if (entityPOList == null || entityPOList.isEmpty()) {
             return Map.of();
         }
