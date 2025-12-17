@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.CaseFormat;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
+import com.milesight.beaveriot.base.tracer.TraceIdProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
@@ -11,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -22,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class QueryParameterNameConversionFilter extends OncePerRequestFilter {
     private static final String KEYWORDS_FILE_TOO_LARGE_EXCEPTION = "FileTooLargeException";
+    private static final String KEYWORDS_REQUEST_TOO_BIG_EXCEPTION = "RequestTooBigException";
 
     private final ObjectMapper objectMapper;
 
@@ -69,21 +72,40 @@ public class QueryParameterNameConversionFilter extends OncePerRequestFilter {
             }, response);
         } catch (IllegalStateException e) {
             Throwable cause = e.getCause();
-            if (cause != null && cause.getClass().getName().contains(KEYWORDS_FILE_TOO_LARGE_EXCEPTION)) {
-                handleFileTooLargeException(response);
-                return;
+            if (cause != null) {
+                String causeName = cause.getClass().getName();
+                if (causeName.contains(KEYWORDS_FILE_TOO_LARGE_EXCEPTION)) {
+                    handleFileTooLargeException(response);
+                    return;
+                } else if (causeName.contains(KEYWORDS_REQUEST_TOO_BIG_EXCEPTION)) {
+                    handleRequestTooBigException(response);
+                    return;
+                }
             }
             throw e;
         }
     }
 
     private void handleFileTooLargeException(HttpServletResponse response) throws IOException {
+        handleDataTooLargeRelatedException(response, "File size exceeds the maximum limit");
+    }
+
+    private void handleRequestTooBigException(HttpServletResponse response) throws IOException {
+        handleDataTooLargeRelatedException(response, "Request size exceeds the maximum limit");
+    }
+
+    private void handleDataTooLargeRelatedException(HttpServletResponse response, String errorMessage) throws IOException {
+        TraceIdProvider traceIdProvider = TraceIdProvider.traceIdProvider();
+        if (!StringUtils.hasText(traceIdProvider.getTraceId())) {
+            traceIdProvider.generateTraceId();
+        }
+
         response.setStatus(HttpStatus.PAYLOAD_TOO_LARGE.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
 
         String jsonResponse = objectMapper.writeValueAsString(
-                ResponseBuilder.fail(ErrorCode.DATA_TOO_LARGE, "File size exceeds the maximum limit")
+                ResponseBuilder.fail(ErrorCode.DATA_TOO_LARGE, errorMessage)
         );
 
         response.getWriter().write(jsonResponse);
