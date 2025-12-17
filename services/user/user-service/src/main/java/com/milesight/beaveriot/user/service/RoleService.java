@@ -479,7 +479,7 @@ public class RoleService {
                     dashboardListResponse.setDashboardId(dashboardDTO.getDashboardId().toString());
                     dashboardListResponse.setDashboardName(dashboardDTO.getDashboardName());
                     dashboardListResponse.setCreatedAt(dashboardDTO.getCreatedAt().toString());
-                    dashboardListResponse.setUserId(dashboardDTO.getUserId().toString());
+                    dashboardListResponse.setUserId(dashboardDTO.getUserId() == null ? null : dashboardDTO.getUserId().toString());
                     UserPO userPO = userMap.get(dashboardDTO.getUserId());
                     dashboardListResponse.setUserEmail(userPO == null ? null : userPO.getEmail());
                     dashboardListResponse.setUserNickname(userPO == null ? null : userPO.getNickname());
