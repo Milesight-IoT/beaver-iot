@@ -37,9 +37,9 @@ public class TransactionUtils {
             TransactionSynchronization transactionSynchronization = new InnerTransactionSynchronizationAdapter(action, transactionPhase);
             TransactionSynchronizationManager.registerSynchronization(transactionSynchronization);
         } else {
-            log.debug("No active transaction.");
+            log.trace("No active transaction.");
             if (executeIfNoTransaction) {
-                log.debug("Execute immediately.");
+                log.trace("Execute immediately.");
                 action.run();
             }
         }
