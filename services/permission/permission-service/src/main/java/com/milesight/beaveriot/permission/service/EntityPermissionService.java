@@ -4,6 +4,8 @@ import com.milesight.beaveriot.context.constants.IntegrationConstants;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.entity.facade.IEntityFacade;
 import com.milesight.beaveriot.permission.dto.PermissionDTO;
+import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
+import com.milesight.beaveriot.permission.facade.IPermissionFacade;
 import com.milesight.beaveriot.user.dto.UserResourceDTO;
 import com.milesight.beaveriot.user.enums.ResourceType;
 import com.milesight.beaveriot.user.facade.IUserFacade;
@@ -33,6 +35,9 @@ public class EntityPermissionService {
     @Autowired
     private IDeviceFacade deviceFacade;
 
+    @Autowired
+    private IPermissionFacade permissionFacade;
+
     public PermissionDTO getEntityPermission(Long userId) {
         PermissionDTO permissionDTO = new PermissionDTO();
         UserResourceDTO userResourceDTO = userFacade.getResource(userId, Arrays.asList(ResourceType.ENTITY, ResourceType.DEVICE, ResourceType.INTEGRATION));
@@ -43,7 +48,10 @@ public class EntityPermissionService {
             Map<ResourceType, List<String>> resource = userResourceDTO.getResource();
             Set<Long> entityIds = new HashSet<>();
             List<String> attachTargetIds = new ArrayList<>();
-            attachTargetIds.add(IntegrationConstants.SYSTEM_INTEGRATION_ID);
+            boolean hasEntityCustomViewPermission = permissionFacade.hasMenuPermission(OperationPermissionCode.ENTITY_CUSTOM_VIEW);
+            if (hasEntityCustomViewPermission) {
+                attachTargetIds.add(IntegrationConstants.SYSTEM_INTEGRATION_ID);
+            }
             if (resource != null && !resource.isEmpty()) {
                 resource.forEach((resourceType, resourceIds) -> {
                     switch (resourceType) {
