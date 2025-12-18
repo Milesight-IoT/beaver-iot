@@ -10,3 +10,7 @@ ALTER TABLE t_flow
     ALTER COLUMN updated_user DROP NOT NULL;
 ALTER TABLE t_flow_log
     ALTER COLUMN user_id DROP NOT NULL;
+
+-- changeset chensh:workflow_v1.3.1_20251216_101000
+ALTER TABLE t_flow_history
+    ALTER COLUMN user_id DROP NOT NULL;
