@@ -64,7 +64,10 @@ public class SimpleTimerConsumer extends DefaultConsumer {
                             .build())
                     .build();
             case INTERVAL -> {
-                if (settings.getIntervalTimeUnit() == null || settings.getIntervalTimeUnit().ordinal() < TimeUnit.MINUTES.ordinal()) {
+                if (settings.getIntervalTimeUnit() == null
+                        || settings.getIntervalTimeUnit().ordinal() < TimeUnit.SECONDS.ordinal()
+                        || (settings.getIntervalTimeUnit().ordinal() == TimeUnit.SECONDS.ordinal() && settings.getIntervalTime() < 10)
+                ) {
                     throw new IllegalArgumentException("invalid intervalTimeUnit");
                 }
                 if (settings.getIntervalTime() == null || settings.getIntervalTime() < 1) {
