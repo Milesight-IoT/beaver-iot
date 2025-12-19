@@ -17,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
@@ -51,19 +50,19 @@ public class EventBusDispatcher<T extends Event<? extends IdentityKey>> implemen
 
     @Override
     public void publish(T event) {
-
         List<InvocationHolder> invocationHolders = createInvocationHolders(event);
+        if (ObjectUtils.isEmpty(invocationHolders)) {
+            return;
+        }
 
         Executor executor = getEventBusExecutor();
 
         log.debug("Ready to publish EventBus events {}, hit Invocation size：{}", event.getEventType(), invocationHolders.size());
 
-        if (!ObjectUtils.isEmpty(invocationHolders)) {
-            boolean isContinue = eventInterceptorChain.preHandle(event);
-            if (!isContinue) {
-                log.warn("EventInterceptor preHandle return false, skip publish event: {}", event.getPayloadKey());
-                return;
-            }
+        boolean isContinue = eventInterceptorChain.preHandle(event);
+        if (!isContinue) {
+            log.warn("EventInterceptor preHandle return false, skip publish event: {}", event.getPayloadKey());
+            return;
         }
 
         invocationHolders.forEach(invocationHolder -> executor.execute(() -> {
