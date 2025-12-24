@@ -13,7 +13,9 @@ import lombok.Data;
 import org.apache.camel.Exchange;
 import org.apache.camel.spi.UriParam;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.CollectionUtils;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -39,9 +41,14 @@ public class EntitySelectorComponent implements ProcessorNode<Exchange> {
     @Override
     public void processor(Exchange exchange) {
         List<String> entitiesVariables = SpELExpressionHelper.resolveExpression(exchange, entities);
-        workflowEntityHelper.checkEntityExist(entitiesVariables);
-        Map<String, Object> entityValues = entityValueServiceProvider.findValuesByKeys(entitiesVariables);
-        ExchangePayload exchangePayload = ExchangePayload.create(entityValues);
-        exchange.getIn().setBody(exchangePayload);
+        if(CollectionUtils.isEmpty(entitiesVariables)){
+            ExchangePayload exchangePayload = ExchangePayload.create(new HashMap<>());
+            exchange.getIn().setBody(exchangePayload);
+        }else {
+            workflowEntityHelper.checkEntityExist(entitiesVariables);
+            Map<String, Object> entityValues = entityValueServiceProvider.findValuesByKeys(entitiesVariables);
+            ExchangePayload exchangePayload = ExchangePayload.create(entityValues);
+            exchange.getIn().setBody(exchangePayload);
+        }
     }
 }
