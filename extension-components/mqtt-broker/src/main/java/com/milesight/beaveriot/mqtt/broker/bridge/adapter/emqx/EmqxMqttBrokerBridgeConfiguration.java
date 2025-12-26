@@ -13,7 +13,7 @@ import java.net.PasswordAuthentication;
 import java.net.http.HttpClient;
 
 @Configuration
-@ConditionalOnProperty(prefix = "cluster", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "mqtt.broker", name = "type", havingValue = "emqx")
 public class EmqxMqttBrokerBridgeConfiguration {
 
     @Bean("emqxHttpClient")
