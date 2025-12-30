@@ -49,6 +49,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -426,7 +427,6 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
         eventBus.publish(DeviceEvent.of(DeviceEvent.EventType.UPDATED, deviceConverter.convertPO(device)));
     }
 
-    @Transactional(rollbackFor = Throwable.class)
     public void batchDeleteDevices(List<String> deviceIdList) {
         if (deviceIdList.isEmpty()) {
             return;
@@ -472,10 +472,12 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
                     return payload;
                 })
                 .filter(Objects::nonNull)
-                .forEach((ExchangePayload payload) -> {
-                    // call service for deleting
-                    entityValueServiceProvider.saveValuesAndPublishSync(payload);
-                });
+                .forEach(self::executeDeleteDevice);
+    }
+
+    @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW)
+    public void executeDeleteDevice(ExchangePayload payload) {
+        entityValueServiceProvider.saveValuesAndPublishSync(payload);
     }
 
     public DeviceDetailResponse getDeviceDetail(Long deviceId) {
