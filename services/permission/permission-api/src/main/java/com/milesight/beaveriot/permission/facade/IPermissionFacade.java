@@ -15,4 +15,6 @@ public interface IPermissionFacade {
     boolean hasMenuPermission(OperationPermissionCode ...codes);
 
     void checkDataPermission(DataPermissionType type, String id);
+
+    void checkAdminPermission();
 }

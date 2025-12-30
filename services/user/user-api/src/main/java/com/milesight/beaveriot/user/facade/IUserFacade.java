@@ -35,4 +35,5 @@ public interface IUserFacade {
 
     List<UserDTO> getUserLike(String keyword);
 
+    boolean isSuperAdmin(Long userId);
 }
