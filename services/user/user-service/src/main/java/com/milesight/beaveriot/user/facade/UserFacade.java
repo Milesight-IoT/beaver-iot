@@ -29,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -161,6 +162,16 @@ public class UserFacade implements IUserFacade {
                     return menuDTO;
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean isSuperAdmin(Long userId) {
+        List<RolePO> rolePOs = getRolePOsByUserId(userId);
+        if (CollectionUtils.isEmpty(rolePOs)) {
+            return false;
+        }
+
+        return rolePOs.stream().anyMatch(rolePO -> Objects.equals(rolePO.getName(), UserConstants.SUPER_ADMIN_ROLE_NAME));
     }
 
     @Override
