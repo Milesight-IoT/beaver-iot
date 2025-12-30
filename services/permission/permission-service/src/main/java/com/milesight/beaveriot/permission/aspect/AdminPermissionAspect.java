@@ -35,8 +35,8 @@ public class AdminPermissionAspect {
     @Before("pointCut()")
     public void checkAdminPermission(JoinPoint joinPoint) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-        AdminPermission operationPermission = signature.getMethod().getAnnotation(AdminPermission.class);
-        if (operationPermission != null) {
+        AdminPermission adminPermission = signature.getMethod().getAnnotation(AdminPermission.class);
+        if (adminPermission != null) {
             permissionService.checkAdminPermission();
         }
     }
