@@ -475,6 +475,7 @@ public class EntityService implements EntityServiceProvider {
             entityLatestRepository.deleteAll(entityLatestPOS);
             entityLatestIds.forEach(entityLatestId -> resourceManagerFacade.unlinkRefAsync(ResourceRefDTO.of(String.valueOf(entityLatestId), ResourceRefType.ENTITY_LATEST.name())));
         }
+        entityTagService.deleteMappingsByEntityIds(entityIdList);
         userFacade.deleteResource(ResourceType.ENTITY, entityIdList);
 
         List<Entity> entityList = convertPOListToEntities(entityPOList);

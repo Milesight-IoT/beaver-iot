@@ -293,4 +293,12 @@ public class EntityTagService {
         return entityTagMappingRepository.findEntityIdsByTagIsNotEmpty();
     }
 
+    @Transactional
+    public void deleteMappingsByEntityIds(List<Long> entityIds) {
+        if (entityIds == null || entityIds.isEmpty()) {
+            return;
+        }
+        entityTagMappingRepository.deleteByEntityIdIn(entityIds);
+    }
+
 }
