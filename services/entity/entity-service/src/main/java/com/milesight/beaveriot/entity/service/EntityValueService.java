@@ -690,7 +690,19 @@ public class EntityValueService implements EntityValueServiceProvider {
             return Map.of();
         }
 
-        List<EntityPO> entityPOList = entityRepository.findAllWithDataPermission(filter -> filter.in(EntityPO.Fields.id, entityIds.toArray()));
+        List<EntityPO> entityPOList;
+        try {
+            entityPOList = entityRepository.findAllWithDataPermission(filter -> filter.in(EntityPO.Fields.id, entityIds.toArray()));
+        } catch (Exception e) {
+            if (e instanceof ServiceException serviceException
+                    && (Objects.equals(serviceException.getErrorCode(), ErrorCode.FORBIDDEN_PERMISSION.getErrorCode()) ||
+                    Objects.equals(serviceException.getErrorCode(), ErrorCode.NO_DATA_PERMISSION.getErrorCode()))) {
+                return Map.of();
+            } else {
+                throw e;
+            }
+        }
+
         if (entityPOList == null || entityPOList.isEmpty()) {
             return Map.of();
         }

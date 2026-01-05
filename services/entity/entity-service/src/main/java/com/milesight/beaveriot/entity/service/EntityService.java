@@ -577,7 +577,8 @@ public class EntityService implements EntityServiceProvider {
                 entityPOList = entityRepository.findAllWithDataPermission(filterable);
             } catch (Exception e) {
                 if (e instanceof ServiceException serviceException
-                        && Objects.equals(serviceException.getErrorCode(), ErrorCode.FORBIDDEN_PERMISSION.getErrorCode())) {
+                        && (Objects.equals(serviceException.getErrorCode(), ErrorCode.FORBIDDEN_PERMISSION.getErrorCode()) ||
+                        Objects.equals(serviceException.getErrorCode(), ErrorCode.NO_DATA_PERMISSION.getErrorCode()))) {
                     entityPOList = new ArrayList<>();
                 } else {
                     throw e;
