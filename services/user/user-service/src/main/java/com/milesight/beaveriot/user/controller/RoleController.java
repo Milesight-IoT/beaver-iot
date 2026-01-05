@@ -3,6 +3,7 @@ package com.milesight.beaveriot.user.controller;
 import com.milesight.beaveriot.base.page.GenericQueryPageRequest;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
+import com.milesight.beaveriot.permission.aspect.AdminPermission;
 import com.milesight.beaveriot.user.model.request.CreateRoleRequest;
 import com.milesight.beaveriot.user.model.request.RoleMenuRequest;
 import com.milesight.beaveriot.user.model.request.RoleResourceListRequest;
@@ -47,18 +48,21 @@ public class RoleController {
     @Autowired
     RoleService roleService;
 
+    @AdminPermission
     @PostMapping("")
     public ResponseBody<CreateRoleResponse> createRole(@RequestBody @Valid CreateRoleRequest createRoleRequest) {
         CreateRoleResponse createRoleResponse = roleService.createRole(createRoleRequest);
         return ResponseBuilder.success(createRoleResponse);
     }
 
+    @AdminPermission
     @PutMapping("/{roleId}")
     public ResponseBody<Void> updateRole(@PathVariable("roleId") Long roleId, @RequestBody @Valid UpdateRoleRequest updateRoleRequest) {
         roleService.updateRole(roleId, updateRoleRequest);
         return ResponseBuilder.success();
     }
 
+    @AdminPermission
     @DeleteMapping("/{roleId}")
     public ResponseBody<Void> deleteRole(@PathVariable("roleId") Long roleId) {
         roleService.deleteRole(roleId);
@@ -131,34 +135,38 @@ public class RoleController {
         return ResponseBuilder.success(deviceUndistributedResponses);
     }
 
+    @AdminPermission
     @PostMapping("/{roleId}/associate-user")
     public ResponseBody<Void> associateUser(@PathVariable("roleId") Long roleId, @RequestBody UserRoleRequest userRoleRequest) {
         roleService.associateUser(roleId, userRoleRequest);
         return ResponseBuilder.success();
     }
 
+    @AdminPermission
     @PostMapping("/{roleId}/disassociate-user")
     public ResponseBody<Void> disassociateUser(@PathVariable("roleId") Long roleId, @RequestBody UserRoleRequest userRoleRequest) {
         roleService.disassociateUser(roleId, userRoleRequest);
         return ResponseBuilder.success();
     }
 
+    @AdminPermission
     @PostMapping("/{roleId}/associate-resource")
     public ResponseBody<Void> associateResource(@PathVariable("roleId") Long roleId, @RequestBody RoleResourceRequest roleResourceRequest) {
         roleService.associateResource(roleId, roleResourceRequest);
         return ResponseBuilder.success();
     }
 
+    @AdminPermission
     @PostMapping("/{roleId}/disassociate-resource")
     public ResponseBody<Void> disassociateResource(@PathVariable("roleId") Long roleId, @RequestBody RoleResourceRequest roleResourceRequest) {
         roleService.disassociateResource(roleId, roleResourceRequest);
         return ResponseBuilder.success();
     }
 
+    @AdminPermission
     @PostMapping("/{roleId}/associate-menu")
     public ResponseBody<Void> associateMenu(@PathVariable("roleId") Long roleId, @RequestBody RoleMenuRequest roleMenuRequest) {
         roleService.associateMenu(roleId, roleMenuRequest);
         return ResponseBuilder.success();
     }
-
 }

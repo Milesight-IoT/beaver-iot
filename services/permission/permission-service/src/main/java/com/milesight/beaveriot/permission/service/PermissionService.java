@@ -67,6 +67,15 @@ public class PermissionService implements IPermissionFacade {
     }
 
     @Override
+    public void checkAdminPermission() {
+        Long userId = getContextUserId();
+        boolean isSuperAdmin = userFacade.isSuperAdmin(userId);
+        if (!isSuperAdmin) {
+            throw ServiceException.with(ErrorCode.FORBIDDEN_PERMISSION).detailMessage("user does not have permission").build();
+        }
+    }
+
+    @Override
     public boolean hasMenuPermission(OperationPermissionCode ...codes) {
         if (codes == null || codes.length == 0) {
             return true;

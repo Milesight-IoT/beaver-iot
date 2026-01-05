@@ -13,7 +13,7 @@ import java.util.Properties;
 
 
 @Configuration
-@ConditionalOnProperty(prefix = "cluster", name = "enabled", havingValue = "false", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "mqtt.broker", name = "type", havingValue = "moquette", matchIfMissing = true)
 public class EmbeddedMqttBrokerBridgeConfiguration {
 
     @Bean("embeddedBrokerProperties")

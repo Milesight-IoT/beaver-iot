@@ -6,6 +6,7 @@ import com.milesight.beaveriot.base.page.GenericQueryPageRequest;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.context.security.TenantContext;
+import com.milesight.beaveriot.permission.aspect.AdminPermission;
 import com.milesight.beaveriot.user.constants.UserConstants;
 import com.milesight.beaveriot.user.model.request.BatchDeleteUserRequest;
 import com.milesight.beaveriot.user.model.request.ChangePasswordRequest;
@@ -91,6 +92,7 @@ public class UserController {
         return ResponseBuilder.success(userInfoResponses);
     }
 
+    @AdminPermission
     @PostMapping("/members")
     public ResponseBody<Void> createUser(@RequestBody CreateUserRequest createUserRequest) {
         userService.createUser(createUserRequest);
@@ -103,25 +105,28 @@ public class UserController {
         return ResponseBuilder.success();
     }
 
+    @AdminPermission
     @PutMapping("/members/{userId}")
     public ResponseBody<Void> updateUser(@PathVariable("userId") Long userId, @RequestBody UpdateUserRequest updateUserRequest) {
         userService.updateUser(userId, updateUserRequest);
         return ResponseBuilder.success();
     }
 
+    @AdminPermission
     @PutMapping("/members/{userId}/change-password")
     public ResponseBody<Void> changePassword(@PathVariable("userId") Long userId, @RequestBody ChangePasswordRequest changePasswordRequest) {
         userService.changePassword(userId, changePasswordRequest);
         return ResponseBuilder.success();
     }
 
-
+    @AdminPermission
     @DeleteMapping("/members/{userId}")
     public ResponseBody<Void> deleteUser(@PathVariable("userId") Long userId) {
         userService.deleteUser(userId);
         return ResponseBuilder.success();
     }
 
+    @AdminPermission
     @PostMapping("/batch-delete")
     public ResponseBody<Void> batchDeleteUsers(@RequestBody BatchDeleteUserRequest batchDeleteUserRequest) {
         userService.batchDeleteUsers(batchDeleteUserRequest);
@@ -140,5 +145,4 @@ public class UserController {
         UserPermissionResponse userPermissionResponse = userService.getUserPermission(userId, userPermissionRequest);
         return ResponseBuilder.success(userPermissionResponse);
     }
-
 }
