@@ -98,14 +98,14 @@ public class EntityController {
     @PostMapping("/history/aggregate")
     public ResponseBody<EntityAggregateResponse> historyAggregate(@RequestBody EntityAggregateQuery entityAggregateQuery) {
         return getResponseOrEmpty(() -> ResponseBuilder.success(entityValueService.historyAggregate(entityAggregateQuery)),
-                () -> ResponseBuilder.success(new EntityAggregateResponse()));
+                () -> ResponseBuilder.success(null));
     }
 
     @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW, OperationPermissionCode.WORKFLOW_ADD, OperationPermissionCode.WORKFLOW_EDIT, OperationPermissionCode.DEVICE_VIEW})
     @GetMapping("/{entityId}/status")
     public ResponseBody<EntityLatestResponse> getEntityStatus(@PathVariable("entityId") Long entityId) {
         return getResponseOrEmpty(() -> ResponseBuilder.success(entityValueService.getEntityStatus(entityId)),
-                () -> ResponseBuilder.success(new EntityLatestResponse()));
+                () -> ResponseBuilder.success(null));
     }
 
     @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW, OperationPermissionCode.WORKFLOW_ADD, OperationPermissionCode.WORKFLOW_EDIT, OperationPermissionCode.DEVICE_VIEW})
