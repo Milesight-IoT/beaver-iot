@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.entitytemplate.service;
 
 import com.google.common.collect.Sets;
+import com.milesight.beaveriot.base.utils.MapUtils;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.integration.model.EntityTemplate;
 import com.milesight.beaveriot.context.integration.model.EntityTemplateBuilder;
@@ -293,7 +294,7 @@ public class EntityTemplateService implements IEntityTemplateFacade {
                 .valueStoreMod(entityTemplatePO.getValueStoreMod())
                 .parentIdentifier(EntityTemplateSupporter.getIdentifierFromKey(entityTemplatePO.getParent()))
                 .valueType(entityTemplatePO.getValueType())
-                .attributes(entityTemplatePO.getValueAttribute())
+                .attributes(MapUtils.deepCopy(entityTemplatePO.getValueAttribute()))
                 .description(entityTemplatePO.getDescription())
                 .visible(entityTemplatePO.getVisible());
         return builder.build();
