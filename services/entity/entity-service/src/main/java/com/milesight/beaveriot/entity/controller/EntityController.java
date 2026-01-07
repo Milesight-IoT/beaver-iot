@@ -1,5 +1,7 @@
 package com.milesight.beaveriot.entity.controller;
 
+import com.milesight.beaveriot.base.enums.ErrorCode;
+import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.response.ResponseBody;
 import com.milesight.beaveriot.base.response.ResponseBuilder;
 import com.milesight.beaveriot.entity.dto.EntityQuery;
@@ -17,19 +19,16 @@ import com.milesight.beaveriot.permission.aspect.OperationPermission;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * @author loong
@@ -56,7 +55,8 @@ public class EntityController {
     })
     @PostMapping("/advanced-search")
     public ResponseBody<Page<EntityResponse>> advancedSearch(@RequestBody EntityAdvancedSearchQuery query) {
-        return ResponseBuilder.success(entityService.advancedSearch(query));
+        return getResponseOrEmpty(() -> ResponseBuilder.success(entityService.advancedSearch(query)),
+                () -> ResponseBuilder.success(Page.empty()));
     }
 
     @OperationPermission(codes = {
@@ -69,8 +69,8 @@ public class EntityController {
     })
     @PostMapping("/search")
     public ResponseBody<Page<EntityResponse>> search(@RequestBody EntityQuery entityQuery) {
-        Page<EntityResponse> entityResponse = entityService.search(entityQuery);
-        return ResponseBuilder.success(entityResponse);
+        return getResponseOrEmpty(() -> ResponseBuilder.success(entityService.search(entityQuery)),
+                () -> ResponseBuilder.success(Page.empty()));
     }
 
     @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW, OperationPermissionCode.INTEGRATION_VIEW, OperationPermissionCode.WORKFLOW_ADD, OperationPermissionCode.WORKFLOW_EDIT, OperationPermissionCode.DEVICE_VIEW})
@@ -90,28 +90,29 @@ public class EntityController {
     })
     @PostMapping("/history/search")
     public ResponseBody<Page<EntityHistoryResponse>> historySearch(@RequestBody EntityHistoryQuery entityHistoryQuery) {
-        Page<EntityHistoryResponse> entityHistoryResponse = entityValueService.historySearch(entityHistoryQuery);
-        return ResponseBuilder.success(entityHistoryResponse);
+        return getResponseOrEmpty(() -> ResponseBuilder.success(entityValueService.historySearch(entityHistoryQuery)),
+                () -> ResponseBuilder.success(Page.empty()));
     }
 
     @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW, OperationPermissionCode.WORKFLOW_ADD, OperationPermissionCode.WORKFLOW_EDIT, OperationPermissionCode.DEVICE_VIEW})
     @PostMapping("/history/aggregate")
     public ResponseBody<EntityAggregateResponse> historyAggregate(@RequestBody EntityAggregateQuery entityAggregateQuery) {
-        EntityAggregateResponse entityAggregateResponse = entityValueService.historyAggregate(entityAggregateQuery);
-        return ResponseBuilder.success(entityAggregateResponse);
+        return getResponseOrEmpty(() -> ResponseBuilder.success(entityValueService.historyAggregate(entityAggregateQuery)),
+                () -> ResponseBuilder.success(new EntityAggregateResponse()));
     }
 
     @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW, OperationPermissionCode.WORKFLOW_ADD, OperationPermissionCode.WORKFLOW_EDIT, OperationPermissionCode.DEVICE_VIEW})
     @GetMapping("/{entityId}/status")
     public ResponseBody<EntityLatestResponse> getEntityStatus(@PathVariable("entityId") Long entityId) {
-        EntityLatestResponse entityLatestResponse = entityValueService.getEntityStatus(entityId);
-        return ResponseBuilder.success(entityLatestResponse);
+        return getResponseOrEmpty(() -> ResponseBuilder.success(entityValueService.getEntityStatus(entityId)),
+                () -> ResponseBuilder.success(new EntityLatestResponse()));
     }
 
     @OperationPermission(codes = {OperationPermissionCode.DASHBOARD_EDIT, OperationPermissionCode.DASHBOARD_VIEW, OperationPermissionCode.WORKFLOW_ADD, OperationPermissionCode.WORKFLOW_EDIT, OperationPermissionCode.DEVICE_VIEW})
     @PostMapping("/batch-get-status")
     public ResponseBody<Map<String, EntityLatestResponse>> batchGetEntityStatus(@RequestBody @Valid EntityStatusBatchGetRequest entityStatusBatchGetRequest) {
-        return ResponseBuilder.success(entityValueService.batchGetEntityStatus(entityStatusBatchGetRequest.getEntityIds()));
+        return getResponseOrEmpty(() ->  ResponseBuilder.success(entityValueService.batchGetEntityStatus(entityStatusBatchGetRequest.getEntityIds())),
+                () -> ResponseBuilder.success(Map.of()));
     }
 
     @GetMapping("/{entityId}/meta")
@@ -180,4 +181,18 @@ public class EntityController {
         entityExportService.export(entityExportRequest, httpServletResponse);
     }
 
+    @SneakyThrows
+    private <T> T getResponseOrEmpty(Supplier<T> responseSupplier, Supplier<T> emptyResponseSupplier) {
+        try {
+            return responseSupplier.get();
+        } catch (Exception e) {
+            if (e instanceof ServiceException serviceException
+                    && (Objects.equals(serviceException.getErrorCode(), ErrorCode.FORBIDDEN_PERMISSION.getErrorCode()) ||
+                    Objects.equals(serviceException.getErrorCode(), ErrorCode.NO_DATA_PERMISSION.getErrorCode()))) {
+                return emptyResponseSupplier.get();
+            } else {
+                throw e;
+            }
+        }
+    }
 }
