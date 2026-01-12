@@ -29,4 +29,6 @@ public interface DeviceServiceProvider {
     void deleteByDeviceTemplateKey(String deviceTemplateKey);
 
     void clearTemplate(String deviceTemplateKey);
+
+    boolean existsById(Long id);
 }

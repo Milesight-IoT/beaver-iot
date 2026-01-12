@@ -1,6 +1,8 @@
 package com.milesight.beaveriot.device.status.service;
 
 import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
+import com.milesight.beaveriot.base.enums.ErrorCode;
+import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.api.*;
 import com.milesight.beaveriot.context.integration.model.*;
 import com.milesight.beaveriot.context.model.delayedqueue.DelayedQueue;
@@ -62,7 +64,7 @@ public class DeviceStatusService {
     }
 
     public void online(Device device) {
-        AvailableDeviceData availableDeviceData = getAvailableDeviceDataByDeviceId(device.getId());
+        AvailableDeviceData availableDeviceData = getAvailableDeviceDataByDevice(device);
         if (availableDeviceData == null) {
             updateDeviceStatusToOnline(device, null);
             return;
@@ -197,6 +199,10 @@ public class DeviceStatusService {
 
     protected AvailableDeviceData getAvailableDeviceDataByDeviceId(Long deviceId) {
         Device device = deviceServiceProvider.findById(deviceId);
+        return getAvailableDeviceDataByDevice(device);
+    }
+
+    protected AvailableDeviceData getAvailableDeviceDataByDevice(Device device) {
         if (device == null) {
             return null;
         }
@@ -227,9 +233,13 @@ public class DeviceStatusService {
     private void updateDeviceStatus(Device device, String deviceStatus, Consumer<Device> statusChangedListener) {
         String statusEntityKey = getStatusEntityKey(device);
         if (entityServiceProvider.findByKey(statusEntityKey) == null) {
+            if (!deviceServiceProvider.existsById(device.getId())) {
+                return;
+            }
+
             EntityTemplate entityTemplate = entityTemplateServiceProvider.findByKey(DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS);
             if (entityTemplate == null) {
-                throw new RuntimeException("Device status entity template not found");
+                throw ServiceException.with(ErrorCode.DATA_NO_FOUND.getErrorCode(), "Device status entity template not found").build();
             }
             Entity statusEntity = entityTemplate.toEntity(device.getIntegrationId(), device.getKey());
             entityServiceProvider.save(statusEntity);
