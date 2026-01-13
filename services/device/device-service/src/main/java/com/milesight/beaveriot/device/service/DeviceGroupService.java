@@ -7,7 +7,9 @@ import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.device.constants.DeviceDataFieldConstants;
+import com.milesight.beaveriot.device.dto.DeviceGroupDTO;
 import com.milesight.beaveriot.device.enums.DeviceErrorCode;
+import com.milesight.beaveriot.device.facade.IDeviceGroupFacade;
 import com.milesight.beaveriot.device.model.request.CreateDeviceGroupRequest;
 import com.milesight.beaveriot.device.model.request.SearchDeviceGroupRequest;
 import com.milesight.beaveriot.device.model.response.DeviceGroupResponseData;
@@ -45,7 +47,7 @@ import java.util.stream.Stream;
  */
 @Service
 @Slf4j
-public class DeviceGroupService {
+public class DeviceGroupService implements IDeviceGroupFacade {
     @Autowired
     DeviceGroupRepository deviceGroupRepository;
 
@@ -249,6 +251,23 @@ public class DeviceGroupService {
                             .map(deviceId -> Pair.of(deviceId, group));
                 })
                 .collect(Collectors.groupingBy(Pair::getFirst, Collectors.mapping(Pair::getSecond, Collectors.toList())));
+    }
+
+    @Override
+    public Map<Long, DeviceGroupDTO> getGroupFromDeviceId(List<Long> deviceIdList) {
+        if (deviceIdList.isEmpty()) {
+            return Map.of();
+        }
+
+        return deviceIdToGroups(deviceIdList).entrySet().stream()
+                .filter(entry -> !entry.getValue().isEmpty())
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> {
+                    DeviceGroupPO deviceGroupPO = entry.getValue().get(0);
+                    return DeviceGroupDTO.builder()
+                            .groupName(deviceGroupPO.getName())
+                            .groupId(deviceGroupPO.getId())
+                            .build();
+                }));
     }
 
     public List<Long> findAllDeviceIdsByGroupNameIn(List<String> groupNames) {

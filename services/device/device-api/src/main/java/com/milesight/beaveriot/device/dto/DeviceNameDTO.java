@@ -15,8 +15,6 @@ public class DeviceNameDTO {
     private String integrationName;
     private String template;
     private String name;
-    private Long groupId;
-    private String groupName;
     private Long createdAt;
 
     public boolean isIntegrationExists() {

@@ -516,8 +516,6 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
     // Device API Implementations
 
     private List<DeviceNameDTO> convertDevicePOList(List<DevicePO> devicePOList) {
-        List<Long> deviceIds = devicePOList.stream().map(DevicePO::getId).toList();
-        Map<Long, List<DeviceGroupPO>> deviceIdToGroups = deviceGroupService.deviceIdToGroups(deviceIds);
         Map<String, Integration> integrationMap = getIntegrationMap(
                 devicePOList.stream().map(DevicePO::getIntegration).toList());
         return devicePOList.stream()
@@ -532,13 +530,6 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
                         .integrationName(integrationMap.get(devicePO.getIntegration()).getName())
                         .identifier(devicePO.getIdentifier())
                         .build())
-                .peek(device -> {
-                    List<DeviceGroupPO> deviceGroupPOList = deviceIdToGroups.get(device.getId());
-                    if (!CollectionUtils.isEmpty(deviceGroupPOList)) {
-                        device.setGroupId(deviceGroupPOList.get(0).getId());
-                        device.setGroupName(deviceGroupPOList.get(0).getName());
-                    }
-                })
                 .toList();
     }
 
