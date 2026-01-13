@@ -55,4 +55,7 @@ public interface DeviceRepository extends BaseJpaRepository<DevicePO, Long> {
 
     @Query("SELECT new com.milesight.beaveriot.device.dto.DeviceIdKeyDTO(d.id, d.key) FROM DevicePO d WHERE d.id IN :ids")
     List<DeviceIdKeyDTO> findIdAndKeyByIdIn(@Param("ids") List<Long> ids);
+
+    @Query("SELECT new com.milesight.beaveriot.device.dto.DeviceIdKeyDTO(d.id, d.key) FROM DevicePO d WHERE d.key IN :keys")
+    List<DeviceIdKeyDTO> findIdAndKeyByKeyIn(@Param("keys") List<String> keys);
 }

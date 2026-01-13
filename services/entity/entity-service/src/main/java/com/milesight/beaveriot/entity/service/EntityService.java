@@ -26,6 +26,7 @@ import com.milesight.beaveriot.context.model.EntityTag;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.data.util.PageConverter;
+import com.milesight.beaveriot.device.dto.DeviceIdKeyDTO;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
 import com.milesight.beaveriot.entity.dto.EntityDeviceGroup;
@@ -349,9 +350,9 @@ public class EntityService implements EntityServiceProvider {
         List<String> deviceKeys = entityList.stream().map(Entity::getDeviceKey).filter(StringUtils::hasText).toList();
         Map<String, Long> deviceKeyMap = new HashMap<>();
         if (!deviceKeys.isEmpty()) {
-            List<DeviceNameDTO> deviceNameDTOList = deviceFacade.getDeviceNameByKey(deviceKeys);
-            if (deviceNameDTOList != null && !deviceNameDTOList.isEmpty()) {
-                deviceKeyMap.putAll(deviceNameDTOList.stream().collect(Collectors.toMap(DeviceNameDTO::getKey, DeviceNameDTO::getId)));
+            List<DeviceIdKeyDTO> deviceIdKeyDTOList = deviceFacade.findIdAndKeyByKeys(deviceKeys);
+            if (!deviceIdKeyDTOList.isEmpty()) {
+                deviceKeyMap.putAll(deviceIdKeyDTOList.stream().collect(Collectors.toMap(DeviceIdKeyDTO::getKey, DeviceIdKeyDTO::getId)));
             }
         }
         List<String> entityKeys = entityList.stream().map(Entity::getKey).filter(StringUtils::hasText).toList();
@@ -624,8 +625,8 @@ public class EntityService implements EntityServiceProvider {
                     deviceGroupId = String.valueOf(deviceDetail.getGroupId());
                     deviceGroupName = deviceDetail.getGroupName();
                 }
-                if (deviceDetail.getIntegrationConfig() != null) {
-                    integrationName = deviceDetail.getIntegrationConfig().getName();
+                if (deviceDetail.isIntegrationExists()) {
+                    integrationName = deviceDetail.getIntegrationName();
                 }
             }
         } else if (attachTarget == AttachTargetType.INTEGRATION) {
@@ -676,10 +677,9 @@ public class EntityService implements EntityServiceProvider {
             attachTargetIds.addAll(getDeviceIdsByIntegrationId(integrationIds));
         }
 
-        List<DeviceNameDTO> deviceNameDTOList = deviceFacade.fuzzySearchDeviceByName(keyword);
-        if (deviceNameDTOList != null && !deviceNameDTOList.isEmpty()) {
-            List<String> deviceIds = deviceNameDTOList.stream().map(DeviceNameDTO::getId).map(String::valueOf).toList();
-            attachTargetIds.addAll(deviceIds);
+        List<Long> deviceIdList = deviceFacade.fuzzySearchDeviceIdsByName(ComparisonOperator.CONTAINS, keyword);
+        if (!deviceIdList.isEmpty()) {
+            attachTargetIds.addAll(deviceIdList.stream().map(Object::toString).toList());
         }
         return attachTargetIds;
     }

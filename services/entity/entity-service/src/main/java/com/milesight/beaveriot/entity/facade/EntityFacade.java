@@ -105,8 +105,8 @@ public class EntityFacade implements IEntityFacade {
         }
 
         Map<String, List<DeviceNameDTO>> integrationDeviceMap = integrationDevices.stream()
-                .filter(t -> t.getIntegrationConfig() != null)
-                .collect(Collectors.groupingBy(t -> t.getIntegrationConfig().getId()));
+                .filter(DeviceNameDTO::isIntegrationExists)
+                .collect(Collectors.groupingBy(DeviceNameDTO::getIntegrationId));
         if (integrationDeviceMap.isEmpty()) {
             return allEntityCountMap;
         }

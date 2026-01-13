@@ -13,6 +13,7 @@ import com.milesight.beaveriot.context.integration.GenericExchangeFlowExecutor;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
 import com.milesight.beaveriot.context.integration.enums.ValueStoreMod;
+import com.milesight.beaveriot.context.integration.model.Entity;
 import com.milesight.beaveriot.context.integration.model.ExchangePayload;
 import com.milesight.beaveriot.context.integration.proxy.MapExchangePayloadProxy;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
@@ -145,19 +146,17 @@ public class EntityValueService implements EntityValueServiceProvider {
     public void evictLatestValues(@CacheKeys Collection<String> keys) {
     }
 
-    public Map<String, Long> saveLatestValues(Map<String, Object> values, long timestamp) {
+    public Map<String, Long> saveLatestValues(ExchangePayload values, long timestamp) {
         if (values == null || values.isEmpty()) {
             return Collections.emptyMap();
         }
 
         Map<String, Long> entityKeyLatestIds = new HashMap<>();
-        List<String> entityKeys = values.keySet().stream().toList();
-        List<EntityPO> entityPOList = entityRepository.findAll(filter -> filter.in(EntityPO.Fields.key, entityKeys.toArray()));
-        if (entityPOList == null || entityPOList.isEmpty()) {
+        Map<String, Entity> entityKeyMap = values.getExchangeEntities();
+        if (entityKeyMap.isEmpty()) {
             return Collections.emptyMap();
         }
-        Map<String, EntityPO> entityKeyMap = entityPOList.stream().collect(Collectors.toMap(EntityPO::getKey, Function.identity()));
-        List<Long> entityIds = entityPOList.stream().map(EntityPO::getId).toList();
+        List<Long> entityIds = entityKeyMap.values().stream().map(Entity::getId).toList();
         List<EntityLatestPO> nowEntityLatestPOList = entityLatestRepository.findAll(filter -> filter.in(EntityLatestPO.Fields.entityId, entityIds.toArray()));
         Map<Long, EntityLatestPO> entityIdDataMap = new HashMap<>();
         if (nowEntityLatestPOList != null && !nowEntityLatestPOList.isEmpty()) {
@@ -165,17 +164,17 @@ public class EntityValueService implements EntityValueServiceProvider {
         }
         List<EntityLatestPO> entityLatestPOList = new ArrayList<>();
         values.forEach((entityKey, payload) -> {
-            EntityPO entityPO = entityKeyMap.get(entityKey);
-            if (entityPO == null) {
+            Entity entity = entityKeyMap.get(entityKey);
+            if (entity == null) {
                 return;
             }
 
-            if (entityPO.getValueStoreMod() == ValueStoreMod.NONE || entityPO.getValueStoreMod() == ValueStoreMod.HISTORY) {
+            if (entity.getValueStoreMod() == ValueStoreMod.NONE || entity.getValueStoreMod() == ValueStoreMod.HISTORY) {
                 return;
             }
 
-            Long entityId = entityPO.getId();
-            EntityValueType entityValueType = entityPO.getValueType();
+            Long entityId = entity.getId();
+            EntityValueType entityValueType = entity.getValueType();
             EntityLatestPO dataEntityLatest = entityIdDataMap.get(entityId);
             Long entityLatestId;
             if (dataEntityLatest == null) {

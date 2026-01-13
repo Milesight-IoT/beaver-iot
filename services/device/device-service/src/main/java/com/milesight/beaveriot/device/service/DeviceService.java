@@ -529,7 +529,7 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
                         .template(devicePO.getTemplate())
                         .createdAt(devicePO.getCreatedAt())
                         .integrationId(devicePO.getIntegration())
-                        .integrationConfig(integrationMap.get(devicePO.getIntegration()))
+                        .integrationName(integrationMap.get(devicePO.getIntegration()).getName())
                         .identifier(devicePO.getIdentifier())
                         .build())
                 .peek(device -> {
@@ -540,11 +540,6 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
                     }
                 })
                 .toList();
-    }
-
-    @Override
-    public List<DeviceNameDTO> fuzzySearchDeviceByName(String name) {
-        return convertDevicePOList(deviceRepository.findAll(f -> f.likeIgnoreCase(DevicePO.Fields.name, name)));
     }
 
     @Override
@@ -572,21 +567,6 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
             return new ArrayList<>();
         }
         return convertDevicePOList(deviceRepository.findByIdIn(deviceIds));
-    }
-
-    @Override
-    public List<DeviceNameDTO> getDeviceNameByKey(List<String> deviceKeys) {
-        if (deviceKeys == null || deviceKeys.isEmpty()) {
-            return new ArrayList<>();
-        }
-        return convertDevicePOList(deviceRepository.findAll(f -> f.in(DevicePO.Fields.key, deviceKeys.toArray())));
-    }
-
-    @Override
-    public DeviceNameDTO getDeviceNameByKey(String deviceKey) {
-        Optional<DevicePO> devicePO = deviceRepository.findOne(f -> f.eq(DevicePO.Fields.key, deviceKey));
-        return devicePO.map(po -> convertDevicePOList(List.of(po)).get(0)).orElse(null);
-
     }
 
     @Override
@@ -662,5 +642,13 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
             return new ArrayList<>();
         }
         return deviceRepository.findIdAndKeyByIdIn(deviceIds);
+    }
+
+    @Override
+    public List<DeviceIdKeyDTO> findIdAndKeyByKeys(List<String> deviceKeys) {
+        if (CollectionUtils.isEmpty(deviceKeys)) {
+            return new ArrayList<>();
+        }
+        return deviceRepository.findIdAndKeyByKeyIn(deviceKeys);
     }
 }

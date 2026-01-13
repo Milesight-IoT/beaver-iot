@@ -1,6 +1,6 @@
 package com.milesight.beaveriot.device.dto;
 
-import com.milesight.beaveriot.context.integration.model.Integration;
+import jakarta.annotation.Nullable;
 import lombok.*;
 
 @Data
@@ -11,10 +11,15 @@ public class DeviceNameDTO {
     private String identifier;
     private Long userId;
     private String integrationId;
+    @Nullable
+    private String integrationName;
     private String template;
-    private Integration integrationConfig;
     private String name;
     private Long groupId;
     private String groupName;
     private Long createdAt;
+
+    public boolean isIntegrationExists() {
+        return integrationName != null;
+    }
 }
