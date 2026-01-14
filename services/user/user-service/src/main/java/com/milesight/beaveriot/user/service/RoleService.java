@@ -3,6 +3,7 @@ package com.milesight.beaveriot.user.service;
 import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheEvict;
 import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheable;
 import com.milesight.beaveriot.base.annotations.cacheable.CacheKeys;
+import com.milesight.beaveriot.base.enums.ComparisonOperator;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.page.GenericQueryPageRequest;
@@ -288,7 +289,7 @@ public class RoleService {
         List<Integration> integrations = integrationServiceProvider.findIntegrations(f -> integrationIds.contains(f.getId()));
         Map<String, Integration> integrationMap = integrations.stream().collect(Collectors.toMap(Integration::getId, Function.identity()));
         List<DeviceNameDTO> deviceNameDTOList = deviceFacade.getDeviceNameByIntegrations(integrationIds);
-        Map<String, List<DeviceNameDTO>> deviceIntegrationMap = deviceNameDTOList.stream().filter(t -> t.getIntegrationConfig() != null).collect(Collectors.groupingBy(t -> t.getIntegrationConfig().getId()));
+        Map<String, List<DeviceNameDTO>> deviceIntegrationMap = deviceNameDTOList.stream().filter(DeviceNameDTO::isIntegrationExists).collect(Collectors.groupingBy(DeviceNameDTO::getIntegrationId));
         Map<String, Long> entityCountMap = entityFacade.countAllEntitiesByIntegrationIds(integrationIds);
         return roleResourcePOs.map(roleResourcePO -> {
             RoleIntegrationResponse roleIntegrationResponse = new RoleIntegrationResponse();
@@ -315,9 +316,9 @@ public class RoleService {
                 }
             }
 
-            List<DeviceNameDTO> deviceNameDTOList = deviceFacade.fuzzySearchDeviceByName(roleDeviceRequest.getKeyword());
-            if (deviceNameDTOList != null && !deviceNameDTOList.isEmpty()) {
-                searchDeviceIds.addAll(deviceNameDTOList.stream().map(DeviceNameDTO::getId).toList());
+            List<Long> deviceIdList = deviceFacade.fuzzySearchDeviceIdsByName(ComparisonOperator.CONTAINS, roleDeviceRequest.getKeyword());
+            if (!deviceIdList.isEmpty()) {
+                searchDeviceIds.addAll(deviceIdList);
             }
 
             if (searchDeviceIds.isEmpty() && searchIntegrationIds.isEmpty()) {
@@ -383,10 +384,9 @@ public class RoleService {
                         roleDeviceResponse.setUserNickname(user.getNickname());
                     }
 
-                    Integration integrationConfig = device == null ? null : device.getIntegrationConfig();
-                    if (integrationConfig != null) {
-                        roleDeviceResponse.setIntegrationId(integrationConfig.getId());
-                        roleDeviceResponse.setIntegrationName(integrationConfig.getName());
+                    if (device != null && device.isIntegrationExists()) {
+                        roleDeviceResponse.setIntegrationId(device.getIntegrationId());
+                        roleDeviceResponse.setIntegrationName(device.getIntegrationName());
                     }
                     roleDeviceResponse.setRoleIntegration(responseIntegrationDeviceIds.contains(deviceId));
 
@@ -551,9 +551,9 @@ public class RoleService {
                 if (deviceNameDTO.getName().toLowerCase().contains(deviceUndistributedRequest.getKeyword().toLowerCase())) {
                     return true;
                 }
-                Integration integration = deviceNameDTO.getIntegrationConfig();
-                return integration != null &&
-                        integration.getName().toLowerCase().contains(deviceUndistributedRequest.getKeyword().toLowerCase());
+                String integrationName = deviceNameDTO.getIntegrationName();
+                return integrationName != null &&
+                        integrationName.toLowerCase().contains(deviceUndistributedRequest.getKeyword().toLowerCase());
             }).toList();
         }
         if (deviceNameDTOList.isEmpty()) {
@@ -593,9 +593,9 @@ public class RoleService {
                     }
 
                     deviceUndistributedResponse.setIntegrationId(deviceNameDTO.getIntegrationId());
-                    Integration integrationConfig = deviceNameDTO.getIntegrationConfig();
-                    if (integrationConfig != null) {
-                        deviceUndistributedResponse.setIntegrationName(integrationConfig.getName());
+                    String integrationName = deviceNameDTO.getIntegrationName();
+                    if (integrationName != null) {
+                        deviceUndistributedResponse.setIntegrationName(integrationName);
                     }
                     return deviceUndistributedResponse;
                 })

@@ -26,8 +26,11 @@ import com.milesight.beaveriot.context.model.EntityTag;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.data.filterable.Filterable;
 import com.milesight.beaveriot.data.util.PageConverter;
+import com.milesight.beaveriot.device.dto.DeviceGroupDTO;
+import com.milesight.beaveriot.device.dto.DeviceIdKeyDTO;
 import com.milesight.beaveriot.device.dto.DeviceNameDTO;
 import com.milesight.beaveriot.device.facade.IDeviceFacade;
+import com.milesight.beaveriot.device.facade.IDeviceGroupFacade;
 import com.milesight.beaveriot.entity.dto.EntityDeviceGroup;
 import com.milesight.beaveriot.entity.dto.EntityQuery;
 import com.milesight.beaveriot.entity.dto.EntityResponse;
@@ -126,6 +129,9 @@ public class EntityService implements EntityServiceProvider {
 
     @Autowired
     ResourceManagerFacade resourceManagerFacade;
+
+    @Autowired
+    IDeviceGroupFacade deviceGroupFacade;
 
     private static Entity convertPOToEntity(EntityPO entityPO, Map<String, DeviceNameDTO> deviceIdToDetails) {
         String integrationId = null;
@@ -349,9 +355,9 @@ public class EntityService implements EntityServiceProvider {
         List<String> deviceKeys = entityList.stream().map(Entity::getDeviceKey).filter(StringUtils::hasText).toList();
         Map<String, Long> deviceKeyMap = new HashMap<>();
         if (!deviceKeys.isEmpty()) {
-            List<DeviceNameDTO> deviceNameDTOList = deviceFacade.getDeviceNameByKey(deviceKeys);
-            if (deviceNameDTOList != null && !deviceNameDTOList.isEmpty()) {
-                deviceKeyMap.putAll(deviceNameDTOList.stream().collect(Collectors.toMap(DeviceNameDTO::getKey, DeviceNameDTO::getId)));
+            List<DeviceIdKeyDTO> deviceIdKeyDTOList = deviceFacade.findIdAndKeyByKeys(deviceKeys);
+            if (!deviceIdKeyDTOList.isEmpty()) {
+                deviceKeyMap.putAll(deviceIdKeyDTOList.stream().collect(Collectors.toMap(DeviceIdKeyDTO::getKey, DeviceIdKeyDTO::getId)));
             }
         }
         List<String> entityKeys = entityList.stream().map(Entity::getKey).filter(StringUtils::hasText).toList();
@@ -609,7 +615,8 @@ public class EntityService implements EntityServiceProvider {
                                                            Map<String, Integration> integrationMap,
                                                            Map<String, DeviceNameDTO> deviceIdToDetails,
                                                            Map<String, EntityPO> parentKeyMap,
-                                                           Map<Long, WorkflowNameDTO> entityWorkflowMap) {
+                                                           Map<Long, WorkflowNameDTO> entityWorkflowMap,
+                                                           Map<Long, DeviceGroupDTO> deviceGroupDTOMap) {
         String deviceName = null;
         String deviceGroupId = null;
         String deviceGroupName = null;
@@ -620,12 +627,13 @@ public class EntityService implements EntityServiceProvider {
             DeviceNameDTO deviceDetail = deviceIdToDetails.get(attachTargetId);
             if (deviceDetail != null) {
                 deviceName = deviceDetail.getName();
-                if (deviceDetail.getGroupId() != null) {
-                    deviceGroupId = String.valueOf(deviceDetail.getGroupId());
-                    deviceGroupName = deviceDetail.getGroupName();
+                DeviceGroupDTO deviceGroupDTO = deviceGroupDTOMap.get(deviceDetail.getId());
+                if (deviceGroupDTO != null) {
+                    deviceGroupId = String.valueOf(deviceGroupDTO.getGroupId());
+                    deviceGroupName = deviceGroupDTO.getGroupName();
                 }
-                if (deviceDetail.getIntegrationConfig() != null) {
-                    integrationName = deviceDetail.getIntegrationConfig().getName();
+                if (deviceDetail.isIntegrationExists()) {
+                    integrationName = deviceDetail.getIntegrationName();
                 }
             }
         } else if (attachTarget == AttachTargetType.INTEGRATION) {
@@ -676,10 +684,9 @@ public class EntityService implements EntityServiceProvider {
             attachTargetIds.addAll(getDeviceIdsByIntegrationId(integrationIds));
         }
 
-        List<DeviceNameDTO> deviceNameDTOList = deviceFacade.fuzzySearchDeviceByName(keyword);
-        if (deviceNameDTOList != null && !deviceNameDTOList.isEmpty()) {
-            List<String> deviceIds = deviceNameDTOList.stream().map(DeviceNameDTO::getId).map(String::valueOf).toList();
-            attachTargetIds.addAll(deviceIds);
+        List<Long> deviceIdList = deviceFacade.fuzzySearchDeviceIdsByName(ComparisonOperator.CONTAINS, keyword);
+        if (!deviceIdList.isEmpty()) {
+            attachTargetIds.addAll(deviceIdList.stream().map(Object::toString).toList());
         }
         return attachTargetIds;
     }
@@ -765,7 +772,8 @@ public class EntityService implements EntityServiceProvider {
         Map<String, Integration> integrationMap = integrationServiceProvider.findIntegrations(i -> integrationIds.contains(i.getId()))
                 .stream()
                 .collect(Collectors.toMap(Integration::getId, Function.identity(), (v1, v2) -> v1));
-        return entityPOPage.map(entityPO -> convertEntityPOToEntityResponse(entityPO, integrationMap, deviceIdToDetails, relatedParentKeyMap, entityWorkflowMap));
+        Map<Long, DeviceGroupDTO> deviceGroupDTOMap = deviceGroupFacade.getGroupFromDeviceId(foundDeviceIds);
+        return entityPOPage.map(entityPO -> convertEntityPOToEntityResponse(entityPO, integrationMap, deviceIdToDetails, relatedParentKeyMap, entityWorkflowMap, deviceGroupDTOMap));
     }
 
     public EntityMetaResponse getEntityMeta(Long entityId) {

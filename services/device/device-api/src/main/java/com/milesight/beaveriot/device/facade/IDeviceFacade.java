@@ -11,17 +11,11 @@ import java.util.Map;
 public interface IDeviceFacade {
     List<Long> findDeviceIdsByGroupNameIn(List<String> deviceGroupNames);
 
-    List<DeviceNameDTO> fuzzySearchDeviceByName(String name);
-
     List<Long> fuzzySearchDeviceIdsByName(ComparisonOperator operator, String keyword);
 
     List<DeviceNameDTO> getDeviceNameByIntegrations(List<String> integrationIds);
 
     List<DeviceNameDTO> getDeviceNameByIds(List<Long> deviceIds);
-
-    List<DeviceNameDTO> getDeviceNameByKey(List<String> deviceKeys);
-
-    DeviceNameDTO getDeviceNameByKey(String deviceKey);
 
     Map<String, Long> countByIntegrationIds(List<String> integrationIds);
 
@@ -32,4 +26,6 @@ public interface IDeviceFacade {
     Device findById(Long id);
 
     List<DeviceIdKeyDTO> findIdAndKeyByIds(List<Long> deviceIds);
+
+    List<DeviceIdKeyDTO> findIdAndKeyByKeys(List<String> deviceKeys);
 }

@@ -439,9 +439,8 @@ public class UserService {
             if (deviceNameDTOList == null || deviceNameDTOList.isEmpty()) {
                 return userPermissionResponse;
             }
-            String integrationId = deviceNameDTOList.get(0).getIntegrationConfig() == null ? null : deviceNameDTOList.get(0).getIntegrationConfig().getId();
-            if (integrationId != null) {
-                List<RoleResourcePO> roleResourcePOs = roleService.getRoleResourcePOsByRoleIdsAndResourceTypeAndResourceId(roleIds, ResourceType.INTEGRATION, integrationId);
+            if (deviceNameDTOList.get(0).isIntegrationExists()) {
+                List<RoleResourcePO> roleResourcePOs = roleService.getRoleResourcePOsByRoleIdsAndResourceTypeAndResourceId(roleIds, ResourceType.INTEGRATION, deviceNameDTOList.get(0).getIntegrationId());
                 if (roleResourcePOs != null && !roleResourcePOs.isEmpty()) {
                     userPermissionResponse.setHasPermission(true);
                     return userPermissionResponse;

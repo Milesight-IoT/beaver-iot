@@ -516,8 +516,6 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
     // Device API Implementations
 
     private List<DeviceNameDTO> convertDevicePOList(List<DevicePO> devicePOList) {
-        List<Long> deviceIds = devicePOList.stream().map(DevicePO::getId).toList();
-        Map<Long, List<DeviceGroupPO>> deviceIdToGroups = deviceGroupService.deviceIdToGroups(deviceIds);
         Map<String, Integration> integrationMap = getIntegrationMap(
                 devicePOList.stream().map(DevicePO::getIntegration).toList());
         return devicePOList.stream()
@@ -529,22 +527,10 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
                         .template(devicePO.getTemplate())
                         .createdAt(devicePO.getCreatedAt())
                         .integrationId(devicePO.getIntegration())
-                        .integrationConfig(integrationMap.get(devicePO.getIntegration()))
+                        .integrationName(integrationMap.get(devicePO.getIntegration()).getName())
                         .identifier(devicePO.getIdentifier())
                         .build())
-                .peek(device -> {
-                    List<DeviceGroupPO> deviceGroupPOList = deviceIdToGroups.get(device.getId());
-                    if (!CollectionUtils.isEmpty(deviceGroupPOList)) {
-                        device.setGroupId(deviceGroupPOList.get(0).getId());
-                        device.setGroupName(deviceGroupPOList.get(0).getName());
-                    }
-                })
                 .toList();
-    }
-
-    @Override
-    public List<DeviceNameDTO> fuzzySearchDeviceByName(String name) {
-        return convertDevicePOList(deviceRepository.findAll(f -> f.likeIgnoreCase(DevicePO.Fields.name, name)));
     }
 
     @Override
@@ -572,21 +558,6 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
             return new ArrayList<>();
         }
         return convertDevicePOList(deviceRepository.findByIdIn(deviceIds));
-    }
-
-    @Override
-    public List<DeviceNameDTO> getDeviceNameByKey(List<String> deviceKeys) {
-        if (deviceKeys == null || deviceKeys.isEmpty()) {
-            return new ArrayList<>();
-        }
-        return convertDevicePOList(deviceRepository.findAll(f -> f.in(DevicePO.Fields.key, deviceKeys.toArray())));
-    }
-
-    @Override
-    public DeviceNameDTO getDeviceNameByKey(String deviceKey) {
-        Optional<DevicePO> devicePO = deviceRepository.findOne(f -> f.eq(DevicePO.Fields.key, deviceKey));
-        return devicePO.map(po -> convertDevicePOList(List.of(po)).get(0)).orElse(null);
-
     }
 
     @Override
@@ -662,5 +633,13 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
             return new ArrayList<>();
         }
         return deviceRepository.findIdAndKeyByIdIn(deviceIds);
+    }
+
+    @Override
+    public List<DeviceIdKeyDTO> findIdAndKeyByKeys(List<String> deviceKeys) {
+        if (CollectionUtils.isEmpty(deviceKeys)) {
+            return new ArrayList<>();
+        }
+        return deviceRepository.findIdAndKeyByKeyIn(deviceKeys);
     }
 }

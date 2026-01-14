@@ -166,6 +166,7 @@ public class ExchangePayload extends HashMap<String, Object> implements Exchange
         if (ObjectUtils.isEmpty(entityMap)) {
             EntityServiceProvider entityServiceProvider = SpringContext.getBean(EntityServiceProvider.class);
             entityMap = entityServiceProvider.findByKeys(keySet().stream().toList());
+            putContext(ExchangeContextKeys.EXCHANGE_ENTITIES, entityMap);
         }
         return entityMap;
     }
