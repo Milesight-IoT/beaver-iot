@@ -43,8 +43,6 @@ public class EntityExportService {
 
     public static final DateTimeFormatter DEFAULT_DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
 
-    private static final int PAGE_SIZE = 1000;
-
     private static final CsvExporter<EntityExportData> exporter = CsvExporter.newInstance(EntityExportData.class);
 
     @Autowired
@@ -93,7 +91,6 @@ public class EntityExportService {
         exporter.export(outputStream, i -> {
             val query = new GenericPageRequest();
             query.setPageNumber(i + 1);
-            query.setPageSize(PAGE_SIZE);
             query.sort(new Sorts().desc(EntityHistoryPO.Fields.timestamp).asc(EntityHistoryPO.Fields.entityId));
             return entityValueService.historySearchSlice(availableEntityIds, startTime, endTime, query)
                     .stream()

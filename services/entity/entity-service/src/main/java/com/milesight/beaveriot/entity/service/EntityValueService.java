@@ -508,6 +508,14 @@ public class EntityValueService implements EntityValueServiceProvider {
             pageRequest.sort(new Sorts().desc(EntityHistoryPO.Fields.timestamp));
         }
 
+        if (entityIdList.size() > 1) {
+            // bitmap heap scan
+            pageRequest.pageSize(50000);
+        } else {
+            // index scan
+            pageRequest.pageSize(1000);
+        }
+
         Slice<EntityHistoryPO> entityHistorySlice = entityHistoryRepository.findSliceByEntityIdInAndTimestampBetween(
                 entityIdList,
                 startTimestamp,
