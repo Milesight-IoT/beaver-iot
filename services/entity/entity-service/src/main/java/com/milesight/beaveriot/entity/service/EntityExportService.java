@@ -43,7 +43,7 @@ public class EntityExportService {
 
     public static final DateTimeFormatter DEFAULT_DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
 
-    private static final int PAGE_SIZE = 100;
+    private static final int PAGE_SIZE = 1000;
 
     private static final CsvExporter<EntityExportData> exporter = CsvExporter.newInstance(EntityExportData.class);
 
@@ -83,6 +83,11 @@ public class EntityExportService {
 
         val startTime = entityExportRequest.getStartTimestamp() == null ? 0 : entityExportRequest.getStartTimestamp();
         val endTime = entityExportRequest.getEndTimestamp() == null ? System.currentTimeMillis() : entityExportRequest.getEndTimestamp();
+        if (endTime <= startTime) {
+            throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED)
+                    .detailMessage("startTimestamp should be less than endTimestamp")
+                    .build();
+        }
         val zoneId = StringUtils.hasText(entityExportRequest.getTimeZone()) ? ZoneId.of(entityExportRequest.getTimeZone()) : ZoneId.systemDefault();
         val outputStream = httpServletResponse.getOutputStream();
         exporter.export(outputStream, i -> {
@@ -90,7 +95,7 @@ public class EntityExportService {
             query.setPageNumber(i + 1);
             query.setPageSize(PAGE_SIZE);
             query.sort(new Sorts().desc(EntityHistoryPO.Fields.timestamp).asc(EntityHistoryPO.Fields.entityId));
-            return entityValueService.historySearch(availableEntityIds, startTime, endTime, query)
+            return entityValueService.historySearchSlice(availableEntityIds, startTime, endTime, query)
                     .stream()
                     .map(historyResponse -> {
                         val entityResponse = entityIdToPO.get(historyResponse.getEntityId());
