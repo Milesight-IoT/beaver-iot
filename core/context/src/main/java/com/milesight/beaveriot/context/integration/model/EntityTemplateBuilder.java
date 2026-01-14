@@ -1,12 +1,12 @@
 package com.milesight.beaveriot.context.integration.model;
 
+import com.milesight.beaveriot.base.utils.MapUtils;
 import com.milesight.beaveriot.context.integration.enums.AccessMod;
 import com.milesight.beaveriot.context.integration.enums.EntityType;
 import com.milesight.beaveriot.context.integration.enums.EntityValueType;
 import com.milesight.beaveriot.context.integration.enums.ValueStoreMod;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -75,7 +75,7 @@ public class EntityTemplateBuilder {
     }
 
     public EntityTemplateBuilder attributes(Map<String, Object> attributes) {
-        this.attributes = attributes != null ? new HashMap<>(attributes) : null;
+        this.attributes = MapUtils.deepCopy(attributes);
         return this;
     }
 

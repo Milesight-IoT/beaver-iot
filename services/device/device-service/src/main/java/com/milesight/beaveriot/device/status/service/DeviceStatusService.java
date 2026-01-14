@@ -1,6 +1,8 @@
 package com.milesight.beaveriot.device.status.service;
 
 import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
+import com.milesight.beaveriot.base.enums.ErrorCode;
+import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.context.api.*;
 import com.milesight.beaveriot.context.integration.model.*;
 import com.milesight.beaveriot.context.model.delayedqueue.DelayedQueue;
@@ -58,29 +60,36 @@ public class DeviceStatusService {
     }
 
     public void deregister(Device device) {
+        if (device == null) {
+            return;
+        }
+
         cancelDelayedTask(device.getId());
     }
 
     public void online(Device device) {
-        AvailableDeviceData availableDeviceData = getAvailableDeviceDataByDeviceId(device.getId());
-        if (availableDeviceData == null) {
-            updateDeviceStatusToOnline(device, null);
+        if (device == null) {
             return;
         }
 
+        AvailableDeviceData availableDeviceData = getAvailableDeviceDataByDevice(device);
         self().handleStatus(device.getId(), availableDeviceData, DeviceStatusOperation.ONLINE);
     }
 
     public void offline(Device device) {
-        DeviceStatusConfig config = integrationDeviceStatusConfigs.get(device.getIntegrationId());
-        Consumer<Device> offlineListener = null;
-        if (config != null) {
-            offlineListener = config.getOfflineListener();
+        if (device == null) {
+            return;
         }
-        updateDeviceStatusToOffline(device, offlineListener);
+
+        AvailableDeviceData availableDeviceData = getAvailableDeviceDataByDevice(device);
+        self().handleStatus(device.getId(), availableDeviceData, DeviceStatusOperation.OFFLINE);
     }
 
     public DeviceStatus status(Device device) {
+        if (device == null) {
+            return null;
+        }
+
         String deviceStatus = (String) entityValueServiceProvider.findValueByKey(getStatusEntityKey(device));
         if (deviceStatus == null) {
             return null;
@@ -119,9 +128,8 @@ public class DeviceStatusService {
     public void handleStatus(Long deviceId,
                              AvailableDeviceData availableDeviceData,
                              DeviceStatusOperation operation) {
-        if (availableDeviceData == null) {
+        if (availableDeviceData.getDeviceStatusConfig() == null) {
             cancelDelayedTask(deviceId);
-            return;
         }
 
         if (operation == DeviceStatusOperation.ONLINE) {
@@ -162,8 +170,13 @@ public class DeviceStatusService {
 
     private void handleStatusToOnline(AvailableDeviceData availableDeviceData) {
         Device device = availableDeviceData.getDevice();
+        if (device == null) {
+            return;
+        }
+
         DeviceStatusConfig config = availableDeviceData.getDeviceStatusConfig();
-        updateDeviceStatusToOnline(device, config.getOnlineListener());
+        Consumer<Device> onlineListener = Optional.ofNullable(config).map(DeviceStatusConfig::getOnlineListener).orElse(null);
+        updateDeviceStatusToOnline(device, onlineListener);
 
         Duration offlineDuration = getDeviceOfflineDuration(device, config);
         if (offlineDuration != null) {
@@ -173,8 +186,13 @@ public class DeviceStatusService {
 
     private void handleStatusToOffline(AvailableDeviceData availableDeviceData) {
         Device device = availableDeviceData.getDevice();
+        if (device == null) {
+            return;
+        }
+
         DeviceStatusConfig config = availableDeviceData.getDeviceStatusConfig();
-        updateDeviceStatusToOffline(device, config.getOfflineListener());
+        Consumer<Device> offlineListener = Optional.ofNullable(config).map(DeviceStatusConfig::getOfflineListener).orElse(null);
+        updateDeviceStatusToOffline(device, offlineListener);
     }
 
     private void offerDelayedTask(Device device, Duration offlineDuration) {
@@ -197,20 +215,21 @@ public class DeviceStatusService {
 
     protected AvailableDeviceData getAvailableDeviceDataByDeviceId(Long deviceId) {
         Device device = deviceServiceProvider.findById(deviceId);
+        return getAvailableDeviceDataByDevice(device);
+    }
+
+    protected AvailableDeviceData getAvailableDeviceDataByDevice(Device device) {
         if (device == null) {
-            return null;
+            return AvailableDeviceData.of(null, null);
         }
 
         DeviceStatusConfig deviceStatusConfig = integrationDeviceStatusConfigs.get(device.getIntegrationId());
-        if (deviceStatusConfig == null) {
-            return null;
-        }
-
         return AvailableDeviceData.of(device, deviceStatusConfig);
     }
 
     private Duration getDeviceOfflineDuration(Device device, DeviceStatusConfig config) {
-        return Optional.ofNullable(config.getOfflineTimeoutFetcher())
+        return Optional.ofNullable(config)
+                .map(DeviceStatusConfig::getOfflineTimeoutFetcher)
                 .map(f -> f.apply(device))
                 .filter(d -> d.toSeconds() > 0)
                 .orElse(null);
@@ -227,9 +246,13 @@ public class DeviceStatusService {
     private void updateDeviceStatus(Device device, String deviceStatus, Consumer<Device> statusChangedListener) {
         String statusEntityKey = getStatusEntityKey(device);
         if (entityServiceProvider.findByKey(statusEntityKey) == null) {
+            if (!deviceServiceProvider.existsById(device.getId())) {
+                return;
+            }
+
             EntityTemplate entityTemplate = entityTemplateServiceProvider.findByKey(DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS);
             if (entityTemplate == null) {
-                throw new RuntimeException("Device status entity template not found");
+                throw ServiceException.with(ErrorCode.DATA_NO_FOUND.getErrorCode(), "Device status entity template not found").build();
             }
             Entity statusEntity = entityTemplate.toEntity(device.getIntegrationId(), device.getKey());
             entityServiceProvider.save(statusEntity);

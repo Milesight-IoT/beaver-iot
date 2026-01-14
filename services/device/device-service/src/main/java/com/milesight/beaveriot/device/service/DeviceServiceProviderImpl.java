@@ -257,4 +257,9 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
         Set<String> integrationIds = devices.stream().map(DevicePO::getIntegration).collect(Collectors.toSet());
         deviceService.evictIntegrationIdToDeviceCache(integrationIds);
     }
+
+    @Override
+    public boolean existsById(Long id) {
+        return deviceRepository.existsById(id);
+    }
 }
