@@ -5,6 +5,7 @@ import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheable;
 import com.milesight.beaveriot.base.annotations.cacheable.CacheKeys;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.page.GenericPageRequest;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
@@ -37,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -435,46 +437,36 @@ public class EntityValueService implements EntityValueServiceProvider {
         return new MapExchangePayloadProxy<>(exchangeValues, entitiesClazz).proxy();
     }
 
-    public Page<EntityHistoryResponse> historySearch(EntityHistoryQuery entityHistoryQuery) {
+    public Page<EntityHistoryResponse> historySearch(List<Long> entityIdList, Long startTimestamp, Long endTimestamp, GenericPageRequest pageRequest) {
+        Long queryStartTimestamp = startTimestamp;
+        Long queryEndTimestamp = endTimestamp;
+        if (queryStartTimestamp == null) {
+            queryStartTimestamp = 0L;
+        }
 
-        if (entityHistoryQuery.getStartTimestamp() == null) {
-            entityHistoryQuery.setStartTimestamp(0L);
+        if (queryEndTimestamp == null) {
+            queryEndTimestamp = System.currentTimeMillis();
         }
-        if (entityHistoryQuery.getEndTimestamp() == null) {
-            entityHistoryQuery.setEndTimestamp(System.currentTimeMillis());
-        }
-        if (entityHistoryQuery.getEndTimestamp() <= entityHistoryQuery.getStartTimestamp()) {
+
+        if (queryEndTimestamp <= queryStartTimestamp) {
             throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED)
                     .detailMessage("startTimestamp should be less than endTimestamp")
                     .build();
         }
 
-        List<Long> entityIds = entityHistoryQuery.getEntityIds() == null
-                ? new ArrayList<>()
-                : entityHistoryQuery.getEntityIds()
-                .stream()
-                .filter(Objects::nonNull)
-                .distinct()
-                .collect(Collectors.toList());
-        if (entityHistoryQuery.getEntityId() != null) {
-            entityIds.add(entityHistoryQuery.getEntityId());
-        }
-
-        if (entityHistoryQuery.getSort().getOrders().isEmpty()) {
-            entityHistoryQuery.sort(new Sorts().desc(EntityHistoryPO.Fields.timestamp));
-        }
-
-        List<Long> entityIdsWithPermission = entityRepository.findAllWithDataPermission(f -> f.in(EntityPO.Fields.id, entityIds.toArray()))
-                .stream().map(EntityPO::getId).toList();
-        if (CollectionUtils.isEmpty(entityIdsWithPermission)) {
+        if (CollectionUtils.isEmpty(entityIdList)) {
             return Page.empty();
         }
 
+        if (pageRequest.getSort().getOrders().isEmpty()) {
+            pageRequest.sort(new Sorts().desc(EntityHistoryPO.Fields.timestamp));
+        }
+
         Page<EntityHistoryPO> entityHistoryPage = entityHistoryRepository.findByEntityIdInAndTimestampBetween(
-                entityIdsWithPermission,
-                entityHistoryQuery.getStartTimestamp(),
-                entityHistoryQuery.getEndTimestamp(),
-                entityHistoryQuery.toPageable()
+                entityIdList,
+                queryStartTimestamp,
+                queryEndTimestamp,
+                pageRequest.toPageable()
         );
         if (entityHistoryPage == null || entityHistoryPage.getContent().isEmpty()) {
             return Page.empty();

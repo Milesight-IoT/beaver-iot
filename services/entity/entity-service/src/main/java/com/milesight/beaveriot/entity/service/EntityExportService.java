@@ -2,6 +2,7 @@ package com.milesight.beaveriot.entity.service;
 
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.page.GenericPageRequest;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.entity.dto.EntityResponse;
 import com.milesight.beaveriot.entity.exporter.CsvExporter;
@@ -10,6 +11,7 @@ import com.milesight.beaveriot.entity.model.request.EntityExportRequest;
 import com.milesight.beaveriot.entity.model.request.EntityHistoryQuery;
 import com.milesight.beaveriot.entity.model.response.EntityHistoryResponse;
 import com.milesight.beaveriot.entity.po.EntityHistoryPO;
+import com.milesight.beaveriot.entity.po.EntityPO;
 import com.milesight.beaveriot.permission.aspect.OperationPermission;
 import com.milesight.beaveriot.permission.enums.OperationPermissionCode;
 import jakarta.servlet.http.HttpServletResponse;
@@ -73,6 +75,9 @@ public class EntityExportService {
                 .map(EntityResponse::getEntityId)
                 .map(Long::parseLong)
                 .toList();
+
+        val availableEntityPOList = entityService.listEntityPOById(entityIds);
+        val availableEntityIds = availableEntityPOList.stream().map(EntityPO::getId).toList();
         val entityIdToPO = entityResponses.stream()
                 .collect(Collectors.toMap(EntityResponse::getEntityId, Function.identity(), (v1, v2) -> v1));
 
@@ -81,14 +86,11 @@ public class EntityExportService {
         val zoneId = StringUtils.hasText(entityExportRequest.getTimeZone()) ? ZoneId.of(entityExportRequest.getTimeZone()) : ZoneId.systemDefault();
         val outputStream = httpServletResponse.getOutputStream();
         exporter.export(outputStream, i -> {
-            val query = new EntityHistoryQuery();
-            query.setEntityIds(entityIds);
-            query.setStartTimestamp(startTime);
-            query.setEndTimestamp(endTime);
+            val query = new GenericPageRequest();
             query.setPageNumber(i + 1);
             query.setPageSize(PAGE_SIZE);
             query.sort(new Sorts().desc(EntityHistoryPO.Fields.timestamp).asc(EntityHistoryPO.Fields.entityId));
-            return entityValueService.historySearch(query)
+            return entityValueService.historySearch(availableEntityIds, startTime, endTime, query)
                     .stream()
                     .map(historyResponse -> {
                         val entityResponse = entityIdToPO.get(historyResponse.getEntityId());
