@@ -10,6 +10,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
 
@@ -29,6 +30,13 @@ public interface EntityHistoryRepository extends BaseJpaRepository<EntityHistory
     void deleteByEntityIdIn(@Param("entityIds") List<Long> entityIds);
 
     Page<EntityHistoryPO> findByEntityIdInAndTimestampBetween(
+            Collection<Long> entityIds,
+            Long startTimestamp,
+            Long endTimestamp,
+            Pageable pageable
+    );
+
+    Slice<EntityHistoryPO> findSliceByEntityIdInAndTimestampBetween(
             Collection<Long> entityIds,
             Long startTimestamp,
             Long endTimestamp,

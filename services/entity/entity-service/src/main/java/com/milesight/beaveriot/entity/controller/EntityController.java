@@ -11,6 +11,7 @@ import com.milesight.beaveriot.entity.model.response.EntityAggregateResponse;
 import com.milesight.beaveriot.entity.model.response.EntityHistoryResponse;
 import com.milesight.beaveriot.entity.model.response.EntityLatestResponse;
 import com.milesight.beaveriot.entity.model.response.EntityMetaResponse;
+import com.milesight.beaveriot.entity.po.EntityPO;
 import com.milesight.beaveriot.entity.service.EntityExportService;
 import com.milesight.beaveriot.entity.service.EntityService;
 import com.milesight.beaveriot.entity.service.EntityValueService;
@@ -25,10 +26,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * @author loong
@@ -89,8 +92,32 @@ public class EntityController {
             OperationPermissionCode.DEVICE_VIEW
     })
     @PostMapping("/history/search")
-    public ResponseBody<Page<EntityHistoryResponse>> historySearch(@RequestBody EntityHistoryQuery entityHistoryQuery) {
-        return getResponseOrEmpty(() -> ResponseBuilder.success(entityValueService.historySearch(entityHistoryQuery)),
+    public ResponseBody<Page<EntityHistoryResponse>> historySearch(@RequestBody EntityHistoryQuery query) {
+        return getResponseOrEmpty(() -> {
+                    List<Long> entityIds = query.getEntityIds() == null
+                            ? new ArrayList<>()
+                            : query.getEntityIds()
+                            .stream()
+                            .filter(Objects::nonNull)
+                            .distinct()
+                            .collect(Collectors.toList());
+                    if (query.getEntityId() != null) {
+                        entityIds.add(query.getEntityId());
+                    }
+
+                    if (entityIds.isEmpty()) {
+                        return ResponseBuilder.success(Page.empty());
+                    }
+
+                    List<Long> entityIdsWithPermission = entityService.listEntityPOById(entityIds)
+                            .stream().map(EntityPO::getId).toList();
+
+                    if (entityIdsWithPermission.isEmpty()) {
+                        return ResponseBuilder.success(Page.empty());
+                    }
+
+                    return ResponseBuilder.success(entityValueService.historySearch(entityIdsWithPermission, query.getStartTimestamp(), query.getEndTimestamp(), query));
+                },
                 () -> ResponseBuilder.success(Page.empty()));
     }
 

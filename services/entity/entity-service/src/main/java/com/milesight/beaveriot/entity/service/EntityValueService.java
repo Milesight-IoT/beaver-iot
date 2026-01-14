@@ -5,6 +5,7 @@ import com.milesight.beaveriot.base.annotations.cacheable.BatchCacheable;
 import com.milesight.beaveriot.base.annotations.cacheable.CacheKeys;
 import com.milesight.beaveriot.base.enums.ErrorCode;
 import com.milesight.beaveriot.base.exception.ServiceException;
+import com.milesight.beaveriot.base.page.GenericPageRequest;
 import com.milesight.beaveriot.base.page.Sorts;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.EntityValueServiceProvider;
@@ -38,6 +39,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -434,74 +437,90 @@ public class EntityValueService implements EntityValueServiceProvider {
         return new MapExchangePayloadProxy<>(exchangeValues, entitiesClazz).proxy();
     }
 
-    public Page<EntityHistoryResponse> historySearch(EntityHistoryQuery entityHistoryQuery) {
+    private EntityHistoryResponse convertToHistoryResponse(EntityHistoryPO entityHistoryPO) {
+        EntityHistoryResponse response = new EntityHistoryResponse();
+        response.setId(entityHistoryPO.getId().toString());
+        response.setEntityId(entityHistoryPO.getEntityId().toString());
+        response.setTimestamp(entityHistoryPO.getTimestamp().toString());
+        if (entityHistoryPO.getValueBoolean() != null) {
+            response.setValue(entityHistoryPO.getValueBoolean());
+            response.setValueType(EntityValueType.BOOLEAN);
+        } else if (entityHistoryPO.getValueLong() != null) {
+            response.setValue(entityHistoryPO.getValueLong().toString());
+            response.setValueType(EntityValueType.LONG);
+        } else if (entityHistoryPO.getValueDouble() != null) {
+            response.setValue(entityHistoryPO.getValueDouble());
+            response.setValueType(EntityValueType.DOUBLE);
+        } else if (entityHistoryPO.getValueString() != null) {
+            response.setValue(entityHistoryPO.getValueString());
+            response.setValueType(EntityValueType.STRING);
+        } else if (entityHistoryPO.getValueBinary() != null) {
+            response.setValue(entityHistoryPO.getValueBinary());
+            response.setValueType(EntityValueType.BINARY);
+        }
+        return response;
+    }
 
-        if (entityHistoryQuery.getStartTimestamp() == null) {
-            entityHistoryQuery.setStartTimestamp(0L);
+    public Page<EntityHistoryResponse> historySearch(List<Long> entityIdList, Long startTimestamp, Long endTimestamp, GenericPageRequest pageRequest) {
+        Long queryStartTimestamp = startTimestamp;
+        Long queryEndTimestamp = endTimestamp;
+        if (queryStartTimestamp == null) {
+            queryStartTimestamp = 0L;
         }
-        if (entityHistoryQuery.getEndTimestamp() == null) {
-            entityHistoryQuery.setEndTimestamp(System.currentTimeMillis());
+
+        if (queryEndTimestamp == null) {
+            queryEndTimestamp = System.currentTimeMillis();
         }
-        if (entityHistoryQuery.getEndTimestamp() <= entityHistoryQuery.getStartTimestamp()) {
+
+        if (queryEndTimestamp <= queryStartTimestamp) {
             throw ServiceException.with(ErrorCode.PARAMETER_VALIDATION_FAILED)
                     .detailMessage("startTimestamp should be less than endTimestamp")
                     .build();
         }
 
-        List<Long> entityIds = entityHistoryQuery.getEntityIds() == null
-                ? new ArrayList<>()
-                : entityHistoryQuery.getEntityIds()
-                .stream()
-                .filter(Objects::nonNull)
-                .distinct()
-                .collect(Collectors.toList());
-        if (entityHistoryQuery.getEntityId() != null) {
-            entityIds.add(entityHistoryQuery.getEntityId());
-        }
-
-        if (entityHistoryQuery.getSort().getOrders().isEmpty()) {
-            entityHistoryQuery.sort(new Sorts().desc(EntityHistoryPO.Fields.timestamp));
-        }
-
-        List<Long> entityIdsWithPermission = entityRepository.findAllWithDataPermission(f -> f.in(EntityPO.Fields.id, entityIds.toArray()))
-                .stream().map(EntityPO::getId).toList();
-        if (CollectionUtils.isEmpty(entityIdsWithPermission)) {
+        if (CollectionUtils.isEmpty(entityIdList)) {
             return Page.empty();
         }
 
+        if (pageRequest.getSort().getOrders().isEmpty()) {
+            pageRequest.sort(new Sorts().desc(EntityHistoryPO.Fields.timestamp));
+        }
+
         Page<EntityHistoryPO> entityHistoryPage = entityHistoryRepository.findByEntityIdInAndTimestampBetween(
-                entityIdsWithPermission,
-                entityHistoryQuery.getStartTimestamp(),
-                entityHistoryQuery.getEndTimestamp(),
-                entityHistoryQuery.toPageable()
+                entityIdList,
+                queryStartTimestamp,
+                queryEndTimestamp,
+                pageRequest.toPageable()
         );
         if (entityHistoryPage == null || entityHistoryPage.getContent().isEmpty()) {
             return Page.empty();
         }
 
-        return entityHistoryPage.map(entityHistoryPO -> {
-            EntityHistoryResponse response = new EntityHistoryResponse();
-            response.setId(entityHistoryPO.getId().toString());
-            response.setEntityId(entityHistoryPO.getEntityId().toString());
-            response.setTimestamp(entityHistoryPO.getTimestamp().toString());
-            if (entityHistoryPO.getValueBoolean() != null) {
-                response.setValue(entityHistoryPO.getValueBoolean());
-                response.setValueType(EntityValueType.BOOLEAN);
-            } else if (entityHistoryPO.getValueLong() != null) {
-                response.setValue(entityHistoryPO.getValueLong().toString());
-                response.setValueType(EntityValueType.LONG);
-            } else if (entityHistoryPO.getValueDouble() != null) {
-                response.setValue(entityHistoryPO.getValueDouble());
-                response.setValueType(EntityValueType.DOUBLE);
-            } else if (entityHistoryPO.getValueString() != null) {
-                response.setValue(entityHistoryPO.getValueString());
-                response.setValueType(EntityValueType.STRING);
-            } else if (entityHistoryPO.getValueBinary() != null) {
-                response.setValue(entityHistoryPO.getValueBinary());
-                response.setValueType(EntityValueType.BINARY);
-            }
-            return response;
-        });
+        return entityHistoryPage.map(this::convertToHistoryResponse);
+    }
+
+    public List<EntityHistoryResponse> historySearchSlice(List<Long> entityIdList, Long startTimestamp, Long endTimestamp, GenericPageRequest pageRequest) {
+        if (CollectionUtils.isEmpty(entityIdList)) {
+            return List.of();
+        }
+
+        if (pageRequest.getSort().getOrders().isEmpty()) {
+            pageRequest.sort(new Sorts().desc(EntityHistoryPO.Fields.timestamp));
+        }
+
+        Slice<EntityHistoryPO> entityHistorySlice = entityHistoryRepository.findSliceByEntityIdInAndTimestampBetween(
+                entityIdList,
+                startTimestamp,
+                endTimestamp,
+                pageRequest.toPageable()
+        );
+        if (entityHistorySlice == null || !entityHistorySlice.hasContent()) {
+            return List.of();
+        }
+
+        return entityHistorySlice.getContent().stream()
+                .map(this::convertToHistoryResponse)
+                .toList();
     }
 
     public EntityAggregateResponse historyAggregate(EntityAggregateQuery entityAggregateQuery) {
