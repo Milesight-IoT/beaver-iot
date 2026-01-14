@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.Value;
 import org.springframework.util.CollectionUtils;
@@ -32,6 +33,9 @@ public class CodecExecutor {
             .allowListAccess(true)
             .build();
     private static final String LANGUAGE_ID = "js";
+    private static final Engine ENGINE = Engine.newBuilder(LANGUAGE_ID)
+            .option("engine.WarnInterpreterOnly", "false")
+            .build();
 
     private String code;
     private String entry;
@@ -42,7 +46,7 @@ public class CodecExecutor {
     private static Context buildCodeCtx() {
         return Context.newBuilder(LANGUAGE_ID)
                 .allowHostAccess(HOST_ACCESS)
-                .option("engine.WarnInterpreterOnly", "false")
+                .engine(ENGINE)
                 .build();
     }
 
@@ -108,8 +112,8 @@ public class CodecExecutor {
     }
 
     private Object convertArg(Context context, Object object) {
-        if (object instanceof JsonNode) {
-            return convertToJSObject(context, (JsonNode) object);
+        if (object instanceof JsonNode jsonNodeObject) {
+            return convertToJSObject(context, jsonNodeObject);
         } else if (object instanceof byte[] byteArray) {
             int[] intArray = new int[byteArray.length];
             for (int i = 0; i < byteArray.length; i++) {
