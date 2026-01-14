@@ -58,15 +58,23 @@ public class Sequence {
      */
     private long lastTimestamp = -1L;
 
+    private final long initialTimestamp;
+
+    private final long initialNanoTime;
+
     private InetAddress inetAddress;
 
     public Sequence() {
+        this.initialTimestamp = SystemClock.now();
+        this.initialNanoTime = System.nanoTime();
         this.inetAddress = getLocalHost();
         this.datacenterId = getDatacenterId(maxDatacenterId);
         this.workerId = getMaxWorkerId(datacenterId, maxWorkerId);
     }
 
     public Sequence(InetAddress inetAddress) {
+        this.initialTimestamp = SystemClock.now();
+        this.initialNanoTime = System.nanoTime();
         this.inetAddress = inetAddress;
         this.datacenterId = getDatacenterId(maxDatacenterId);
         this.workerId = getMaxWorkerId(datacenterId, maxWorkerId);
@@ -93,6 +101,8 @@ public class Sequence {
      * @param datacenterId SerialNumber
      */
     public Sequence(long workerId, long datacenterId) {
+        this.initialTimestamp = SystemClock.now();
+        this.initialNanoTime = System.nanoTime();
         Assert.isTrue(!(workerId > maxWorkerId || workerId < 0),
                 String.format("worker Id can't be greater than %d or less than 0", maxWorkerId));
         Assert.isTrue(!(datacenterId > maxDatacenterId || datacenterId < 0),
@@ -196,7 +206,8 @@ public class Sequence {
     }
 
     protected long timeGen() {
-        return SystemClock.now();
+        long nanoTime = System.nanoTime();
+        return initialTimestamp + ((nanoTime - initialNanoTime) / 1000000);
     }
 
 }
