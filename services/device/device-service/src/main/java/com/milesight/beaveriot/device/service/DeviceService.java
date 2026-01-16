@@ -527,7 +527,7 @@ public class DeviceService implements IDeviceFacade, IDeviceResponseFacade {
                         .template(devicePO.getTemplate())
                         .createdAt(devicePO.getCreatedAt())
                         .integrationId(devicePO.getIntegration())
-                        .integrationName(integrationMap.get(devicePO.getIntegration()).getName())
+                        .integrationName(Optional.ofNullable(integrationMap.get(devicePO.getIntegration())).map(Integration::getName).orElse(null))
                         .identifier(devicePO.getIdentifier())
                         .build())
                 .toList();
