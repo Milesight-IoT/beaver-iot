@@ -31,21 +31,15 @@ public class InMemoryRequestCoalescer<V> implements RequestCoalescer<V> {
             return existingFuture;
         }
 
-        return inflightRequests.computeIfAbsent(key, k -> {
-            CompletableFuture<V> newFuture = CompletableFuture
-                    .supplyAsync(task, this.executor)
-                    .orTimeout(RequestCoalescerConstants.REQUEST_TIMEOUT.getSeconds(), TimeUnit.SECONDS);
-
-            newFuture.whenComplete((result, ex) -> {
-                inflightRequests.remove(k);
-                if (ex != null) {
-                    log.error("Request failed for key: {}", k, ex);
-                } else {
-                    log.debug("Request completed for key: {}", k);
-                }
-            });
-
-            return newFuture;
+        return inflightRequests.computeIfAbsent(key, k -> CompletableFuture.supplyAsync(task, this.executor))
+                .orTimeout(RequestCoalescerConstants.REQUEST_TIMEOUT.getSeconds(), TimeUnit.SECONDS)
+                .whenComplete((result, ex) -> {
+                    inflightRequests.remove(key);
+                    if (ex != null) {
+                        log.error("Request failed for key: {}", key, ex);
+                    } else {
+                        log.debug("Request completed for key: {}", key);
+                    }
         });
     }
 }
