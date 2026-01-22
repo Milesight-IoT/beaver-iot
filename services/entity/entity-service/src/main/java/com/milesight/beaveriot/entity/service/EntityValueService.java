@@ -106,8 +106,17 @@ public class EntityValueService implements EntityValueServiceProvider {
     }
 
     @Override
-    @Transactional
     public Map<String, Pair<Long, Long>> saveValues(ExchangePayload exchange, long timestamp) {
+        Map<String, Pair<Long, Long>> entityKeyLatestIdAndHistoryIds = self().doSaveValues(exchange, timestamp);
+        Map<String, Object> propertyEntities = exchange.getPayloadsByEntityType(EntityType.PROPERTY);
+        if (!ObjectUtils.isEmpty(propertyEntities)) {
+            self().evictLatestValues(propertyEntities.keySet());
+        }
+        return entityKeyLatestIdAndHistoryIds;
+    }
+
+    @Transactional
+    public Map<String, Pair<Long, Long>> doSaveValues(ExchangePayload exchange, long timestamp) {
         Map<String, Pair<Long, Long>> entityKeyLatestIdAndHistoryIds = new HashMap<>();
 
         // Save event entities， only save history
@@ -131,7 +140,6 @@ public class EntityValueService implements EntityValueServiceProvider {
             Map<String, Long> entityKeyHistoryIds = saveHistoryRecord(serviceEntities, timestamp);
             entityKeyLatestIdAndHistoryIds.putAll(entityKeyHistoryIds.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> Pair.of(-1L, entry.getValue()))));
         }
-
         return entityKeyLatestIdAndHistoryIds;
     }
 
@@ -199,7 +207,6 @@ public class EntityValueService implements EntityValueServiceProvider {
         });
 
         entityLatestRepository.saveAll(entityLatestPOList);
-        self().evictLatestValues(values.keySet());
         return entityKeyLatestIds;
     }
 
