@@ -9,6 +9,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.core.log.LogMessage;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -174,7 +175,7 @@ public class CustomOAuth2RefreshTokenAuthenticationProvider implements Authentic
         // @formatter:off
         DefaultOAuth2TokenContext.Builder tokenContextBuilder = DefaultOAuth2TokenContext.builder()
                 .registeredClient(registeredClient)
-                .principal(authorization.getAttribute(Principal.class.getName()))
+                .principal(new UsernamePasswordAuthenticationToken(authentication.getName(), null))
                 .authorizationServerContext(AuthorizationServerContextHolder.getContext())
                 .authorization(authorization)
                 .authorizedScopes(scopes)
