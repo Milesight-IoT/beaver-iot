@@ -227,7 +227,7 @@ public class CustomOAuth2RefreshTokenAuthenticationProvider implements Authentic
         // @formatter:off
         DefaultOAuth2TokenContext.Builder tokenContextBuilder = DefaultOAuth2TokenContext.builder()
                 .registeredClient(registeredClient)
-                .principal(new UsernamePasswordAuthenticationToken(refreshTokenAuthentication.getName(), null))
+                .principal(new UsernamePasswordAuthenticationToken(authorization.getPrincipalName(), null))
                 .authorizationServerContext(AuthorizationServerContextHolder.getContext())
                 .authorization(authorization)
                 .authorizedScopes(scopes)
