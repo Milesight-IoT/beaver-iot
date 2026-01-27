@@ -1,5 +1,8 @@
 package com.milesight.beaveriot.authentication.provider;
 
+import com.milesight.beaveriot.authentication.config.OAuth2Properties;
+import com.milesight.beaveriot.base.annotations.shedlock.DistributedLock;
+import com.milesight.beaveriot.base.annotations.shedlock.LockScope;
 import com.milesight.beaveriot.context.security.SecurityUser;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.context.security.TenantContext;
@@ -7,18 +10,12 @@ import com.milesight.beaveriot.user.dto.TenantDTO;
 import com.milesight.beaveriot.user.facade.IUserFacade;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.core.log.LogMessage;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.oauth2.core.AuthorizationGrantType;
-import org.springframework.security.oauth2.core.ClaimAccessor;
-import org.springframework.security.oauth2.core.OAuth2AccessToken;
-import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
-import org.springframework.security.oauth2.core.OAuth2Error;
-import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
-import org.springframework.security.oauth2.core.OAuth2RefreshToken;
-import org.springframework.security.oauth2.core.OAuth2Token;
+import org.springframework.security.oauth2.core.*;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
@@ -29,7 +26,6 @@ import org.springframework.security.oauth2.server.authorization.OAuth2Authorizat
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AccessTokenAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationToken;
-import org.springframework.security.oauth2.server.authorization.authentication.OAuth2RefreshTokenAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.context.AuthorizationServerContextHolder;
 import org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat;
@@ -39,6 +35,7 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.util.Assert;
 
 import java.security.Principal;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -62,6 +59,8 @@ public class CustomOAuth2RefreshTokenAuthenticationProvider implements Authentic
 
     private final JwtDecoder jwtDecoder;
 
+    private final OAuth2Properties oAuth2Properties;
+
     /**
      * Constructs an {@code OAuth2RefreshTokenAuthenticationProvider} using the provided
      * parameters.
@@ -73,26 +72,33 @@ public class CustomOAuth2RefreshTokenAuthenticationProvider implements Authentic
     public CustomOAuth2RefreshTokenAuthenticationProvider(OAuth2AuthorizationService authorizationService,
                                                           OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator,
                                                           IUserFacade userFacade,
-                                                          JwtDecoder jwtDecoder) {
+                                                          JwtDecoder jwtDecoder,
+                                                          OAuth2Properties oAuth2Properties) {
         Assert.notNull(authorizationService, "authorizationService cannot be null");
         Assert.notNull(tokenGenerator, "tokenGenerator cannot be null");
         this.authorizationService = authorizationService;
         this.tokenGenerator = tokenGenerator;
         this.userFacade = userFacade;
         this.jwtDecoder = jwtDecoder;
+        this.oAuth2Properties = oAuth2Properties;
     }
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         CustomOAuth2RefreshTokenAuthenticationToken refreshTokenAuthentication = (CustomOAuth2RefreshTokenAuthenticationToken) authentication;
-
-        OAuth2ClientAuthenticationToken clientPrincipal = getAuthenticatedClientElseThrowInvalidClient(refreshTokenAuthentication);
-        RegisteredClient registeredClient = clientPrincipal.getRegisteredClient();
-
         if (this.logger.isTraceEnabled()) {
             this.logger.trace("Retrieved registered client");
         }
 
+        OAuth2Authorization authorization = getOAuth2Authorization(refreshTokenAuthentication);
+        return self().doAuthenticate(authorization.getId(), refreshTokenAuthentication);
+    }
+
+    private CustomOAuth2RefreshTokenAuthenticationProvider self() {
+        return (CustomOAuth2RefreshTokenAuthenticationProvider) AopContext.currentProxy();
+    }
+
+    private OAuth2Authorization getOAuth2Authorization(CustomOAuth2RefreshTokenAuthenticationToken refreshTokenAuthentication) {
         OAuth2Authorization authorization = this.authorizationService
                 .findByToken(refreshTokenAuthentication.getRefreshToken(), OAuth2TokenType.REFRESH_TOKEN);
         if (authorization == null) {
@@ -100,6 +106,52 @@ public class CustomOAuth2RefreshTokenAuthenticationProvider implements Authentic
                 this.logger.debug("Invalid request: refresh_token is invalid");
             }
             throw new OAuth2AuthenticationException(OAuth2ErrorCodes.INVALID_GRANT);
+        }
+
+        return authorization;
+    }
+
+    @DistributedLock(name = "refresh-token-#{#p0}", lockAtMostFor = "30s", waitForLock = "5s", scope = LockScope.GLOBAL)
+    public Authentication doAuthenticate(String authorizationId, CustomOAuth2RefreshTokenAuthenticationToken refreshTokenAuthentication) {
+        OAuth2ClientAuthenticationToken clientPrincipal = getAuthenticatedClientElseThrowInvalidClient(refreshTokenAuthentication);
+        RegisteredClient registeredClient = clientPrincipal.getRegisteredClient();
+        // Double check
+        OAuth2Authorization authorization = getOAuth2Authorization(refreshTokenAuthentication);
+
+        // Check if token is within cool down period
+        OAuth2Authorization.Token<OAuth2AccessToken> currentAccessToken = authorization.getAccessToken();
+        if (currentAccessToken != null && oAuth2Properties.getRefreshCoolDown() != null) {
+            Instant tokenIssuedAt = currentAccessToken.getToken().getIssuedAt();
+            if (tokenIssuedAt != null) {
+                Instant now = Instant.now();
+                Instant coolDownExpiry = tokenIssuedAt.plus(oAuth2Properties.getRefreshCoolDown());
+
+                if (now.isBefore(coolDownExpiry)) {
+                    if (this.logger.isDebugEnabled()) {
+                        this.logger.debug(LogMessage.format(
+                                "Token is within cool down period, returning existing token for authorization '%s'",
+                                authorization.getId()));
+                    }
+
+                    // Return existing tokens without refreshing
+                    OAuth2RefreshToken currentRefreshToken = authorization.getRefreshToken().getToken();
+                    Map<String, Object> additionalParameters = Collections.emptyMap();
+
+                    // Include ID token if present
+                    OAuth2Authorization.Token<OidcIdToken> idToken = authorization.getToken(OidcIdToken.class);
+                    if (idToken != null) {
+                        additionalParameters = new HashMap<>();
+                        additionalParameters.put(OidcParameterNames.ID_TOKEN, idToken.getToken().getTokenValue());
+                    }
+
+                    return new OAuth2AccessTokenAuthenticationToken(
+                            registeredClient,
+                            clientPrincipal,
+                            currentAccessToken.getToken(),
+                            currentRefreshToken,
+                            additionalParameters);
+                }
+            }
         }
 
         String tenantId = refreshTokenAuthentication.getTenantId();
