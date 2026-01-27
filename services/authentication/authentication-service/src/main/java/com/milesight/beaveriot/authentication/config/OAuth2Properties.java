@@ -4,6 +4,8 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
+
 /**
  * @author loong
  * @date 2024/10/24 14:39
@@ -18,6 +20,7 @@ public class OAuth2Properties {
     private String clientSecret;
     private String[] ignoreUrls;
     private RsaKey rsa;
+    private Duration refreshCoolDown;
 
     @Data
     public static class RsaKey {
