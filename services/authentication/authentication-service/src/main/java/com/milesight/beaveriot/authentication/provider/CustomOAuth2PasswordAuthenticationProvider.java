@@ -93,7 +93,6 @@ public class CustomOAuth2PasswordAuthenticationProvider implements Authenticatio
                 .principalName(principal.getName())
                 .authorizationGrantType(AuthorizationGrantType.PASSWORD)
                 .authorizedScopes(registeredClient.getScopes())
-                .attribute(Principal.class.getName(), principal)
                 .build();
 
         // @formatter:off
