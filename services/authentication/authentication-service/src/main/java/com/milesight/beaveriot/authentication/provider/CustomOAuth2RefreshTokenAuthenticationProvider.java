@@ -37,10 +37,7 @@ import org.springframework.util.Assert;
 
 import java.security.Principal;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author loong
@@ -300,6 +297,7 @@ public class CustomOAuth2RefreshTokenAuthenticationProvider implements Authentic
             idToken = null;
         }
 
+        authorizationBuilder.id(UUID.randomUUID().toString());
         authorization = authorizationBuilder.build();
 
         this.authorizationService.save(authorization);
