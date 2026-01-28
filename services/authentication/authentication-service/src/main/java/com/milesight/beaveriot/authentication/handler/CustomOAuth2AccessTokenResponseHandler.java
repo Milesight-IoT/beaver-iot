@@ -19,6 +19,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
@@ -43,8 +44,8 @@ public class CustomOAuth2AccessTokenResponseHandler implements AuthenticationSuc
         OAuth2AccessTokenResponse.Builder builder = OAuth2AccessTokenResponse.withToken(accessToken.getTokenValue())
                 .tokenType(accessToken.getTokenType())
                 .scopes(accessToken.getScopes());
-        if (accessToken.getIssuedAt() != null && accessToken.getExpiresAt() != null) {
-            builder.expiresIn(ChronoUnit.SECONDS.between(accessToken.getIssuedAt(), accessToken.getExpiresAt()));
+        if (accessToken.getExpiresAt() != null) {
+            builder.expiresIn(ChronoUnit.SECONDS.between(Instant.now(), accessToken.getExpiresAt()));
         }
         if (refreshToken != null) {
             builder.refreshToken(refreshToken.getTokenValue());
