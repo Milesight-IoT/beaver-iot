@@ -3,10 +3,13 @@ package com.milesight.beaveriot.device.status.service
 import com.milesight.beaveriot.context.api.*
 import com.milesight.beaveriot.context.integration.model.*
 import com.milesight.beaveriot.context.model.delayedqueue.DelayedQueue
+import com.milesight.beaveriot.context.support.SpringContext
 import com.milesight.beaveriot.device.status.constants.DeviceStatusConstants
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import java.lang.reflect.Field
 import java.time.Duration
 
 /**
@@ -39,6 +42,13 @@ class DeviceStatusServiceTest extends Specification {
                 entityValueServiceProvider,
                 delayedQueueServiceProvider
         )
+
+        ConfigurableListableBeanFactory mockBeanFactory = Mock(ConfigurableListableBeanFactory)
+        mockBeanFactory.getBean(DeviceStatusService.class) >> deviceStatusService
+
+        Field beanFactoryField = SpringContext.class.getDeclaredField("beanFactory")
+        beanFactoryField.setAccessible(true)
+        beanFactoryField.set(null, mockBeanFactory)
     }
 
     // ==================== register tests ====================
@@ -131,6 +141,7 @@ class DeviceStatusServiceTest extends Specification {
         def entityTemplate = Mock(EntityTemplate)
         def entity = Mock(Entity)
 
+        deviceServiceProvider.existsById(1L) >> true
         entityServiceProvider.findByKey(statusEntityKey) >> null
         entityTemplateServiceProvider.findByKey(DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS) >> entityTemplate
         entityTemplate.toEntity("test-integration", device.getKey()) >> entity
@@ -162,6 +173,7 @@ class DeviceStatusServiceTest extends Specification {
         deviceServiceProvider.findAll(integrationId) >> []
         deviceStatusService.register(integrationId, config)
 
+        deviceServiceProvider.existsById(1L) >> true
         entityServiceProvider.findByKey(statusEntityKey) >> null
         entityTemplateServiceProvider.findByKey(DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS) >> entityTemplate
         entityTemplate.toEntity(integrationId, device.getKey()) >> entity
@@ -183,6 +195,7 @@ class DeviceStatusServiceTest extends Specification {
         def entityTemplate = Mock(EntityTemplate)
         def entity = Mock(Entity)
 
+        deviceServiceProvider.existsById(1L) >> true
         entityServiceProvider.findByKey(statusEntityKey) >> null
         entityTemplateServiceProvider.findByKey(DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS) >> entityTemplate
         entityTemplate.toEntity("test-integration", device.getKey()) >> entity
@@ -194,6 +207,111 @@ class DeviceStatusServiceTest extends Specification {
         then:
         1 * entityServiceProvider.save(entity)
         1 * entityValueServiceProvider.saveValuesAndPublishSync(_)
+    }
+
+    // ==================== offlineIfPreviouslySeen tests ====================
+
+    def "offlineIfPreviouslySeen should do nothing when device is null"() {
+        when:
+        deviceStatusService.offlineIfPreviouslySeen(null)
+
+        then:
+        0 * deviceServiceProvider._
+        0 * entityServiceProvider._
+        0 * entityValueServiceProvider._
+    }
+
+    def "offlineIfPreviouslySeen should update to offline when device was previously online"() {
+        given:
+        def integrationId = "test-integration"
+        def device = createDevice(1L, integrationId, "device-1")
+        def statusEntityKey = getDeviceStatusEntityKey(device)
+        def config = DeviceStatusConfig.builder()
+                .offlineListener({ d -> })
+                .build()
+
+        // Register the integration first
+        deviceServiceProvider.findAll(integrationId) >> []
+        deviceStatusService.register(integrationId, config)
+
+        entityServiceProvider.findByKey(statusEntityKey) >> Mock(Entity)
+        entityValueServiceProvider.findValueByKey(statusEntityKey) >> "ONLINE"
+
+        when:
+        deviceStatusService.offlineIfPreviouslySeen(device)
+
+        then:
+        1 * entityValueServiceProvider.saveValuesAndPublishSync(_)
+    }
+
+    def "offlineIfPreviouslySeen should not update when device has no previous status"() {
+        given:
+        def device = createDevice(1L, "test-integration", "device-1")
+        def statusEntityKey = getDeviceStatusEntityKey(device)
+
+        entityServiceProvider.findByKey(statusEntityKey) >> Mock(Entity)
+        entityValueServiceProvider.findValueByKey(statusEntityKey) >> null
+
+        when:
+        deviceStatusService.offlineIfPreviouslySeen(device)
+
+        then:
+        0 * entityValueServiceProvider.saveValuesAndPublishSync(_)
+    }
+
+    def "offlineIfPreviouslySeen should call offline listener when status changes"() {
+        given:
+        def integrationId = "test-integration"
+        def device = createDevice(1L, integrationId, "device-1")
+        def statusEntityKey = getDeviceStatusEntityKey(device)
+        def offlineListenerCalled = false
+        def config = DeviceStatusConfig.builder()
+                .offlineListener({ d -> offlineListenerCalled = true })
+                .build()
+
+        // Register the integration first
+        deviceServiceProvider.findAll(integrationId) >> []
+        deviceStatusService.register(integrationId, config)
+
+        entityServiceProvider.findByKey(statusEntityKey) >> Mock(Entity)
+        entityValueServiceProvider.findValueByKey(statusEntityKey) >> "ONLINE"
+
+        when:
+        deviceStatusService.offlineIfPreviouslySeen(device)
+
+        then:
+        1 * entityValueServiceProvider.saveValuesAndPublishSync(_)
+        offlineListenerCalled
+    }
+
+    def "offlineIfPreviouslySeen should work without registered config"() {
+        given:
+        def device = createDevice(1L, "test-integration", "device-1")
+        def statusEntityKey = getDeviceStatusEntityKey(device)
+
+        entityServiceProvider.findByKey(statusEntityKey) >> Mock(Entity)
+        entityValueServiceProvider.findValueByKey(statusEntityKey) >> "ONLINE"
+
+        when:
+        deviceStatusService.offlineIfPreviouslySeen(device)
+
+        then:
+        1 * entityValueServiceProvider.saveValuesAndPublishSync(_)
+    }
+
+    def "offlineIfPreviouslySeen should not update when device already offline"() {
+        given:
+        def device = createDevice(1L, "test-integration", "device-1")
+        def statusEntityKey = getDeviceStatusEntityKey(device)
+
+        entityServiceProvider.findByKey(statusEntityKey) >> Mock(Entity)
+        entityValueServiceProvider.findValueByKey(statusEntityKey) >> "OFFLINE"
+
+        when:
+        deviceStatusService.offlineIfPreviouslySeen(device)
+
+        then:
+        0 * entityValueServiceProvider.saveValuesAndPublishSync(_)
     }
 
     // ==================== status tests ====================
@@ -253,15 +371,22 @@ class DeviceStatusServiceTest extends Specification {
 
     // ==================== handleStatus tests ====================
 
-    def "handleStatus should cancel delayed task when availableDeviceData is null"() {
+    def "handleStatus should cancel delayed task when deviceStatusConfig is null"() {
         given:
         def deviceId = 1L
+        def device = createDevice(1L, "test-integration", "device-1")
+        def availableDeviceData = DeviceStatusService.AvailableDeviceData.of(device, null)
+        def statusEntityKey = getDeviceStatusEntityKey(device)
+
+        entityServiceProvider.findByKey(statusEntityKey) >> Mock(Entity)
+        entityValueServiceProvider.findValueByKey(statusEntityKey) >> "OFFLINE"
 
         when:
-        deviceStatusService.handleStatus(deviceId, null, DeviceStatusService.DeviceStatusOperation.ONLINE)
+        deviceStatusService.handleStatus(deviceId, availableDeviceData, DeviceStatusService.DeviceStatusOperation.ONLINE, true)
 
         then:
         1 * delayedQueue.cancel("1")
+        1 * entityValueServiceProvider.saveValuesAndPublishSync(_)
     }
 
     def "handleStatus should handle online operation"() {
@@ -278,7 +403,7 @@ class DeviceStatusServiceTest extends Specification {
         entityValueServiceProvider.findValueByKey(statusEntityKey) >> "OFFLINE"
 
         when:
-        deviceStatusService.handleStatus(1L, availableDeviceData, DeviceStatusService.DeviceStatusOperation.ONLINE)
+        deviceStatusService.handleStatus(1L, availableDeviceData, DeviceStatusService.DeviceStatusOperation.ONLINE, true)
 
         then:
         1 * entityValueServiceProvider.saveValuesAndPublishSync(_)
@@ -297,7 +422,7 @@ class DeviceStatusServiceTest extends Specification {
         entityValueServiceProvider.findValueByKey(statusEntityKey) >> "ONLINE"
 
         when:
-        deviceStatusService.handleStatus(1L, availableDeviceData, DeviceStatusService.DeviceStatusOperation.OFFLINE)
+        deviceStatusService.handleStatus(1L, availableDeviceData, DeviceStatusService.DeviceStatusOperation.OFFLINE, true)
 
         then:
         1 * entityValueServiceProvider.saveValuesAndPublishSync(_)
@@ -305,21 +430,31 @@ class DeviceStatusServiceTest extends Specification {
 
     // ==================== getAvailableDeviceDataByDeviceId tests ====================
 
-    def "getAvailableDeviceDataByDeviceId returns null when device not found"() {
+    def "getAvailableDeviceDataByDeviceId returns data with null device when device not found"() {
         given:
         deviceServiceProvider.findById(1L) >> null
 
-        expect:
-        deviceStatusService.getAvailableDeviceDataByDeviceId(1L) == null
+        when:
+        def result = deviceStatusService.getAvailableDeviceDataByDeviceId(1L)
+
+        then:
+        result != null
+        result.device == null
+        result.deviceStatusConfig == null
     }
 
-    def "getAvailableDeviceDataByDeviceId returns null when config not registered"() {
+    def "getAvailableDeviceDataByDeviceId returns data with null config when config not registered"() {
         given:
         def device = createDevice(1L, "test-integration", "device-1")
         deviceServiceProvider.findById(1L) >> device
 
-        expect:
-        deviceStatusService.getAvailableDeviceDataByDeviceId(1L) == null
+        when:
+        def result = deviceStatusService.getAvailableDeviceDataByDeviceId(1L)
+
+        then:
+        result != null
+        result.device == device
+        result.deviceStatusConfig == null
     }
 
     def "getAvailableDeviceDataByDeviceId returns data when device and config exist"() {
@@ -384,19 +519,41 @@ class DeviceStatusServiceTest extends Specification {
         0 * entityValueServiceProvider.saveValuesAndPublishSync(_)
     }
 
-    def "should not update to offline when existing value is null"() {
+    def "should not update to offline when existing value is null and force is false"() {
         given:
         def device = createDevice(1L, "test-integration", "device-1")
         def statusEntityKey = getDeviceStatusEntityKey(device)
+        def availableDeviceData = DeviceStatusService.AvailableDeviceData.of(device, null)
 
         entityServiceProvider.findByKey(statusEntityKey) >> Mock(Entity)
+        entityValueServiceProvider.findValueByKey(statusEntityKey) >> null
+
+        when:
+        deviceStatusService.handleStatus(1L, availableDeviceData, DeviceStatusService.DeviceStatusOperation.OFFLINE, false)
+
+        then:
+        0 * entityValueServiceProvider.saveValuesAndPublishSync(_)
+    }
+
+    def "should update to offline when existing value is null and force is true"() {
+        given:
+        def device = createDevice(1L, "test-integration", "device-1")
+        def statusEntityKey = getDeviceStatusEntityKey(device)
+        def entityTemplate = Mock(EntityTemplate)
+        def entity = Mock(Entity)
+
+        entityServiceProvider.findByKey(statusEntityKey) >> null
+        deviceServiceProvider.existsById(1L) >> true
+        entityTemplateServiceProvider.findByKey(DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS) >> entityTemplate
+        entityTemplate.toEntity("test-integration", device.getKey()) >> entity
         entityValueServiceProvider.findValueByKey(statusEntityKey) >> null
 
         when:
         deviceStatusService.offline(device)
 
         then:
-        0 * entityValueServiceProvider.saveValuesAndPublishSync(_)
+        1 * entityServiceProvider.save(entity)
+        1 * entityValueServiceProvider.saveValuesAndPublishSync(_)
     }
 
     def "should throw exception when entity template not found"() {
@@ -405,6 +562,7 @@ class DeviceStatusServiceTest extends Specification {
         def statusEntityKey = getDeviceStatusEntityKey(device)
 
         entityServiceProvider.findByKey(statusEntityKey) >> null
+        deviceServiceProvider.existsById(1L) >> true
         entityTemplateServiceProvider.findByKey(DeviceStatusConstants.IDENTIFIER_DEVICE_STATUS) >> null
 
         when:
@@ -412,6 +570,23 @@ class DeviceStatusServiceTest extends Specification {
 
         then:
         thrown(RuntimeException)
+    }
+
+    def "should skip update when device not exists"() {
+        given:
+        def device = createDevice(1L, "test-integration", "device-1")
+        def statusEntityKey = getDeviceStatusEntityKey(device)
+
+        entityServiceProvider.findByKey(statusEntityKey) >> null
+        deviceServiceProvider.existsById(1L) >> false
+
+        when:
+        deviceStatusService.online(device)
+
+        then:
+        0 * entityTemplateServiceProvider.findByKey(_)
+        0 * entityServiceProvider.save(_)
+        0 * entityValueServiceProvider.saveValuesAndPublishSync(_)
     }
 
     def "should call online listener when status changes to online"() {
@@ -430,7 +605,7 @@ class DeviceStatusServiceTest extends Specification {
         entityValueServiceProvider.findValueByKey(statusEntityKey) >> "OFFLINE"
 
         when:
-        deviceStatusService.handleStatus(1L, availableDeviceData, DeviceStatusService.DeviceStatusOperation.ONLINE)
+        deviceStatusService.handleStatus(1L, availableDeviceData, DeviceStatusService.DeviceStatusOperation.ONLINE, true)
 
         then:
         1 * entityValueServiceProvider.saveValuesAndPublishSync(_)
@@ -451,7 +626,7 @@ class DeviceStatusServiceTest extends Specification {
         entityValueServiceProvider.findValueByKey(statusEntityKey) >> "OFFLINE"
 
         when:
-        deviceStatusService.handleStatus(1L, availableDeviceData, DeviceStatusService.DeviceStatusOperation.ONLINE)
+        deviceStatusService.handleStatus(1L, availableDeviceData, DeviceStatusService.DeviceStatusOperation.ONLINE, true)
 
         then:
         1 * entityValueServiceProvider.saveValuesAndPublishSync(_)
@@ -472,7 +647,7 @@ class DeviceStatusServiceTest extends Specification {
         entityValueServiceProvider.findValueByKey(statusEntityKey) >> "OFFLINE"
 
         when:
-        deviceStatusService.handleStatus(1L, availableDeviceData, DeviceStatusService.DeviceStatusOperation.ONLINE)
+        deviceStatusService.handleStatus(1L, availableDeviceData, DeviceStatusService.DeviceStatusOperation.ONLINE, true)
 
         then:
         1 * entityValueServiceProvider.saveValuesAndPublishSync(_)

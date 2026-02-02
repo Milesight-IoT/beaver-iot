@@ -41,6 +41,12 @@ public interface DeviceStatusServiceProvider {
      */
     void offline(Device device);
     /**
+     * Updates the device status to "OFFLINE" if it was previously seen.
+     *
+     * @param device the device to update
+     */
+    void offlineIfPreviouslySeen(Device device);
+    /**
      * Returns the device status.
      *
      * @param device the device to get the status for

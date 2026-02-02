@@ -34,6 +34,11 @@ public class DeviceStatusServiceProviderImpl implements DeviceStatusServiceProvi
     }
 
     @Override
+    public void offlineIfPreviouslySeen(Device device) {
+        deviceStatusService.offlineIfPreviouslySeen(device);
+    }
+
+    @Override
     public DeviceStatus status(Device device) {
         return deviceStatusService.status(device);
     }
