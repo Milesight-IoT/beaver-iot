@@ -209,6 +209,111 @@ class DeviceStatusServiceTest extends Specification {
         1 * entityValueServiceProvider.saveValuesAndPublishSync(_)
     }
 
+    // ==================== offlineIfPreviouslySeen tests ====================
+
+    def "offlineIfPreviouslySeen should do nothing when device is null"() {
+        when:
+        deviceStatusService.offlineIfPreviouslySeen(null)
+
+        then:
+        0 * deviceServiceProvider._
+        0 * entityServiceProvider._
+        0 * entityValueServiceProvider._
+    }
+
+    def "offlineIfPreviouslySeen should update to offline when device was previously online"() {
+        given:
+        def integrationId = "test-integration"
+        def device = createDevice(1L, integrationId, "device-1")
+        def statusEntityKey = getDeviceStatusEntityKey(device)
+        def config = DeviceStatusConfig.builder()
+                .offlineListener({ d -> })
+                .build()
+
+        // Register the integration first
+        deviceServiceProvider.findAll(integrationId) >> []
+        deviceStatusService.register(integrationId, config)
+
+        entityServiceProvider.findByKey(statusEntityKey) >> Mock(Entity)
+        entityValueServiceProvider.findValueByKey(statusEntityKey) >> "ONLINE"
+
+        when:
+        deviceStatusService.offlineIfPreviouslySeen(device)
+
+        then:
+        1 * entityValueServiceProvider.saveValuesAndPublishSync(_)
+    }
+
+    def "offlineIfPreviouslySeen should not update when device has no previous status"() {
+        given:
+        def device = createDevice(1L, "test-integration", "device-1")
+        def statusEntityKey = getDeviceStatusEntityKey(device)
+
+        entityServiceProvider.findByKey(statusEntityKey) >> Mock(Entity)
+        entityValueServiceProvider.findValueByKey(statusEntityKey) >> null
+
+        when:
+        deviceStatusService.offlineIfPreviouslySeen(device)
+
+        then:
+        0 * entityValueServiceProvider.saveValuesAndPublishSync(_)
+    }
+
+    def "offlineIfPreviouslySeen should call offline listener when status changes"() {
+        given:
+        def integrationId = "test-integration"
+        def device = createDevice(1L, integrationId, "device-1")
+        def statusEntityKey = getDeviceStatusEntityKey(device)
+        def offlineListenerCalled = false
+        def config = DeviceStatusConfig.builder()
+                .offlineListener({ d -> offlineListenerCalled = true })
+                .build()
+
+        // Register the integration first
+        deviceServiceProvider.findAll(integrationId) >> []
+        deviceStatusService.register(integrationId, config)
+
+        entityServiceProvider.findByKey(statusEntityKey) >> Mock(Entity)
+        entityValueServiceProvider.findValueByKey(statusEntityKey) >> "ONLINE"
+
+        when:
+        deviceStatusService.offlineIfPreviouslySeen(device)
+
+        then:
+        1 * entityValueServiceProvider.saveValuesAndPublishSync(_)
+        offlineListenerCalled
+    }
+
+    def "offlineIfPreviouslySeen should work without registered config"() {
+        given:
+        def device = createDevice(1L, "test-integration", "device-1")
+        def statusEntityKey = getDeviceStatusEntityKey(device)
+
+        entityServiceProvider.findByKey(statusEntityKey) >> Mock(Entity)
+        entityValueServiceProvider.findValueByKey(statusEntityKey) >> "ONLINE"
+
+        when:
+        deviceStatusService.offlineIfPreviouslySeen(device)
+
+        then:
+        1 * entityValueServiceProvider.saveValuesAndPublishSync(_)
+    }
+
+    def "offlineIfPreviouslySeen should not update when device already offline"() {
+        given:
+        def device = createDevice(1L, "test-integration", "device-1")
+        def statusEntityKey = getDeviceStatusEntityKey(device)
+
+        entityServiceProvider.findByKey(statusEntityKey) >> Mock(Entity)
+        entityValueServiceProvider.findValueByKey(statusEntityKey) >> "OFFLINE"
+
+        when:
+        deviceStatusService.offlineIfPreviouslySeen(device)
+
+        then:
+        0 * entityValueServiceProvider.saveValuesAndPublishSync(_)
+    }
+
     // ==================== status tests ====================
 
     @Unroll

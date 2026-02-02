@@ -85,6 +85,15 @@ public class DeviceStatusService {
         self().handleStatus(device.getId(), availableDeviceData, DeviceStatusOperation.OFFLINE, true);
     }
 
+    public void offlineIfPreviouslySeen(Device device) {
+        if (device == null) {
+            return;
+        }
+
+        AvailableDeviceData availableDeviceData = getAvailableDeviceDataByDevice(device);
+        self().handleStatus(device.getId(), availableDeviceData, DeviceStatusOperation.OFFLINE, false);
+    }
+
     public DeviceStatus status(Device device) {
         if (device == null) {
             return null;
