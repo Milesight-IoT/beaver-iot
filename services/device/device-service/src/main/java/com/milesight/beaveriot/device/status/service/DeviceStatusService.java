@@ -73,7 +73,7 @@ public class DeviceStatusService {
         }
 
         AvailableDeviceData availableDeviceData = getAvailableDeviceDataByDevice(device);
-        self().handleStatus(device.getId(), availableDeviceData, DeviceStatusOperation.ONLINE);
+        self().handleStatus(device.getId(), availableDeviceData, DeviceStatusOperation.ONLINE, true);
     }
 
     public void offline(Device device) {
@@ -82,7 +82,7 @@ public class DeviceStatusService {
         }
 
         AvailableDeviceData availableDeviceData = getAvailableDeviceDataByDevice(device);
-        self().handleStatus(device.getId(), availableDeviceData, DeviceStatusOperation.OFFLINE);
+        self().handleStatus(device.getId(), availableDeviceData, DeviceStatusOperation.OFFLINE, true);
     }
 
     public DeviceStatus status(Device device) {
@@ -127,15 +127,15 @@ public class DeviceStatusService {
     @DistributedLock(name = "device:status:handle:#{#p0}", waitForLock = "5s", throwOnLockFailure = false)
     public void handleStatus(Long deviceId,
                              AvailableDeviceData availableDeviceData,
-                             DeviceStatusOperation operation) {
+                             DeviceStatusOperation operation, boolean force) {
         if (availableDeviceData.getDeviceStatusConfig() == null) {
             cancelDelayedTask(deviceId);
         }
 
         if (operation == DeviceStatusOperation.ONLINE) {
-            handleStatusToOnline(availableDeviceData);
+            handleStatusToOnline(availableDeviceData, force);
         } else {
-            handleStatusToOffline(availableDeviceData);
+            handleStatusToOffline(availableDeviceData, force);
         }
     }
 
@@ -168,7 +168,7 @@ public class DeviceStatusService {
         }
     }
 
-    private void handleStatusToOnline(AvailableDeviceData availableDeviceData) {
+    private void handleStatusToOnline(AvailableDeviceData availableDeviceData, boolean force) {
         Device device = availableDeviceData.getDevice();
         if (device == null) {
             return;
@@ -176,7 +176,7 @@ public class DeviceStatusService {
 
         DeviceStatusConfig config = availableDeviceData.getDeviceStatusConfig();
         Consumer<Device> onlineListener = Optional.ofNullable(config).map(DeviceStatusConfig::getOnlineListener).orElse(null);
-        updateDeviceStatusToOnline(device, onlineListener);
+        updateDeviceStatusToOnline(device, onlineListener, force);
 
         Duration offlineDuration = getDeviceOfflineDuration(device, config);
         if (offlineDuration != null) {
@@ -184,7 +184,7 @@ public class DeviceStatusService {
         }
     }
 
-    private void handleStatusToOffline(AvailableDeviceData availableDeviceData) {
+    private void handleStatusToOffline(AvailableDeviceData availableDeviceData, boolean force) {
         Device device = availableDeviceData.getDevice();
         if (device == null) {
             return;
@@ -192,7 +192,7 @@ public class DeviceStatusService {
 
         DeviceStatusConfig config = availableDeviceData.getDeviceStatusConfig();
         Consumer<Device> offlineListener = Optional.ofNullable(config).map(DeviceStatusConfig::getOfflineListener).orElse(null);
-        updateDeviceStatusToOffline(device, offlineListener);
+        updateDeviceStatusToOffline(device, offlineListener, force);
     }
 
     private void offerDelayedTask(Device device, Duration offlineDuration) {
@@ -202,7 +202,7 @@ public class DeviceStatusService {
     private void consumeDelayedTask(DelayedTask<Void> task) {
         Long deviceId = Long.valueOf(task.getId());
         AvailableDeviceData availableDeviceData = getAvailableDeviceDataByDeviceId(deviceId);
-        self().handleStatus(deviceId, availableDeviceData, DeviceStatusOperation.OFFLINE);
+        self().handleStatus(deviceId, availableDeviceData, DeviceStatusOperation.OFFLINE, false);
     }
 
     private void cancelDelayedTask(Long deviceId) {
@@ -235,15 +235,15 @@ public class DeviceStatusService {
                 .orElse(null);
     }
 
-    private void updateDeviceStatusToOnline(Device device, Consumer<Device> onlineListener) {
-        updateDeviceStatus(device, DeviceStatus.ONLINE.name(), onlineListener);
+    private void updateDeviceStatusToOnline(Device device, Consumer<Device> onlineListener, boolean force) {
+        updateDeviceStatus(device, DeviceStatus.ONLINE.name(), onlineListener, force);
     }
 
-    private void updateDeviceStatusToOffline(Device device, Consumer<Device> offlineListener) {
-        updateDeviceStatus(device, DeviceStatus.OFFLINE.name(), offlineListener);
+    private void updateDeviceStatusToOffline(Device device, Consumer<Device> offlineListener, boolean force) {
+        updateDeviceStatus(device, DeviceStatus.OFFLINE.name(), offlineListener, force);
     }
 
-    private void updateDeviceStatus(Device device, String deviceStatus, Consumer<Device> statusChangedListener) {
+    private void updateDeviceStatus(Device device, String deviceStatus, Consumer<Device> statusChangedListener, boolean force) {
         String statusEntityKey = getStatusEntityKey(device);
         if (entityServiceProvider.findByKey(statusEntityKey) == null) {
             if (!deviceServiceProvider.existsById(device.getId())) {
@@ -259,7 +259,11 @@ public class DeviceStatusService {
         }
 
         String existValue = (String) entityValueServiceProvider.findValueByKey(statusEntityKey);
-        if (existValue == null && deviceStatus.equals(DeviceStatus.OFFLINE.name()) || deviceStatus.equals(existValue)) {
+        if (existValue == null && deviceStatus.equals(DeviceStatus.OFFLINE.name()) && !force) {
+            return;
+        }
+
+        if (deviceStatus.equals(existValue)) {
             return;
         }
 
