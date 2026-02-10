@@ -7,13 +7,14 @@ import com.milesight.beaveriot.base.exception.ServiceException;
 import com.milesight.beaveriot.base.utils.snowflake.SnowflakeUtil;
 import com.milesight.beaveriot.context.api.ResourceServiceProvider;
 import com.milesight.beaveriot.context.enums.ResourceRefType;
+import com.milesight.beaveriot.context.model.ResourceRefDTO;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
 import com.milesight.beaveriot.context.security.TenantContext;
+import com.milesight.beaveriot.context.support.SpringContext;
 import com.milesight.beaveriot.data.model.TimeSeriesCategory;
 import com.milesight.beaveriot.data.timeseries.common.TimeSeriesProperty;
 import com.milesight.beaveriot.resource.ResourceStorage;
 import com.milesight.beaveriot.resource.manager.constants.ResourceManagerConstants;
-import com.milesight.beaveriot.context.model.ResourceRefDTO;
 import com.milesight.beaveriot.resource.manager.facade.ResourceManagerFacade;
 import com.milesight.beaveriot.resource.manager.model.request.RequestUploadConfig;
 import com.milesight.beaveriot.resource.manager.po.ResourcePO;
@@ -31,7 +32,6 @@ import com.milesight.beaveriot.scheduler.core.model.ScheduleType;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -206,16 +206,15 @@ public class ResourceService implements ResourceManagerFacade, ResourceServicePr
     }
 
     public void unlinkRefAsync(ResourceRefDTO resourceRefDTO) {
-        ResourceService self = self();
         String tenantId = TenantContext.getTenantId();
         asyncUnlinkThreadPoolExecutor.execute(() -> {
             TenantContext.setTenantId(tenantId);
-            self.unlinkRef(resourceRefDTO);
+            self().unlinkRef(resourceRefDTO);
         });
     }
 
     public ResourceService self() {
-        return (ResourceService) AopContext.currentProxy();
+        return SpringContext.getBean(ResourceService.class);
     }
 
     @Override
