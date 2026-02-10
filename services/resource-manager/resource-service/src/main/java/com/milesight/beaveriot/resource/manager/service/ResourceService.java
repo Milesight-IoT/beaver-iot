@@ -244,7 +244,7 @@ public class ResourceService implements ResourceManagerFacade, ResourceServicePr
             return;
         }
 
-        List<ResourcePO> resourceToRemove = resourceRepository.findAllById(resourceIdToRemove);
+        List<ResourcePO> resourceToRemove = resourceRepository.findAllByIdIgnoreTenant(resourceIdToRemove);
         resourceRepository.deleteAllIgnoreTenant(resourceToRemove);
         resourceToRemove.forEach(r -> resourceStorage.delete(r.getKey()));
     }
