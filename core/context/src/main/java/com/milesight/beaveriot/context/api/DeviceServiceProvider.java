@@ -1,6 +1,7 @@
 package com.milesight.beaveriot.context.api;
 
 import com.milesight.beaveriot.context.integration.model.Device;
+import com.milesight.beaveriot.context.integration.model.DeviceBasicData;
 
 import java.util.List;
 
@@ -22,7 +23,13 @@ public interface DeviceServiceProvider {
 
     List<Device> findByIdentifiers(List<String> identifier, String integrationId);
 
+    /**
+     * Get all devices of an integration
+     * <p><b>[Warning]</b> When the device count is high, it can be resource-intensive and time-consuming.</p>
+     */
     List<Device> findAll(String integrationId);
+
+    List<DeviceBasicData> findByIntegrations(List<String> integrationIdList);
 
     long countByDeviceTemplateKey(String deviceTemplateKey);
 

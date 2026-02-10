@@ -51,7 +51,7 @@ public class DeviceStatusService {
     public void register(String integrationId, DeviceStatusConfig config) {
         if (config != null) {
             integrationDeviceStatusConfigs.put(integrationId, config);
-            List<Device> devices = deviceServiceProvider.findAll(integrationId);
+            List<DeviceBasicData> devices = deviceServiceProvider.findByIntegrations(List.of(integrationId));
             if (!CollectionUtils.isEmpty(devices)) {
                 initDevices(devices, config);
             }
@@ -148,8 +148,8 @@ public class DeviceStatusService {
         }
     }
 
-    private void initDevices(List<Device> devices, DeviceStatusConfig config) {
-        Function<List<Device>, Map<Long, Duration>> batchOfflineTimeoutFetcher = config.getBatchOfflineTimeoutFetcher();
+    private void initDevices(List<DeviceBasicData> devices, DeviceStatusConfig config) {
+        Function<List<DeviceBasicData>, Map<Long, Duration>> batchOfflineTimeoutFetcher = config.getBatchOfflineTimeoutFetcher();
         if (batchOfflineTimeoutFetcher == null) {
             devices.forEach(device -> {
                 Duration offlineDuration = getDeviceOfflineDuration(device, config);
@@ -161,7 +161,7 @@ public class DeviceStatusService {
             int totalSize = devices.size();
             for (int i = 0; i < totalSize; i += BATCH_QUERY_OFFLINE_TIMEOUT_SIZE) {
                 int endIndex = Math.min(i + BATCH_QUERY_OFFLINE_TIMEOUT_SIZE, totalSize);
-                List<Device> batchDevices = devices.subList(i, endIndex);
+                List<DeviceBasicData> batchDevices = devices.subList(i, endIndex);
                 Map<Long, Duration> deviceOfflineTimeoutMap = batchOfflineTimeoutFetcher.apply(batchDevices);
                 if (CollectionUtils.isEmpty(deviceOfflineTimeoutMap)) {
                     continue;
@@ -187,9 +187,9 @@ public class DeviceStatusService {
         Consumer<Device> onlineListener = Optional.ofNullable(config).map(DeviceStatusConfig::getOnlineListener).orElse(null);
         updateDeviceStatusToOnline(device, onlineListener, force);
 
-        Duration offlineDuration = getDeviceOfflineDuration(device, config);
+        Duration offlineDuration = getDeviceOfflineDuration(device.getBasicData(), config);
         if (offlineDuration != null) {
-            offerDelayedTask(device, offlineDuration);
+            offerDelayedTask(device.getBasicData(), offlineDuration);
         }
     }
 
@@ -204,7 +204,7 @@ public class DeviceStatusService {
         updateDeviceStatusToOffline(device, offlineListener, force);
     }
 
-    private void offerDelayedTask(Device device, Duration offlineDuration) {
+    private void offerDelayedTask(DeviceBasicData device, Duration offlineDuration) {
         delayedQueue.offer(DelayedTask.of(String.valueOf(device.getId()), device.getIntegrationId(), null, offlineDuration));
     }
 
@@ -236,7 +236,7 @@ public class DeviceStatusService {
         return AvailableDeviceData.of(device, deviceStatusConfig);
     }
 
-    private Duration getDeviceOfflineDuration(Device device, DeviceStatusConfig config) {
+    private Duration getDeviceOfflineDuration(DeviceBasicData device, DeviceStatusConfig config) {
         return Optional.ofNullable(config)
                 .map(DeviceStatusConfig::getOfflineTimeoutFetcher)
                 .map(f -> f.apply(device))

@@ -104,4 +104,16 @@ public class Device implements IdentityKey {
         DeviceLocationServiceProvider deviceLocationServiceProvider = SpringContext.getBean(DeviceLocationServiceProvider.class);
         return deviceLocationServiceProvider.getLocation(this);
     }
+
+    public DeviceBasicData getBasicData() {
+        return DeviceBasicData.builder()
+                .id(this.getId())
+                .key(this.getKey())
+                .name(this.getName())
+                .integrationId(this.getIntegrationId())
+                .identifier(this.getIdentifier())
+                .template(this.getTemplate())
+                .additionalData(this.getAdditional())
+                .build();
+    }
 }

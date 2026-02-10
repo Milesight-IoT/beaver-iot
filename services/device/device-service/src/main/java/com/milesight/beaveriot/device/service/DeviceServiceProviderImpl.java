@@ -7,6 +7,7 @@ import com.milesight.beaveriot.context.api.DeviceServiceProvider;
 import com.milesight.beaveriot.context.api.DeviceStatusServiceProvider;
 import com.milesight.beaveriot.context.api.EntityServiceProvider;
 import com.milesight.beaveriot.context.integration.model.Device;
+import com.milesight.beaveriot.context.integration.model.DeviceBasicData;
 import com.milesight.beaveriot.context.integration.model.DeviceLocation;
 import com.milesight.beaveriot.context.integration.model.event.DeviceEvent;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
@@ -216,6 +217,24 @@ public class DeviceServiceProviderImpl implements DeviceServiceProvider {
     public List<Device> findAll(String integrationId) {
         return deviceConverter.convertPO(deviceRepository
                 .findAll(f -> f.eq(DevicePO.Fields.integration, integrationId)));
+    }
+
+    @Override
+    public List<DeviceBasicData> findByIntegrations(List<String> integrationIdList) {
+        return deviceService
+                .mapIntegrationIdToDevices(integrationIdList)
+                .values().stream()
+                .flatMap(List::stream)
+                .map(devicePO -> DeviceBasicData.builder()
+                        .id(devicePO.getId())
+                        .key(devicePO.getKey())
+                        .name(devicePO.getName())
+                        .integrationId(devicePO.getIntegration())
+                        .identifier(devicePO.getIdentifier())
+                        .template(devicePO.getTemplate())
+                        .additionalData(devicePO.getAdditionalData())
+                        .build())
+                .toList();
     }
 
     private boolean deviceAdditionalDataEqual(Map<String, Object> arg1, Map<String, Object> arg2) {

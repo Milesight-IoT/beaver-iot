@@ -16,8 +16,8 @@ import java.util.function.Function;
 @Builder
 @Data
 public class DeviceStatusConfig {
-    private Function<Device, Duration> offlineTimeoutFetcher;
-    private Function<List<Device>, Map<Long, Duration>> batchOfflineTimeoutFetcher;
+    private Function<DeviceBasicData, Duration> offlineTimeoutFetcher;
+    private Function<List<DeviceBasicData>, Map<Long, Duration>> batchOfflineTimeoutFetcher;
     private Consumer<Device> onlineListener;
     private Consumer<Device> offlineListener;
 }
