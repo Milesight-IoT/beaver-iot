@@ -9,7 +9,6 @@ import com.milesight.beaveriot.context.api.ResourceServiceProvider;
 import com.milesight.beaveriot.context.enums.ResourceRefType;
 import com.milesight.beaveriot.context.model.ResourceRefDTO;
 import com.milesight.beaveriot.context.security.SecurityUserContext;
-import com.milesight.beaveriot.context.security.TenantContext;
 import com.milesight.beaveriot.context.support.SpringContext;
 import com.milesight.beaveriot.data.model.TimeSeriesCategory;
 import com.milesight.beaveriot.data.timeseries.common.TimeSeriesProperty;
@@ -206,11 +205,7 @@ public class ResourceService implements ResourceManagerFacade, ResourceServicePr
     }
 
     public void unlinkRefAsync(ResourceRefDTO resourceRefDTO) {
-        String tenantId = TenantContext.getTenantId();
-        asyncUnlinkThreadPoolExecutor.execute(() -> {
-            TenantContext.setTenantId(tenantId);
-            self().unlinkRef(resourceRefDTO);
-        });
+        asyncUnlinkThreadPoolExecutor.execute(() -> self().unlinkRef(resourceRefDTO));
     }
 
     public ResourceService self() {
@@ -250,7 +245,7 @@ public class ResourceService implements ResourceManagerFacade, ResourceServicePr
         }
 
         List<ResourcePO> resourceToRemove = resourceRepository.findAllById(resourceIdToRemove);
-        resourceRepository.deleteAll(resourceToRemove);
+        resourceRepository.deleteAllIgnoreTenant(resourceToRemove);
         resourceToRemove.forEach(r -> resourceStorage.delete(r.getKey()));
     }
 
