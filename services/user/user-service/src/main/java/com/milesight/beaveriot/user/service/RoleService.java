@@ -341,8 +341,7 @@ public class RoleService {
         Set<Long> responseIntegrationDeviceIds = new HashSet<>();
         List<RoleResourcePO> roleIntegrations = roleResourceRepository.findAll(filterable ->
                 filterable.eq(RoleResourcePO.Fields.roleId, roleId)
-                        .eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION.name())
-                        .in(!searchIntegrationIds.isEmpty(), RoleResourcePO.Fields.resourceId, searchIntegrationIds.toArray()));
+                        .eq(RoleResourcePO.Fields.resourceType, ResourceType.INTEGRATION.name()));
         if (!roleIntegrations.isEmpty()) {
             List<String> integrationIds = roleIntegrations.stream().map(RoleResourcePO::getResourceId).toList();
             List<Long> integrationDeviceIds = deviceFacade.getDeviceNameByIntegrations(integrationIds).stream()
